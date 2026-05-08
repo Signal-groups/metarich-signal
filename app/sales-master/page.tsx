@@ -385,6 +385,7 @@ export default function SalesMasterPage() {
               </p>
             </div>
             <div className="flex gap-2">
+              <button onClick={() => window.open("/sales-book", "_blank", "noopener,noreferrer")} className="rounded-xl bg-white/10 px-5 py-3 text-[13px] font-black text-white hover:bg-white/20">세일즈 북</button>
               <button onClick={() => window.open("/dashboard", "_self")} className="rounded-xl bg-white/10 px-5 py-3 text-[13px] font-black text-white hover:bg-white/20">대시보드</button>
               <button onClick={() => window.close()} className="rounded-xl bg-white px-5 py-3 text-[13px] font-black text-[#173b72]">창 닫기</button>
             </div>
