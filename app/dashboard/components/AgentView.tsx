@@ -16,7 +16,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   });
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
-  const [isToolOpen, setIsToolOpen] = useState(false); // 계산기(영업도구) 상태
   const [isCustOpen, setIsCustOpen] = useState(false); 
   const [avgTab, setAvgTab] = useState<'perf' | 'act'>('perf'); 
   const [historyData, setHistoryData] = useState<any[]>([]);
@@ -31,6 +30,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     insu: "https://xn--on3bi2e18htop.com/", 
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm",
     customerCrm: "/crm",
+    salesMaster: "/sales-master",
+    salesBook: "/sales-book",
   };
 
   const handleGoogleSync = async (customers: any[]) => {
@@ -169,7 +170,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-[#f8fafc] text-[#475569]" />
-          <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-[#1a3a6e] text-white" />
+          <QuickBtn label="세일즈 마스터" url={LINKS.salesMaster} color="bg-[#1a3a6e] text-white" />
+          <QuickBtn label="세일즈 북" url={LINKS.salesBook} color="bg-[#2563eb] text-white" />
           <QuickBtn
             label="고객관리"
             url={LINKS.customerCrm}
@@ -362,7 +364,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       )}
 
       {/* 🟢 모달 영역 */}
-      {/* {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />} */}
       {isCustOpen && (
         <CustomerManagerModal onClose={() => setIsCustOpen(false)} onSaveToGoogle={handleGoogleSync} />
       )}
