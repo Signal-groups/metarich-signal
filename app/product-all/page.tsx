@@ -332,6 +332,16 @@ function getTopics(category: CategoryId, query: string) {
   })
 }
 
+function getSpecCards(topic: ProductTopic) {
+  const firstType = topic.productTypes?.[0]
+  return [
+    { label: "상품군", value: topic.group },
+    { label: "대표 구조", value: firstType?.name || topic.title },
+    { label: "주요 보장", value: firstType?.feature.split(".")[0] || topic.purpose.split(".")[0] },
+    { label: "확인 포인트", value: firstType?.limits[0] || topic.caution[0] || "약관과 가입조건 확인" },
+  ]
+}
+
 export default function ProductAllPage() {
   const [activeCategory, setActiveCategory] = useState<CategoryId>("life")
   const [selectedId, setSelectedId] = useState("whole-life")
@@ -339,6 +349,16 @@ export default function ProductAllPage() {
 
   const visibleTopics = useMemo(() => getTopics(activeCategory, query), [activeCategory, query])
   const selectedTopic = visibleTopics.find((topic) => topic.id === selectedId) || visibleTopics[0] || topics.find((topic) => topic.category === activeCategory) || topics[0]
+  const selectedCategory = categories.find((category) => category.id === activeCategory) || categories[0]
+  const sidebarGroups = useMemo(() => {
+    return visibleTopics.reduce<Record<string, ProductTopic[]>>((groups, topic) => {
+      const groupName = topic.group.split("·").map((part) => part.trim()).filter(Boolean).slice(0, 2).join(" · ") || topic.group
+      groups[groupName] = groups[groupName] || []
+      groups[groupName].push(topic)
+      return groups
+    }, {})
+  }, [visibleTopics])
+  const specCards = getSpecCards(selectedTopic)
 
   const handleCategory = (id: CategoryId) => {
     setActiveCategory(id)
@@ -346,120 +366,117 @@ export default function ProductAllPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#eef3fb] text-slate-900">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6 md:px-8">
-        <header className="flex flex-col gap-4 rounded-lg bg-[#14386f] p-6 text-white shadow-sm md:flex-row md:items-end md:justify-between">
-          <div>
-            <button
-              onClick={() => window.close()}
-              className="mb-5 inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-[13px] font-bold text-white hover:bg-white/15"
-            >
-              <ArrowLeft size={16} />
-              대시보드로 돌아가기
-            </button>
-            <p className="text-[12px] font-black uppercase text-sky-200">Metarich Signal Product Guide</p>
-            <h1 className="mt-2 text-3xl font-black md:text-5xl">상품의 모든것</h1>
-            <p className="mt-3 max-w-2xl text-[15px] leading-7 text-blue-50">
-              생명보험과 손해보험 상품군을 상담 목적별로 정리한 내부 업무용 가이드입니다. 상품명보다 고객 상황, 필요한 돈, 주의사항을 먼저 확인하도록 구성했습니다.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {["상품 분류", "핵심 질문", "상담 포인트"].map((label) => (
-              <div key={label} className="rounded-lg border border-white/20 bg-white/10 px-4 py-3">
-                <p className="text-[12px] font-black text-sky-100">{label}</p>
-              </div>
-            ))}
-          </div>
-        </header>
-
-        <section className="grid gap-4 lg:grid-cols-[280px_1fr]">
-          <aside className="space-y-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+    <main className="min-h-screen bg-[#eef2f7] text-slate-900">
+      <div className="grid min-h-screen lg:grid-cols-[310px_1fr]">
+        <aside className="bg-[#142132] text-slate-200 lg:sticky lg:top-0 lg:h-screen">
+          <div className="flex h-full flex-col">
+            <div className="border-b border-white/10 px-5 py-5">
+              <button onClick={() => window.close()} className="mb-5 inline-flex items-center gap-2 text-[13px] font-bold text-slate-300 hover:text-white">
+                <ArrowLeft size={16} />
+                창 닫기
+              </button>
+              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-sky-300">Product Guide</p>
+              <h1 className="mt-2 text-2xl font-black text-white">상품의 모든것</h1>
+              <p className="mt-2 text-[12px] font-bold leading-5 text-slate-400">상품 구조, 특장점, 면책·감액 조건을 빠르게 확인하는 내부 자료실입니다.</p>
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={17} />
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="상품, 상황 검색"
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-[14px] font-bold outline-none focus:border-[#2563eb] focus:bg-white"
+                  placeholder="상품명 검색"
+                  className="h-10 w-full rounded-lg border border-white/10 bg-white/5 pl-10 pr-3 text-[13px] font-bold text-white outline-none placeholder:text-slate-500 focus:border-sky-400"
                 />
               </div>
             </div>
 
-            <nav className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategory(category.id)}
-                  className={`mb-2 w-full rounded-lg p-4 text-left transition last:mb-0 ${
-                    activeCategory === category.id ? "bg-[#14386f] text-white" : "bg-slate-50 text-slate-700 hover:bg-blue-50"
-                  }`}
-                >
-                  <span className="block text-[15px] font-black">{category.label}</span>
-                  <span className={`mt-1 block text-[12px] leading-5 ${activeCategory === category.id ? "text-blue-100" : "text-slate-500"}`}>
-                    {category.caption}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          </aside>
+            <nav className="flex-1 overflow-y-auto px-4 py-4">
+              {categories.map((category) => {
+                const isOpen = activeCategory === category.id
+                const groups = isOpen ? sidebarGroups : {}
+                return (
+                  <section key={category.id} className="mb-4">
+                    <button
+                      onClick={() => handleCategory(category.id)}
+                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition ${
+                        isOpen ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <span className={`h-8 w-8 rounded-lg ${category.id === "life" ? "bg-blue-600/35" : category.id === "nonLife" ? "bg-rose-600/35" : category.id === "underwriting" ? "bg-amber-500/30" : "bg-emerald-500/30"}`} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[14px] font-black">{category.label}의 모든 것</span>
+                        <span className="mt-1 block text-[11px] font-bold leading-4 text-slate-500">{category.caption}</span>
+                      </span>
+                      <span className="text-[11px] text-slate-500">{isOpen ? "−" : "+"}</span>
+                    </button>
 
-          <section className="grid gap-4 xl:grid-cols-[340px_1fr]">
-            <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-              <div className="mb-3 flex items-center gap-2 px-2 pt-1 text-[#14386f]">
-                <BookOpenCheck size={18} />
-                <h2 className="text-[15px] font-black">상품 목차</h2>
-              </div>
-              <div className="max-h-[680px] space-y-2 overflow-y-auto pr-1">
-                {visibleTopics.map((topic) => (
-                  <button
-                    key={topic.id}
-                    onClick={() => setSelectedId(topic.id)}
-                    className={`w-full rounded-lg border p-4 text-left transition ${
-                      selectedTopic.id === topic.id ? "border-[#2563eb] bg-blue-50" : "border-slate-200 bg-white hover:border-blue-200"
-                    }`}
-                  >
-                    <p className="text-[11px] font-black text-slate-400">{topic.group}</p>
-                    <p className="mt-1 text-[16px] font-black text-slate-900">{topic.title}</p>
-                    <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-slate-500">{topic.purpose}</p>
-                  </button>
-                ))}
-                {visibleTopics.length === 0 && (
-                  <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-[14px] font-bold text-slate-500">
-                    검색 결과가 없습니다.
-                  </div>
-                )}
-              </div>
+                    {isOpen && (
+                      <div className="mt-3 space-y-5 pl-4">
+                        {Object.entries(groups).map(([groupName, groupTopics]) => (
+                          <div key={groupName}>
+                            <p className="mb-2 text-[11px] font-black text-slate-500">{groupName}</p>
+                            <div className="space-y-1">
+                              {groupTopics.map((topic) => (
+                                <button
+                                  key={topic.id}
+                                  onClick={() => setSelectedId(topic.id)}
+                                  className={`block w-full rounded-md px-3 py-2 text-left text-[13px] font-bold leading-5 transition ${
+                                    selectedTopic.id === topic.id ? "bg-blue-500/15 text-sky-200" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                  }`}
+                                >
+                                  {topic.title}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        {visibleTopics.length === 0 && <p className="px-3 text-[13px] font-bold text-slate-500">검색 결과가 없습니다.</p>}
+                      </div>
+                    )}
+                  </section>
+                )
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        <section className="min-w-0">
+          <header className="border-b border-slate-200 bg-white px-5 py-7 md:px-8">
+            <div className="h-1 w-9 rounded-full bg-[#2563eb]" />
+            <p className="mt-4 text-[13px] font-bold text-slate-500">홈 · {selectedCategory.label} · {selectedTopic.group}</p>
+            <h2 className="mt-3 text-3xl font-black text-slate-900 md:text-4xl">{selectedTopic.title}</h2>
+            <p className="mt-3 max-w-5xl text-[15px] font-bold leading-7 text-slate-600">{selectedTopic.purpose}</p>
+          </header>
+
+          <div className="space-y-7 px-5 py-7 md:px-8">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {specCards.map((card) => (
+                <div key={card.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-[12px] font-black text-slate-500">{card.label}</p>
+                  <p className="mt-2 text-[15px] font-bold leading-6 text-slate-900">{card.value}</p>
+                </div>
+              ))}
             </div>
 
-            <article className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-7">
-              <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-[12px] font-black text-[#2563eb]">{selectedTopic.group}</p>
-                  <h2 className="mt-1 text-3xl font-black text-[#14386f]">{selectedTopic.title}</h2>
-                  <p className="mt-3 text-[15px] leading-7 text-slate-600">{selectedTopic.purpose}</p>
-                </div>
-                <div className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-50 px-4 py-3 text-[13px] font-black text-emerald-700">
-                  <ShieldCheck size={18} />
-                  상담용 정리
-                </div>
+            {selectedTopic.productTypes && selectedTopic.productTypes.length > 0 ? (
+              <ProductTypeTable productTypes={selectedTopic.productTypes} />
+            ) : (
+              <InfoBlock icon={<ClipboardCheck size={19} />} title="상품 구조" items={selectedTopic.fit} />
+            )}
+
+            <section className="rounded-lg border border-blue-200 bg-white p-6">
+              <p className="text-[15px] font-black text-[#14386f]">{selectedTopic.title} 핵심 특장점</p>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {[selectedTopic.talkPoint, ...selectedTopic.fit].slice(0, 5).map((item) => (
+                  <p key={item} className="rounded-lg bg-blue-50 p-4 text-[14px] font-bold leading-6 text-slate-700">✓ {item}</p>
+                ))}
               </div>
+            </section>
 
-              {selectedTopic.productTypes && selectedTopic.productTypes.length > 0 && (
-                <ProductTypeGrid productTypes={selectedTopic.productTypes} />
-              )}
-
-              <InfoBlock icon={<ClipboardCheck size={19} />} title="어떤 고객에게 맞나요?" items={selectedTopic.fit} />
-              <InfoBlock icon={<Search size={19} />} title="상담 핵심 질문" items={selectedTopic.keyQuestions} />
-
-              <section className="rounded-lg border border-blue-100 bg-blue-50 p-5">
-                <p className="text-[13px] font-black text-[#2563eb]">설명 포인트</p>
-                <p className="mt-2 text-[15px] leading-7 font-bold text-slate-800">{selectedTopic.talkPoint}</p>
-              </section>
-
-              <InfoBlock icon={<ShieldCheck size={19} />} title="주의할 점" items={selectedTopic.caution} tone="amber" />
-            </article>
-          </section>
+            <section className="grid gap-5 xl:grid-cols-2">
+              <InfoBlock icon={<Search size={19} />} title="가입 전 체크포인트" items={selectedTopic.keyQuestions} />
+              <InfoBlock icon={<ShieldCheck size={19} />} title="면책 · 감액 · 유의사항" items={selectedTopic.caution} tone="amber" />
+            </section>
+          </div>
         </section>
       </div>
     </main>
@@ -497,6 +514,51 @@ function ProductTypeGrid({ productTypes }: { productTypes: NonNullable<ProductTo
             </div>
           </div>
         ))}
+      </div>
+    </section>
+  )
+}
+
+function ProductTypeTable({ productTypes }: { productTypes: NonNullable<ProductTopic["productTypes"]> }) {
+  return (
+    <section>
+      <h3 className="mb-3 text-[16px] font-black text-slate-900">상품 유형별 특장점 비교</h3>
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="grid grid-cols-[180px_1fr_1fr_1fr] bg-[#172334] text-white max-xl:hidden">
+          {["상품 유형", "주요 특장점", "권유 포인트", "면책 · 감액 · 확인사항"].map((header) => (
+            <div key={header} className="px-5 py-4 text-center text-[13px] font-black">
+              {header}
+            </div>
+          ))}
+        </div>
+        <div className="divide-y divide-slate-100">
+          {productTypes.map((product, index) => (
+            <div key={product.name} className="grid grid-cols-1 xl:grid-cols-[180px_1fr_1fr_1fr]">
+              <div className="bg-slate-50 px-5 py-4 text-[14px] font-black text-slate-900 xl:flex xl:items-center">
+                <span className="mr-2 text-[#2563eb]">{String(index + 1).padStart(2, "0")}</span>
+                {product.name}
+              </div>
+              <div className="px-5 py-4 text-[14px] font-bold leading-7 text-slate-700">
+                <span className="mb-1 block text-[11px] font-black text-slate-400 xl:hidden">주요 특장점</span>
+                {product.feature}
+              </div>
+              <div className="bg-blue-50/60 px-5 py-4 text-[14px] font-bold leading-7 text-[#174ea6]">
+                <span className="mb-1 block text-[11px] font-black text-blue-400 xl:hidden">권유 포인트</span>
+                {product.recommend}
+              </div>
+              <div className="px-5 py-4">
+                <span className="mb-1 block text-[11px] font-black text-amber-600 xl:hidden">면책 · 감액 · 확인사항</span>
+                <ul className="space-y-1">
+                  {product.limits.map((limit) => (
+                    <li key={limit} className="text-[13px] font-bold leading-6 text-slate-700">
+                      {limit}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   )
