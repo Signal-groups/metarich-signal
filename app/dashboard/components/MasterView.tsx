@@ -164,6 +164,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
         <QuickLink href="/sales-master" label="세일즈 마스터" />
         <QuickLink href="/sales-book" label="세일즈 북" />
+        <QuickLink href="/product-all" label="상품의 모든것" />
         <QuickLink href="/crm" label="고객관리" />
         <div className="relative">
           <button onClick={() => setShowExportOpt(!showExportOpt)} className="w-full h-full bg-emerald-600 text-white p-4 rounded-2xl text-[13px] shadow-lg font-black border border-emerald-700">

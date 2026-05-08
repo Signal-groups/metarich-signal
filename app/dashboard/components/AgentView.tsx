@@ -32,6 +32,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     customerCrm: "/crm",
     salesMaster: "/sales-master",
     salesBook: "/sales-book",
+    productAll: "/product-all",
   };
 
   const handleGoogleSync = async (customers: any[]) => {
@@ -172,6 +173,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="세일즈 마스터" url={LINKS.salesMaster} color="bg-[#1a3a6e] text-white" />
           <QuickBtn label="세일즈 북" url={LINKS.salesBook} color="bg-[#2563eb] text-white" />
+          <QuickBtn label="상품의 모든것" url={LINKS.productAll} color="bg-[#f59e0b] text-white" />
           <QuickBtn
             label="고객관리"
             url={LINKS.customerCrm}
