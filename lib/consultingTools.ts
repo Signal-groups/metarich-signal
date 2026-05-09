@@ -81,6 +81,17 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     staffOnly: true,
   },
   {
+    id: "show_premium_compare",
+    title: "교차설계 보험료 비교",
+    label: "교차설계 보험료 비교",
+    desc: "건강보험 · 종신/사망 · 저축성 비교",
+    icon: "📊",
+    url: "/insurance-tools/premium-compare",
+    color: "border-sky-500",
+    cardColor: "border-sky-500 text-sky-600",
+    staffOnly: true,
+  },
+  {
     id: "show_surgery",
     title: "수술비 검색",
     label: "수술비 검색",
