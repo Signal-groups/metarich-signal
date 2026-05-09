@@ -14,7 +14,7 @@ import MasterView from "./components/MasterView"
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
-import { CONSULTING_TOOLS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
+import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { normalizeRole, roleLabel, isApprovedUser } from "../../lib/roles"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -33,9 +33,9 @@ function ConsultingBox({
     <div className="relative">
       <button 
         onClick={() => !isEditMode && onClick(menu)} 
-        className={`h-48 w-full bg-white rounded-2xl flex flex-col p-6 shadow-sm border text-left transition-all group ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
+        className={`h-40 w-full bg-white rounded-2xl flex flex-col p-5 shadow-sm border text-left transition-all group ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
       >
-        <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">{menu.icon}</div>
+        <div className="text-2xl mb-3 group-hover:scale-110 transition-transform">{menu.icon}</div>
         <div className="flex-1">
           <h3 className="text-[15px] font-bold text-[#1e293b] mb-1">{menu.title}</h3>
           <p className="text-[12px] text-[#94a3b8] leading-tight break-keep">{menu.desc}</p>
@@ -138,6 +138,10 @@ export default function DashboardPage() {
   const isGuest = userRole === 'guest';
   
   const isApproved = !isGuest && isApprovedUser(user);
+  const visibleConsultingTools = CONSULTING_TOOLS.filter(m =>
+    m.placement !== "office" &&
+    (m.fixed || (m.staffOnly && isApproved && (menuStatus[m.id] || isConsultEditMode)))
+  );
 
   const renderOfficeView = () => {
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
@@ -230,20 +234,34 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {CONSULTING_TOOLS
-                    .filter(m => m.fixed || (m.staffOnly && isApproved && (menuStatus[m.id] || isConsultEditMode)))
-                    .map((menu) => (
-                      <ConsultingBox 
-                        key={menu.id} 
-                        menu={menu} 
-                        onClick={handleNavigation} 
-                        isEditMode={isConsultEditMode}
-                        checked={menu.fixed || menuStatus[menu.id] !== false}
-                        onToggle={toggleMenu}
-                      />
-                    ))
-                  }
+                <div className="space-y-8">
+                  {CONSULTING_TOOL_CATEGORIES.map((category) => {
+                    const tools = visibleConsultingTools.filter((tool) => (tool.category || "field") === category.id);
+                    if (tools.length === 0) return null;
+                    return (
+                      <section key={category.id} className="space-y-4">
+                        <div className="flex items-end justify-between border-b border-slate-200 pb-3">
+                          <div>
+                            <h2 className="text-xl font-black text-[#1a3a6e]">{category.title}</h2>
+                            <p className="mt-1 text-[12px] font-bold text-slate-400">{category.desc}</p>
+                          </div>
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-500">{tools.length}개</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {tools.map((menu) => (
+                            <ConsultingBox
+                              key={menu.id}
+                              menu={menu}
+                              onClick={handleNavigation}
+                              isEditMode={isConsultEditMode}
+                              checked={menu.fixed || menuStatus[menu.id] !== false}
+                              onToggle={toggleMenu}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
               </div>
             )

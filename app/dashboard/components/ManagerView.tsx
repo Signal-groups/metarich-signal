@@ -118,6 +118,9 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
       </div>
 
       <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+        <button onClick={() => window.open('https://meta-on.kr/#/login', '_blank', 'noopener,noreferrer')} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black hover:bg-slate-100 transition-all">메타온</button>
+        <button onClick={() => window.open('https://xn--on3bi2e18htop.com/', '_blank', 'noopener,noreferrer')} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black hover:bg-slate-100 transition-all">보험사</button>
+        <button onClick={() => window.open('/gongsi.html', '_blank', 'noopener,noreferrer')} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black hover:bg-slate-100 transition-all">공시실</button>
         <button onClick={() => window.open('/sales-master', '_blank', 'noopener,noreferrer')} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black hover:bg-[#1a3a6e] hover:text-white transition-all">세일즈 마스터</button>
         <button onClick={() => window.open('/sales-book', '_blank', 'noopener,noreferrer')} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black hover:bg-[#2563eb] hover:text-white transition-all">세일즈 북</button>
         <button onClick={() => window.open('/product-all', '_blank', 'noopener,noreferrer')} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black hover:bg-[#f59e0b] hover:text-white transition-all">상품의 모든것</button>

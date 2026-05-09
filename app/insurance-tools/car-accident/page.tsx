@@ -23,11 +23,80 @@ const GRADE_COLORS: Record<number, { badge: string; bar: string; text: string }>
   14: { badge: 'bg-slate-400 text-white',    bar: 'bg-slate-400',  text: 'text-slate-500' },
 }
 
+type BenefitPlanId = 'flat1to7' | 'a1to3' | 'a4to14' | 'flat1to11'
+
+const BENEFIT_PLANS: {
+  id: BenefitPlanId
+  label: string
+  defaultAmount: number
+  summary: string
+  note: string
+}[] = [
+  {
+    id: 'flat1to7',
+    label: '1~7급 정액형',
+    defaultAmount: 100,
+    summary: '가입금액 1백만원 기준, 1~7급은 가입금액 지급',
+    note: '상해등급 1~7급: 가입금액 지급 / 8~14급: 미지급',
+  },
+  {
+    id: 'a1to3',
+    label: 'A형 1~3급',
+    defaultAmount: 1500,
+    summary: '가입금액 1,500만원 기준, 1급 5,000만원 · 2급 2,500만원 · 3급 1,500만원',
+    note: '가입금액 기준 배율 적용: 1급 3.33배 / 2급 1.67배 / 3급 1배',
+  },
+  {
+    id: 'a4to14',
+    label: 'A형 4~14급',
+    defaultAmount: 900,
+    summary: '가입금액 900만원 기준, 4급 900만원 · 5급 450만원 · 6급 240만원 · 7급 120만원',
+    note: '8~11급 60만원, 12~14급 30만원 기준으로 비례 계산',
+  },
+  {
+    id: 'flat1to11',
+    label: '1~11급 정액형',
+    defaultAmount: 5,
+    summary: '가입금액 5만원 기준, 1~11급은 가입금액 지급',
+    note: '상해등급 1~11급: 가입금액 지급 / 12~14급: 미지급',
+  },
+]
+
 function fmoney(v: number): string {
   if (v === 0) return '미가입'
   if (v >= 10000) return `${(v / 10000).toFixed(v % 10000 === 0 ? 0 : 1)}억원`
   if (v >= 1000) return `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}천만원`
   return `${v.toLocaleString()}만원`
+}
+
+function getBenefitAmount(plan: BenefitPlanId, amount: number, grade: number): number {
+  if (amount <= 0) return 0
+
+  switch (plan) {
+    case 'flat1to7':
+      return grade >= 1 && grade <= 7 ? amount : 0
+    case 'a1to3':
+      if (grade === 1) return Math.round((amount * 5000) / 1500)
+      if (grade === 2) return Math.round((amount * 2500) / 1500)
+      if (grade === 3) return amount
+      return 0
+    case 'a4to14':
+      if (grade === 4) return amount
+      if (grade === 5) return Math.round((amount * 450) / 900)
+      if (grade === 6) return Math.round((amount * 240) / 900)
+      if (grade === 7) return Math.round((amount * 120) / 900)
+      if (grade >= 8 && grade <= 11) return Math.round((amount * 60) / 900)
+      if (grade >= 12 && grade <= 14) return Math.round((amount * 30) / 900)
+      return 0
+    case 'flat1to11':
+      return grade >= 1 && grade <= 11 ? amount : 0
+  }
+}
+
+function shortMoney(v: number): string {
+  if (v === 0) return '-'
+  if (v >= 1000) return `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}천`
+  return `${v.toLocaleString()}`
 }
 
 // ─────────────────────────────────────────────────────────
@@ -36,7 +105,9 @@ function fmoney(v: number): string {
 export default function CarAccidentPage() {
   const [query, setQuery]       = useState('')
   const [selectedGrade, setGrade] = useState<number | null>(null)
-  const [amount, setAmount]     = useState<number>(3000) // 자동차부상 보험금 기준금액
+  const [benefitPlan, setBenefitPlan] = useState<BenefitPlanId>('a4to14')
+  const [amount, setAmount]     = useState<number>(900) // 자동차부상 보험금 기준금액
+  const currentPlan = BENEFIT_PLANS.find(plan => plan.id === benefitPlan) ?? BENEFIT_PLANS[0]
 
   const filtered = useMemo(() => {
     // 1순위: 특정 급수 선택 시
@@ -117,11 +188,12 @@ export default function CarAccidentPage() {
               CALCULATE BENEFITS
             </p>
             <div className="flex items-center gap-3">
+              <span className="hidden sm:inline text-[11px] font-black text-slate-500">가입금액</span>
               <div className="relative flex items-center border-2 border-slate-100 focus-within:border-amber-400 rounded-2xl overflow-hidden bg-slate-50 focus-within:bg-white w-full sm:w-48 transition-all">
                 <input
                   type="number"
                   min={0}
-                  step={100}
+                  step={benefitPlan === 'flat1to11' ? 1 : 100}
                   value={amount}
                   onChange={e => setAmount(Number(e.target.value) || 0)}
                   className="w-full text-right pr-10 pl-4 py-3 text-base font-black bg-transparent outline-none"
@@ -130,11 +202,31 @@ export default function CarAccidentPage() {
               </div>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-4">
+            {BENEFIT_PLANS.map(plan => (
+              <button
+                key={plan.id}
+                onClick={() => {
+                  setBenefitPlan(plan.id)
+                  setAmount(plan.defaultAmount)
+                }}
+                className={`text-left rounded-2xl border-2 p-3 transition-all ${
+                  benefitPlan === plan.id
+                    ? 'border-amber-500 bg-amber-50 shadow-sm'
+                    : 'border-slate-100 bg-slate-50 hover:border-amber-200'
+                }`}
+              >
+                <div className="text-xs font-black text-slate-800">{plan.label}</div>
+                <div className="text-[10px] text-slate-500 font-bold mt-1 leading-snug">{plan.summary}</div>
+              </button>
+            ))}
+          </div>
           
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
             {Array.from({ length: 14 }, (_, i) => i + 1).map(g => {
               const col = GRADE_COLORS[g]
-              const pay = Math.round(amount / g)
+              const pay = getBenefitAmount(benefitPlan, amount, g)
               return (
                 <div
                   key={g}
@@ -144,14 +236,14 @@ export default function CarAccidentPage() {
                 >
                   <div className={`text-[10px] font-black mb-0.5 group-hover:scale-110 transition-transform ${col.text}`}>{g}급</div>
                   <div className="text-[11px] text-slate-700 font-black tracking-tighter">
-                    {pay >= 1000 ? `${(pay/1000).toFixed(1)}천` : `${pay}`}만
+                    {shortMoney(pay)}{pay > 0 ? '만' : ''}
                   </div>
                 </div>
               )
             })}
           </div>
-          <p className="text-[10px] text-slate-400 mt-4 text-center">
-            ※ 급수별 지급금액 공식: 가입금액(1급 기준) ÷ 해당 급수 (원단위 절사)
+          <p className="text-[10px] text-slate-400 mt-4 text-center leading-relaxed">
+            ※ {currentPlan.label}: {currentPlan.note}
           </p>
         </div>
 
@@ -179,7 +271,7 @@ export default function CarAccidentPage() {
             <div className="grid gap-4">
               {filtered.map(item => {
                 const col = GRADE_COLORS[item.grade]
-                const pay = amount > 0 ? Math.round(amount / item.grade) : 0
+                const pay = getBenefitAmount(benefitPlan, amount, item.grade)
                 return (
                   <CarGradeCard key={item.grade} item={item} col={col} pay={pay} query={query} amount={amount} />
                 )

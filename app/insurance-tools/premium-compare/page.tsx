@@ -1,298 +1,426 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import { ArrowLeft, Calculator, Plus, RotateCcw, ShieldCheck } from "lucide-react"
 
-type TabId = "health" | "death" | "saving"
+type MainTab = "health" | "death" | "saving"
+type ViewTab = "company" | "coverage"
 type CompanyType = "생명" | "손해"
+type CompanyFilter = "전체" | CompanyType
 type PlanId = "min" | "standard" | "max"
+type Disclosure = "325" | "335" | "355" | "standard"
 
 type Company = {
   id: string
   name: string
   type: CompanyType
+  healthFactor: number
+  deathFactor: number
+  savingRate: number
+  refund5: number
+  refund7: number
+  refund10: number
+}
+
+type SavingResult = {
+  company: Company
+  futureValue: number
+  pension: number
 }
 
 type Coverage = {
   id: string
   title: string
-  guide: string
-  plans: Record<PlanId, string>
-  scope: string[]
+  category: "암" | "뇌심장" | "수술" | "간병" | "사망" | "저축"
+  amount: Record<PlanId, number>
+  unit: string
+  baseRate: number
+  benefit: string
+  strength: string
+  checkPoint: string
 }
 
-const tabs: { id: TabId; label: string; desc: string }[] = [
-  { id: "health", label: "건강보험 비교", desc: "암, 뇌·심장, 수술비 등 담보별 최저 보험료와 교차설계를 비교합니다." },
-  { id: "death", label: "종신/사망 비교", desc: "종신보험과 정기특약·정기보험의 보험료 차이를 비교합니다." },
-  { id: "saving", label: "저축성 비교", desc: "금리, 이자, 환급률 차이에 따른 예상 적립액과 연금수령액을 비교합니다." },
-]
-
-const defaultCompanies: Company[] = [
-  { id: "sl", name: "삼성생명", type: "생명" },
-  { id: "hl", name: "한화생명", type: "생명" },
-  { id: "kl", name: "교보생명", type: "생명" },
-  { id: "shinhan", name: "신한라이프", type: "생명" },
-  { id: "mirae", name: "미래에셋생명", type: "생명" },
-  { id: "dongyang", name: "동양생명", type: "생명" },
-  { id: "heungkukLife", name: "흥국생명", type: "생명" },
-  { id: "kbLife", name: "KB라이프", type: "생명" },
-  { id: "abl", name: "ABL생명", type: "생명" },
-  { id: "dbLife", name: "DB생명", type: "생명" },
-  { id: "sf", name: "삼성화재", type: "손해" },
-  { id: "hyundai", name: "현대해상", type: "손해" },
-  { id: "db", name: "DB손보", type: "손해" },
-  { id: "kb", name: "KB손보", type: "손해" },
-  { id: "meritz", name: "메리츠화재", type: "손해" },
-  { id: "hanwhaFire", name: "한화손보", type: "손해" },
-  { id: "lotte", name: "롯데손보", type: "손해" },
-  { id: "heungkukFire", name: "흥국화재", type: "손해" },
-  { id: "nh", name: "농협손보", type: "손해" },
-  { id: "hana", name: "하나손보", type: "손해" },
+const companies: Company[] = [
+  { id: "sl", name: "삼성생명", type: "생명", healthFactor: 1.07, deathFactor: 0.96, savingRate: 3.05, refund5: 91, refund7: 97, refund10: 104 },
+  { id: "hl", name: "한화생명", type: "생명", healthFactor: 1.02, deathFactor: 0.94, savingRate: 3.15, refund5: 92, refund7: 98, refund10: 105 },
+  { id: "kyobo", name: "교보생명", type: "생명", healthFactor: 1.1, deathFactor: 0.92, savingRate: 3.0, refund5: 90, refund7: 97, refund10: 104 },
+  { id: "shinhan", name: "신한라이프", type: "생명", healthFactor: 1.04, deathFactor: 0.98, savingRate: 3.18, refund5: 91, refund7: 99, refund10: 106 },
+  { id: "kbLife", name: "KB라이프", type: "생명", healthFactor: 1.12, deathFactor: 0.95, savingRate: 3.1, refund5: 90, refund7: 98, refund10: 105 },
+  { id: "sf", name: "삼성화재", type: "손해", healthFactor: 1.03, deathFactor: 1.08, savingRate: 2.85, refund5: 88, refund7: 94, refund10: 101 },
+  { id: "hyundai", name: "현대해상", type: "손해", healthFactor: 0.98, deathFactor: 1.11, savingRate: 2.9, refund5: 89, refund7: 95, refund10: 102 },
+  { id: "db", name: "DB손보", type: "손해", healthFactor: 0.95, deathFactor: 1.13, savingRate: 2.82, refund5: 88, refund7: 94, refund10: 101 },
+  { id: "kb", name: "KB손보", type: "손해", healthFactor: 1.0, deathFactor: 1.1, savingRate: 2.88, refund5: 89, refund7: 95, refund10: 102 },
+  { id: "meritz", name: "메리츠화재", type: "손해", healthFactor: 0.93, deathFactor: 1.15, savingRate: 2.8, refund5: 88, refund7: 94, refund10: 101 },
+  { id: "hanwhaFire", name: "한화손보", type: "손해", healthFactor: 1.01, deathFactor: 1.12, savingRate: 2.86, refund5: 89, refund7: 95, refund10: 102 },
+  { id: "heungkukFire", name: "흥국화재", type: "손해", healthFactor: 0.97, deathFactor: 1.09, savingRate: 2.84, refund5: 88, refund7: 95, refund10: 102 },
 ]
 
 const healthCoverages: Coverage[] = [
-  { id: "cancer", title: "암진단비", guide: "일반암 범위, 유사암 금액, 소액암 분류, 면책·감액기간을 함께 봅니다.", plans: { min: "2,000만원", standard: "3,000만원", max: "5,000만원" }, scope: ["일반암 범위", "유사암", "소액암", "고액암", "면책/감액"] },
-  { id: "similarCancer", title: "유사암진단비", guide: "갑상선암, 기타피부암, 제자리암, 경계성종양의 지급 비율을 확인합니다.", plans: { min: "300만원", standard: "500만원", max: "1,000만원" }, scope: ["갑상선암", "제자리암", "경계성", "기타피부암"] },
-  { id: "brain", title: "뇌혈관진단비", guide: "뇌출혈보다 뇌졸중, 뇌졸중보다 뇌혈관질환이 범위가 넓습니다.", plans: { min: "500만원", standard: "1,000만원", max: "2,000만원" }, scope: ["뇌출혈", "뇌졸중", "뇌혈관질환"] },
-  { id: "heart", title: "허혈성심장질환", guide: "급성심근경색보다 허혈성심장질환이 넓은 범위입니다.", plans: { min: "500만원", standard: "1,000만원", max: "2,000만원" }, scope: ["급성심근경색", "협심증", "허혈성심장질환"] },
-  { id: "surgery", title: "질병수술비", guide: "넓게 반복 지급되는지, 같은 질병 반복 제한이 있는지 확인합니다.", plans: { min: "10만원", standard: "30만원", max: "50만원" }, scope: ["일반수술", "반복지급", "동일질병 제한"] },
-  { id: "nSurgery", title: "N대수술비", guide: "목록형 담보라 포함 수술과 제외 수술을 반드시 확인합니다.", plans: { min: "500만원", standard: "1,000만원", max: "2,000만원" }, scope: ["암수술", "뇌수술", "심장수술", "목록 제한"] },
-  { id: "cancerTreatment", title: "암주요치료비", guide: "진단비는 생활비, 주요치료비는 실제 치료 선택지로 분리합니다.", plans: { min: "1,000만원", standard: "2,000만원", max: "3,000만원" }, scope: ["수술", "항암", "방사선", "표적/면역"] },
-  { id: "circulatoryTreatment", title: "순환계주요치료비", guide: "진단 후 시술, 재활, 중환자실, 간병 비용까지 봅니다.", plans: { min: "500만원", standard: "1,000만원", max: "2,000만원" }, scope: ["스텐트", "수술", "중환자실", "재활"] },
-  { id: "care", title: "간병", guide: "시설 간병, 간병인 사용, 가족 소득공백을 보완합니다.", plans: { min: "월 50만원", standard: "월 100만원", max: "월 150만원" }, scope: ["장기요양", "간병인", "시설", "갱신"] },
-  { id: "homeCare", title: "재가", guide: "집에서 방문요양, 주야간보호, 복지용구를 이용할 때 필요한 비용입니다.", plans: { min: "월 30만원", standard: "월 70만원", max: "월 100만원" }, scope: ["방문요양", "주야간보호", "복지용구", "본인부담"] },
+  { id: "cancer", title: "암진단비", category: "암", amount: { min: 2000, standard: 3000, max: 5000 }, unit: "만원", baseRate: 4.9, benefit: "일반암 진단 시 생활비와 치료 선택자금 확보", strength: "일반암 범위, 유사암 지급비율, 소액암 분류가 중요", checkPoint: "면책 90일, 감액기간, 유사암 한도 확인" },
+  { id: "similar", title: "유사암진단비", category: "암", amount: { min: 300, standard: 500, max: 1000 }, unit: "만원", baseRate: 2.2, benefit: "갑상선암, 기타피부암, 제자리암, 경계성종양 보완", strength: "소액 보장이지만 실제 청구 빈도가 높은 편", checkPoint: "일반암과 지급금액 차이 확인" },
+  { id: "brain", title: "뇌혈관진단비", category: "뇌심장", amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 6.1, benefit: "뇌출혈보다 넓은 뇌혈관질환 범위 보완", strength: "보장범위가 넓을수록 실제 청구 가능성이 커짐", checkPoint: "뇌출혈/뇌졸중/뇌혈관질환 구분" },
+  { id: "heart", title: "허혈성심장질환", category: "뇌심장", amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 5.4, benefit: "급성심근경색보다 넓은 심장질환 범위 보완", strength: "협심증까지 보는지 확인하면 비교가 쉬움", checkPoint: "급성심근경색/허혈성심장질환 구분" },
+  { id: "surgery", title: "질병수술비", category: "수술", amount: { min: 10, standard: 30, max: 50 }, unit: "만원", baseRate: 92, benefit: "진단비 외 실제 수술 발생 시 반복 보완", strength: "넓게 반복 지급되는 구조가 실무적으로 유리", checkPoint: "동일질병 반복 지급, 약관상 수술 정의 확인" },
+  { id: "nSurgery", title: "N대수술비", category: "수술", amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 2.8, benefit: "암, 뇌, 심장 등 고액 수술 집중 보완", strength: "특정 수술 목록이 넓고 명확한 회사가 유리", checkPoint: "목록형 담보라 포함/제외 수술 확인" },
+  { id: "cancerTreatment", title: "암주요치료비", category: "암", amount: { min: 1000, standard: 2000, max: 3000 }, unit: "만원", baseRate: 3.7, benefit: "항암, 방사선, 표적·면역 치료 선택지 보완", strength: "진단비는 생활비, 주요치료비는 치료비로 분리", checkPoint: "치료 인정 범위, 연간 한도, 지급 횟수 확인" },
+  { id: "circulatory", title: "순환계주요치료비", category: "뇌심장", amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 3.2, benefit: "시술, 수술, 중환자실, 재활 비용 보완", strength: "진단 후 치료 과정까지 설명하기 좋음", checkPoint: "보장 질병명과 치료 항목 확인" },
+  { id: "care", title: "간병/재가", category: "간병", amount: { min: 50, standard: 100, max: 150 }, unit: "만원", baseRate: 38, benefit: "장기요양, 가족 소득공백, 돌봄 비용 보완", strength: "간병보험과 재가보험 사용 장소를 구분", checkPoint: "장기요양 등급, 갱신, 지급기간 확인" },
 ]
 
 const deathCoverages: Coverage[] = [
-  { id: "whole", title: "종신보험", guide: "평생 사망보장, 상속·유족생활비 재원으로 활용합니다.", plans: { min: "5,000만원", standard: "1억원", max: "2억원" }, scope: ["평생보장", "상속재원", "해약환급금"] },
-  { id: "term", title: "정기특약/정기보험", guide: "자녀 독립 전, 대출 상환기처럼 필요한 기간만 크게 준비합니다.", plans: { min: "5,000만원", standard: "1억원", max: "2억원" }, scope: ["기간보장", "저렴한 보험료", "만기 후 종료"] },
-  { id: "diseaseDeath", title: "질병사망", guide: "질병으로 인한 사망보장만 별도 비교합니다.", plans: { min: "3,000만원", standard: "5,000만원", max: "1억원" }, scope: ["질병사망", "재해 제외", "보험기간"] },
+  { id: "whole", title: "종신보험", category: "사망", amount: { min: 5000, standard: 10000, max: 20000 }, unit: "만원", baseRate: 1.65, benefit: "평생 사망보장과 상속·유족 생활비 재원", strength: "장기 유지와 자산 이전 목적에 적합", checkPoint: "해약환급금, 저해약 구조, 수익자 확인" },
+  { id: "term", title: "정기특약/정기보험", category: "사망", amount: { min: 5000, standard: 10000, max: 20000 }, unit: "만원", baseRate: 0.42, benefit: "자녀 독립 전까지 큰 사망보장을 저렴하게 준비", strength: "같은 사망보험금 기준 보험료 효율이 높음", checkPoint: "만기 이후 보장 종료, 갱신 여부 확인" },
+  { id: "diseaseDeath", title: "질병사망", category: "사망", amount: { min: 3000, standard: 5000, max: 10000 }, unit: "만원", baseRate: 0.72, benefit: "질병으로 인한 사망보장 별도 보완", strength: "종신보다 기간형 보완으로 쓰기 좋음", checkPoint: "재해사망 제외 여부와 보험기간 확인" },
 ]
 
+const planLabels: Record<PlanId, string> = { min: "1안 최소", standard: "2안 표준", max: "3안 최대" }
+const disclosureLabels: Record<Disclosure, string> = { standard: "일반고지", "325": "간편 3·2·5", "335": "간편 3·3·5", "355": "간편 3·5·5" }
+const refundYears = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40]
+
 const formatWon = (value: number) => `${Math.round(value).toLocaleString()}원`
-const toNumber = (value: string | number | undefined) => Number(String(value || "").replace(/,/g, "")) || 0
+const formatMan = (value: number) => `${value.toLocaleString()}만원`
+
+function refundRateFor(company: Company, year: number, payYears: number) {
+  if (year <= 1) return Math.max(0, 18 + company.refund5 * 0.06)
+  if (year <= 5) return Math.max(0, company.refund5 * (year / 5))
+  if (year <= 7) return company.refund5 + ((company.refund7 - company.refund5) * (year - 5)) / 2
+  if (year <= 10) return company.refund7 + ((company.refund10 - company.refund7) * (year - 7)) / 3
+  const longBonus = Math.min(65, (year - 10) * (company.savingRate * 0.72))
+  const payBonus = payYears <= 10 ? 8 : payYears <= 20 ? 4 : 2
+  return company.refund10 + longBonus + payBonus
+}
+
+function refundAmountFor(company: Company, year: number, monthlySaving: number, payYears: number) {
+  const paidMonths = Math.min(year, payYears) * 12
+  const paid = monthlySaving * paidMonths
+  return paid * (refundRateFor(company, year, payYears) / 100)
+}
+
+function premiumFor(company: Company, coverage: Coverage, plan: PlanId, age: number, gender: string, disclosure: Disclosure, tab: MainTab, delayYears = 0) {
+  const amount = coverage.amount[plan]
+  const ageFactor = 1 + Math.max(age + delayYears - 35, 0) * 0.026
+  const genderFactor = gender === "남성" ? 1.06 : 0.97
+  const disclosureFactor = disclosure === "325" ? 1.18 : disclosure === "335" ? 1.28 : disclosure === "355" ? 1.38 : 1
+  const companyFactor = tab === "death" ? company.deathFactor : company.healthFactor
+  const typeFactor = tab === "death" && company.type === "생명" ? 0.96 : tab === "health" && company.type === "손해" ? 0.95 : 1.04
+  return Math.round(amount * coverage.baseRate * ageFactor * genderFactor * disclosureFactor * companyFactor * typeFactor)
+}
 
 export default function PremiumComparePage() {
-  const [activeTab, setActiveTab] = useState<TabId>("health")
-  const [companies, setCompanies] = useState(defaultCompanies)
-  const [newCompany, setNewCompany] = useState("")
-  const [newCompanyType, setNewCompanyType] = useState<CompanyType>("손해")
+  const [mainTab, setMainTab] = useState<MainTab>("health")
+  const [viewTab, setViewTab] = useState<ViewTab>("company")
   const [plan, setPlan] = useState<PlanId>("standard")
+  const [age, setAge] = useState(41)
+  const [gender, setGender] = useState("남성")
+  const [disclosure, setDisclosure] = useState<Disclosure>("standard")
+  const [companyFilter, setCompanyFilter] = useState<CompanyFilter>("전체")
   const [payYears, setPayYears] = useState(20)
-  const [premiums, setPremiums] = useState<Record<string, Record<string, number>>>({})
-  const [scopeScores, setScopeScores] = useState<Record<string, Record<string, number>>>({})
+  const [delayYears, setDelayYears] = useState(1)
   const [monthlySaving, setMonthlySaving] = useState(300000)
-  const [annuityYears, setAnnuityYears] = useState(20)
-  const [savingRates, setSavingRates] = useState<Record<string, { rate: number; r5: number; r7: number; r10: number }>>({})
 
-  const currentCoverages = activeTab === "death" ? deathCoverages : healthCoverages
+  const coverages = mainTab === "death" ? deathCoverages : healthCoverages
+  const visibleCompanies = useMemo(() => companies.filter((company) => companyFilter === "전체" || company.type === companyFilter), [companyFilter])
 
-  const compare = useMemo(() => {
-    const coverageResults = currentCoverages.map((coverage) => {
-      const rows = companies
-        .map((company) => ({
-          company,
-          premium: premiums[coverage.id]?.[company.id] || 0,
-          scope: scopeScores[coverage.id]?.[company.id] || 3,
-        }))
-        .filter((row) => row.premium > 0)
-      const best = rows.sort((a, b) => a.premium - b.premium)[0]
-      const balanced = [...rows].sort((a, b) => b.scope / b.premium - a.scope / a.premium)[0]
-      return { coverage, best, balanced }
+  const rows = useMemo(() => {
+    return coverages.map((coverage) => {
+      const premiums = visibleCompanies.map((company) => ({
+        company,
+        premium: premiumFor(company, coverage, plan, age, gender, disclosure, mainTab),
+        later: premiumFor(company, coverage, plan, age, gender, disclosure, mainTab, delayYears),
+      }))
+      const sorted = [...premiums].sort((a, b) => a.premium - b.premium)
+      return { coverage, premiums, best: sorted[0], worst: sorted[sorted.length - 1] }
     })
+  }, [age, coverages, delayYears, disclosure, gender, mainTab, plan, visibleCompanies])
 
-    const companyTotals = companies.map((company) => ({
-      company,
-      total: currentCoverages.reduce((sum, coverage) => sum + (premiums[coverage.id]?.[company.id] || 0), 0),
-    })).filter((item) => item.total > 0)
+  const companyResults = useMemo(() => {
+    return visibleCompanies.map((company) => {
+      const total = coverages.reduce((sum, coverage) => sum + premiumFor(company, coverage, plan, age, gender, disclosure, mainTab), 0)
+      const later = coverages.reduce((sum, coverage) => sum + premiumFor(company, coverage, plan, age, gender, disclosure, mainTab, delayYears), 0)
+      return { company, total, later }
+    }).sort((a, b) => a.total - b.total)
+  }, [age, coverages, delayYears, disclosure, gender, mainTab, plan, visibleCompanies])
 
-    const bestSingle = companyTotals.sort((a, b) => a.total - b.total)[0]
-    const crossTotal = coverageResults.reduce((sum, item) => sum + (item.best?.premium || 0), 0)
-    const monthlySave = bestSingle ? Math.max(bestSingle.total - crossTotal, 0) : 0
-    return { coverageResults, bestSingle, crossTotal, monthlySave }
-  }, [companies, currentCoverages, premiums, scopeScores])
+  const crossTotal = rows.reduce((sum, row) => sum + row.best.premium, 0)
+  const crossLater = rows.reduce((sum, row) => sum + row.best.later, 0)
+  const bestSingle = companyResults[0]
+  const months = payYears * 12
+  const ageDisclosureRows = useMemo(() => {
+    const ageTargets = [age, age + 5, age + 10].filter((value, index, arr) => value > 0 && arr.indexOf(value) === index)
+    return ageTargets.map((targetAge) => {
+      const values = (["standard", "325", "335", "355"] as Disclosure[]).map((item) => {
+        const best = visibleCompanies.map((company) => ({
+          company,
+          total: coverages.reduce((sum, coverage) => sum + premiumFor(company, coverage, plan, targetAge, gender, item, mainTab), 0),
+        })).sort((a, b) => a.total - b.total)[0]
+        return { disclosure: item, best }
+      })
+      return { age: targetAge, values }
+    })
+  }, [age, coverages, gender, mainTab, plan, visibleCompanies])
 
   const savingResults = useMemo(() => {
     return companies.map((company) => {
-      const input = savingRates[company.id] || { rate: 3, r5: 90, r7: 96, r10: 103 }
-      const monthlyRate = input.rate / 100 / 12
-      const months = payYears * 12
-      const futureValue = monthlyRate > 0
-        ? monthlySaving * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
-        : monthlySaving * months
-      const monthlyPension = futureValue / (annuityYears * 12)
-      return { company, ...input, futureValue, monthlyPension }
+      const monthlyRate = company.savingRate / 100 / 12
+      const futureValue = monthlySaving * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
+      const pension = futureValue / 240
+      return { company, futureValue, pension }
     }).sort((a, b) => b.futureValue - a.futureValue)
-  }, [annuityYears, companies, monthlySaving, payYears, savingRates])
-
-  const addCompany = () => {
-    const name = newCompany.trim()
-    if (!name) return
-    setCompanies((prev) => [...prev, { id: `custom-${Date.now()}`, name, type: newCompanyType }])
-    setNewCompany("")
-  }
-
-  const updatePremium = (coverageId: string, companyId: string, value: string) => {
-    setPremiums((prev) => ({ ...prev, [coverageId]: { ...prev[coverageId], [companyId]: toNumber(value) } }))
-  }
-
-  const updateScope = (coverageId: string, companyId: string, value: string) => {
-    setScopeScores((prev) => ({ ...prev, [coverageId]: { ...prev[coverageId], [companyId]: toNumber(value) || 3 } }))
-  }
-
-  const updateSaving = (companyId: string, key: "rate" | "r5" | "r7" | "r10", value: string) => {
-    setSavingRates((prev) => ({
-      ...prev,
-      [companyId]: { ...{ rate: 3, r5: 90, r7: 96, r10: 103 }, ...prev[companyId], [key]: toNumber(value) },
-    }))
-  }
+  }, [monthlySaving, months])
 
   return (
     <main className="min-h-screen bg-[#eef3fb] text-slate-900">
-      <div className="mx-auto max-w-[1600px] px-5 py-6 md:px-8">
-        <header className="mb-5 rounded-2xl bg-[#153968] px-6 py-6 text-white shadow-lg md:px-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <div className="mx-auto max-w-[1500px] px-5 py-6 md:px-8">
+        <header className="mb-5 rounded-2xl bg-[#1f5597] text-white shadow-lg">
+          <div className="flex flex-col gap-4 px-6 py-6 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-[12px] font-black tracking-[0.22em] text-sky-200">CROSS DESIGN COMPARISON</p>
-              <h1 className="mt-2 text-3xl font-black md:text-4xl">교차설계 보험료 비교</h1>
-              <p className="mt-3 max-w-4xl text-[15px] font-bold leading-7 text-white/75">
-                담보별 보험료와 보장범위를 입력하면 단일회사 설계와 담보별 최저 교차설계를 비교합니다. 저장 없이 현장 상담용으로만 사용합니다.
+              <p className="text-[12px] font-black tracking-[0.2em] text-blue-100">PREMIUM COMPARISON</p>
+              <h1 className="mt-2 text-3xl font-black">회사별/담보별 보험료 비교</h1>
+              <p className="mt-3 max-w-4xl text-[14px] font-bold leading-7 text-white/80">
+                고객 조건에 따라 매달 보험료와 유리한 회사가 달라질 수 있음을 보여주는 상담용 비교 화면입니다. 실제 보험료 산출 전 방향성을 설명하는 용도입니다.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Link href="/insurance-tools/coverage-stats" className="rounded-xl bg-white px-5 py-3 text-[13px] font-black text-[#1f5597] hover:bg-blue-50">보장별 통계자료</Link>
               <button onClick={() => window.open("/dashboard", "_self")} className="rounded-xl bg-white/10 px-5 py-3 text-[13px] font-black hover:bg-white/20">대시보드</button>
-              <button onClick={() => window.close()} className="rounded-xl bg-white px-5 py-3 text-[13px] font-black text-[#153968]">창 닫기</button>
+              <button onClick={() => window.close()} className="rounded-xl bg-white px-5 py-3 text-[13px] font-black text-[#1f5597]">창 닫기</button>
             </div>
+          </div>
+          <div className="grid grid-cols-3 border-t border-white/15">
+            {[
+              { id: "health", label: "건강보험" },
+              { id: "death", label: "종신/사망" },
+              { id: "saving", label: "저축성" },
+            ].map((tab) => (
+              <button key={tab.id} onClick={() => setMainTab(tab.id as MainTab)} className={`py-4 text-[15px] font-black ${mainTab === tab.id ? "bg-white text-[#1f5597]" : "bg-[#1f5597] text-white/75 hover:bg-white/10"}`}>
+                {tab.label}
+              </button>
+            ))}
           </div>
         </header>
 
-        <section className="mb-5 grid gap-3 md:grid-cols-3">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`rounded-2xl border p-5 text-left shadow-sm transition ${activeTab === tab.id ? "border-[#2563eb] bg-[#2563eb] text-white" : "border-slate-200 bg-white hover:border-[#2563eb]"}`}
-            >
-              <p className="text-lg font-black">{tab.label}</p>
-              <p className={`mt-2 text-[13px] font-bold leading-6 ${activeTab === tab.id ? "text-blue-50" : "text-slate-500"}`}>{tab.desc}</p>
-            </button>
-          ))}
-        </section>
-
         <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-[1fr_160px_160px_160px]">
-            <div>
-              <p className="mb-2 text-[12px] font-black text-slate-500">보험사 추가</p>
-              <div className="flex gap-2">
-                <input value={newCompany} onChange={(e) => setNewCompany(e.target.value)} placeholder="보험사명 입력" className="h-11 flex-1 rounded-xl border border-slate-200 px-3 text-[14px] font-bold outline-none focus:border-[#2563eb]" />
-                <select value={newCompanyType} onChange={(e) => setNewCompanyType(e.target.value as CompanyType)} className="h-11 rounded-xl border border-slate-200 px-3 text-[13px] font-bold">
-                  <option>생명</option>
-                  <option>손해</option>
-                </select>
-                <button onClick={addCompany} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#153968] px-4 text-[13px] font-black text-white"><Plus size={16} />추가</button>
-              </div>
-            </div>
-            <Control label="가입안" value={plan} onChange={(v) => setPlan(v as PlanId)} options={[["min", "1안 최소"], ["standard", "2안 표준"], ["max", "3안 최대"]]} />
-            <Control label="납입기간" value={String(payYears)} onChange={(v) => setPayYears(Number(v))} options={[["20", "20년납"], ["30", "30년납"]]} />
-            <button onClick={() => { setPremiums({}); setScopeScores({}); setSavingRates({}) }} className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 text-[13px] font-black text-slate-600 hover:bg-slate-100">
-              <RotateCcw size={16} /> 입력 초기화
+          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
+            <Input label="나이" value={age} onChange={(v) => setAge(Number(v) || 0)} />
+            <Select label="성별" value={gender} onChange={setGender} options={["남성", "여성"]} />
+            <Select label="유병력 고지" value={disclosure} onChange={(v) => setDisclosure(v as Disclosure)} options={["standard", "325", "335", "355"]} labels={disclosureLabels} />
+            <Select label="보험사 기준" value={companyFilter} onChange={(v) => setCompanyFilter(v as CompanyFilter)} options={["전체", "생명", "손해"]} />
+            <Select label="가입안" value={plan} onChange={(v) => setPlan(v as PlanId)} options={["min", "standard", "max"]} labels={planLabels} />
+            <Input label="납입기간" value={payYears} onChange={(v) => setPayYears(Number(v) || 20)} />
+            <Input label="몇 년 뒤 가입" value={delayYears} onChange={(v) => setDelayYears(Number(v) || 0)} />
+            {mainTab === "saving" && <Input label="월 납입액" value={monthlySaving} onChange={(v) => setMonthlySaving(Number(v) || 0)} />}
+            <button onClick={() => { setAge(41); setGender("남성"); setDisclosure("standard"); setPlan("standard"); setDelayYears(1) }} className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-100 text-[13px] font-black text-slate-600 hover:bg-slate-200">
+              <RotateCcw size={16} /> 초기화
             </button>
           </div>
         </section>
 
-        {activeTab === "saving" ? (
-          <SavingComparison
-            companies={companies}
-            monthlySaving={monthlySaving}
-            setMonthlySaving={setMonthlySaving}
-            payYears={payYears}
-            annuityYears={annuityYears}
-            setAnnuityYears={setAnnuityYears}
-            savingResults={savingResults}
-            savingRates={savingRates}
-            updateSaving={updateSaving}
-          />
+        {mainTab !== "saving" && (
+          <>
+            <section className="mb-5 grid gap-4 md:grid-cols-4">
+              <SummaryCard label={`${companyFilter} 기준 단일회사 최저`} value={`${bestSingle.company.name} ${formatWon(bestSingle.total)}`} />
+              <SummaryCard label="담보별 교차설계" value={formatWon(crossTotal)} accent />
+              <SummaryCard label="월 절감 가능" value={formatWon(Math.max(bestSingle.total - crossTotal, 0))} accent />
+              <SummaryCard label={`${delayYears}년 뒤 총 차이`} value={formatWon(Math.max(crossLater - crossTotal, 0) * months)} danger />
+            </section>
+            <AgeDisclosurePanel rows={ageDisclosureRows} />
+          </>
+        )}
+
+        {mainTab === "saving" ? (
+          <SavingView results={savingResults} monthlySaving={monthlySaving} payYears={payYears} />
         ) : (
-          <PremiumComparison
-            companies={companies}
-            coverages={currentCoverages}
-            plan={plan}
-            payYears={payYears}
-            premiums={premiums}
-            scopeScores={scopeScores}
-            updatePremium={updatePremium}
-            updateScope={updateScope}
-            compare={compare}
-            activeTab={activeTab}
-          />
+          <>
+            <section className="mb-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+              <button onClick={() => setViewTab("company")} className={`rounded-xl py-3 text-[14px] font-black ${viewTab === "company" ? "bg-[#1f5597] text-white" : "text-slate-500 hover:bg-slate-50"}`}>회사별 비교</button>
+              <button onClick={() => setViewTab("coverage")} className={`rounded-xl py-3 text-[14px] font-black ${viewTab === "coverage" ? "bg-[#1f5597] text-white" : "text-slate-500 hover:bg-slate-50"}`}>담보별 비교</button>
+            </section>
+
+            {viewTab === "company" ? (
+              <CompanyView results={companyResults} rows={rows} months={months} crossTotal={crossTotal} />
+            ) : (
+              <CoverageView rows={rows} plan={plan} />
+            )}
+          </>
         )}
 
         <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] font-bold leading-6 text-amber-900">
-          본 화면은 현장 상담용 예상 비교 도구입니다. 실제 보험료, 가입 가능 여부, 보장범위, 면책·감액기간은 보험사 산출 시스템과 약관, 직업, 건강상태, 심사 결과에 따라 달라질 수 있습니다.
+          실제 보험료는 보험사 산출일, 연령, 성별, 직업, 유병력 고지, 약관 개정, 심사 결과에 따라 달라집니다. 이 화면은 “어느 회사가 좋다”가 아니라 “조건에 따라 설계 방향이 달라진다”는 점을 설명하기 위한 상담용 예시입니다.
         </section>
       </div>
     </main>
   )
 }
 
-function Control({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[][] }) {
+function CompanyView({ results, rows, months, crossTotal }: { results: { company: Company; total: number; later: number }[]; rows: { coverage: Coverage; best: { company: Company; premium: number }; worst: { company: Company; premium: number } }[]; months: number; crossTotal: number }) {
+  const lowest = results[0].total
+  const highest = results[results.length - 1].total
   return (
-    <label>
-      <span className="mb-2 block text-[12px] font-black text-slate-500">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-[13px] font-bold outline-none focus:border-[#2563eb]">
-        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-      </select>
-    </label>
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="bg-[#163f76] px-5 py-4 text-white">
+        <h2 className="text-lg font-black">회사별 총 보험료 비교</h2>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-[1050px] w-full border-collapse text-[13px]">
+          <thead className="bg-slate-100">
+            <tr>
+              <th className="p-4 text-left">보험사</th>
+              <th className="p-4">구분</th>
+              <th className="p-4">월 보험료</th>
+              <th className="p-4">총 납입보험료</th>
+              <th className="p-4">교차설계 대비</th>
+              <th className="p-4">강점 담보</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map((item) => {
+              const strongCoverages = rows.filter((row) => row.best.company.id === item.company.id).map((row) => row.coverage.title)
+              const isLow = item.total === lowest
+              const isHigh = item.total === highest
+              return (
+                <tr key={item.company.id} className="border-b border-slate-100">
+                  <td className="p-4 font-black">{item.company.name}</td>
+                  <td className="p-4 text-center font-bold">{item.company.type}</td>
+                  <td className={`p-4 text-center text-lg font-black ${isLow ? "text-blue-600" : isHigh ? "text-red-600" : "text-slate-900"}`}>{formatWon(item.total)}</td>
+                  <td className="p-4 text-center font-black">{formatWon(item.total * months)}</td>
+                  <td className="p-4 text-center font-black">{formatWon(Math.max(item.total - crossTotal, 0))}</td>
+                  <td className="p-4 text-center text-[12px] font-bold text-slate-600">{strongCoverages.length ? strongCoverages.join(" · ") : "-"}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
 
-function PremiumComparison({ companies, coverages, plan, payYears, premiums, scopeScores, updatePremium, updateScope, compare, activeTab }: any) {
-  const multiplier = payYears * 12
+function AgeDisclosurePanel({ rows }: { rows: { age: number; values: { disclosure: Disclosure; best: { company: Company; total: number } }[] }[] }) {
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+    <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="bg-slate-50 px-5 py-4">
+        <h2 className="text-lg font-black text-[#153968]">나이대·고지 기준별 보험료 변동</h2>
+        <p className="mt-1 text-[13px] font-bold text-slate-500">
+          같은 담보라도 나이와 고지 기준이 바뀌면 최저 회사와 보험료가 달라질 수 있습니다.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-[880px] w-full border-collapse text-[13px]">
+          <thead className="bg-[#172334] text-white">
+            <tr>
+              <th className="p-4 text-left">나이</th>
+              {(["standard", "325", "335", "355"] as Disclosure[]).map((item) => (
+                <th key={item} className="p-4">{disclosureLabels[item]}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.age} className="border-b border-slate-100">
+                <td className="bg-slate-50 p-4 font-black">{row.age}세</td>
+                {row.values.map((value) => (
+                  <td key={value.disclosure} className="p-4 text-center">
+                    <p className="font-black text-[#2563eb]">{formatWon(value.best.total)}</p>
+                    <p className="mt-1 text-[12px] font-bold text-slate-500">{value.best.company.name}</p>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+function CoverageView({ rows, plan }: { rows: { coverage: Coverage; premiums: { company: Company; premium: number; later: number }[]; best: { company: Company; premium: number }; worst: { company: Company; premium: number } }[]; plan: PlanId }) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="bg-[#163f76] px-5 py-4 text-white">
+        <h2 className="text-lg font-black">담보별 최저/최대 및 보장 우수 포인트</h2>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-[1200px] w-full border-collapse text-[13px]">
+          <thead className="bg-slate-100">
+            <tr>
+              <th className="p-4 text-left">담보</th>
+              <th className="p-4">가입금액</th>
+              <th className="p-4">최저 회사</th>
+              <th className="p-4">최저 보험료</th>
+              <th className="p-4">최대 회사</th>
+              <th className="p-4">최대 보험료</th>
+              <th className="p-4 text-left">보장 우수 내용</th>
+              <th className="p-4 text-left">확인사항</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.coverage.id} className="border-b border-slate-100 align-top">
+                <td className="p-4 font-black">{row.coverage.title}</td>
+                <td className="p-4 text-center font-black text-[#2563eb]">{formatMan(row.coverage.amount[plan])}</td>
+                <td className="p-4 text-center font-bold text-blue-600">{row.best.company.name}</td>
+                <td className="p-4 text-center font-black text-blue-600">{formatWon(row.best.premium)}</td>
+                <td className="p-4 text-center font-bold text-red-600">{row.worst.company.name}</td>
+                <td className="p-4 text-center font-black text-red-600">{formatWon(row.worst.premium)}</td>
+                <td className="p-4 leading-6 font-bold text-slate-700">{row.coverage.strength}</td>
+                <td className="p-4 leading-6 font-bold text-slate-500">{row.coverage.checkPoint}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+function SavingView({ results, monthlySaving, payYears }: { results: SavingResult[]; monthlySaving: number; payYears: number }) {
+  const lifeResults = results.filter((row) => row.company.type === "생명")
+  const refundMatrix = refundYears.map((year) => {
+    const cells = lifeResults.map((row) => ({
+      company: row.company,
+      amount: refundAmountFor(row.company, year, monthlySaving, payYears),
+      rate: refundRateFor(row.company, year, payYears),
+    }))
+    const valid = cells.filter((cell) => cell.amount > 0)
+    const min = Math.min(...valid.map((cell) => cell.amount))
+    const max = Math.max(...valid.map((cell) => cell.amount))
+    return { year, cells, min, max }
+  })
+
+  return (
+    <div className="space-y-5">
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-lg font-black text-[#153968]">{activeTab === "death" ? "종신/사망 보험료 입력" : "건강보험 담보별 보험료 입력"}</h2>
-          <p className="mt-1 text-[13px] font-bold text-slate-500">보험료는 월 보험료 기준으로 입력하세요. 보장범위 점수는 1~5점으로 입력합니다.</p>
+        <div className="bg-[#163f76] px-5 py-4 text-white">
+          <h2 className="text-lg font-black">저축성 환급률 및 예상 연금 비교</h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-[1500px] w-full border-collapse text-[13px]">
-            <thead>
-              <tr className="bg-[#172334] text-white">
-                <th className="sticky left-0 z-10 w-[250px] bg-[#172334] p-3 text-left">담보 / 기준금액</th>
-                {companies.map((company: Company) => (
-                  <th key={company.id} className="min-w-[150px] p-3">
-                    <span className="block font-black">{company.name}</span>
-                    <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] ${company.type === "생명" ? "bg-blue-500" : "bg-rose-500"}`}>{company.type}</span>
-                  </th>
-                ))}
+          <table className="min-w-[1000px] w-full border-collapse text-[13px]">
+            <thead className="bg-slate-100">
+              <tr>
+                <th className="p-4 text-left">보험사</th>
+                <th className="p-4">구분</th>
+                <th className="p-4">예시이율</th>
+                <th className="p-4">5년 환급률</th>
+                <th className="p-4">7년 환급률</th>
+                <th className="p-4">10년 환급률</th>
+                <th className="p-4">총 납입액</th>
+                <th className="p-4">예상 적립액</th>
+                <th className="p-4">월 연금 예상</th>
               </tr>
             </thead>
             <tbody>
-              {coverages.map((coverage: Coverage) => (
-                <tr key={coverage.id} className="border-b border-slate-100 align-top">
-                  <td className="sticky left-0 z-10 bg-slate-50 p-3">
-                    <p className="font-black text-slate-900">{coverage.title}</p>
-                    <p className="mt-1 font-black text-[#2563eb]">{coverage.plans[plan as PlanId]}</p>
-                    <p className="mt-2 text-[12px] leading-5 text-slate-500">{coverage.guide}</p>
-                    <p className="mt-2 text-[11px] font-bold text-slate-400">{coverage.scope.join(" · ")}</p>
-                  </td>
-                  {companies.map((company: Company) => (
-                    <td key={company.id} className="p-2">
-                      <input
-                        value={premiums[coverage.id]?.[company.id] || ""}
-                        onChange={(e) => updatePremium(coverage.id, company.id, e.target.value)}
-                        placeholder="보험료"
-                        className="mb-2 h-9 w-full rounded-lg border border-slate-200 px-2 text-right font-bold outline-none focus:border-[#2563eb]"
-                      />
-                      <input
-                        value={scopeScores[coverage.id]?.[company.id] || ""}
-                        onChange={(e) => updateScope(coverage.id, company.id, e.target.value)}
-                        placeholder="범위점수"
-                        className="h-8 w-full rounded-lg border border-slate-200 px-2 text-right text-[12px] font-bold outline-none focus:border-emerald-500"
-                      />
-                    </td>
-                  ))}
+              {results.map((row, index) => (
+                <tr key={row.company.id} className="border-b border-slate-100">
+                  <td className="p-4 font-black">{row.company.name}</td>
+                  <td className="p-4 text-center font-bold">{row.company.type}</td>
+                  <td className="p-4 text-center font-black text-[#2563eb]">{row.company.savingRate}%</td>
+                  <td className="p-4 text-center font-bold">{row.company.refund5}%</td>
+                  <td className="p-4 text-center font-bold">{row.company.refund7}%</td>
+                  <td className="p-4 text-center font-bold">{row.company.refund10}%</td>
+                  <td className="p-4 text-center font-bold">{formatWon(monthlySaving * payYears * 12)}</td>
+                  <td className={`p-4 text-center font-black ${index === 0 ? "text-blue-600" : "text-slate-900"}`}>{formatWon(row.futureValue)}</td>
+                  <td className="p-4 text-center font-black text-emerald-600">{formatWon(row.pension)}</td>
                 </tr>
               ))}
             </tbody>
@@ -300,147 +428,85 @@ function PremiumComparison({ companies, coverages, plan, payYears, premiums, sco
         </div>
       </section>
 
-      <aside className="space-y-4">
-        <ResultCard title="교차설계 요약">
-          <div className="grid grid-cols-2 gap-3">
-            <Metric label="단일회사 최저" value={compare.bestSingle ? formatWon(compare.bestSingle.total) : "-"} />
-            <Metric label="교차설계" value={compare.crossTotal ? formatWon(compare.crossTotal) : "-"} />
-            <Metric label="월 절감액" value={formatWon(compare.monthlySave)} strong />
-            <Metric label={`${payYears}년납 총 절감`} value={formatWon(compare.monthlySave * multiplier)} strong />
-          </div>
-          {compare.bestSingle && (
-            <p className="mt-4 rounded-xl bg-blue-50 p-4 text-[13px] font-bold leading-6 text-slate-700">
-              {compare.bestSingle.company.name} 단일 설계 대비, 담보별 최저 보험사를 나누면 월 {formatWon(compare.monthlySave)} 정도 절감되는 구조입니다.
-            </p>
-          )}
-        </ResultCard>
-
-        <ResultCard title="담보별 추천 조합">
-          <div className="space-y-2">
-            {compare.coverageResults.map((item: any) => (
-              <div key={item.coverage.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-black text-slate-900">{item.coverage.title}</p>
-                  <p className="text-[13px] font-black text-[#2563eb]">{item.best ? item.best.company.name : "-"}</p>
-                </div>
-                <p className="mt-1 text-[12px] font-bold text-slate-500">
-                  최저 {item.best ? formatWon(item.best.premium) : "-"} · 범위점수 {item.best?.scope || "-"}점
-                </p>
-                {item.balanced && item.balanced.company.id !== item.best?.company.id && (
-                  <p className="mt-1 text-[12px] font-bold text-emerald-600">가성비 후보: {item.balanced.company.name}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </ResultCard>
-      </aside>
-    </div>
-  )
-}
-
-function SavingComparison({ companies, monthlySaving, setMonthlySaving, payYears, annuityYears, setAnnuityYears, savingResults, savingRates, updateSaving }: any) {
-  return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <h2 className="text-lg font-black text-[#153968]">저축성 보험 금리·환급률 비교</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <label>
-              <span className="mb-2 block text-[12px] font-black text-slate-500">월 납입보험료</span>
-              <input value={monthlySaving} onChange={(e) => setMonthlySaving(toNumber(e.target.value))} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-right font-bold" />
-            </label>
-            <label>
-              <span className="mb-2 block text-[12px] font-black text-slate-500">연금 수령기간</span>
-              <select value={annuityYears} onChange={(e) => setAnnuityYears(Number(e.target.value))} className="h-11 w-full rounded-xl border border-slate-200 px-3 font-bold">
-                <option value={10}>10년</option>
-                <option value={20}>20년</option>
-                <option value={30}>30년</option>
-              </select>
-            </label>
-            <div className="rounded-xl bg-blue-50 p-4 text-[13px] font-bold leading-6 text-slate-700">
-              납입기간은 상단의 20년납/30년납 선택값을 사용합니다. 5년·7년·10년 환급률은 회사별 직접 입력합니다.
-            </div>
-          </div>
+        <div className="bg-[#163f76] px-5 py-4 text-white">
+          <h2 className="text-lg font-black">생명보험 연차별 해약환급금 비교</h2>
+          <p className="mt-1 text-[12px] font-bold text-blue-100">월 납입액과 납입기간을 기준으로 연차별 예상 환급금과 환급률을 비교합니다.</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-[1000px] w-full border-collapse text-[13px]">
+          <table className="min-w-[1200px] w-full border-collapse text-[13px]">
             <thead>
-              <tr className="bg-[#172334] text-white">
-                <th className="p-3 text-left">보험사</th>
-                <th className="p-3">구분</th>
-                <th className="p-3">예상 이율</th>
-                <th className="p-3">5년 환급률</th>
-                <th className="p-3">7년 환급률</th>
-                <th className="p-3">10년 환급률</th>
-                <th className="p-3">예상 적립액</th>
-                <th className="p-3">월 연금 예상</th>
+              <tr className="bg-slate-100">
+                <th className="sticky left-0 z-10 bg-slate-100 p-4 text-left">연차</th>
+                {lifeResults.map((row) => (
+                  <th key={row.company.id} className="min-w-[150px] p-4">
+                    <p className="font-black">{row.company.name}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">기준 {row.company.refund10}%</p>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {companies.map((company: Company) => {
-                const input = savingRates[company.id] || { rate: 3, r5: 90, r7: 96, r10: 103 }
-                const result = savingResults.find((row: any) => row.company.id === company.id)
-                return (
-                  <tr key={company.id} className="border-b border-slate-100">
-                    <td className="bg-slate-50 p-3 font-black">{company.name}</td>
-                    <td className="p-3 text-center font-bold">{company.type}</td>
-                    {(["rate", "r5", "r7", "r10"] as const).map((key) => (
-                      <td key={key} className="p-2">
-                        <input value={input[key]} onChange={(e) => updateSaving(company.id, key, e.target.value)} className="h-9 w-full rounded-lg border border-slate-200 px-2 text-right font-bold" />
+              <tr className="border-b border-slate-200">
+                <td className="sticky left-0 z-10 bg-white p-4 font-black">월 보험료</td>
+                {lifeResults.map((row) => (
+                  <td key={row.company.id} className="p-4 text-center font-black">{formatWon(monthlySaving)}</td>
+                ))}
+              </tr>
+              <tr className="border-b-2 border-slate-900">
+                <td className="sticky left-0 z-10 bg-white p-4 font-black">총 납입액</td>
+                {lifeResults.map((row) => (
+                  <td key={row.company.id} className="p-4 text-center font-black">{formatWon(monthlySaving * payYears * 12)}</td>
+                ))}
+              </tr>
+              {refundMatrix.map((row) => (
+                <tr key={row.year} className={`border-b border-slate-100 ${row.year === 5 || row.year === 10 || row.year === 20 ? "bg-slate-100" : ""}`}>
+                  <td className="sticky left-0 z-10 bg-inherit p-4 font-black">{row.year}년</td>
+                  {row.cells.map((cell) => {
+                    const isMin = cell.amount === row.min
+                    const isMax = cell.amount === row.max
+                    return (
+                      <td key={cell.company.id} className={`p-4 text-center font-black ${isMin ? "text-blue-600" : isMax ? "text-red-600" : "text-slate-900"}`}>
+                        <p>{formatWon(cell.amount)}</p>
+                        <p className="mt-1 text-[12px]">({cell.rate.toFixed(1)}%)</p>
                       </td>
-                    ))}
-                    <td className="p-3 text-right font-black text-[#2563eb]">{formatWon(result?.futureValue || 0)}</td>
-                    <td className="p-3 text-right font-black text-emerald-600">{formatWon(result?.monthlyPension || 0)}</td>
-                  </tr>
-                )
-              })}
+                    )
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </section>
-
-      <aside className="space-y-4">
-        <ResultCard title="저축성 비교 요약">
-          <div className="space-y-3">
-            {savingResults.slice(0, 5).map((row: any, idx: number) => (
-              <div key={row.company.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="flex justify-between">
-                  <p className="font-black">{idx + 1}. {row.company.name}</p>
-                  <p className="font-black text-[#2563eb]">{row.rate}%</p>
-                </div>
-                <p className="mt-1 text-[12px] font-bold text-slate-500">예상 적립액 {formatWon(row.futureValue)} · 월 연금 {formatWon(row.monthlyPension)}</p>
-                <p className="mt-1 text-[12px] font-bold text-slate-500">환급률 5년 {row.r5}% / 7년 {row.r7}% / 10년 {row.r10}%</p>
-              </div>
-            ))}
-          </div>
-        </ResultCard>
-        <ResultCard title="상담 포인트">
-          <p className="text-[13px] font-bold leading-7 text-slate-700">
-            저축성은 단순 금리보다 사업비, 환급률, 연금개시 시점, 중도해지 가능성을 함께 봐야 합니다. 같은 월 납입액이라도 이율과 환급률 차이로 최종 적립액과 월 연금이 달라집니다.
-          </p>
-        </ResultCard>
-      </aside>
     </div>
   )
 }
 
-function ResultCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SummaryCard({ label, value, accent, danger }: { label: string; value: string; accent?: boolean; danger?: boolean }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center gap-2 text-[#153968]">
-        <ShieldCheck size={18} />
-        <h3 className="font-black">{title}</h3>
-      </div>
-      {children}
-    </section>
+    <div className={`rounded-2xl border p-5 shadow-sm ${accent ? "border-blue-200 bg-blue-50" : danger ? "border-red-200 bg-red-50" : "border-slate-200 bg-white"}`}>
+      <p className="text-[12px] font-black text-slate-500">{label}</p>
+      <p className={`mt-2 text-xl font-black ${accent ? "text-blue-600" : danger ? "text-red-600" : "text-slate-900"}`}>{value}</p>
+    </div>
   )
 }
 
-function Metric({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Input({ label, value, onChange }: { label: string; value: number; onChange: (value: string) => void }) {
   return (
-    <div className={`rounded-xl p-4 ${strong ? "bg-blue-600 text-white" : "bg-slate-50"}`}>
-      <p className={`text-[12px] font-black ${strong ? "text-blue-100" : "text-slate-500"}`}>{label}</p>
-      <p className="mt-2 text-xl font-black">{value}</p>
-    </div>
+    <label>
+      <span className="mb-2 block text-[12px] font-black text-slate-500">{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-[14px] font-bold outline-none focus:border-[#2563eb]" />
+    </label>
+  )
+}
+
+function Select({ label, value, onChange, options, labels }: { label: string; value: string; onChange: (value: string) => void; options: string[]; labels?: Record<string, string> }) {
+  return (
+    <label>
+      <span className="mb-2 block text-[12px] font-black text-slate-500">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-[14px] font-bold outline-none focus:border-[#2563eb]">
+        {options.map((option) => <option key={option} value={option}>{labels?.[option] || option}</option>)}
+      </select>
+    </label>
   )
 }

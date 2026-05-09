@@ -126,6 +126,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       {/* 퀵링크 섹션 */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
+        <QuickLink href="https://xn--on3bi2e18htop.com/" label="보험사" />
+        <QuickLink href="/gongsi.html" label="공시실" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
         <QuickLink href="/sales-master" label="세일즈 마스터" />
         <QuickLink href="/sales-book" label="세일즈 북" />

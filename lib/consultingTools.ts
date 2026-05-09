@@ -10,7 +10,19 @@ export type ConsultingTool = {
   fixed?: boolean;
   staffOnly?: boolean;
   chromeRecommended?: boolean;
+  category?: "field" | "planning" | "finance";
+  placement?: "consulting" | "office";
 };
+
+export const CONSULTING_TOOL_CATEGORIES: {
+  id: NonNullable<ConsultingTool["category"]>;
+  title: string;
+  desc: string;
+}[] = [
+  { id: "field", title: "고객 앞 상담용", desc: "현장에서 고객에게 바로 보여주거나 확인하는 도구" },
+  { id: "planning", title: "설계 · 보장분석", desc: "보장 점검, 담보 확인, 비교 설계에 필요한 도구" },
+  { id: "finance", title: "계산 · 재무", desc: "보험료, 재무 흐름, 금융 계산을 보조하는 도구" },
+];
 
 export const CONSULTING_TOOLS: ConsultingTool[] = [
   {
@@ -23,6 +35,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-[#2db400]",
     cardColor: "border-[#2db400] text-[#2db400]",
     fixed: true,
+    category: "field",
   },
   {
     id: "show_cont",
@@ -35,6 +48,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-emerald-500 text-emerald-600",
     fixed: true,
     chromeRecommended: true,
+    category: "field",
   },
   {
     id: "show_hira",
@@ -46,6 +60,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-orange-500",
     cardColor: "border-orange-500 text-orange-600",
     fixed: true,
+    category: "field",
   },
   {
     id: "show_knia",
@@ -57,6 +72,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-blue-400",
     cardColor: "border-blue-400 text-blue-500",
     fixed: true,
+    category: "field",
   },
   {
     id: "show_gongsi",
@@ -68,6 +84,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-slate-400",
     cardColor: "border-slate-400 text-slate-500",
     fixed: true,
+    placement: "office",
   },
   {
     id: "show_calc",
@@ -79,6 +96,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-blue-500",
     cardColor: "border-blue-500 text-blue-600",
     staffOnly: true,
+    category: "finance",
   },
   {
     id: "show_premium_compare",
@@ -90,6 +108,19 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-sky-500",
     cardColor: "border-sky-500 text-sky-600",
     staffOnly: true,
+    category: "planning",
+  },
+  {
+    id: "show_coverage_stats",
+    title: "보장별 통계 자료",
+    label: "보장별 통계 자료",
+    desc: "니즈 환기 통계 이미지와 상담 멘트",
+    icon: "📈",
+    url: "/insurance-tools/coverage-stats",
+    color: "border-blue-500",
+    cardColor: "border-blue-500 text-blue-600",
+    staffOnly: true,
+    category: "field",
   },
   {
     id: "show_surgery",
@@ -101,6 +132,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-rose-400",
     cardColor: "border-rose-400 text-rose-500",
     staffOnly: true,
+    category: "planning",
   },
   {
     id: "show_disability",
@@ -112,6 +144,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-amber-500",
     cardColor: "border-amber-500 text-amber-600",
     staffOnly: true,
+    category: "planning",
   },
   {
     id: "show_underwriting",
@@ -123,6 +156,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-cyan-500",
     cardColor: "border-cyan-500 text-cyan-600",
     staffOnly: true,
+    category: "planning",
   },
   {
     id: "show_car_accident",
@@ -134,6 +168,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-emerald-400",
     cardColor: "border-emerald-400 text-emerald-600",
     staffOnly: true,
+    category: "field",
   },
   {
     id: "show_disease",
@@ -145,6 +180,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-indigo-400",
     cardColor: "border-indigo-400 text-indigo-500",
     staffOnly: true,
+    category: "field",
   },
   {
     id: "show_finance",
@@ -156,6 +192,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-black",
     cardColor: "border-black text-black",
     staffOnly: true,
+    category: "finance",
   },
   {
     id: "show_insu",
@@ -167,6 +204,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-blue-600",
     cardColor: "border-blue-600 text-blue-600",
     staffOnly: true,
+    category: "planning",
   },
 ];
 

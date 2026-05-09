@@ -5,7 +5,7 @@ import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
-import { CONSULTING_TOOLS, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
+import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
 import { normalizeRole, roleLabel, isApprovedUser } from "../../../lib/roles"
 
 export default function Sidebar({ 
@@ -118,7 +118,7 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  const consultTools = CONSULTING_TOOLS.filter((tool) => tool.staffOnly);
+  const consultTools = CONSULTING_TOOLS.filter((tool) => tool.staffOnly && tool.placement !== "office");
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
@@ -326,7 +326,7 @@ export default function Sidebar({
 
       {isConsultModalOpen && isApproved && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
+          <div className="bg-white w-full max-w-xl rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
             <div className="bg-black p-6 flex justify-between items-center">
               <h3 className="text-[#d4af37] font-black text-xl tracking-tighter">상담 도구</h3>
               <div className="flex items-center gap-3">
@@ -339,20 +339,31 @@ export default function Sidebar({
               </div>
             </div>
             
-            <div className="p-6 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar">
-              {consultTools.map((item) => {
-                const isVisible = menuStatus[item.id] || isEditMode;
-                if (!isVisible) return null;
+            <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto no-scrollbar">
+              {CONSULTING_TOOL_CATEGORIES.map((category) => {
+                const tools = consultTools.filter((tool) => (tool.category || "field") === category.id);
+                const visibleTools = tools.filter((item) => menuStatus[item.id] || isEditMode);
+                if (visibleTools.length === 0) return null;
                 return (
-                  <div key={item.id} className="relative">
-                    <button onClick={() => handleLinkClick(item)} className={`w-full flex items-center gap-4 px-6 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!menuStatus[item.id] && 'opacity-30'}`}>
-                      <span className="text-xl">{item.icon}</span>
-                      <span className="text-[13px] font-black">{item.label}</span>
-                    </button>
-                    {isMaster && isEditMode && (
-                      <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 accent-black" />
-                    )}
-                  </div>
+                  <section key={category.id} className="space-y-3">
+                    <div>
+                      <p className="text-[13px] font-black text-slate-900">{category.title}</p>
+                      <p className="text-[10px] font-bold text-slate-400">{category.desc}</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {visibleTools.map((item) => (
+                        <div key={item.id} className="relative">
+                          <button onClick={() => handleLinkClick(item)} className={`w-full min-h-[72px] flex items-center gap-3 px-4 py-3 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!menuStatus[item.id] && 'opacity-30'}`}>
+                            <span className="text-xl">{item.icon}</span>
+                            <span className="text-[12px] font-black text-left leading-tight">{item.label}</span>
+                          </button>
+                          {isMaster && isEditMode && (
+                            <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
                 );
               })}
             </div>
