@@ -119,7 +119,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/insurance-tools/coverage-stats",
     color: "border-blue-500",
     cardColor: "border-blue-500 text-blue-600",
-    staffOnly: true,
+    fixed: true,
     category: "field",
   },
   {

@@ -118,7 +118,7 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  const consultTools = CONSULTING_TOOLS.filter((tool) => tool.staffOnly && tool.placement !== "office");
+  const consultTools = CONSULTING_TOOLS.filter((tool) => (tool.fixed || tool.staffOnly) && tool.placement !== "office");
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
@@ -342,7 +342,7 @@ export default function Sidebar({
             <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto no-scrollbar">
               {CONSULTING_TOOL_CATEGORIES.map((category) => {
                 const tools = consultTools.filter((tool) => (tool.category || "field") === category.id);
-                const visibleTools = tools.filter((item) => menuStatus[item.id] || isEditMode);
+                const visibleTools = tools.filter((item) => item.fixed || menuStatus[item.id] || isEditMode);
                 if (visibleTools.length === 0) return null;
                 return (
                   <section key={category.id} className="space-y-3">
@@ -353,11 +353,11 @@ export default function Sidebar({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {visibleTools.map((item) => (
                         <div key={item.id} className="relative">
-                          <button onClick={() => handleLinkClick(item)} className={`w-full min-h-[72px] flex items-center gap-3 px-4 py-3 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!menuStatus[item.id] && 'opacity-30'}`}>
+                          <button onClick={() => handleLinkClick(item)} className={`w-full min-h-[72px] flex items-center gap-3 px-4 py-3 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!item.fixed && !menuStatus[item.id] && 'opacity-30'}`}>
                             <span className="text-xl">{item.icon}</span>
                             <span className="text-[12px] font-black text-left leading-tight">{item.label}</span>
                           </button>
-                          {isMaster && isEditMode && (
+                          {isMaster && isEditMode && item.staffOnly && (
                             <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black" />
                           )}
                         </div>

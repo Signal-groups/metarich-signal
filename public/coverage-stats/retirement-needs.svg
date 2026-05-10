@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <rect width="1200" height="760" fill="#f8fafc"/>
+  <rect x="70" y="58" width="1060" height="644" rx="32" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"/>
+  <text x="120" y="130" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#0f172a">노후 준비는 생활비 + 의료비 + 간병비입니다</text>
+  <text x="120" y="176" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#64748b">연금만으로 부족한 부분은 병원비와 돌봄비에서 생깁니다.</text>
+  <g font-family="Arial, sans-serif">
+    <rect x="120" y="240" width="300" height="270" rx="26" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="270" y="305" text-anchor="middle" font-size="34" font-weight="900" fill="#1d4ed8">생활비</text>
+    <text x="270" y="370" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">연금 공백</text>
+    <text x="270" y="415" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">주거비</text>
+    <text x="270" y="460" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">배우자 생활비</text>
+    <rect x="450" y="240" width="300" height="270" rx="26" fill="#ecfdf5" stroke="#bbf7d0"/>
+    <text x="600" y="305" text-anchor="middle" font-size="34" font-weight="900" fill="#047857">의료비</text>
+    <text x="600" y="370" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">암·뇌·심장</text>
+    <text x="600" y="415" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">수술·입원</text>
+    <text x="600" y="460" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">비급여 치료</text>
+    <rect x="780" y="240" width="300" height="270" rx="26" fill="#fff7ed" stroke="#fed7aa"/>
+    <text x="930" y="305" text-anchor="middle" font-size="34" font-weight="900" fill="#c2410c">간병비</text>
+    <text x="930" y="370" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">치매</text>
+    <text x="930" y="415" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">장기요양</text>
+    <text x="930" y="460" text-anchor="middle" font-size="23" font-weight="800" fill="#334155">가족 돌봄 공백</text>
+  </g>
+  <text x="120" y="600" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#0f172a">결론</text>
+  <text x="120" y="646" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#334155">오래 사는 기간에는 매달 쓸 돈과 아플 때 쓸 돈이 따로 필요합니다.</text>
+</svg>

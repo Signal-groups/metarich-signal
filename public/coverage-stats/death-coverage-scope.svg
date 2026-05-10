@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <rect width="1200" height="760" fill="#fff7ed"/>
+  <rect x="60" y="56" width="1080" height="648" rx="36" fill="#ffffff" stroke="#fb923c" stroke-width="4"/>
+  <text x="110" y="125" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#111827">사망 보험금 지급 기준</text>
+  <text x="110" y="170" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#64748b">원인에 따라 지급되는 담보 범위가 달라집니다.</text>
+  <rect x="125" y="220" width="950" height="390" rx="44" fill="#ffedd5" stroke="#fb923c" stroke-width="4"/>
+  <text x="520" y="282" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="900" fill="#9a3412">일반사망</text>
+  <circle cx="350" cy="425" r="155" fill="#ef4444"/>
+  <text x="350" y="436" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="900" fill="#ffffff">질병사망</text>
+  <circle cx="780" cy="425" r="155" fill="#fdba74"/>
+  <text x="780" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="900" fill="#ffffff">재해사망</text>
+  <circle cx="780" cy="485" r="88" fill="#ffffff"/>
+  <text x="780" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#fdba74">상해</text>
+  <text x="780" y="515" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#fdba74">사망</text>
+  <text x="110" y="660" font-family="Arial, sans-serif" font-size="22" font-weight="800" fill="#334155">일반사망은 가장 넓고, 질병사망과 재해사망을 모두 포함하는 구조입니다. 상해사망은 재해사망 안의 사고성 보장으로 확인합니다.</text>
+</svg>
