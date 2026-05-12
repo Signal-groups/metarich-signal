@@ -22,10 +22,56 @@ export interface NSurgeryCoverage {
   groupName: string
   keywords: string[]
   diseaseCodes?: string[]
+  diseaseDetailGroup?: string
   bodyParts?: string[]
   baseAmount?: number
   note?: string
 }
+
+export interface NSurgeryDiseaseDetail {
+  company: NSurgeryCompany
+  productName: string
+  groupName: string
+  category: string
+  disease: string
+  code: string
+  aliases?: string[]
+}
+
+export const N_SURGERY_DISEASE_DETAILS: NSurgeryDiseaseDetail[] = [
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '백내장', category: '백내장', disease: '노년백내장', code: 'H25', aliases: ['백내장'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '백내장', category: '백내장', disease: '기타 백내장', code: 'H26', aliases: ['백내장', '후발백내장'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '백내장', category: '백내장', disease: '수정체의 기타 장애', code: 'H27', aliases: ['수정체', '백내장'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '수면무호흡증', disease: '수면무호흡', code: 'G47.3', aliases: ['수면무호흡증'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '식도정맥류', disease: '식도정맥류', code: 'I85', aliases: ['식도정맥류'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '요로결석증', disease: '요도결석', code: 'N21.1', aliases: ['요로결석', '요도결석'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '요로결석증', disease: '기타 하부요로결석', code: 'N21.8', aliases: ['요로결석', '하부요로결석'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '요로결석증', disease: '상세불명의 하부요로결석', code: 'N21.9', aliases: ['요로결석', '하부요로결석'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '신장 및 요관의 결석', disease: '신장 및 요관의 결석', code: 'N20', aliases: ['신장결석', '요관결석', '요로결석'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '치핵 및 항문주위 정맥혈전증', disease: '치핵 및 항문주위 정맥혈전증', code: 'K64', aliases: ['치핵', '치질'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '치열 및 치루', disease: '항문 및 직장부위 열창 및 누공', code: 'K60', aliases: ['치열', '치루', '항문열창', '항문누공'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '6대질병', category: '치열 및 치루', disease: '항문 및 직장부위 농양', code: 'K61', aliases: ['치루', '항문농양', '직장농양'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '당뇨병질환', disease: '1형당뇨병', code: 'E10', aliases: ['당뇨', '당뇨병'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '당뇨병질환', disease: '2형당뇨병', code: 'E11', aliases: ['당뇨', '당뇨병'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '당뇨병질환', disease: '영양실조 관련 당뇨병', code: 'E12', aliases: ['당뇨', '당뇨병'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '당뇨병질환', disease: '기타 명시된 당뇨병', code: 'E13', aliases: ['당뇨', '당뇨병'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '당뇨병질환', disease: '상세불명의 당뇨병', code: 'E14', aliases: ['당뇨', '당뇨병'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '당뇨병질환', disease: '당뇨병성 백내장', code: 'H28.0', aliases: ['백내장', '당뇨병성백내장'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '폐질환', disease: '달리 분류되지 않은 호흡부전', code: 'J96', aliases: ['호흡부전'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '위·십이지장궤양', disease: '위궤양', code: 'K25', aliases: ['위궤양'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '위·십이지장궤양', disease: '십이지장궤양', code: 'K26', aliases: ['십이지장궤양'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '23대질병', category: '녹내장', disease: '녹내장', code: 'H40', aliases: ['녹내장'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '22대질병', category: '갑상선질환', disease: '갑상선의 장애', code: 'E00-E07', aliases: ['갑상선'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '22대질병', category: '갑상선질환', disease: '갑상선기능저하증', code: 'E89.0', aliases: ['갑상선', '갑상선기능저하'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '22대질병', category: '부갑상선질환', disease: '부갑상선기능저하증', code: 'E20', aliases: ['부갑상선'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '22대질병', category: '부갑상선질환', disease: '부갑상선기능항진증 및 기타 장애', code: 'E21', aliases: ['부갑상선'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '22대질병', category: '간암', disease: '간 및 간내 담관의 악성 신생물', code: 'C22', aliases: ['간암', '담관암'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '22대질병', category: '췌장질환', disease: '췌장의 기타 질환', code: 'K86', aliases: ['췌장질환', '췌장'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '49대질병', category: '담낭담도질환', disease: '담낭염', code: 'K81', aliases: ['담낭', '담낭염'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '49대질병', category: '담낭담도질환', disease: '담낭의 기타 질환', code: 'K82', aliases: ['담낭', '담낭질환'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '49대질병', category: '담낭담도질환', disease: '담도의 기타 질환', code: 'K83', aliases: ['담도', '담도질환'] },
+  { company: 'KB손해보험', productName: '116대질병수술비', groupName: '49대질병', category: '담석증', disease: '담석증', code: 'K80', aliases: ['담석', '담석증'] },
+]
 
 const commonMajorKeywords = [
   '뇌혈관', '심장', '간질환', '폐질환', '췌장', '신부전', '폐렴', '결핵',
@@ -281,5 +327,20 @@ export function matchesNSurgeryText(item: SurgeryItem, query: string): boolean {
       ?.some(code => itemHaystack.includes(normalize(code)) && normalize(code).includes(q)) ?? false
 
     return coverageMetaMatches || itemKeywordMatches || itemCodeMatches
+  })
+}
+
+export function getNSurgeryDiseaseDetailsForItem(item: SurgeryItem): NSurgeryDiseaseDetail[] {
+  const itemCodes = item.kcd_codes.map(c => c.toUpperCase())
+  const itemName = item.name.toLowerCase()
+  const itemSynonyms = item.synonyms.map(s => s.toLowerCase())
+
+  return N_SURGERY_DISEASE_DETAILS.filter(detail => {
+    const codeMatch = itemCodes.some(c => c.startsWith(detail.code.toUpperCase()))
+    const aliasMatch = detail.aliases?.some(alias =>
+      itemName.includes(alias.toLowerCase()) ||
+      itemSynonyms.some(s => s.includes(alias.toLowerCase()))
+    ) ?? false
+    return codeMatch || aliasMatch
   })
 }
