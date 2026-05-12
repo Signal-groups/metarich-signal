@@ -1,12 +1,14 @@
 "use client"
 
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability */
+
 import { useState, useEffect } from "react"
 import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
-import { normalizeRole, roleLabel, isApprovedUser } from "../../../lib/roles"
+import { normalizeRole, roleLabel, isApprovedUser, isOrganizationAdminAccount } from "../../../lib/roles"
 
 export default function Sidebar({ 
   user, selectedDate, onDateChange, mode, onBack, 
@@ -27,7 +29,7 @@ export default function Sidebar({
   const isAgent = currentRole === 'agent' || isManager || isLeader || isMaster;
   
   const isAdmin = isMaster; 
-  const canManageStaff = isMaster || currentRole === "headquarters";
+  const canManageStaff = isOrganizationAdminAccount(user);
   const isStaff = isAgent;
   const isApproved = isApprovedUser(user);
 
@@ -47,7 +49,7 @@ export default function Sidebar({
       fetch3MonthAvg();
     }
     fetchMenuSettings();
-    if (isMaster) fetchStaffList();
+    if (canManageStaff) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
   useEffect(() => {

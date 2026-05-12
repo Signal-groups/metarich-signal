@@ -13,7 +13,6 @@ import AgentView from "./components/AgentView"
 import MasterView from "./components/MasterView" 
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
-import FinancialCalc from "./components/FinancialCalc"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { normalizeRole, roleLabel, isApprovedUser } from "../../lib/roles"
 
@@ -209,12 +208,7 @@ export default function DashboardPage() {
 
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[300px]' : 'lg:ml-0'}`}>
         <div className="max-w-[1400px] mx-auto">
-          {activeTab === 'finance' ? (
-            <div className="animate-in fade-in duration-500">
-              <HeaderBar title="금융계산기" icon="🧮" onBack={() => setActiveTab(null)} />
-              <FinancialCalc />
-            </div>
-          ) : (
+          {(
             viewMode === 'office' ? renderOfficeView() : (
               <div className="max-w-5xl mx-auto py-6 md:py-8">
                 <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">

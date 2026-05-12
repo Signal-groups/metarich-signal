@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
@@ -61,6 +61,7 @@ type TreatmentCostTab = {
 
 type SearchItem = {
   id: string
+  type: "roadmap" | "cost" | "receipt" | "image" | "stat" | "material"
   title: string
   subtitle: string
   keywords: string
@@ -711,7 +712,6 @@ const tabs: GuideTab[] = [
 export default function CoverageStatsPage() {
   const [selected, setSelected] = useState<CoverageStatItem | null>(null)
   const [selectedImage, setSelectedImage] = useState<{ title: string; image: string } | null>(null)
-  const [libraryQuery, setLibraryQuery] = useState("")
   const [activeTab, setActiveTab] = useState<GuideTabId>("cancer")
   const activeGuide = tabs.find((tab) => tab.id === activeTab) || tabs[0]
   const [activeStepId, setActiveStepId] = useState(activeGuide.steps[0].id)
@@ -722,6 +722,7 @@ export default function CoverageStatsPage() {
     const guideItems = tabs.flatMap((tab) => [
       ...tab.steps.map((step) => ({
         id: `step-${tab.id}-${step.id}`,
+        type: "roadmap" as const,
         title: step.title,
         subtitle: `${tab.title} 치료과정`,
         keywords: `${tab.title} ${tab.label} ${step.title} ${step.subtitle} ${step.trigger} ${step.needs.join(" ")} ${step.detail.join(" ")} ${step.coverages.map((coverage) => `${coverage.label} ${coverage.body}`).join(" ")} ${step.costMemo}`,
@@ -732,6 +733,7 @@ export default function CoverageStatsPage() {
       })),
       ...tab.images.map((image) => ({
         id: `image-${tab.id}-${image.image}`,
+        type: image.title.includes("영수증") || image.title.includes("곸닔利") ? ("receipt" as const) : ("image" as const),
         title: image.title,
         subtitle: `${tab.title} 자료`,
         keywords: `${tab.title} ${tab.label} ${image.title} 비용 수술 입원 영수증 산정특례`,
@@ -745,6 +747,7 @@ export default function CoverageStatsPage() {
         return [
           {
             id: `cost-${tab.id}-${costTab.id}`,
+            type: "cost" as const,
             title: costTab.title,
             subtitle: `${tab.title} 치료행위별 비용`,
             keywords: `${tab.title} ${costTab.title} ${costTab.subtitle} ${costTab.cost} ${costTab.body} ${costTab.coverage} ${costTab.items.map((item) => `${item.label} ${item.value} ${item.note || ""}`).join(" ")}`,
@@ -755,6 +758,7 @@ export default function CoverageStatsPage() {
           },
           ...images.map((image) => ({
             id: `cost-image-${tab.id}-${costTab.id}-${image.image}`,
+            type: image.title.includes("영수증") || image.title.includes("곸닔利") ? ("receipt" as const) : ("image" as const),
             title: image.title,
             subtitle: `${tab.title} ${costTab.title} 자료`,
             keywords: `${tab.title} ${costTab.title} ${image.title} 비용 수술 입원 영수증 산정특례`,
@@ -770,6 +774,7 @@ export default function CoverageStatsPage() {
 
     const statItems = COVERAGE_STATS.map((item) => ({
       id: `stat-${item.id}`,
+      type: "stat" as const,
       title: item.title,
       subtitle: item.tags.join(" / "),
       keywords: `${item.title} ${item.subtitle} ${item.summary} ${item.tags.join(" ")}`,
@@ -778,6 +783,7 @@ export default function CoverageStatsPage() {
 
     const supplementalItems = supplementalMaterials.map((item) => ({
       id: `supplemental-${item.image}`,
+      type: "material" as const,
       title: item.title,
       subtitle: item.tags.join(" / "),
       keywords: `${item.title} ${item.tags.join(" ")}`,
@@ -786,22 +792,6 @@ export default function CoverageStatsPage() {
 
     return [...guideItems, ...supplementalItems, ...statItems]
   }, [])
-
-  const libraryStats = useMemo(() => {
-    const q = libraryQuery.trim().toLowerCase()
-    return COVERAGE_STATS.filter((item) => {
-      const haystack = `${item.title} ${item.subtitle} ${item.summary} ${item.tags.join(" ")}`.toLowerCase()
-      return !q || haystack.includes(q)
-    })
-  }, [libraryQuery])
-
-  const libraryMaterials = useMemo(() => {
-    const q = libraryQuery.trim().toLowerCase()
-    return supplementalMaterials.filter((item) => {
-      const haystack = `${item.title} ${item.tags.join(" ")}`.toLowerCase()
-      return !q || haystack.includes(q)
-    })
-  }, [libraryQuery])
 
   function changeTab(id: GuideTabId) {
     const next = tabs.find((tab) => tab.id === id)
@@ -834,7 +824,9 @@ export default function CoverageStatsPage() {
           </div>
         </header>
 
-        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+        <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
+          <SearchSidebar items={searchItems} />
+
           <div>
             <ConsultingGuide
               activeGuide={activeGuide}
@@ -846,18 +838,7 @@ export default function CoverageStatsPage() {
               onSelectCostTab={setActiveCostTabId}
             />
           </div>
-
-          <SearchSidebar items={searchItems} />
         </div>
-
-        <MaterialLibrary
-          query={libraryQuery}
-          onQueryChange={setLibraryQuery}
-          stats={libraryStats}
-          materials={libraryMaterials}
-          onSelectStat={setSelected}
-          onSelectImage={setSelectedImage}
-        />
 
       </div>
 
@@ -1013,29 +994,70 @@ function MaterialButtonList({
 
 function SearchSidebar({ items }: { items: SearchItem[] }) {
   const [keyword, setKeyword] = useState("")
+  const [activeFilter, setActiveFilter] = useState<SearchItem["type"] | "all">("all")
   const q = keyword.trim().toLowerCase()
+  const filterOptions: { id: SearchItem["type"] | "all"; label: string; hint: string }[] = [
+    { id: "all", label: "전체", hint: "모든 자료" },
+    { id: "roadmap", label: "치료과정", hint: "순서·필요보장" },
+    { id: "cost", label: "비용", hint: "치료행위별 금액" },
+    { id: "receipt", label: "영수증", hint: "실제 서류" },
+    { id: "stat", label: "통계", hint: "기존 자료" },
+    { id: "material", label: "추가자료", hint: "운전자·화재 등" },
+    { id: "image", label: "이미지", hint: "팝업 자료" },
+  ]
+  const typeLabel: Record<SearchItem["type"], string> = {
+    roadmap: "치료과정",
+    cost: "비용",
+    receipt: "영수증",
+    image: "이미지 자료",
+    stat: "통계 자료",
+    material: "추가 자료",
+  }
   const filtered = items
-    .filter((item) => !q || `${item.title} ${item.subtitle} ${item.keywords}`.toLowerCase().includes(q))
-    .slice(0, 24)
+    .filter((item) => activeFilter === "all" || item.type === activeFilter)
+    .filter((item) => !q || `${item.title} ${item.subtitle} ${item.keywords} ${typeLabel[item.type]}`.toLowerCase().includes(q))
+    .slice(0, 80)
+  const materialCount = items.filter((item) => item.type === "stat" || item.type === "material").length
 
   return (
     <aside className="xl:sticky xl:top-5 xl:self-start">
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
         <div className="border-b border-slate-100 p-5">
-          <p className="text-[12px] font-black tracking-[0.18em] text-[#1f5597]">QUICK SEARCH</p>
+          <p className="text-[12px] font-black tracking-[0.18em] text-[#1f5597]">ALL MATERIALS</p>
           <h2 className="mt-1 text-xl font-black text-slate-900">전체 자료 검색</h2>
           <p className="mt-2 text-[12px] font-bold leading-5 text-slate-500">
-            비용, 수술, 입원, 영수증처럼 상담 중 필요한 단어를 검색하면 바로 열 수 있습니다.
+            치료과정, 비용, 영수증, 통계자료, 추가 상담자료까지 이곳에서 한 번에 찾을 수 있습니다.
           </p>
+          <div className="mt-3 rounded-2xl bg-blue-50 px-4 py-3 text-[12px] font-black text-[#1f5597]">
+            전체 자료 모음 {materialCount}개가 사이드바 검색에 포함되어 있습니다.
+          </div>
           <label className="mt-4 flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4">
             <Search className="h-5 w-5 text-[#1f5597]" />
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="비용, 수술, 입원, 영수증 검색"
+              placeholder="비용, 수술, 입원, 영수증, 운전자, 화재 검색"
               className="h-12 min-w-0 flex-1 bg-transparent text-[13px] font-bold outline-none"
             />
           </label>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {filterOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => setActiveFilter(option.id)}
+                className={`rounded-xl border px-3 py-2 text-left transition ${
+                  activeFilter === option.id
+                    ? "border-[#1f5597] bg-[#1f5597] text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50"
+                }`}
+              >
+                <span className="block text-[12px] font-black">{option.label}</span>
+                <span className={`mt-0.5 block text-[10px] font-bold ${activeFilter === option.id ? "text-blue-100" : "text-slate-400"}`}>
+                  {option.hint}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="max-h-[72vh] space-y-2 overflow-y-auto p-3">
@@ -1045,7 +1067,12 @@ function SearchSidebar({ items }: { items: SearchItem[] }) {
               onClick={item.action}
               className="w-full rounded-2xl border border-slate-100 bg-slate-50 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
             >
-              <p className="text-[11px] font-black text-[#1f5597]">{item.subtitle}</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="rounded-full bg-white px-2 py-1 text-[10px] font-black text-[#1f5597] ring-1 ring-blue-100">
+                  {typeLabel[item.type]}
+                </p>
+                <p className="truncate text-[10px] font-black text-slate-400">{item.subtitle}</p>
+              </div>
               <p className="mt-1 text-[13px] font-black leading-5 text-slate-900">{item.title}</p>
             </button>
           ))}
@@ -1057,107 +1084,6 @@ function SearchSidebar({ items }: { items: SearchItem[] }) {
         </div>
       </div>
     </aside>
-  )
-}
-
-function MaterialLibrary({
-  query,
-  onQueryChange,
-  stats,
-  materials,
-  onSelectStat,
-  onSelectImage,
-}: {
-  query: string
-  onQueryChange: (value: string) => void
-  stats: CoverageStatItem[]
-  materials: { title: string; image: string; tags: string[] }[]
-  onSelectStat: (item: CoverageStatItem) => void
-  onSelectImage: (item: { title: string; image: string }) => void
-}) {
-  return (
-    <section className="mt-5 rounded-2xl bg-white p-5 shadow-sm">
-      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-[12px] font-black tracking-[0.18em] text-[#1f5597]">MATERIAL LIBRARY</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-900">전체 자료 모음</h2>
-          <p className="mt-2 text-[13px] font-bold leading-6 text-slate-500">
-            기존 하단 통계 자료와 추가 상담 이미지를 여기에서 다시 확인할 수 있습니다.
-          </p>
-        </div>
-        <label className="flex w-full max-w-md items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4">
-          <Search className="h-5 w-5 text-[#1f5597]" />
-          <input
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="자료명, 보장, 질환, 비용 검색"
-            className="h-12 min-w-0 flex-1 bg-transparent text-[13px] font-bold outline-none"
-          />
-        </label>
-      </div>
-
-      {materials.length > 0 && (
-        <div className="mb-6">
-          <h3 className="mb-3 text-[15px] font-black text-slate-900">추가 상담 자료</h3>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {materials.map((item) => (
-              <button
-                key={item.image}
-                onClick={() => onSelectImage(item)}
-                className="group grid grid-cols-[112px_1fr] gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
-              >
-                <div className="h-24 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                  <img src={item.image} alt="" className="h-full w-full object-cover" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-black text-[#1f5597]">{item.tags.slice(0, 3).join(" / ")}</p>
-                  <p className="mt-2 text-[15px] font-black leading-5 text-slate-900">{item.title}</p>
-                  <p className="mt-3 flex items-center gap-1 text-[11px] font-black text-[#1f5597]">
-                    <Eye className="h-3.5 w-3.5" />
-                    열기
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <h3 className="mb-3 text-[15px] font-black text-slate-900">기존 통계 자료</h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          {stats.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onSelectStat(item)}
-              className="group grid grid-cols-[112px_1fr] gap-4 rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-blue-200 hover:shadow-md"
-            >
-              <div className="relative h-28 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" onError={(event) => { event.currentTarget.style.display = "none" }} />
-                ) : (
-                  <div className="grid h-full place-items-center text-[11px] font-black text-[#1f5597]">통계</div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-black text-[#1f5597]">{item.tags.join(" / ")}</p>
-                <h3 className="mt-2 text-[17px] font-black text-slate-900">{item.title}</h3>
-                <p className="mt-2 line-clamp-2 text-[12px] font-bold leading-5 text-slate-500">{item.subtitle}</p>
-                <div className="mt-4 flex items-center gap-2 text-[11px] font-black text-[#1f5597]">
-                  <Eye className="h-4 w-4" />
-                  미리보기
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-        {stats.length === 0 && materials.length === 0 && (
-          <div className="rounded-2xl bg-slate-50 py-12 text-center text-sm font-black text-slate-400">
-            검색 결과가 없습니다.
-          </div>
-        )}
-      </div>
-    </section>
   )
 }
 

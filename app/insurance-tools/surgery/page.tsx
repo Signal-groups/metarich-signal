@@ -1,8 +1,18 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { SURGERY_DB, CATEGORY_LABELS, TYPE_MULTIPLIER } from '../../../lib/insurance/surgery-db'
+import { SURGERY_DB } from '../../../lib/insurance/surgery-db'
+import {
+  N_SURGERY_BODY_PARTS,
+  N_SURGERY_COMPANIES,
+  N_SURGERY_COVERAGES,
+  findNSurgeryCoverages,
+  getCoverageBodyParts,
+  getCoverageDisplayAmount,
+  matchesNSurgeryText,
+} from '../../../lib/insurance/n-surgery-db'
 import type { SurgeryItem, SurgeryAmounts } from '../../../lib/insurance/types'
+import type { NSurgeryBodyPartKey, NSurgeryCompany } from '../../../lib/insurance/n-surgery-db'
 
 // ─────────────────────────────────────────────────────────
 // 상단에 임시로 혹은 누락된 SurgeryItem 인터페이스 정의 (빌드 에러 방지)
@@ -86,8 +96,9 @@ function matchItem(item: SurgeryItem, q: string): boolean {
   return (
     item.name.toLowerCase().includes(ql) ||
     item.kcd_codes.some(k => k.toLowerCase().includes(ql)) ||
-    ((item as any).desc?.toLowerCase().includes(ql) || false) ||
-    item.synonyms.some(s => s.toLowerCase().includes(ql))
+    ((item as ExtendedSurgeryItem).desc?.toLowerCase().includes(ql) || false) ||
+    item.synonyms.some(s => s.toLowerCase().includes(ql)) ||
+    matchesNSurgeryText(item, q)
   )
 }
 
@@ -119,6 +130,11 @@ export default function SurgeryPage() {
   const [amounts, setAmounts]     = useState<SurgeryAmounts>(DEFAULT_AMOUNTS)
   const [showChiogol, setShowChiogol] = useState(false)
   const [acOpen, setAcOpen]       = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState<NSurgeryCompany | 'all'>('all')
+  const [nSurgeryAmount, setNSurgeryAmount] = useState(100)
+  const [selectedBodyPart, setSelectedBodyPart] = useState<NSurgeryBodyPartKey | 'all'>('all')
+  const [nSurgeryModalCompany, setNSurgeryModalCompany] = useState<NSurgeryCompany | null>(null)
+  const [showCompanyPicker, setShowCompanyPicker] = useState(false)
 
   // 자동완성 후보
   const acItems = useMemo(() => {
@@ -157,23 +173,51 @@ export default function SurgeryPage() {
 
   const normalItems = filtered.filter(x => !x.is_cancer)
   const cancerItems = filtered.filter(x => x.is_cancer)
+  const selectedCompanyCoverages = useMemo(() => {
+    const rows = selectedCompany === 'all'
+      ? N_SURGERY_COVERAGES
+      : N_SURGERY_COVERAGES.filter(coverage => coverage.company === selectedCompany)
+    return rows.filter(coverage =>
+      selectedBodyPart === 'all' ? true : getCoverageBodyParts(coverage).includes(selectedBodyPart)
+    )
+  }, [selectedBodyPart, selectedCompany])
+  const companyMatchedItems = useMemo(() => {
+    if (!query && selectedBodyPart === 'all') return []
+
+    return SURGERY_DB
+      .map(item => {
+        const coverages = findNSurgeryCoverages(item, query).filter(coverage => {
+          const companyOk = selectedCompany === 'all' ? true : coverage.company === selectedCompany
+          const bodyPartOk = selectedBodyPart === 'all' ? true : getCoverageBodyParts(coverage).includes(selectedBodyPart)
+          return companyOk && bodyPartOk
+        })
+        return { item, coverages }
+      })
+      .filter(row => row.coverages.length > 0 && (!query || matchItem(row.item, query)))
+      .slice(0, 12)
+  }, [query, selectedBodyPart, selectedCompany])
+  const modalCoverages = useMemo(() => {
+    if (!nSurgeryModalCompany) return []
+    return N_SURGERY_COVERAGES.filter(coverage => coverage.company === nSurgeryModalCompany)
+      .filter(coverage => selectedBodyPart === 'all' ? true : getCoverageBodyParts(coverage).includes(selectedBodyPart))
+  }, [nSurgeryModalCompany, selectedBodyPart])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-green-50">
+    <div className="min-h-screen bg-[#eef3ff]">
       {/* 헤더 */}
-      <div className="bg-gradient-to-r from-slate-800 to-blue-900 text-white px-6 py-5 shadow-lg">
-        <div className="max-w-4xl mx-auto">
+      <div className="px-4 py-6 lg:px-8">
+        <div className="max-w-[1400px] mx-auto rounded-3xl bg-white p-6 lg:p-8 shadow-sm border-l-[6px] border-[#2563eb]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <span className="bg-white/20 p-1.5 rounded-lg">🏥</span>
-                수술비 통합 계산기
+              <h1 className="text-3xl font-black text-[#1a3a6e] tracking-tight flex items-center gap-3">
+                <span className="bg-blue-50 text-blue-600 p-2 rounded-2xl">🏥</span>
+                수술비 검색
               </h1>
-              <p className="text-sm text-blue-200 mt-1 opacity-90">1~5종 수술 데이터베이스 · KB/흥국/DB 기준</p>
+              <p className="text-sm text-[#94a3b8] font-bold mt-2 tracking-wider">종수술비와 회사별 N대 수술비를 함께 확인합니다</p>
             </div>
             <button
               onClick={() => setShowChiogol(true)}
-              className="text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-xl transition-all active:scale-95"
+              className="text-xs font-black bg-slate-100 hover:bg-slate-200 border border-slate-100 text-slate-600 px-4 py-3 rounded-xl transition-all active:scale-95"
             >
               🦷 1~3종 치조골이식 지급시기 확인
             </button>
@@ -181,10 +225,10 @@ export default function SurgeryPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-[1400px] mx-auto px-4 pb-8 lg:px-8 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-6 items-start">
 
         {/* ① 검색 섹션 */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+        <div className="bg-white rounded-3xl shadow-sm p-6 border border-white xl:col-start-1">
           <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">🔍 통합 수술 명칭 검색</p>
           <div className="relative">
             <div className="flex gap-2">
@@ -273,7 +317,7 @@ export default function SurgeryPage() {
         </div>
 
         {/* ② 가입금액 설정 */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+        <div className="bg-white rounded-3xl shadow-sm p-6 border border-white xl:col-start-1">
           <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">💰 나의 가입 특약 설정</p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
             {([1,2,3,4,5] as const).map(t => {
@@ -311,11 +355,191 @@ export default function SurgeryPage() {
           </div>
         </div>
 
+        <div className="bg-white rounded-3xl shadow-sm p-6 border border-emerald-100 xl:col-start-2 xl:row-start-1 xl:row-span-5 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
+          <div className="flex flex-col gap-4 mb-5">
+            <div>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2">N대 수술비 회사별 확인</p>
+              <h2 className="text-xl font-black text-slate-900">보험회사별 보장 범위와 예상 수령액</h2>
+              <p className="text-xs text-slate-500 font-bold mt-1">
+                위 검색창에 수술명이나 질병명을 입력하면 선택한 회사의 N대 수술비와 종수술비 예상액을 함께 봅니다.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-black text-slate-500 whitespace-nowrap">N대 가입금액</label>
+              <div className="flex items-center border-2 border-emerald-100 rounded-2xl overflow-hidden bg-emerald-50/40 focus-within:bg-white focus-within:border-emerald-300 w-[150px]">
+                <input
+                  type="number"
+                  min={0}
+                  value={nSurgeryAmount}
+                  onChange={event => setNSurgeryAmount(Number(event.target.value) || 0)}
+                  className="flex-1 text-right px-3 py-3 text-sm font-black bg-transparent outline-none min-w-0"
+                />
+                <span className="pr-3 text-[10px] text-emerald-600 font-bold">만원</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 mb-4">
+            <p className="text-[11px] font-black text-slate-400 mb-2">선택 회사</p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-lg font-black text-slate-900 truncate">
+                  {selectedCompany === 'all' ? '전체 회사' : selectedCompany}
+                </p>
+                <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                  {selectedCompanyCoverages.length}개 담보 그룹 표시
+                </p>
+              </div>
+              <button
+                onClick={() => setShowCompanyPicker(true)}
+                className="shrink-0 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black text-white shadow-sm hover:bg-emerald-700 transition-colors"
+              >
+                회사 선택
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <button
+                onClick={() => setShowCompanyPicker(true)}
+                className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-[11px] font-black text-emerald-700 hover:bg-emerald-50"
+              >
+                회사별 목록 보기
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedCompany !== 'all') {
+                    setNSurgeryModalCompany(selectedCompany)
+                  } else {
+                    setShowCompanyPicker(true)
+                  }
+                }}
+                className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-50"
+              >
+                상세 팝업
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-black text-slate-400">신체 부위</p>
+              {selectedBodyPart !== 'all' && (
+                <button
+                  onClick={() => setSelectedBodyPart('all')}
+                  className="text-[11px] font-black text-slate-400 hover:text-slate-700"
+                >
+                  전체로 보기
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setSelectedBodyPart('all')}
+                className={`px-3 py-2 rounded-xl text-[11px] font-black border transition-all ${
+                  selectedBodyPart === 'all'
+                    ? 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-white text-slate-500 border-slate-100 hover:border-slate-300'
+                }`}
+              >
+                전체
+              </button>
+              {N_SURGERY_BODY_PARTS.slice(0, 8).map(part => (
+                <button
+                  key={part.key}
+                  onClick={() => setSelectedBodyPart(part.key)}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-black border transition-all ${
+                    selectedBodyPart === part.key
+                      ? 'bg-slate-800 text-white border-slate-800'
+                      : 'bg-white text-slate-500 border-slate-100 hover:border-slate-300'
+                  }`}
+                >
+                  {part.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-black text-slate-800">검색 수술과 회사별 예상</h3>
+                <span className="text-[11px] font-black text-slate-500">
+                  {query || selectedBodyPart !== 'all' ? `${companyMatchedItems.length}건 연결` : '검색어 필요'}
+                </span>
+              </div>
+              {!query && selectedBodyPart === 'all' ? (
+                <div className="rounded-2xl bg-white/80 border border-emerald-100 p-5 text-sm font-bold text-slate-500 leading-relaxed">
+                  예: 대장용종, 복강경 담낭수술, 백내장, 갑상선, 심장, 디스크처럼 입력하면 선택한 회사 기준으로 종수술비와 N대 수술비를 함께 계산합니다.
+                </div>
+              ) : companyMatchedItems.length === 0 ? (
+                <div className="rounded-2xl bg-white/80 border border-emerald-100 p-5 text-sm font-bold text-slate-500 leading-relaxed">
+                  {selectedCompany === 'all' ? '등록된 회사별 N대 수술비에서' : `${selectedCompany} 자료에서`} 직접 연결되는 N대 수술비가 없습니다.
+                  종수술비 결과는 아래 검색 결과에서 확인하세요.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[310px] overflow-y-auto pr-1">
+                  {companyMatchedItems.map(({ item, coverages }) => {
+                    const payout = calcPayout(item, amounts)
+                    const nExpected = Math.max(...coverages.map(coverage => getCoverageDisplayAmount(coverage, nSurgeryAmount)))
+                    const expectedTotal = payout.total + nExpected
+
+                    return (
+                      <div key={item.id} className="rounded-2xl bg-white border border-emerald-100 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-black text-slate-900 truncate">{item.name}</p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                              {item.kcd_codes.slice(0, 3).join(', ') || 'KCD 확인 필요'}
+                            </p>
+                          </div>
+                          <span className={`text-[11px] px-2.5 py-1 rounded-lg font-black ${item.is_cancer ? CANCER_COLOR.badge : TYPE_COLORS[item.type].badge}`}>
+                            {item.type}종
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mt-3">
+                          <div className="rounded-xl bg-slate-50 border border-slate-100 p-2">
+                            <p className="text-[10px] font-black text-slate-400">종수+질병</p>
+                            <p className="text-[13px] font-black text-slate-800">{fmoney(payout.total)}</p>
+                          </div>
+                          <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-2">
+                            <p className="text-[10px] font-black text-emerald-600">N대 예상</p>
+                            <p className="text-[13px] font-black text-emerald-800">{fmoney(nExpected)}</p>
+                          </div>
+                          <div className="rounded-xl bg-blue-50 border border-blue-100 p-2">
+                            <p className="text-[10px] font-black text-blue-600">합계 예상</p>
+                            <p className="text-[13px] font-black text-blue-800">{fmoney(expectedTotal)}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {coverages.slice(0, 4).map((coverage, index) => (
+                            <span key={`${coverage.company}-${coverage.groupName}-${index}`} className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg">
+                              {coverage.company} · {coverage.groupName}
+                            </span>
+                          ))}
+                          {coverages.length > 4 && (
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg">
+                              외 {coverages.length - 4}개
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-400 font-bold mt-4 leading-relaxed">
+            N대 예상액은 위 입력한 가입금액을 기준으로 단순 합산한 상담용 예시입니다. 실제 지급은 회사별 약관, 가입금액, 면책/감액, 동일질병 반복지급 조건에 따라 달라집니다.
+          </p>
+        </div>
+
         {/* ③ 종별 빠른 필터 */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+        <div className="bg-white rounded-3xl shadow-sm p-6 border border-white xl:col-start-1">
           <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">📂 종별 전체 리스트</p>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-            {TYPE_BROWSE.map(({ type, label, example, mul }) => {
+            {TYPE_BROWSE.map(({ type, example }) => {
               const col = TYPE_COLORS[type]
               const isOn = typeFilter === type
               const amt = amounts[`type${type}` as keyof SurgeryAmounts] as number
@@ -352,7 +576,7 @@ export default function SurgeryPage() {
         </div>
 
         {/* ④ 검색 및 필터 결과 리스트 */}
-        <div className="space-y-4">
+        <div className="space-y-4 xl:col-start-1">
           <div className="flex items-center justify-between px-2">
             <h3 className="text-base font-black text-slate-800">
               {typeFilter !== null
@@ -458,6 +682,182 @@ export default function SurgeryPage() {
           </div>
         </div>
       )}
+
+      {showCompanyPicker && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[105] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[86vh] overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#1a3a6e] text-white px-6 py-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black">N대 수술비 회사 선택</h2>
+                  <p className="text-blue-100 text-xs mt-1 font-bold">
+                    회사를 선택하면 오른쪽 패널 기준이 바뀌고, 상세 버튼으로 담보 범위를 확인합니다.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCompanyPicker(false)}
+                  className="bg-white/10 hover:bg-white/20 rounded-full w-9 h-9 flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="p-5 overflow-y-auto max-h-[calc(86vh-92px)]">
+              <button
+                onClick={() => {
+                  setSelectedCompany('all')
+                  setShowCompanyPicker(false)
+                }}
+                className={`w-full rounded-2xl border-2 p-4 text-left transition-all mb-3 ${
+                  selectedCompany === 'all'
+                    ? 'border-emerald-500 bg-emerald-50'
+                    : 'border-slate-100 bg-slate-50 hover:border-emerald-200 hover:bg-white'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-black text-slate-900">전체 회사</p>
+                    <p className="text-[11px] font-bold text-slate-500 mt-1">검색 수술이 어느 회사 N대 담보와 연결되는지 전체 비교</p>
+                  </div>
+                  <span className="text-[11px] font-black text-emerald-700 bg-white border border-emerald-100 px-2.5 py-1 rounded-full">
+                    {N_SURGERY_COVERAGES.length}개 그룹
+                  </span>
+                </div>
+              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {N_SURGERY_COMPANIES.map(company => {
+                  const coverageCount = N_SURGERY_COVERAGES.filter(coverage => coverage.company === company).length
+                  return (
+                    <div
+                      key={company}
+                      className={`rounded-2xl border-2 p-4 transition-all ${
+                        selectedCompany === company
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : 'border-slate-100 bg-white hover:border-emerald-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black text-slate-900">{company}</p>
+                          <p className="text-[11px] font-bold text-slate-500 mt-1">{coverageCount}개 담보 그룹</p>
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">
+                          N대
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <button
+                          onClick={() => {
+                            setSelectedCompany(company)
+                            setShowCompanyPicker(false)
+                          }}
+                          className="rounded-xl bg-emerald-600 px-3 py-2 text-[11px] font-black text-white hover:bg-emerald-700"
+                        >
+                          선택
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedCompany(company)
+                            setShowCompanyPicker(false)
+                            setNSurgeryModalCompany(company)
+                          }}
+                          className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-50"
+                        >
+                          상세보기
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {nSurgeryModalCompany && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl max-h-[86vh] overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-gradient-to-r from-emerald-700 to-teal-800 text-white px-6 py-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black">{nSurgeryModalCompany} N대 수술비 상세</h2>
+                  <p className="text-emerald-100 text-xs mt-1 font-bold">
+                    {selectedBodyPart === 'all'
+                      ? '전체 신체부위'
+                      : N_SURGERY_BODY_PARTS.find(part => part.key === selectedBodyPart)?.label} 기준 담보 그룹, 질병명, 코드, 예상액
+                  </p>
+                </div>
+                <button
+                  onClick={() => setNSurgeryModalCompany(null)}
+                  className="bg-white/10 hover:bg-white/20 rounded-full w-9 h-9 flex items-center justify-center transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="p-5 overflow-y-auto max-h-[calc(86vh-92px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {modalCoverages.map((coverage, index) => {
+                  const amount = getCoverageDisplayAmount(coverage, nSurgeryAmount)
+                  const bodyLabels = getCoverageBodyParts(coverage)
+                    .map(key => N_SURGERY_BODY_PARTS.find(part => part.key === key)?.label)
+                    .filter(Boolean)
+
+                  return (
+                    <div key={`${coverage.company}-${coverage.productName}-${coverage.groupName}-${index}`} className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[12px] font-black text-emerald-800">{coverage.groupName}</p>
+                          <p className="text-[13px] font-black text-slate-900 mt-1">{coverage.productName}</p>
+                        </div>
+                        <span className="text-[12px] font-black text-white bg-emerald-600 px-2.5 py-1 rounded-lg">
+                          {fmoney(amount)}
+                        </span>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-[10px] font-black text-slate-400 mb-1">질병명/검색 기준</p>
+                        <p className="text-[11px] font-bold text-slate-700 leading-relaxed">
+                          {coverage.keywords.slice(0, 22).join(', ')}
+                        </p>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-[10px] font-black text-slate-400 mb-1">질병코드 / 신체부위</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(coverage.diseaseCodes ?? []).length > 0 ? (
+                            (coverage.diseaseCodes ?? []).map(code => (
+                              <span key={code} className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg">
+                                {code}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-1 rounded-lg">
+                              질병코드 원문 확인 필요
+                            </span>
+                          )}
+                        {bodyLabels.map(label => (
+                          <span key={label} className="text-[10px] font-bold text-slate-500 bg-white border border-slate-100 px-2 py-1 rounded-lg">
+                            {label}
+                          </span>
+                        ))}
+                        </div>
+                      </div>
+                      {coverage.note && (
+                        <p className="text-[10px] text-slate-400 font-bold mt-3 leading-relaxed">{coverage.note}</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {modalCoverages.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm font-bold text-slate-500">
+                  선택한 부위 기준으로 표시할 N대 수술비 항목이 없습니다.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -469,6 +869,16 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
   const [open, setOpen] = useState(false)
   const col = item.is_cancer ? CANCER_COLOR : TYPE_COLORS[item.type]
   const { surgPay, disPay, total } = calcPayout(item, amounts)
+  const nSurgeryCoverages = useMemo(() => findNSurgeryCoverages(item, query), [item, query])
+  const nSurgeryByCompany = useMemo(() => {
+    const seen = new Set<string>()
+    return nSurgeryCoverages.filter(coverage => {
+      const key = `${coverage.company}-${coverage.productName}-${coverage.groupName}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [nSurgeryCoverages])
 
   const matchedSyns = useMemo(() => {
     if (!query) return []
@@ -508,6 +918,15 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
               </span>
             )}
           </div>
+          <div className="mt-2">
+            <span className={`text-[11px] px-2.5 py-0.5 rounded-lg font-black border ${
+              nSurgeryByCompany.length > 0
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                : 'bg-slate-50 text-slate-400 border-slate-100'
+            }`}>
+              N대 {nSurgeryByCompany.length > 0 ? `${nSurgeryByCompany.length}개 회사 연결` : '지급회사 없음'}
+            </span>
+          </div>
           {matchedSyns.length > 0 && (
             <div className="mt-2 flex items-center gap-1.5">
               <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md border border-green-100 flex items-center gap-1">
@@ -546,7 +965,7 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
             <span className="text-xl shrink-0 mt-0.5">📋</span>
             <div className="space-y-1">
               <span className="font-black text-slate-800 block">수술 정의 및 범위</span>
-              <p className="text-slate-600 leading-relaxed font-medium">{(item as any).desc}</p>
+              <p className="text-slate-600 leading-relaxed font-medium">{(item as ExtendedSurgeryItem).desc}</p>
             </div>
           </div>
 
@@ -569,6 +988,41 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
               </div>
             </div>
           )}
+
+          <div className="bg-emerald-50 border-2 border-emerald-100 rounded-[1.5rem] p-5 mt-2">
+            <div className="text-emerald-800 font-black text-sm mb-3 flex items-center gap-2">
+              <span className="bg-emerald-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">N</span>
+              보험회사별 N대 수술비 연결
+            </div>
+            {nSurgeryByCompany.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {nSurgeryByCompany.slice(0, 10).map((coverage, i) => (
+                  <div key={`${coverage.company}-${coverage.productName}-${coverage.groupName}-${i}`} className="rounded-2xl bg-white/80 border border-emerald-100 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[12px] font-black text-emerald-800">{coverage.company}</span>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{coverage.groupName}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-bold mt-1 leading-relaxed">{coverage.productName}</p>
+                    {coverage.diseaseCodes && (
+                      <p className="text-[10px] text-slate-400 font-mono mt-1">{coverage.diseaseCodes.join(', ')}</p>
+                    )}
+                    {coverage.note && (
+                      <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{coverage.note}</p>
+                    )}
+                  </div>
+                ))}
+                {nSurgeryByCompany.length > 10 && (
+                  <div className="rounded-2xl bg-white/70 border border-emerald-100 p-3 text-[11px] font-bold text-emerald-700">
+                    외 {nSurgeryByCompany.length - 10}개 연결 항목은 회사별 원자료에서 추가 확인
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-[13px] text-slate-600 font-bold leading-relaxed">
+                현재 등록된 회사별 N대 수술비 자료에서는 직접 연결되는 지급회사가 없습니다.
+              </p>
+            )}
+          </div>
 
           {item.type_by_company && (
             <div className="flex gap-3 pt-2">
