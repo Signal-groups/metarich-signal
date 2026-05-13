@@ -436,6 +436,22 @@ export default function ProductAllPage() {
                 )
               })}
             </nav>
+
+            {/* 영업전략/상품전략 버튼 — 카테고리 목록 위 고정 */}
+            <div className="border-t border-white/10 px-4 py-4">
+              <a
+                href="https://naver.me/I5w5UaIa"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center gap-3 rounded-xl bg-gradient-to-r from-sky-500/20 to-blue-600/20 border border-sky-400/30 px-4 py-3.5 text-left hover:from-sky-500/30 hover:to-blue-600/30 transition-all group"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/25 text-sky-300 text-base">📊</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-black text-sky-200 group-hover:text-white transition-colors">영업전략 / 상품전략</span>
+                  <span className="mt-0.5 block text-[11px] font-bold text-slate-500">전략 자료 바로 열기 →</span>
+                </span>
+              </a>
+            </div>
           </div>
         </aside>
 

@@ -74,6 +74,19 @@ const CHIOGOL_DATA = [
   { company: '하나생명',   until: '~2006년 03월 31일' },
 ]
 
+const SURGERY_REFERENCE_IMAGES = [
+  {
+    title: '종수술비의 종류와 보장 내용',
+    image: '/coverage-stats/surgery-type-compare-2605.png',
+    buttonLabel: '종수술비 비교',
+  },
+  {
+    title: '종수술비 VS N대 수술비',
+    image: '/coverage-stats/surgery-type-vs-n-surgery-2605.png',
+    buttonLabel: '종수술비 · N대 비교',
+  },
+] as const
+
 // ─────────────────────────────────────────────────────────
 // 유틸리티 함수
 // ─────────────────────────────────────────────────────────
@@ -144,6 +157,7 @@ export default function SurgeryPage() {
   const [typeFilter, setTypeFilter]   = useState<number | 'cancer' | null>(null)
   const [amounts, setAmounts]         = useState<ExtendedSurgeryAmounts>(DEFAULT_AMOUNTS)
   const [showChiogol, setShowChiogol] = useState(false)
+  const [selectedReferenceImage, setSelectedReferenceImage] = useState<{ title: string; image: string } | null>(null)
   const [acOpen, setAcOpen]           = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<NSurgeryCompany | 'all'>('all')
   // 회사별 그룹별 가입금액 Record<groupName, 만원>
@@ -251,12 +265,23 @@ export default function SurgeryPage() {
               종수술비 · N대수술비 · 질병수술비를 한 화면에서 확인
             </p>
           </div>
-          <button
-            onClick={() => setShowChiogol(true)}
-            className="text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-xl transition-all active:scale-95"
-          >
-            🦷 치조골이식 지급시기
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {SURGERY_REFERENCE_IMAGES.map((item) => (
+              <button
+                key={item.image}
+                onClick={() => setSelectedReferenceImage(item)}
+                className="text-xs font-black bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2.5 rounded-xl transition-all active:scale-95"
+              >
+                {item.buttonLabel}
+              </button>
+            ))}
+            <button
+              onClick={() => setShowChiogol(true)}
+              className="text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-xl transition-all active:scale-95"
+            >
+              🦷 치조골이식 지급시기
+            </button>
+          </div>
         </div>
       </div>
 
@@ -714,6 +739,40 @@ export default function SurgeryPage() {
               >
                 닫기
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━ 수술비 비교 이미지 팝업 ━━━━━━ */}
+      {selectedReferenceImage && (
+        <div
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[110] flex items-center justify-center p-4"
+          onClick={() => setSelectedReferenceImage(null)}
+        >
+          <div
+            className="w-full max-w-[1500px] max-h-[92vh] overflow-hidden rounded-[2rem] bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4 bg-[#1a3a6e] px-5 py-4 text-white">
+              <div>
+                <p className="text-[11px] font-black tracking-[0.16em] text-blue-100">SURGERY REFERENCE</p>
+                <h2 className="mt-1 text-lg font-black">{selectedReferenceImage.title}</h2>
+              </div>
+              <button
+                onClick={() => setSelectedReferenceImage(null)}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-lg font-black transition hover:bg-white/20"
+                aria-label="팝업 닫기"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-[calc(92vh-76px)] overflow-auto bg-slate-100 p-3 md:p-5">
+              <img
+                src={selectedReferenceImage.image}
+                alt={selectedReferenceImage.title}
+                className="mx-auto h-auto w-full rounded-2xl bg-white object-contain shadow-sm"
+              />
             </div>
           </div>
         </div>

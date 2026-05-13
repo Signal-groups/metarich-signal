@@ -108,6 +108,8 @@ const tabs: GuideTab[] = [
       { title: "표적항암과 NGS 유전자검사", image: "/coverage-stats/target-ngs-2605.png" },
       { title: "암종별 표적치료와 비용", image: "/coverage-stats/cancer-target-cost-2605.png" },
       { title: "가방항암 통원치료", image: "/coverage-stats/portable-chemo-2605.png" },
+      { title: "종수술비의 종류와 보장 내용", image: "/coverage-stats/surgery-type-compare-2605.png" },
+      { title: "종수술비 VS N대 수술비", image: "/coverage-stats/surgery-type-vs-n-surgery-2605.png" },
     ],
     costTabs: [
       {
@@ -287,6 +289,8 @@ const tabs: GuideTab[] = [
       { title: "중환자실과 간병 비용", image: "/coverage-stats/icu-care-cost-2605.png" },
       { title: "산정특례 가능 질환과 적용기간", image: "/coverage-stats/special-case-2605.png" },
       { title: "뇌·심장 보장 범위", image: "/coverage-stats/brain-heart-scope-2605.png" },
+      { title: "종수술비의 종류와 보장 내용", image: "/coverage-stats/surgery-type-compare-2605.png" },
+      { title: "종수술비 VS N대 수술비", image: "/coverage-stats/surgery-type-vs-n-surgery-2605.png" },
     ],
     costTabs: [
       {
