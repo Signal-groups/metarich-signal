@@ -132,11 +132,16 @@ export default function CarAccidentPage() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-slate-50 to-orange-50 pb-20">
       {/* 헤더 */}
       <div className="bg-gradient-to-r from-amber-800 to-orange-700 text-white px-6 py-6 shadow-md">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-xl font-black flex items-center gap-2">
-            <span>🚗</span> 자동차사고 부상등급 검색기
-          </h1>
-          <p className="text-xs text-amber-200 mt-1 font-medium">자배법 시행령 기준 · 1~14급 상해내용 및 예상 지급금액 확인</p>
+        <div className="max-w-4xl mx-auto flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-xl font-black flex items-center gap-2">
+              <span>🚗</span> 자동차사고 부상등급 검색기
+            </h1>
+            <p className="text-xs text-amber-200 mt-1 font-medium">자배법 시행령 기준 · 1~14급 상해내용 및 예상 지급금액 확인</p>
+          </div>
+          <button onClick={() => window.close()} className="rounded-xl bg-white/10 px-4 py-3 text-[12px] font-black text-white hover:bg-white/20">
+            창 닫기
+          </button>
         </div>
       </div>
 

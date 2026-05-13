@@ -142,9 +142,14 @@ export default function DiagnosisPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-slate-50 to-pink-50">
       <div className="bg-gradient-to-r from-red-800 to-rose-700 text-white px-6 py-5 shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-xl font-bold">🎗 진단비 검색기</h1>
-          <p className="text-sm text-red-200 mt-0.5 font-medium">KCD 코드 · 질병명 입력 → 보장 분류 및 예상 진단비 확인</p>
+        <div className="max-w-4xl mx-auto flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold">🎗 진단비 검색기</h1>
+            <p className="text-sm text-red-200 mt-0.5 font-medium">KCD 코드 · 질병명 입력 → 보장 분류 및 예상 진단비 확인</p>
+          </div>
+          <button onClick={() => window.close()} className="rounded-xl bg-white/10 px-4 py-3 text-[12px] font-black text-white hover:bg-white/20">
+            창 닫기
+          </button>
         </div>
       </div>
 

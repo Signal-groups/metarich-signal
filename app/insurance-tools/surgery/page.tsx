@@ -281,6 +281,12 @@ export default function SurgeryPage() {
             >
               🦷 치조골이식 지급시기
             </button>
+            <button
+              onClick={() => window.close()}
+              className="text-xs font-black bg-[#1a3a6e] hover:bg-[#2563eb] text-white px-4 py-2.5 rounded-xl transition-all active:scale-95"
+            >
+              창 닫기
+            </button>
           </div>
         </div>
       </div>

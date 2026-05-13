@@ -58,7 +58,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
   const canOpenOrgManagement = isOrganizationAdminAccount(user)
   const canOpenSettings = currentRole === "leader" || currentRole === "headquarters" || currentRole === "master"
   const canEditSelectedDept = canEditDepartmentSettings(user, selectedHeadquarter, selectedDept)
-  const canApproveSelectedDept = canEditSelectedDept
+  const canApproveSelectedDept = currentRole === "leader" || currentRole === "headquarters" || currentRole === "master"
   const canEditNotice = canEditMainNotice(user)
 
   const fetchTeamData = useCallback(async () => {
@@ -338,6 +338,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
           selectedAgent={selectedAgent}
           teamMeta={deptMeta}
           viewer={user}
+          monthKey={monthKey}
           selectedScope={{ headquarter: selectedHeadquarter || "미지정본부", department: selectedDept, team: selectedTeam }}
           canEditDepartment={canEditSelectedDept}
           canApprovePerformance={canApproveSelectedDept}

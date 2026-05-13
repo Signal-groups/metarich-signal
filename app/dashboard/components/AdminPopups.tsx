@@ -33,6 +33,7 @@ export default function AdminPopups({
   teamMeta,
   onClose,
   viewer,
+  monthKey,
   selectedScope,
   canEditDepartment = false,
   canApprovePerformance = false,
@@ -206,16 +207,20 @@ export default function AdminPopups({
 
   const handleApprovePerf = async (agentId: string, currentStatus: boolean) => {
     if (!canApprovePerformance) {
-      alert("해당 사업부장만 실적 승인 상태를 변경할 수 있습니다.")
+      alert("사업부장, 본부장, 마스터만 목표 승인 상태를 변경할 수 있습니다.")
       return
     }
 
-    const { error } = await supabase.from("daily_perf").update({ is_approved: !currentStatus }).eq("user_id", agentId)
+    const { error } = await supabase
+      .from("daily_perf")
+      .update({ is_approved: !currentStatus })
+      .eq("user_id", agentId)
+      .eq("date", monthKey)
     if (error) {
       alert("승인 처리 중 오류가 발생했습니다.")
       return
     }
-    alert(!currentStatus ? "실적을 승인했습니다." : "실적 승인을 해제했습니다.")
+    alert(!currentStatus ? "해당 월 목표를 승인했습니다. 승인 후 직원은 목표를 수정할 수 없습니다." : "해당 월 목표 승인을 해제했습니다.")
     onClose()
   }
 

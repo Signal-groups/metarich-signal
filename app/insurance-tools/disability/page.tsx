@@ -86,9 +86,14 @@ export default function DisabilityPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-purple-50">
       {/* 헤더 */}
       <div className="bg-gradient-to-r from-indigo-800 to-purple-800 text-white px-6 py-5">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-xl font-bold">🦴 후유장해율 계산기</h1>
-          <p className="text-sm text-indigo-200 mt-0.5">KB 금쪽같은 별표1 · 장해분류표 기준 · 13개 신체부위 전체</p>
+        <div className="max-w-4xl mx-auto flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold">🦴 후유장해율 계산기</h1>
+            <p className="text-sm text-indigo-200 mt-0.5">KB 금쪽같은 별표1 · 장해분류표 기준 · 13개 신체부위 전체</p>
+          </div>
+          <button onClick={() => window.close()} className="rounded-xl bg-white/10 px-4 py-3 text-[12px] font-black text-white hover:bg-white/20">
+            창 닫기
+          </button>
         </div>
       </div>
 

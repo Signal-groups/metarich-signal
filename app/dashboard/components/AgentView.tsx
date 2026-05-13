@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability */
+
 import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
 import CustomerManagerModal from "./CustomerManagerModal"
@@ -133,13 +135,18 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   const handleSave = async (customField?: object) => {
     const rawPayload = customField ? { ...perfInput, ...customField } : perfInput;
+    const lockedTargetPayload = perfInput.is_approved
+      ? { target_cnt: perfInput.target_cnt, target_amt: perfInput.target_amt }
+      : {};
     const payload = {
       ...rawPayload,
+      ...lockedTargetPayload,
       call: Number(rawPayload.call || 0), meet: Number(rawPayload.meet || 0),
       pt: Number(rawPayload.pt || 0), intro: Number(rawPayload.intro || 0),
       db_assigned: Number(rawPayload.db_assigned || 0), db_returned: Number(rawPayload.db_returned || 0),
       contract_cnt: Number(rawPayload.contract_cnt || 0), contract_amt: Number(rawPayload.contract_amt || 0),
-      target_cnt: Number(rawPayload.target_cnt || 0), target_amt: Number(rawPayload.target_amt || 0)
+      target_cnt: Number((perfInput.is_approved ? perfInput.target_cnt : rawPayload.target_cnt) || 0),
+      target_amt: Number((perfInput.is_approved ? perfInput.target_amt : rawPayload.target_amt) || 0)
     };
     const { error } = await supabase.from("daily_perf").upsert({ ...payload, user_id: user.id, date: monthKey }, { onConflict: 'user_id, date' });
     if (error) alert("저장 실패: " + error.message);
