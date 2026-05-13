@@ -5,10 +5,62 @@
 import { useState, useEffect } from "react"
 import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
+import {
+  ArrowLeftRight,
+  BarChart3,
+  BookOpen,
+  Calculator,
+  CarFront,
+  ClipboardCheck,
+  FileSearch,
+  Hospital,
+  PieChart,
+  Scale,
+  Search,
+  ShieldCheck,
+  Stethoscope,
+  ScrollText,
+} from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
-import { normalizeRole, roleLabel, isApprovedUser, isOrganizationAdminAccount } from "../../../lib/roles"
+import { canAccessCrm, normalizeRole, roleLabel, isApprovedUser, isOrganizationAdminAccount } from "../../../lib/roles"
+
+function ToolIcon({ icon }: { icon: string }) {
+  const className = "h-5 w-5"
+  switch (icon) {
+    case "cafe":
+      return <BookOpen className={className} />
+    case "search":
+      return <Search className={className} />
+    case "hospital":
+      return <Hospital className={className} />
+    case "crash":
+      return <Scale className={className} />
+    case "chart":
+      return <BarChart3 className={className} />
+    case "calculator-car":
+      return <CarFront className={className} />
+    case "code":
+      return <FileSearch className={className} />
+    case "compare":
+      return <ArrowLeftRight className={className} />
+    case "surgery":
+      return <Stethoscope className={className} />
+    case "document":
+      return <ScrollText className={className} />
+    case "checklist":
+      return <ClipboardCheck className={className} />
+    case "shield":
+      return <ShieldCheck className={className} />
+    case "calculator":
+      return <Calculator className={className} />
+    case "finance":
+      return <PieChart className={className} />
+    default:
+      return <Search className={className} />
+  }
+}
 
 export default function Sidebar({ 
   user, selectedDate, onDateChange, mode, onBack, 
@@ -120,7 +172,12 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  const consultTools = CONSULTING_TOOLS.filter((tool) => (tool.fixed || tool.staffOnly) && tool.placement !== "office");
+  const consultTools = CONSULTING_TOOLS.filter((tool) => tool.placement !== "office");
+  const visibleConsultTools = consultTools.filter((tool) =>
+    tool.access === "public" ||
+    (tool.access === "approved" && isApproved && (menuStatus[tool.id] || isEditMode))
+  );
+  const highlightTools = visibleConsultTools.filter((tool) => tool.highlight);
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
@@ -221,7 +278,7 @@ export default function Sidebar({
                 onClick={() => setIsConsultModalOpen(true)} 
               />
 
-              {((user?.crm_access === true || user?.crm_access === "true") || (user?.is_approved === true || user?.is_approved === "true") || isMaster) && (
+              {canAccessCrm(user) && (
                 <NavItem
                   icon="📋"
                   label="고객관리"
@@ -326,7 +383,7 @@ export default function Sidebar({
         </div>
       </aside>
 
-      {isConsultModalOpen && isApproved && (
+      {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-xl rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
             <div className="bg-black p-6 flex justify-between items-center">
@@ -342,9 +399,31 @@ export default function Sidebar({
             </div>
             
             <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto no-scrollbar">
+              {highlightTools.length > 0 && (
+                <section className="space-y-3">
+                  <div>
+                    <p className="text-[13px] font-black text-slate-900">기본 바로가기</p>
+                    <p className="text-[10px] font-bold text-slate-400">승인 전 게스트도 이용 가능한 기본 도구</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {highlightTools.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleLinkClick(item)}
+                        className={`min-h-[72px] w-full rounded-2xl border-2 bg-white px-4 py-3 text-left transition-all hover:bg-black hover:text-[#d4af37] ${item.color}`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <ToolIcon icon={item.icon} />
+                          <span className="text-[12px] font-black leading-tight">{item.label}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {CONSULTING_TOOL_CATEGORIES.map((category) => {
-                const tools = consultTools.filter((tool) => (tool.category || "field") === category.id);
-                const visibleTools = tools.filter((item) => item.fixed || menuStatus[item.id] || isEditMode);
+                const visibleTools = visibleConsultTools.filter((tool) => !tool.highlight && tool.category === category.id);
                 if (visibleTools.length === 0) return null;
                 return (
                   <section key={category.id} className="space-y-3">
@@ -356,10 +435,10 @@ export default function Sidebar({
                       {visibleTools.map((item) => (
                         <div key={item.id} className="relative">
                           <button onClick={() => handleLinkClick(item)} className={`w-full min-h-[72px] flex items-center gap-3 px-4 py-3 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!item.fixed && !menuStatus[item.id] && 'opacity-30'}`}>
-                            <span className="text-xl">{item.icon}</span>
+                            <ToolIcon icon={item.icon} />
                             <span className="text-[12px] font-black text-left leading-tight">{item.label}</span>
                           </button>
-                          {isMaster && isEditMode && item.staffOnly && (
+                          {isMaster && isEditMode && item.editable && (
                             <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black" />
                           )}
                         </div>

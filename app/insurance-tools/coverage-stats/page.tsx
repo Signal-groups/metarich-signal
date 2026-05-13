@@ -433,6 +433,8 @@ const tabs: GuideTab[] = [
     images: [
       { title: "장기요양 등급과 본인부담", image: "/coverage-stats/longterm-care-grade-cost-2605.png" },
       { title: "레켐비 뉴스 요약", image: "/coverage-stats/leqembi-news-2605.png" },
+      { title: "치매 전단계", image: "/coverage-stats/dementia-prestage-guide.png" },
+      { title: "2024 대한민국 치매 현황", image: "/coverage-stats/dementia-status-2024.png" },
     ],
     steps: [
       {

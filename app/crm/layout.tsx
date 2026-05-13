@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
-import { isApprovedUser, normalizeRole } from '../../lib/roles'
+import { canAccessCrm, normalizeRole } from '../../lib/roles'
 
 const NAV = [
   {
@@ -63,8 +63,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
 
       const mergedUser = { ...session.user, ...userData, email: session.user.email }
       const effectiveRole = normalizeRole(mergedUser)
-      const hasCrm = mergedUser.crm_access === true || mergedUser.crm_access === 'true'
-      const canUseCrm = hasCrm || isApprovedUser(mergedUser)
+      const canUseCrm = canAccessCrm(mergedUser)
       if (!canUseCrm) { router.replace('/dashboard'); return }
 
       setUser({ ...mergedUser, effectiveRole })

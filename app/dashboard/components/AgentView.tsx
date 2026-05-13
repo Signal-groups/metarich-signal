@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
+import { canAccessCrm } from "../../../lib/roles"
 import CustomerManagerModal from "./CustomerManagerModal"
 // import CalcModal from "./CalcModal" // 파일 존재 여부에 따라 주석 해제 가능
 
@@ -36,7 +37,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     salesBook: "/sales-book",
     productAll: "/product-all",
     gongsi: "/gongsi.html",
+    claimDocs: "/claim-documents",
   };
+  const canUseCrm = canAccessCrm(user);
 
   const handleGoogleSync = async (customers: any[]) => {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxQVSM9jB0lubHWSEBNUcRT_OFwU4QS9AOjNOzQwPjW9FOif3izSVWxOwuXpUXhGZ0IEQ/exec";
@@ -183,11 +186,14 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="세일즈 마스터" url={LINKS.salesMaster} color="bg-[#1a3a6e] text-white" />
           <QuickBtn label="세일즈 북" url={LINKS.salesBook} color="bg-[#2563eb] text-white" />
           <QuickBtn label="상품의 모든것" url={LINKS.productAll} color="bg-[#f59e0b] text-white" />
-          <QuickBtn
-            label="고객관리"
-            url={LINKS.customerCrm}
-            color="bg-[#10b981] text-white"
-          />
+          <QuickBtn label="서류 안내" url={LINKS.claimDocs} color="bg-[#0f766e] text-white" />
+          {canUseCrm && (
+            <QuickBtn
+              label="고객관리"
+              url={LINKS.customerCrm}
+              color="bg-[#10b981] text-white"
+            />
+          )}
         </div>
       </div>
 

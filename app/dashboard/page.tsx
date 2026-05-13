@@ -6,6 +6,22 @@
 
 import React, { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import {
+  ArrowLeftRight,
+  BarChart3,
+  BookOpen,
+  Calculator,
+  CarFront,
+  ClipboardCheck,
+  FileSearch,
+  Hospital,
+  PieChart,
+  Scale,
+  Search,
+  ShieldCheck,
+  Stethoscope,
+  ScrollText,
+} from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
 import Sidebar from "./components/Sidebar"
@@ -15,6 +31,42 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { normalizeRole, roleLabel, isApprovedUser } from "../../lib/roles"
+
+function ToolIcon({ icon }: { icon: string }) {
+  const className = "h-7 w-7"
+  switch (icon) {
+    case "cafe":
+      return <BookOpen className={className} />
+    case "search":
+      return <Search className={className} />
+    case "hospital":
+      return <Hospital className={className} />
+    case "crash":
+      return <Scale className={className} />
+    case "chart":
+      return <BarChart3 className={className} />
+    case "calculator-car":
+      return <CarFront className={className} />
+    case "code":
+      return <FileSearch className={className} />
+    case "compare":
+      return <ArrowLeftRight className={className} />
+    case "surgery":
+      return <Stethoscope className={className} />
+    case "document":
+      return <ScrollText className={className} />
+    case "checklist":
+      return <ClipboardCheck className={className} />
+    case "shield":
+      return <ShieldCheck className={className} />
+    case "calculator":
+      return <Calculator className={className} />
+    case "finance":
+      return <PieChart className={className} />
+    default:
+      return <Search className={className} />
+  }
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1. [Box Component] Consulting 도구 카드 컴포넌트
@@ -34,7 +86,9 @@ function ConsultingBox({
         onClick={() => !isEditMode && onClick(menu)} 
         className={`h-40 w-full bg-white rounded-2xl flex flex-col p-5 shadow-sm border text-left transition-all group ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
       >
-        <div className="text-2xl mb-3 group-hover:scale-110 transition-transform">{menu.icon}</div>
+        <div className="mb-3 transition-transform group-hover:scale-110">
+          <ToolIcon icon={menu.icon} />
+        </div>
         <div className="flex-1">
           <h3 className="text-[15px] font-bold text-[#1e293b] mb-1">{menu.title}</h3>
           <p className="text-[12px] text-[#94a3b8] leading-tight break-keep">{menu.desc}</p>
@@ -43,7 +97,7 @@ function ConsultingBox({
           시작하기
         </div>
       </button>
-      {isEditMode && menu.staffOnly && (
+      {isEditMode && menu.editable && (
         <label className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[11px] font-bold text-slate-700 shadow-md">
           <input type="checkbox" checked={checked} onChange={() => onToggle(menu.id)} className="h-4 w-4 accent-[#1a3a6e]" />
           노출
@@ -136,11 +190,15 @@ export default function DashboardPage() {
   const isManager = userRole === 'manager';
   const isGuest = userRole === 'guest';
   
-  const isApproved = !isGuest && isApprovedUser(user);
+  const isApproved = isApprovedUser(user);
   const visibleConsultingTools = CONSULTING_TOOLS.filter(m =>
     m.placement !== "office" &&
-    (m.fixed || (m.staffOnly && isApproved && (menuStatus[m.id] || isConsultEditMode)))
+    (
+      m.access === "public" ||
+      (m.access === "approved" && isApproved && (menuStatus[m.id] || isConsultEditMode))
+    )
   );
+  const highlightTools = visibleConsultingTools.filter((tool) => tool.highlight);
 
   const renderOfficeView = () => {
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
@@ -228,9 +286,33 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
+                {highlightTools.length > 0 && (
+                  <section className="mb-8 space-y-4">
+                    <div className="flex items-end justify-between border-b border-slate-200 pb-3">
+                      <div>
+                        <h2 className="text-xl font-black text-[#1a3a6e]">기본 바로가기</h2>
+                        <p className="mt-1 text-[12px] font-bold text-slate-400">승인 전 게스트도 바로 이용할 수 있는 안내 도구</p>
+                      </div>
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">{highlightTools.length}개</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      {highlightTools.map((menu) => (
+                        <ConsultingBox
+                          key={menu.id}
+                          menu={menu}
+                          onClick={handleNavigation}
+                          isEditMode={false}
+                          checked
+                          onToggle={toggleMenu}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <div className="space-y-8">
                   {CONSULTING_TOOL_CATEGORIES.map((category) => {
-                    const tools = visibleConsultingTools.filter((tool) => (tool.category || "field") === category.id);
+                    const tools = visibleConsultingTools.filter((tool) => !tool.highlight && tool.category === category.id);
                     if (tools.length === 0) return null;
                     return (
                       <section key={category.id} className="space-y-4">
@@ -239,7 +321,7 @@ export default function DashboardPage() {
                             <h2 className="text-xl font-black text-[#1a3a6e]">{category.title}</h2>
                             <p className="mt-1 text-[12px] font-bold text-slate-400">{category.desc}</p>
                           </div>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-500">{tools.length}개</span>
+                          <span className={`rounded-full px-3 py-1 text-[11px] font-black ${category.countTone}`}>{tools.length}개</span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {tools.map((menu) => (

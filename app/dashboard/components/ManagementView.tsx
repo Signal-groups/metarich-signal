@@ -12,6 +12,7 @@ import { exportExcel } from "./exportExcel"
 import {
   canEditDepartmentSettings,
   canEditMainNotice,
+  canAccessCrm,
   canSeeUser,
   getBranch,
   getDepartment,
@@ -34,7 +35,6 @@ const QUICK_LINKS = [
   { href: "/sales-master", label: "세일즈 마스터" },
   { href: "/sales-book", label: "세일즈 북" },
   { href: "/product-all", label: "상품 모아보기" },
-  { href: "/crm", label: "고객관리" },
 ]
 
 const defaultDeptMeta = { targetAmt: 3000, targetCnt: 100, targetIntro: 10, actualIntro: 0 }
@@ -60,6 +60,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
   const canEditSelectedDept = canEditDepartmentSettings(user, selectedHeadquarter, selectedDept)
   const canApproveSelectedDept = currentRole === "leader" || currentRole === "headquarters" || currentRole === "master"
   const canEditNotice = canEditMainNotice(user)
+  const canUseCrm = canAccessCrm(user)
 
   const fetchTeamData = useCallback(async () => {
     const { data: settings } = await supabase.from("team_settings").select("*")
@@ -189,6 +190,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
     { id: "perf", label: "실적 관리" },
     { id: "act", label: "활동 및 분석" },
     { id: "edu", label: "교육 관리" },
+    { id: "docs", label: "서류 안내", external: true },
     ...(canOpenSettings ? [{ id: "sys", label: "설정 관리" }] : []),
     ...(canOpenOrgManagement ? [{ id: "users", label: "직원 관리" }] : []),
   ]
@@ -247,6 +249,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
 
       <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-6">
         {QUICK_LINKS.map((link) => <QuickLink key={link.label} {...link} />)}
+        {canUseCrm && <QuickLink href="/crm" label="고객관리" />}
         <div className="relative col-span-2 md:col-span-1">
           <button onClick={() => setShowExportOpt(!showExportOpt)} className="h-full w-full rounded-2xl border border-emerald-700 bg-emerald-600 p-4 text-center text-[13px] font-black text-white shadow-lg">
             리포트 출력
@@ -262,7 +265,17 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
 
       <div className={`grid gap-2 font-black ${tabs.length >= 5 ? "grid-cols-2 md:grid-cols-5" : "grid-cols-2 md:grid-cols-4"}`}>
         {tabs.map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`${activeTab === tab.id ? "bg-[#1a3a6e] text-white shadow-md" : "bg-white text-slate-600 hover:bg-slate-50"} rounded-2xl border border-slate-200 px-1 py-4 text-center text-[13px] font-black transition-all md:text-sm`}>
+          <button
+            key={tab.id}
+            onClick={() => {
+              if ("external" in tab && tab.external) {
+                window.open(`${window.location.origin}/claim-documents`, "_blank", "noopener,noreferrer")
+                return
+              }
+              setActiveTab(tab.id)
+            }}
+            className={`${activeTab === tab.id ? "bg-[#1a3a6e] text-white shadow-md" : "bg-white text-slate-600 hover:bg-slate-50"} rounded-2xl border border-slate-200 px-1 py-4 text-center text-[13px] font-black transition-all md:text-sm`}
+          >
             {tab.label}
           </button>
         ))}
