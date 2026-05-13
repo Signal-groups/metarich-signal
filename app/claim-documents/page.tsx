@@ -12,6 +12,13 @@ import {
   VisitType,
 } from "../../lib/claimDocuments"
 
+type GuideMode = "claim" | "notice"
+
+const GUIDE_MODES: { id: GuideMode; label: string; desc: string }[] = [
+  { id: "claim", label: "보험금 청구", desc: "청구 유형과 담보를 선택해 고객 안내 문구를 완성합니다." },
+  { id: "notice", label: "기타안내", desc: "보험사 연락처 또는 팩스 요청 안내 문구를 빠르게 만듭니다." },
+]
+
 const VISIT_OPTIONS: { id: VisitType; label: string; desc: string }[] = [
   { id: "hospitalization", label: "입원", desc: "입원 치료, 수술, 간병 사용이 포함된 청구" },
   { id: "outpatient", label: "통원", desc: "외래 진료, 당일 시술, 통원 수술 청구" },
@@ -24,11 +31,14 @@ const INSURER_FILTERS: { id: "all" | InsurerType; label: string }[] = [
 ]
 
 export default function ClaimDocumentsPage() {
+  const [guideMode, setGuideMode] = useState<GuideMode>("claim")
   const [visitType, setVisitType] = useState<VisitType>("hospitalization")
   const [selectedCoverageIds, setSelectedCoverageIds] = useState<string[]>([])
   const [selectedInsurerIds, setSelectedInsurerIds] = useState<string[]>([])
   const [insurerFilter, setInsurerFilter] = useState<"all" | InsurerType>("all")
   const [searchText, setSearchText] = useState("")
+  const [noticeText, setNoticeText] = useState("")
+  const [faxNumber, setFaxNumber] = useState("")
   const [copied, setCopied] = useState(false)
 
   const selectedCoverages = COVERAGES.filter((coverage) => selectedCoverageIds.includes(coverage.id))
@@ -47,6 +57,37 @@ export default function ClaimDocumentsPage() {
   const notes = selectedCoverages.map((coverage) => coverage.note).filter(Boolean) as string[]
 
   const previewText = useMemo(() => {
+    const commonClosing = [
+      "",
+      "추가적으로 궁금하신 사항은",
+      "언제든 연락주시면 최대한 알아보고",
+      "도움드리도록 하겠습니다. 감사합니다!",
+    ]
+
+    if (guideMode === "notice") {
+      const trimmedNotice = noticeText.trim()
+      const trimmedFaxNumber = faxNumber.trim()
+      const insurerContactLines = selectedInsurers.map((insurer) => `${insurer.name} ${insurer.phone}`)
+
+      if (trimmedNotice) {
+        return [
+          "안녕하세요 고객님 안내드립니다.",
+          `"${trimmedNotice}" 팩스로 요청 한다고`,
+          "상담원에게 말씀해주시면 됩니다.",
+          trimmedFaxNumber ? `[${trimmedFaxNumber}]` : "[팩스번호]",
+          "확인 후 연락드리겠습니다!",
+          ...commonClosing,
+        ].join("\n")
+      }
+
+      return [
+        "안녕하세요 고객님 보험사 연락처 안내드립니다.",
+        ...(insurerContactLines.length > 0 ? insurerContactLines : ["선택된 보험사가 없습니다."]),
+        "이쪽으로 연락하셔서 확인하시면 됩니다.",
+        ...commonClosing,
+      ].join("\n")
+    }
+
     const visitLabel = VISIT_OPTIONS.find((option) => option.id === visitType)?.label || "입원"
     const insurerLines = selectedInsurers.length > 0
       ? selectedInsurers.map((insurer) => `- ${insurer.name}: ${insurer.phone}`)
@@ -84,7 +125,7 @@ export default function ClaimDocumentsPage() {
       "",
       "이번 보상이 잘 처리되도록 최선을 다하겠습니다.",
     ].join("\n")
-  }, [extraDocs, notes, selectedCoverages, selectedInsurers, visitType])
+  }, [extraDocs, faxNumber, guideMode, notes, noticeText, selectedCoverages, selectedInsurers, visitType])
 
   const toggleCoverage = (coverageId: string) => {
     setSelectedCoverageIds((prev) => prev.includes(coverageId)
@@ -142,57 +183,103 @@ export default function ClaimDocumentsPage() {
 
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
-            <Panel title="1. 청구 유형 선택" icon={<HeartPulse className="h-5 w-5" />}>
+            <Panel title="1. 안내 종류 선택" icon={<HeartPulse className="h-5 w-5" />}>
               <div className="grid gap-3 md:grid-cols-2">
-                {VISIT_OPTIONS.map((option) => (
+                {GUIDE_MODES.map((mode) => (
                   <button
-                    key={option.id}
-                    onClick={() => setVisitType(option.id)}
+                    key={mode.id}
+                    onClick={() => setGuideMode(mode.id)}
                     className={`rounded-2xl border-2 p-5 text-left transition ${
-                      visitType === option.id
+                      guideMode === mode.id
                         ? "border-[#2563eb] bg-blue-50"
                         : "border-slate-200 bg-white hover:border-slate-300"
                     }`}
                   >
-                    <p className="text-xl font-black text-[#1a3a6e]">{option.label}</p>
-                    <p className="mt-1 text-[13px] font-bold text-slate-500">{option.desc}</p>
+                    <p className="text-xl font-black text-[#1a3a6e]">{mode.label}</p>
+                    <p className="mt-1 text-[13px] font-bold text-slate-500">{mode.desc}</p>
                   </button>
                 ))}
               </div>
             </Panel>
 
-            <Panel title="2. 담보 선택" icon={<Stethoscope className="h-5 w-5" />}>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {COVERAGES.map((coverage) => {
-                  const active = selectedCoverageIds.includes(coverage.id)
-                  return (
-                    <button
-                      key={coverage.id}
-                      onClick={() => toggleCoverage(coverage.id)}
-                      className={`min-h-[96px] rounded-2xl border-2 p-4 text-left transition ${
-                        active
-                          ? "border-emerald-500 bg-emerald-50"
-                          : "border-slate-200 bg-white hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[15px] font-black text-slate-900">{coverage.label}</p>
-                          <p className="mt-1 text-[12px] font-bold text-slate-500">
-                            {coverage.group === "care" ? "치료·입원" : coverage.group === "diagnosis" ? "중대질환" : "특수 청구"}
-                          </p>
-                        </div>
-                        <span className={`flex h-7 w-7 items-center justify-center rounded-full border ${active ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-300 text-transparent"}`}>
-                          <Check className="h-4 w-4" />
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </Panel>
+            {guideMode === "claim" ? (
+              <>
+                <Panel title="2. 청구 유형 선택" icon={<HeartPulse className="h-5 w-5" />}>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {VISIT_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => setVisitType(option.id)}
+                        className={`rounded-2xl border-2 p-5 text-left transition ${
+                          visitType === option.id
+                            ? "border-[#2563eb] bg-blue-50"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <p className="text-xl font-black text-[#1a3a6e]">{option.label}</p>
+                        <p className="mt-1 text-[13px] font-bold text-slate-500">{option.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </Panel>
 
-            <Panel title="3. 보험회사 선택" icon={<ShieldPlus className="h-5 w-5" />}>
+                <Panel title="3. 담보 선택" icon={<Stethoscope className="h-5 w-5" />}>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {COVERAGES.map((coverage) => {
+                      const active = selectedCoverageIds.includes(coverage.id)
+                      return (
+                        <button
+                          key={coverage.id}
+                          onClick={() => toggleCoverage(coverage.id)}
+                          className={`min-h-[96px] rounded-2xl border-2 p-4 text-left transition ${
+                            active
+                              ? "border-emerald-500 bg-emerald-50"
+                              : "border-slate-200 bg-white hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[15px] font-black text-slate-900">{coverage.label}</p>
+                              <p className="mt-1 text-[12px] font-bold text-slate-500">
+                                {coverage.group === "care" ? "치료·입원" : coverage.group === "diagnosis" ? "중대질환" : "특수 청구"}
+                              </p>
+                            </div>
+                            <span className={`flex h-7 w-7 items-center justify-center rounded-full border ${active ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-300 text-transparent"}`}>
+                              <Check className="h-4 w-4" />
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </Panel>
+              </>
+            ) : (
+              <Panel title="2. 기타안내 내용 입력" icon={<Stethoscope className="h-5 w-5" />}>
+                <div className="grid gap-4">
+                  <label className="grid gap-2">
+                    <span className="text-[13px] font-black text-slate-700">안내할 요청 내용</span>
+                    <textarea
+                      value={noticeText}
+                      onChange={(event) => setNoticeText(event.target.value)}
+                      placeholder="예: 보험금 청구서, 지급내역서, 해지환급금 확인서"
+                      className="min-h-[132px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-bold leading-6 text-slate-800 outline-none focus:border-[#2563eb]"
+                    />
+                  </label>
+                  <label className="grid gap-2 md:max-w-sm">
+                    <span className="text-[13px] font-black text-slate-700">팩스번호</span>
+                    <input
+                      value={faxNumber}
+                      onChange={(event) => setFaxNumber(event.target.value)}
+                      placeholder="예: 02-0000-0000"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+                    />
+                  </label>
+                </div>
+              </Panel>
+            )}
+
+            <Panel title={guideMode === "claim" ? "4. 보험회사 선택" : "3. 보험회사 선택"} icon={<ShieldPlus className="h-5 w-5" />}>
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex flex-wrap gap-2">
