@@ -39,6 +39,9 @@ export default function ClaimDocumentsPage() {
   const [searchText, setSearchText] = useState("")
   const [noticeText, setNoticeText] = useState("")
   const [faxNumber, setFaxNumber] = useState("")
+  const [advisorLabel, setAdvisorLabel] = useState("")
+  const [advisorPhone, setAdvisorPhone] = useState("")
+  const [advisorFaxNumber, setAdvisorFaxNumber] = useState("")
   const [copied, setCopied] = useState(false)
 
   const selectedCoverages = COVERAGES.filter((coverage) => selectedCoverageIds.includes(coverage.id))
@@ -75,6 +78,8 @@ export default function ClaimDocumentsPage() {
           `"${trimmedNotice}" 팩스로 요청 한다고`,
           "상담원에게 말씀해주시면 됩니다.",
           trimmedFaxNumber ? `[${trimmedFaxNumber}]` : "[팩스번호]",
+          "",
+          ...(insurerContactLines.length > 0 ? ["[보험사 연락처]", ...insurerContactLines] : []),
           "확인 후 연락드리겠습니다!",
           ...commonClosing,
         ].join("\n")
@@ -100,6 +105,12 @@ export default function ClaimDocumentsPage() {
       ? extraDocs.map((doc) => `- ${doc}`)
       : ["- 선택한 담보에 따른 추가 서류가 있으면 보험사 안내에 맞춰 준비해주세요."]
     const noteLines = notes.length > 0 ? notes.map((note) => `- ${note}`) : []
+    const advisorLines = [
+      advisorLabel.trim() || advisorPhone.trim()
+        ? `${advisorLabel.trim() || "보험 전문가"}${advisorPhone.trim() ? ` ${advisorPhone.trim()}` : ""}`
+        : "",
+      advisorFaxNumber.trim() ? `팩스번호 ${advisorFaxNumber.trim()}` : "",
+    ].filter(Boolean)
 
     return [
       "안녕하세요. 보험금 청구에 필요한 서류 안내드립니다.",
@@ -124,8 +135,21 @@ export default function ClaimDocumentsPage() {
       ...noteLines,
       "",
       "이번 보상이 잘 처리되도록 최선을 다하겠습니다.",
+      ...(advisorLines.length > 0 ? ["", ...advisorLines] : []),
     ].join("\n")
-  }, [extraDocs, faxNumber, guideMode, notes, noticeText, selectedCoverages, selectedInsurers, visitType])
+  }, [
+    advisorFaxNumber,
+    advisorLabel,
+    advisorPhone,
+    extraDocs,
+    faxNumber,
+    guideMode,
+    notes,
+    noticeText,
+    selectedCoverages,
+    selectedInsurers,
+    visitType,
+  ])
 
   const toggleCoverage = (coverageId: string) => {
     setSelectedCoverageIds((prev) => prev.includes(coverageId)
@@ -143,6 +167,21 @@ export default function ClaimDocumentsPage() {
     await navigator.clipboard.writeText(previewText)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1800)
+  }
+
+  const resetGuide = () => {
+    setGuideMode("claim")
+    setVisitType("hospitalization")
+    setSelectedCoverageIds([])
+    setSelectedInsurerIds([])
+    setInsurerFilter("all")
+    setSearchText("")
+    setNoticeText("")
+    setFaxNumber("")
+    setAdvisorLabel("")
+    setAdvisorPhone("")
+    setAdvisorFaxNumber("")
+    setCopied(false)
   }
 
   return (
@@ -183,7 +222,18 @@ export default function ClaimDocumentsPage() {
 
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
-            <Panel title="1. 안내 종류 선택" icon={<HeartPulse className="h-5 w-5" />}>
+            <Panel
+              title="1. 안내 종류 선택"
+              icon={<HeartPulse className="h-5 w-5" />}
+              action={(
+                <button
+                  onClick={resetGuide}
+                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-black text-slate-600 transition hover:bg-slate-50"
+                >
+                  초기화
+                </button>
+              )}
+            >
               <div className="grid gap-3 md:grid-cols-2">
                 {GUIDE_MODES.map((mode) => (
                   <button
@@ -223,7 +273,39 @@ export default function ClaimDocumentsPage() {
                   </div>
                 </Panel>
 
-                <Panel title="3. 담보 선택" icon={<Stethoscope className="h-5 w-5" />}>
+                <Panel title="3. 담당자 안내 입력" icon={<FileText className="h-5 w-5" />}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-2">
+                      <span className="text-[13px] font-black text-slate-700">담당자 표기</span>
+                      <input
+                        value={advisorLabel}
+                        onChange={(event) => setAdvisorLabel(event.target.value)}
+                        placeholder="예: 000 보험 전문가"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+                      />
+                    </label>
+                    <label className="grid gap-2">
+                      <span className="text-[13px] font-black text-slate-700">연락처</span>
+                      <input
+                        value={advisorPhone}
+                        onChange={(event) => setAdvisorPhone(event.target.value)}
+                        placeholder="예: 000-0000-0000"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+                      />
+                    </label>
+                    <label className="grid gap-2 md:max-w-sm">
+                      <span className="text-[13px] font-black text-slate-700">팩스번호</span>
+                      <input
+                        value={advisorFaxNumber}
+                        onChange={(event) => setAdvisorFaxNumber(event.target.value)}
+                        placeholder="예: 000-0000-0000"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+                      />
+                    </label>
+                  </div>
+                </Panel>
+
+                <Panel title="4. 담보 선택" icon={<Stethoscope className="h-5 w-5" />}>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {COVERAGES.map((coverage) => {
                       const active = selectedCoverageIds.includes(coverage.id)
@@ -279,7 +361,7 @@ export default function ClaimDocumentsPage() {
               </Panel>
             )}
 
-            <Panel title={guideMode === "claim" ? "4. 보험회사 선택" : "3. 보험회사 선택"} icon={<ShieldPlus className="h-5 w-5" />}>
+            <Panel title={guideMode === "claim" ? "5. 보험회사 선택" : "3. 보험회사 선택"} icon={<ShieldPlus className="h-5 w-5" />}>
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex flex-wrap gap-2">
@@ -354,12 +436,25 @@ export default function ClaimDocumentsPage() {
   )
 }
 
-function Panel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+function Panel({
+  title,
+  icon,
+  action,
+  children,
+}: {
+  title: string
+  icon: ReactNode
+  action?: ReactNode
+  children: ReactNode
+}) {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-      <div className="mb-5 flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">{icon}</span>
-        <h2 className="text-lg font-black text-[#1a3a6e]">{title}</h2>
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">{icon}</span>
+          <h2 className="text-lg font-black text-[#1a3a6e]">{title}</h2>
+        </div>
+        {action}
       </div>
       {children}
     </section>
