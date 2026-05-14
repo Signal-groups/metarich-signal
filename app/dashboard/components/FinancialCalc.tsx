@@ -25,6 +25,8 @@ type RetirementLevelId = "unprepared" | "minimum" | "standard" | "comfort"
 type PensionType = "db" | "dc" | "irp"
 type CompoundMode = "single" | "monthly"
 
+const inputGrid = (count: number) => `repeat(${count}, minmax(0,1fr))`
+
 const fmt = (n: number) => Math.round(Number.isFinite(n) ? n : 0).toLocaleString("ko-KR")
 const fmtM = (n: number) => {
   const v = Math.round(Number.isFinite(n) ? n : 0)
@@ -137,15 +139,15 @@ function InputRow({
   hint?: string
 }) {
   return (
-    <label style={{ display: "grid", gap: 6 }}>
+    <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
       <span style={{ fontSize: 12, fontWeight: 800, color: C.slate }}>{label}</span>
-      <span style={{ display: "flex", alignItems: "center", gap: 8, height: 46, padding: "0 14px", border: `1.5px solid ${C.border}`, borderRadius: 10, background: "#fff" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", boxSizing: "border-box", height: 46, padding: "0 12px", border: `1.5px solid ${C.border}`, borderRadius: 10, background: "#fff", overflow: "hidden" }}>
         <input
           type="number"
           value={value}
           step={step}
           onChange={(event) => onChange(Number(event.target.value))}
-          style={{ minWidth: 0, flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 16, fontWeight: 800 }}
+          style={{ minWidth: 0, width: "100%", flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 16, fontWeight: 800 }}
         />
         {unit && <span style={{ color: C.muted, fontSize: 12, fontWeight: 700 }}>{unit}</span>}
       </span>
@@ -168,10 +170,19 @@ function SectionTitle({ title, desc }: { title: string; desc?: string }) {
 
 function Metric({ label, value, tone = C.blue, sub }: { label: string; value: string; tone?: string; sub?: string }) {
   return (
-    <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderTop: `4px solid ${tone}`, borderRadius: 14, padding: "16px 18px" }}>
+    <div style={{ minWidth: 0, background: "#fff", border: `1px solid ${C.border}`, borderTop: `4px solid ${tone}`, borderRadius: 14, padding: "16px 18px", overflow: "hidden" }}>
       <p style={{ margin: "0 0 7px", color: C.muted, fontSize: 11, fontWeight: 900 }}>{label}</p>
-      <p style={{ margin: 0, color: C.text, fontSize: 22, fontWeight: 900, letterSpacing: "-0.5px" }}>{value}</p>
+      <p style={{ margin: 0, color: C.text, fontSize: 22, fontWeight: 900, letterSpacing: "-0.5px", lineHeight: 1.18, overflowWrap: "anywhere" }}>{value}</p>
       {sub && <p style={{ margin: "5px 0 0", color: C.muted, fontSize: 11, fontWeight: 700 }}>{sub}</p>}
+    </div>
+  )
+}
+
+function ResultHero({ title, body, tone = C.blue }: { title: string; body: string; tone?: string }) {
+  return (
+    <div style={{ marginTop: 16, border: `1px solid ${tone}33`, borderLeft: `5px solid ${tone}`, borderRadius: 16, background: "#fff", padding: "16px 18px" }}>
+      <p style={{ margin: "0 0 6px", color: tone, fontSize: 12, fontWeight: 950 }}>{title}</p>
+      <p style={{ margin: 0, color: C.text, fontSize: 17, fontWeight: 900, lineHeight: 1.55, overflowWrap: "anywhere" }}>{body}</p>
     </div>
   )
 }
@@ -209,8 +220,8 @@ export default function FinancialCalc() {
   const reset = () => setState(DEFAULT_STATE)
 
   return (
-    <div style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#F5F7FA", minHeight: "100vh", padding: "28px 20px" }}>
-      <div style={{ maxWidth: 1320, margin: "0 auto", display: "grid", gridTemplateColumns: "260px minmax(0,1fr)", gap: 22, alignItems: "start" }}>
+    <div style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#EEF3F8", minHeight: "100vh", padding: "24px 18px 40px" }}>
+      <div style={{ maxWidth: 1220, margin: "0 auto", display: "grid", gridTemplateColumns: "250px minmax(0,1fr)", gap: 18, alignItems: "start" }}>
         <aside style={{ position: "sticky", top: 76, background: C.navy, borderRadius: 22, padding: 16, color: "#fff", boxShadow: "0 16px 28px rgba(15,30,53,0.18)" }}>
           <div style={{ padding: "8px 8px 14px", borderBottom: "1px solid rgba(255,255,255,0.09)", marginBottom: 12 }}>
             <p style={{ margin: 0, color: C.gold, fontSize: 12, fontWeight: 950, letterSpacing: "0.4px" }}>계산 메뉴</p>
@@ -241,7 +252,7 @@ export default function FinancialCalc() {
           </div>
         </aside>
 
-        <main style={{ minWidth: 0, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22, padding: 28, boxShadow: "0 12px 30px rgba(15,30,53,0.06)" }}>
+        <main style={{ minWidth: 0, maxWidth: "100%", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22, padding: 24, boxShadow: "0 12px 30px rgba(15,30,53,0.06)", overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
             <div>
               <p style={{ margin: "0 0 7px", color: C.blue, fontSize: 11, fontWeight: 900, letterSpacing: "1px" }}>FINANCIAL CALCULATOR</p>
@@ -316,7 +327,6 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
     const next = RETIREMENT_LEVELS.find((item) => item.id === id)
     if (!next) return
     setLevelId(id)
-    setImageLevelId(id)
     patch({ monthlyExpense: next.expense })
   }
 
@@ -351,7 +361,6 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
               <strong style={{ display: "block", color: C.navy, fontSize: 14 }}>{item.title}</strong>
               <span style={{ display: "block", marginTop: 5, color: C.muted, fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>{item.subtitle}</span>
               <span style={{ display: "block", marginTop: 8, color: item.expense > item.income ? C.rose : C.teal, fontSize: 12, fontWeight: 900 }}>월 {fmt(item.expense)}원 기준</span>
-              <span style={{ display: "inline-flex", marginTop: 9, borderRadius: 999, background: levelId === item.id ? "#fff" : C.slateLight, color: C.blue, padding: "5px 9px", fontSize: 10, fontWeight: 900 }}>이미지 보기</span>
             </button>
           ))}
         </div>
@@ -360,12 +369,15 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
           <Metric label="기준 월 생활비" value={`${fmt(level.expense)}원`} tone={level.expense > level.income ? C.rose : C.teal} />
           <Metric label="예시 월 수입" value={`${fmt(level.income)}원`} tone={C.gold} />
         </div>
+        <button onClick={() => setImageLevelId(level.id)} style={{ marginTop: 12, width: "100%", border: `1px solid ${C.blue}33`, background: C.blueLight, color: C.blue, borderRadius: 14, padding: "13px 16px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>
+          선택한 노후 생활 예시 이미지 보기
+        </button>
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 18 }}>
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
           <SectionTitle title="은퇴 목표 설정" desc="먼저 언제 은퇴하고 월 얼마가 필요한지 정합니다." />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 12 }}>
             <InputRow label="현재 나이" value={state.age} onChange={(v) => patch({ age: v })} unit="세" />
             <InputRow label="은퇴 나이" value={state.retireAge} onChange={(v) => patch({ retireAge: v })} unit="세" />
             <InputRow label="기대 수명" value={state.lifeAge} onChange={(v) => patch({ lifeAge: v })} unit="세" />
@@ -379,7 +391,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
 
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
           <SectionTitle title="국민연금 계산기" desc="정확 조회가 아닌 상담용 간편 예상입니다." />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 14 }}>
             <InputRow label="예상 가입기간" value={state.nationalJoinYears} onChange={(v) => patch({ nationalJoinYears: v })} unit="년" />
             <InputRow label="평균 월소득" value={state.nationalAvgIncome} onChange={(v) => patch({ nationalAvgIncome: v })} unit="원" hint={`${fmt(state.nationalAvgIncome)}원`} />
           </div>
@@ -390,30 +402,30 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
       <section style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
         <SectionTitle title="퇴직연금 계산기" desc="DB, DC, IRP 방식별로 고객 상황에 맞게 대략적인 월 환산액을 확인합니다." />
         <MiniTabs value={state.pensionType} onChange={(id) => patch({ pensionType: id })} options={[{ id: "db", label: "DB형" }, { id: "dc", label: "DC형" }, { id: "irp", label: "IRP" }]} />
-        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 18 }}>
-          <div style={{ background: C.slateLight, borderRadius: 16, padding: 18 }}>
+        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "minmax(0,1.35fr) minmax(260px,0.65fr)", gap: 18, alignItems: "stretch" }}>
+          <div style={{ background: C.slateLight, borderRadius: 16, padding: 18, minHeight: 156 }}>
             {state.pensionType === "db" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12 }}>
                 <InputRow label="평균 월급여" value={state.salary} onChange={(v) => patch({ salary: v })} unit="원" hint={`${fmt(state.salary)}원`} />
                 <InputRow label="총 근속 예상" value={state.workYears} onChange={(v) => patch({ workYears: v })} unit="년" />
               </div>
             )}
             {state.pensionType === "dc" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
                 <InputRow label="연봉" value={state.dcAnnualSalary} onChange={(v) => patch({ dcAnnualSalary: v })} unit="원" hint={`${fmt(state.dcAnnualSalary)}원`} />
                 <InputRow label="운용 기간" value={state.dcYears} onChange={(v) => patch({ dcYears: v })} unit="년" />
                 <InputRow label="예상 수익률" value={state.dcRate} onChange={(v) => patch({ dcRate: v })} unit="%" step={0.1} />
               </div>
             )}
             {state.pensionType === "irp" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
                 <InputRow label="월 납입액" value={state.irpMonthly} onChange={(v) => patch({ irpMonthly: v })} unit="원" hint={`${fmt(state.irpMonthly)}원`} />
                 <InputRow label="납입 기간" value={state.irpYears} onChange={(v) => patch({ irpYears: v })} unit="년" />
                 <InputRow label="예상 수익률" value={state.irpRate} onChange={(v) => patch({ irpRate: v })} unit="%" step={0.1} />
               </div>
             )}
           </div>
-          <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: 10, minWidth: 0 }}>
             <Metric label="퇴직연금 월 환산액" value={`${fmt(selectedRetirementMonthly)}원`} tone={C.blue} sub={`${state.lifeAge - state.retireAge}년 동안 나눠 받는 기준`} />
             <Metric label="DC/IRP 예상 적립금" value={`${fmt(state.pensionType === "dc" ? dcLump : state.pensionType === "irp" ? irpLump : state.salary * state.workYears)}원`} tone={C.gold} />
           </div>
@@ -471,6 +483,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
 
 function CompareCalc() {
   const [inp, setInp] = useState({ monthly: 500000, years: 5, bankRate: 3.5, insuranceReturn: 124 })
+  const [confirmed, setConfirmed] = useState(false)
   const months = inp.years * 12
   const principal = inp.monthly * months
   const r = monthlyRate(inp.bankRate)
@@ -480,37 +493,52 @@ function CompareCalc() {
   return (
     <div>
       <SectionTitle title="보험 vs 은행 저축 비교" desc="보험과 은행은 적금이 아닌 저축이라는 표현으로 안내합니다." />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(4), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16, overflow: "hidden" }}>
         <InputRow label="월 납입액" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" />
         <InputRow label="저축 기간" value={inp.years} onChange={(v) => setInp({ ...inp, years: v })} unit="년" />
         <InputRow label="은행 저축 이율" value={inp.bankRate} onChange={(v) => setInp({ ...inp, bankRate: v })} unit="%" step={0.1} />
         <InputRow label="보험 환급률" value={inp.insuranceReturn} onChange={(v) => setInp({ ...inp, insuranceReturn: v })} unit="%" />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+      <button onClick={() => setConfirmed(true)} style={{ width: "100%", border: "none", background: C.navy, color: C.gold, borderRadius: 14, padding: "13px 16px", fontSize: 13, fontWeight: 950, cursor: "pointer", marginBottom: 14 }}>
+        계산 확인
+      </button>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
         <Metric label="총 납입원금" value={`${fmt(principal)}원`} tone={C.slate} />
         <Metric label="은행 저축 세후" value={`${fmt(bank)}원`} tone={C.blue} />
         <Metric label="보험 예상 환급" value={`${fmt(insurance)}원`} tone={insurance >= bank ? C.teal : C.rose} sub={`차이 ${insurance >= bank ? "+" : "-"}${fmt(Math.abs(insurance - bank))}원`} />
       </div>
+      {confirmed && (
+        <ResultHero
+          title="상담 포인트"
+          tone={insurance >= bank ? C.teal : C.rose}
+          body={insurance >= bank ? `현재 조건에서는 보험 저축 예상 환급이 은행 저축보다 ${fmt(insurance - bank)}원 높게 보입니다.` : `현재 조건에서는 은행 저축 세후 금액이 보험 예상 환급보다 ${fmt(bank - insurance)}원 높게 보입니다.`}
+        />
+      )}
     </div>
   )
 }
 
 function InflationCalc() {
   const [inp, setInp] = useState({ amount: 100000000, years: 20, inflation: 3 })
+  const [confirmed, setConfirmed] = useState(false)
   const futurePower = Math.round(inp.amount / Math.pow(1 + inp.inflation / 100, inp.years))
   const need = Math.round(inp.amount * Math.pow(1 + inp.inflation / 100, inp.years))
   return (
     <div>
       <SectionTitle title="화폐가치 하락" desc="물가상승률에 따라 현재 돈의 구매력이 어떻게 바뀌는지 보여줍니다." />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16, overflow: "hidden" }}>
         <InputRow label="현재 금액" value={inp.amount} onChange={(v) => setInp({ ...inp, amount: v })} unit="원" />
         <InputRow label="기간" value={inp.years} onChange={(v) => setInp({ ...inp, years: v })} unit="년" />
         <InputRow label="물가상승률" value={inp.inflation} onChange={(v) => setInp({ ...inp, inflation: v })} unit="%" step={0.1} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12 }}>
+      <button onClick={() => setConfirmed(true)} style={{ width: "100%", border: "none", background: C.navy, color: C.gold, borderRadius: 14, padding: "13px 16px", fontSize: 13, fontWeight: 950, cursor: "pointer", marginBottom: 14 }}>
+        계산 확인
+      </button>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12 }}>
         <Metric label={`${inp.years}년 후 현재 돈의 구매력`} value={`${fmt(futurePower)}원`} tone={C.rose} />
         <Metric label="같은 구매력에 필요한 미래 금액" value={`${fmt(need)}원`} tone={C.blue} />
       </div>
+      {confirmed && <ResultHero title="상담 포인트" tone={C.rose} body={`현재 ${fmt(inp.amount)}원의 구매력을 유지하려면 ${inp.years}년 후 약 ${fmt(need)}원이 필요합니다.`} />}
     </div>
   )
 }
@@ -518,6 +546,7 @@ function InflationCalc() {
 function CompoundCalc({ age }: { age: number }) {
   const [mode, setMode] = useState<CompoundMode>("single")
   const [inp, setInp] = useState({ principal: 50000000, monthly: 500000, saveYears: 10, holdUntilAge: 65, rate: 5 })
+  const [confirmed, setConfirmed] = useState(false)
   const saveMonths = inp.saveYears * 12
   const holdYears = Math.max(inp.holdUntilAge - age - inp.saveYears, 0)
   const saved = mode === "single"
@@ -528,7 +557,7 @@ function CompoundCalc({ age }: { age: number }) {
     <div>
       <SectionTitle title="복리 계산" desc="일시납과 월적립식 중 선택하고, 저축기간 이후 거치기간까지 함께 계산합니다." />
       <MiniTabs value={mode} onChange={setMode} options={[{ id: "single", label: "일시납" }, { id: "monthly", label: "월적립식" }]} />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, margin: "16px 0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(4), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, margin: "16px 0", overflow: "hidden" }}>
         {mode === "single"
           ? <InputRow label="일시납 원금" value={inp.principal} onChange={(v) => setInp({ ...inp, principal: v })} unit="원" />
           : <InputRow label="월 적립액" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" />}
@@ -536,17 +565,23 @@ function CompoundCalc({ age }: { age: number }) {
         <InputRow label="거치 종료 나이" value={inp.holdUntilAge} onChange={(v) => setInp({ ...inp, holdUntilAge: v })} unit="세" hint={`현재 나이 ${age}세 기준`} />
         <InputRow label="연 수익률" value={inp.rate} onChange={(v) => setInp({ ...inp, rate: v })} unit="%" step={0.1} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+      <button onClick={() => setConfirmed(true)} style={{ width: "100%", border: "none", background: C.navy, color: C.gold, borderRadius: 14, padding: "13px 16px", fontSize: 13, fontWeight: 950, cursor: "pointer", marginBottom: 14 }}>
+        계산 확인
+      </button>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
         <Metric label="저축 종료 시점 금액" value={`${fmt(saved)}원`} tone={C.blue} />
         <Metric label="이후 거치기간" value={`${fmt(holdYears)}년`} tone={C.gold} />
         <Metric label="최종 예상 금액" value={`${fmt(final)}원`} tone={C.teal} />
       </div>
+      {confirmed && <ResultHero title="상담 포인트" tone={C.teal} body={`${mode === "single" ? "일시납" : "월적립식"} 기준으로 저축 후 ${holdYears}년 거치하면 최종 예상 금액은 약 ${fmt(final)}원입니다.`} />}
     </div>
   )
 }
 
 function VariableCalc() {
   const [inp, setInp] = useState({ lump: 6000000, monthly: 1000000, months: 6 })
+  const [confirmed, setConfirmed] = useState(false)
+  const [showVisual, setShowVisual] = useState(false)
   const prices = [1000, 1200, 800, 600, 900, 1100].slice(0, Math.max(1, Math.min(inp.months, 6)))
   const endPrice = prices[prices.length - 1]
   const lumpQty = inp.lump / prices[0]
@@ -557,15 +592,30 @@ function VariableCalc() {
   return (
     <div>
       <SectionTitle title="코스트 애버리지 비교" desc="주가 상승·하락 상황에서 일시납과 월적립식 투자를 비교합니다." />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16, overflow: "hidden" }}>
         <InputRow label="일시납 투자금" value={inp.lump} onChange={(v) => setInp({ ...inp, lump: v })} unit="원" />
         <InputRow label="월적립 투자금" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" />
         <InputRow label="비교 기간" value={inp.months} onChange={(v) => setInp({ ...inp, months: v })} unit="개월" />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 10, marginBottom: 14 }}>
+        <button onClick={() => setConfirmed(true)} style={{ border: "none", background: C.navy, color: C.gold, borderRadius: 14, padding: "13px 16px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>
+          계산 확인
+        </button>
+        <button onClick={() => setShowVisual(true)} style={{ border: `1px solid ${C.blue}33`, background: C.blueLight, color: C.blue, borderRadius: 14, padding: "13px 16px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>
+          비교 이미지 보기
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 16 }}>
         <Metric label="일시납 평가금액" value={`${fmt(lumpValue)}원`} tone={lumpValue >= inp.lump ? C.teal : C.rose} sub={`수익 ${fmt(lumpValue - inp.lump)}원`} />
         <Metric label="월적립식 평가금액" value={`${fmt(monthlyValue)}원`} tone={monthlyValue >= monthlyPrincipal ? C.teal : C.rose} sub={`수익 ${fmt(monthlyValue - monthlyPrincipal)}원`} />
       </div>
+      {confirmed && (
+        <ResultHero
+          title="상담 포인트"
+          tone={monthlyValue >= lumpValue ? C.teal : C.blue}
+          body={monthlyValue >= lumpValue ? `이 변동 구간에서는 월적립식이 일시납보다 ${fmt(monthlyValue - lumpValue)}원 높게 평가됩니다.` : `이 변동 구간에서는 일시납이 월적립식보다 ${fmt(lumpValue - monthlyValue)}원 높게 평가됩니다.`}
+        />
+      )}
       <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
@@ -589,6 +639,44 @@ function VariableCalc() {
           </tbody>
         </table>
       </div>
+      {showVisual && (
+        <div onClick={() => setShowVisual(false)} style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(15,30,53,0.68)", padding: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div onClick={(event) => event.stopPropagation()} style={{ width: "min(860px, 96vw)", background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: "0 28px 80px rgba(0,0,0,0.35)" }}>
+            <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
+              <div>
+                <p style={{ margin: 0, color: C.blue, fontSize: 11, fontWeight: 950, letterSpacing: "0.8px" }}>코스트 애버리지 이미지</p>
+                <h3 style={{ margin: "4px 0 0", color: C.navy, fontSize: 20, fontWeight: 950 }}>일시납 vs 월적립식 비교</h3>
+              </div>
+              <button onClick={() => setShowVisual(false)} style={{ border: `1px solid ${C.border}`, background: "#fff", color: C.slate, width: 38, height: 38, borderRadius: 12, cursor: "pointer", fontSize: 20, fontWeight: 900 }}>×</button>
+            </div>
+            <div style={{ padding: 22, background: C.slateLight }}>
+              <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 14, marginBottom: 16 }}>
+                <Metric label="일시납 평가" value={`${fmt(lumpValue)}원`} tone={C.blue} sub={`첫 달 ${fmt(prices[0])}원에 한 번 매수`} />
+                <Metric label="월적립식 평가" value={`${fmt(monthlyValue)}원`} tone={C.teal} sub={`가격 변동마다 나눠 매수`} />
+              </div>
+              <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 18, padding: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${prices.length}, minmax(0,1fr))`, gap: 8, alignItems: "end", height: 220 }}>
+                  {prices.map((price, index) => {
+                    const h = Math.max(28, (price / Math.max(...prices)) * 180)
+                    return (
+                      <div key={index} style={{ display: "grid", gap: 8, alignItems: "end", textAlign: "center" }}>
+                        <div style={{ height: h, borderRadius: "12px 12px 4px 4px", background: price <= prices[0] ? C.teal : C.blue, opacity: 0.9 }} />
+                        <div>
+                          <p style={{ margin: 0, color: C.text, fontSize: 12, fontWeight: 900 }}>{index + 1}월</p>
+                          <p style={{ margin: "2px 0 0", color: C.muted, fontSize: 11, fontWeight: 700 }}>{fmt(price)}원</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+              <p style={{ margin: "14px 0 0", color: C.slate, fontSize: 13, fontWeight: 800, lineHeight: 1.6 }}>
+                가격이 내려가는 구간에서는 월적립식이 더 많은 수량을 모을 수 있어 평균 매입 단가를 낮추는 상담 자료로 활용할 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
