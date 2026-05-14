@@ -12,11 +12,12 @@ import {
   VisitType,
 } from "../../lib/claimDocuments"
 
-type GuideMode = "claim" | "notice"
+type GuideMode = "claim" | "notice" | "monitoring"
 
 const GUIDE_MODES: { id: GuideMode; label: string; desc: string }[] = [
   { id: "claim", label: "보험금 청구", desc: "청구 유형과 담보를 선택해 고객 안내 문구를 완성합니다." },
   { id: "notice", label: "기타안내", desc: "보험사 연락처 또는 팩스 요청 안내 문구를 빠르게 만듭니다." },
+  { id: "monitoring", label: "모니터링", desc: "보험사별 모니터링 연락처와 가입내용 확인 문구를 만듭니다." },
 ]
 
 const VISIT_OPTIONS: { id: VisitType; label: string; desc: string }[] = [
@@ -30,6 +31,10 @@ const INSURER_FILTERS: { id: "all" | InsurerType; label: string }[] = [
   { id: "nonlife", label: "손해보험" },
 ]
 
+const MONITORING_PRODUCT_TYPES = ["보장성", "저축성", "종신·사망", "건강보험·암보험", "운전자·상해"]
+const MONITORING_RENEWAL_TYPES = ["갱신", "비갱신", "일부특약갱신"]
+const MONITORING_DELIVERY_TYPES = ["서류", "모바일"]
+
 export default function ClaimDocumentsPage() {
   const [guideMode, setGuideMode] = useState<GuideMode>("claim")
   const [visitType, setVisitType] = useState<VisitType>("hospitalization")
@@ -42,6 +47,19 @@ export default function ClaimDocumentsPage() {
   const [advisorLabel, setAdvisorLabel] = useState("")
   const [advisorPhone, setAdvisorPhone] = useState("")
   const [advisorFaxNumber, setAdvisorFaxNumber] = useState("")
+  const [monitoringProductType, setMonitoringProductType] = useState(MONITORING_PRODUCT_TYPES[0])
+  const [monitoringProductDetail, setMonitoringProductDetail] = useState("")
+  const [monitoringPayPeriod, setMonitoringPayPeriod] = useState("")
+  const [monitoringMaturity, setMonitoringMaturity] = useState("")
+  const [monitoringRenewalType, setMonitoringRenewalType] = useState(MONITORING_RENEWAL_TYPES[2])
+  const [monitoringPremium, setMonitoringPremium] = useState("")
+  const [monitoringPayDay, setMonitoringPayDay] = useState("")
+  const [monitoringExemptionDays, setMonitoringExemptionDays] = useState("")
+  const [monitoringReductionYears, setMonitoringReductionYears] = useState("")
+  const [monitoringReductionRate, setMonitoringReductionRate] = useState("")
+  const [monitoringDocumentMethod, setMonitoringDocumentMethod] = useState(MONITORING_DELIVERY_TYPES[1])
+  const [monitoringSignMethod, setMonitoringSignMethod] = useState(MONITORING_DELIVERY_TYPES[1])
+  const [monitoringExtraText, setMonitoringExtraText] = useState("")
   const [copied, setCopied] = useState(false)
 
   const selectedCoverages = COVERAGES.filter((coverage) => selectedCoverageIds.includes(coverage.id))
@@ -51,7 +69,7 @@ export default function ClaimDocumentsPage() {
     const keyword = searchText.trim().toLowerCase()
     return INSURERS.filter((insurer) => {
       const filterMatched = insurerFilter === "all" || insurer.type === insurerFilter
-      const keywordMatched = !keyword || `${insurer.name} ${insurer.phone}`.toLowerCase().includes(keyword)
+      const keywordMatched = !keyword || `${insurer.name} ${insurer.phone} ${insurer.monitoringPhone ?? ""}`.toLowerCase().includes(keyword)
       return filterMatched && keywordMatched
     })
   }, [insurerFilter, searchText])
@@ -89,6 +107,38 @@ export default function ClaimDocumentsPage() {
         "안녕하세요 고객님 보험사 연락처 안내드립니다.",
         ...(insurerContactLines.length > 0 ? insurerContactLines : ["선택된 보험사가 없습니다."]),
         "이쪽으로 연락하셔서 확인하시면 됩니다.",
+        ...commonClosing,
+      ].join("\n")
+    }
+
+    if (guideMode === "monitoring") {
+      const selectedProduct = monitoringProductDetail.trim() || `${monitoringProductType} 상품`
+      const insurerMonitoringLines = selectedInsurers.length > 0
+        ? selectedInsurers.flatMap((insurer) => [
+          `${insurer.name}`,
+          `보험회사 ${insurer.phone}`,
+          `모니터링 ${insurer.monitoringPhone || "확인 필요"}`,
+        ])
+        : ["선택된 보험사가 없습니다."]
+      const extraLines = monitoringExtraText.trim()
+        ? ["", "[추가 안내]", monitoringExtraText.trim()]
+        : []
+
+      return [
+        "안녕하세요 고객님 모니터링 연락처 및 가입내용 안내드립니다.",
+        "",
+        "[보험사 연락처]",
+        ...insurerMonitoringLines,
+        "",
+        "[가입내용 확인]",
+        `1. ${monitoringPayPeriod.trim() || "00년납"} ${monitoringMaturity.trim() || "00만기"} (${monitoringRenewalType || "갱신/비갱신/일부특약갱신"})형 ${selectedProduct}입니다.`,
+        `2. 월 보험료는 ${monitoringPremium.trim() || "000,000"}원이며 매월 ${monitoringPayDay.trim() || "00"}일에 결제가 됩니다.`,
+        `3. ${monitoringExemptionDays.trim() || "00"}일 면책, ${monitoringReductionYears.trim() || "00"}년 감액 기간이 있으며 감액기간의 경우 ${monitoringReductionRate.trim() || "00"}%가 지급됩니다.`,
+        `4. 상품설명서 및 주요내용은 ${monitoringDocumentMethod || "서류/모바일"} 전달 해드리며 같이 확인하였습니다.`,
+        `5. 서명은 자필서명으로 ${monitoringSignMethod || "서류/모바일"}청약으로 진행했습니다.`,
+        "6. 갱신형 특약의 경우 갱신시 보험료가 오를 수 있습니다.",
+        "7. 중도 해지시 납입한 보험료보다 적거나 없을 수 있습니다.",
+        ...extraLines,
         ...commonClosing,
       ].join("\n")
     }
@@ -144,6 +194,19 @@ export default function ClaimDocumentsPage() {
     extraDocs,
     faxNumber,
     guideMode,
+    monitoringDocumentMethod,
+    monitoringExemptionDays,
+    monitoringExtraText,
+    monitoringMaturity,
+    monitoringPayDay,
+    monitoringPayPeriod,
+    monitoringPremium,
+    monitoringProductDetail,
+    monitoringProductType,
+    monitoringReductionRate,
+    monitoringReductionYears,
+    monitoringRenewalType,
+    monitoringSignMethod,
     notes,
     noticeText,
     selectedCoverages,
@@ -181,6 +244,19 @@ export default function ClaimDocumentsPage() {
     setAdvisorLabel("")
     setAdvisorPhone("")
     setAdvisorFaxNumber("")
+    setMonitoringProductType(MONITORING_PRODUCT_TYPES[0])
+    setMonitoringProductDetail("")
+    setMonitoringPayPeriod("")
+    setMonitoringMaturity("")
+    setMonitoringRenewalType(MONITORING_RENEWAL_TYPES[2])
+    setMonitoringPremium("")
+    setMonitoringPayDay("")
+    setMonitoringExemptionDays("")
+    setMonitoringReductionYears("")
+    setMonitoringReductionRate("")
+    setMonitoringDocumentMethod(MONITORING_DELIVERY_TYPES[1])
+    setMonitoringSignMethod(MONITORING_DELIVERY_TYPES[1])
+    setMonitoringExtraText("")
     setCopied(false)
   }
 
@@ -234,7 +310,7 @@ export default function ClaimDocumentsPage() {
                 </button>
               )}
             >
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-3">
                 {GUIDE_MODES.map((mode) => (
                   <button
                     key={mode.id}
@@ -336,7 +412,7 @@ export default function ClaimDocumentsPage() {
                   </div>
                 </Panel>
               </>
-            ) : (
+            ) : guideMode === "notice" ? (
               <Panel title="2. 기타안내 내용 입력" icon={<Stethoscope className="h-5 w-5" />}>
                 <div className="grid gap-4">
                   <label className="grid gap-2">
@@ -359,9 +435,98 @@ export default function ClaimDocumentsPage() {
                   </label>
                 </div>
               </Panel>
+            ) : (
+              <Panel title="2. 모니터링 가입내용 입력" icon={<Stethoscope className="h-5 w-5" />}>
+                <div className="grid gap-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="grid gap-2">
+                      <span className="text-[13px] font-black text-slate-700">상품 구분</span>
+                      <select
+                        value={monitoringProductType}
+                        onChange={(event) => setMonitoringProductType(event.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+                      >
+                        {MONITORING_PRODUCT_TYPES.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-2">
+                      <span className="text-[13px] font-black text-slate-700">상품 내용 직접 입력</span>
+                      <input
+                        value={monitoringProductDetail}
+                        onChange={(event) => setMonitoringProductDetail(event.target.value)}
+                        placeholder="예: 종신·사망, 건강보험·암보험, 운전자·상해"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <TextInput label="납입기간" value={monitoringPayPeriod} onChange={setMonitoringPayPeriod} placeholder="예: 20년납" />
+                    <TextInput label="만기" value={monitoringMaturity} onChange={setMonitoringMaturity} placeholder="예: 90세만기" />
+                    <label className="grid gap-2">
+                      <span className="text-[13px] font-black text-slate-700">갱신 유형</span>
+                      <select
+                        value={monitoringRenewalType}
+                        onChange={(event) => setMonitoringRenewalType(event.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+                      >
+                        {MONITORING_RENEWAL_TYPES.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <TextInput label="월 보험료" value={monitoringPremium} onChange={setMonitoringPremium} placeholder="예: 120,000" />
+                    <TextInput label="결제일" value={monitoringPayDay} onChange={setMonitoringPayDay} placeholder="예: 25" />
+                    <TextInput label="면책 기간" value={monitoringExemptionDays} onChange={setMonitoringExemptionDays} placeholder="예: 90" />
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <TextInput label="감액 기간" value={monitoringReductionYears} onChange={setMonitoringReductionYears} placeholder="예: 1" />
+                    <TextInput label="감액 지급률" value={monitoringReductionRate} onChange={setMonitoringReductionRate} placeholder="예: 50" />
+                    <div className="grid gap-2">
+                      <span className="text-[13px] font-black text-slate-700">전달/청약 방식</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={monitoringDocumentMethod}
+                          onChange={(event) => setMonitoringDocumentMethod(event.target.value)}
+                          className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-[13px] font-bold outline-none focus:border-[#2563eb]"
+                        >
+                          {MONITORING_DELIVERY_TYPES.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={monitoringSignMethod}
+                          onChange={(event) => setMonitoringSignMethod(event.target.value)}
+                          className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-[13px] font-bold outline-none focus:border-[#2563eb]"
+                        >
+                          {MONITORING_DELIVERY_TYPES.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <label className="grid gap-2">
+                    <span className="text-[13px] font-black text-slate-700">추가 안내 문구</span>
+                    <textarea
+                      value={monitoringExtraText}
+                      onChange={(event) => setMonitoringExtraText(event.target.value)}
+                      placeholder="예: 고객님 상황에 맞춰 추가로 안내할 내용을 입력하세요."
+                      className="min-h-[104px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[14px] font-bold leading-6 text-slate-800 outline-none focus:border-[#2563eb]"
+                    />
+                  </label>
+                </div>
+              </Panel>
             )}
 
-            <Panel title={guideMode === "claim" ? "5. 보험회사 선택" : "3. 보험회사 선택"} icon={<ShieldPlus className="h-5 w-5" />}>
+            <Panel title={guideMode === "claim" ? "5. 보험회사 선택" : guideMode === "notice" ? "3. 보험회사 선택" : "3. 모니터링 보험회사 선택"} icon={<ShieldPlus className="h-5 w-5" />}>
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex flex-wrap gap-2">
@@ -400,7 +565,9 @@ export default function ClaimDocumentsPage() {
                           onClick={() => toggleInsurer(insurer.id)}
                           className="rounded-full border border-blue-200 bg-white px-3 py-2 text-[12px] font-black text-[#1a3a6e]"
                         >
-                          {insurer.name} · {insurer.phone}
+                          {guideMode === "monitoring"
+                            ? `${insurer.name} · 보험회사 ${insurer.phone} · 모니터링 ${insurer.monitoringPhone || "확인 필요"}`
+                            : `${insurer.name} · ${insurer.phone}`}
                         </button>
                       ))}
                     </div>
@@ -414,6 +581,7 @@ export default function ClaimDocumentsPage() {
                       insurer={insurer}
                       selected={selectedInsurerIds.includes(insurer.id)}
                       onToggle={() => toggleInsurer(insurer.id)}
+                      showMonitoring={guideMode === "monitoring"}
                     />
                   ))}
                 </div>
@@ -461,14 +629,40 @@ function Panel({
   )
 }
 
+function TextInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-[13px] font-black text-slate-700">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
+      />
+    </label>
+  )
+}
+
 function InsurerButton({
   insurer,
   selected,
   onToggle,
+  showMonitoring,
 }: {
   insurer: Insurer
   selected: boolean
   onToggle: () => void
+  showMonitoring?: boolean
 }) {
   return (
     <button
@@ -483,6 +677,11 @@ function InsurerButton({
         <div>
           <p className="text-[15px] font-black text-slate-900">{insurer.name}</p>
           <p className="mt-1 text-[13px] font-bold text-slate-500">{insurer.phone}</p>
+          {showMonitoring && (
+            <p className="mt-1 text-[12px] font-black text-[#2563eb]">
+              모니터링 {insurer.monitoringPhone || "확인 필요"}
+            </p>
+          )}
         </div>
         <span className={`flex h-7 w-7 items-center justify-center rounded-full border ${selected ? "border-[#2563eb] bg-[#2563eb] text-white" : "border-slate-300 text-transparent"}`}>
           <Check className="h-4 w-4" />

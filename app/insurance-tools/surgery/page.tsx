@@ -93,6 +93,54 @@ const SURGERY_REFERENCE_IMAGES = [
   },
 ] as const
 
+const SURGERY_TERM_GLOSSARY = [
+  { term: '감압술', desc: '압박된 병변의 압력을 낮추거나 압박 원인을 줄이는 수술입니다.' },
+  { term: '거상술', desc: '처지고 늘어진 조직을 끌어 올려 고정하는 수술입니다.' },
+  { term: '견인술', desc: '고정 장치 등으로 환부를 견인해 공간을 확보하는 치료입니다. 약관상 수술 해당 여부는 별도 확인이 필요합니다.' },
+  { term: '개두술', desc: '두개골을 절개하고 뇌를 노출해 시행하는 수술입니다.' },
+  { term: '개복술', desc: '복강 내 장기 수술이나 검사를 위해 배를 절개하는 수술입니다.' },
+  { term: '개심술', desc: '흉부를 절개해 심장을 직접 보면서 조작하는 수술입니다.' },
+  { term: '개흉술', desc: '폐나 심장 등 흉강 내 장기 치료를 위해 흉벽을 절개하는 수술입니다.' },
+  { term: '결찰술', desc: '실이나 끈으로 혈관이나 관을 묶는 수술입니다.' },
+  { term: '고정술', desc: '조직이나 뼈 등을 일정 위치에 지지·봉합·고정하는 수술입니다.' },
+  { term: '관절경하 수술', desc: '관절경을 관절강 안에 넣어 관찰하면서 시행하는 수술입니다.' },
+  { term: '관혈적 수술', desc: '피부나 조직을 절개해 병변을 직접 확인하며 시행하는 수술입니다.' },
+  { term: '내시경 수술', desc: '내시경을 이용해 몸 안 병소에 도달해 시행하는 수술입니다.' },
+  { term: '냉동술', desc: '액화질소나 이산화탄소 등을 이용해 조직을 얼려 파괴하는 방식입니다.' },
+  { term: '단단성형술', desc: '절단 부위 끝을 주변 피부조직 등으로 감싸주는 수술입니다. 약관상 비해당 가능성이 있어 확인이 필요합니다.' },
+  { term: '단락술', desc: '뇌척수액 등을 다른 공간으로 배액하도록 우회로를 만드는 수술입니다.' },
+  { term: '문합술', desc: '장기와 장기 또는 혈관 등을 서로 접합해 잇는 수술입니다.' },
+  { term: '박리술', desc: '피부나 근육, 유착 조직 등을 분리하거나 벗겨내는 수술입니다.' },
+  { term: '배농술', desc: '농양 안의 고름을 배출하는 처치입니다. 약관상 수술 비해당 가능성이 있습니다.' },
+  { term: '변연절제술', desc: '괴사조직이나 이물질을 제거해 환부를 치료하는 수술입니다.' },
+  { term: '복강경수술', desc: '복부에 작은 절개창을 만들고 카메라와 기구를 넣어 시행하는 수술입니다.' },
+  { term: '복강경하 수술', desc: '복강경으로 장기를 관찰하면서 일부를 절제하거나 치료하는 수술입니다.' },
+  { term: '봉합술', desc: '조직 결손이나 창상면을 꿰매어 치유를 돕는 처치 또는 수술입니다.' },
+  { term: '비관혈적 수술', desc: '피부나 근육의 외과적 절개 없이 시행하는 시술입니다. 수술 보장 비해당 가능성이 있습니다.' },
+  { term: '삽관술', desc: '인공관을 삽입하는 수술 또는 처치입니다.' },
+  { term: '색전술', desc: '혈관을 인위적으로 막아 병변으로 가는 혈류를 차단하는 치료입니다.' },
+  { term: '생검술', desc: '조직 일부를 떼어내 검사하는 행위입니다. 검사 목적이면 수술비 비해당 가능성이 있습니다.' },
+  { term: '소작술', desc: '열, 전류, 레이저, 냉동, 부식성 물질 등으로 병소를 태우거나 파괴하는 수술입니다.' },
+  { term: '소파술', desc: '병소 조직이나 염증 조직을 긁어내는 수술입니다.' },
+  { term: '식피술', desc: '떼어낸 피부편을 피부 결손 부위에 이식하는 수술입니다.' },
+  { term: '신경 BLOCK', desc: '통증 완화를 위해 약물을 주입해 신경 전달을 차단하는 시술입니다. 신경차단술은 비해당 가능성이 있습니다.' },
+  { term: '우회술', desc: '막히거나 병적인 혈관 대신 새로운 통로를 연결하는 수술입니다.' },
+  { term: '위루술', desc: '위에 구멍을 내고 관을 연결하는 수술입니다.' },
+  { term: '적출술', desc: '장기의 전체나 일부를 떼어내는 수술입니다.' },
+  { term: '절개술', desc: '피부, 조직, 기관 등을 째고 시행하는 수술입니다.' },
+  { term: '절제술', desc: '병적 상태에 있는 장기나 조직 일부를 잘라 제거하는 수술입니다.' },
+  { term: '정복술', desc: '골절되거나 어긋난 뼈를 맞추는 의료 기술입니다.' },
+  { term: '제거술', desc: '필요 없거나 병적인 부위를 없애는 수술입니다.' },
+  { term: '조루술', desc: '인체 밖으로 배출구를 만들어주는 수술입니다.' },
+  { term: '조성술', desc: '인공항문이나 동정맥루처럼 새로운 구조를 만들어주는 수술입니다.' },
+  { term: '천공술', desc: '뼈나 조직에 구멍을 내어 내부 조직을 노출하거나 접근하는 수술입니다.' },
+  { term: '천자술', desc: '침이나 주사기로 몸 안의 액체를 빼내는 처치입니다. 수술비 비해당 가능성이 있습니다.' },
+  { term: '치환술', desc: '병적 이상 부위를 인공물 등으로 교체하는 수술입니다.' },
+  { term: '피판술', desc: '피부 결손 부위에 주변 피부와 조직을 끌어 덮어주는 수술입니다.' },
+  { term: '흉강경하 수술', desc: '흉부에 내시경을 넣어 폐나 종격을 관찰하며 절제 또는 치료하는 수술입니다.' },
+  { term: '흡인술', desc: '병소 부위의 기체나 액체를 빨아들이는 처치입니다. 수술비 비해당 가능성이 있습니다.' },
+] as const
+
 // ─────────────────────────────────────────────────────────
 // 유틸리티 함수
 // ─────────────────────────────────────────────────────────
@@ -169,6 +217,7 @@ export default function SurgeryPage() {
   const [typeFilter, setTypeFilter]   = useState<number | 'cancer' | null>(null)
   const [amounts, setAmounts]         = useState<ExtendedSurgeryAmounts>(DEFAULT_AMOUNTS)
   const [showChiogol, setShowChiogol] = useState(false)
+  const [showSurgeryTerms, setShowSurgeryTerms] = useState(false)
   const [selectedReferenceImage, setSelectedReferenceImage] = useState<{ title: string; image: string } | null>(null)
   const [acOpen, setAcOpen]           = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<NSurgeryCompany | 'all'>('all')
@@ -282,6 +331,12 @@ export default function SurgeryPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowSurgeryTerms(true)}
+              className="text-xs font-black bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-xl transition-all active:scale-95"
+            >
+              📖 수술명 용어 정리
+            </button>
             {SURGERY_REFERENCE_IMAGES.map((item) => (
               <button
                 key={item.image}
@@ -826,6 +881,56 @@ export default function SurgeryPage() {
                 alt={selectedReferenceImage.title}
                 className="mx-auto h-auto w-full rounded-2xl bg-white object-contain shadow-sm"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━ 수술명 용어 정리 팝업 ━━━━━━ */}
+      {showSurgeryTerms && (
+        <div
+          className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
+          onClick={() => setShowSurgeryTerms(false)}
+        >
+          <div
+            className="w-full max-w-5xl max-h-[88vh] overflow-hidden rounded-[2rem] bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4 bg-gradient-to-r from-emerald-700 to-teal-800 px-5 py-4 text-white">
+              <div>
+                <p className="text-[11px] font-black tracking-[0.16em] text-emerald-100">SURGERY TERM GUIDE</p>
+                <h2 className="mt-1 text-lg font-black">수술명 용어 정리 ({SURGERY_TERM_GLOSSARY.length}건)</h2>
+              </div>
+              <button
+                onClick={() => setShowSurgeryTerms(false)}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-lg font-black transition hover:bg-white/20"
+                aria-label="수술명 용어 정리 닫기"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-[calc(88vh-78px)] overflow-auto p-4 md:p-6">
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[13px] font-bold leading-6 text-amber-900">
+                아래 용어는 상담자가 수술확인서와 약관을 해석할 때 참고하는 설명입니다. 실제 수술비 지급 여부는 보험사 약관, 수술 목적, 검사/치료 목적, 진료기록에 따라 달라질 수 있습니다.
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-slate-200">
+                <table className="w-full min-w-[760px] border-collapse text-left text-[13px]">
+                  <thead className="bg-slate-100 text-slate-700">
+                    <tr>
+                      <th className="w-[180px] px-4 py-3 font-black">용어</th>
+                      <th className="px-4 py-3 font-black">설명</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SURGERY_TERM_GLOSSARY.map((item) => (
+                      <tr key={item.term} className="border-t border-slate-100 align-top">
+                        <td className="px-4 py-3 font-black text-[#1a3a6e]">{item.term}</td>
+                        <td className="px-4 py-3 font-bold leading-6 text-slate-600">{item.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
