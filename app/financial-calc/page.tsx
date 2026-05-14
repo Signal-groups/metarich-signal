@@ -27,7 +27,7 @@ export default function FinancialCalcPage() {
             color: '#fff',
             letterSpacing: '-0.3px',
           }}>
-            🧮 영업용 금융계산기
+            🧮 금융계산기
           </span>
           <span style={{
             fontSize: 10,

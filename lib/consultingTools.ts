@@ -13,7 +13,7 @@ export type ConsultingTool = {
   highlight?: boolean;
   editable?: boolean;
   chromeRecommended?: boolean;
-  category?: "customer" | "planning" | "claims";
+  category?: "customer" | "coverage" | "financial" | "planning" | "claims";
   placement?: "consulting" | "office";
 };
 
@@ -25,7 +25,9 @@ export const CONSULTING_TOOL_CATEGORIES: {
   countTone: string;
 }[] = [
   { id: "customer", title: "고객 상담", desc: "고객 안내와 상담 근거 확인에 필요한 도구", tone: "border-sky-500 text-sky-600", countTone: "bg-sky-50 text-sky-700" },
-  { id: "planning", title: "설계 및 보장분석", desc: "비교 설계와 보장 점검, 재무 분석에 필요한 도구", tone: "border-indigo-500 text-indigo-600", countTone: "bg-indigo-50 text-indigo-700" },
+  { id: "coverage", title: "보장 분석", desc: "보장 통계, 인수 기준, 교차설계 비교에 필요한 도구", tone: "border-sky-500 text-sky-600", countTone: "bg-sky-50 text-sky-700" },
+  { id: "financial", title: "재무설계 상담", desc: "재무 분석과 금융 계산에 필요한 상담 도구", tone: "border-indigo-500 text-indigo-600", countTone: "bg-indigo-50 text-indigo-700" },
+  { id: "planning", title: "설계 및 보장분석", desc: "보장 점검과 사고 상담에 필요한 도구", tone: "border-indigo-500 text-indigo-600", countTone: "bg-indigo-50 text-indigo-700" },
   { id: "claims", title: "수술 및 후유장해", desc: "질병, 수술, 장해 기준 확인에 필요한 도구", tone: "border-rose-500 text-rose-600", countTone: "bg-rose-50 text-rose-700" },
 ];
 
@@ -46,9 +48,9 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
   },
   {
     id: "show_cont",
-    title: "숨은 보험금 찾기",
-    label: "숨은 보험금 찾기",
-    desc: "미청구 보험금 조회",
+    title: "숨은보험금",
+    label: "숨은보험금",
+    desc: "숨은보험금, 진료기록 확인",
     icon: "search",
     url: "https://cont.insure.or.kr/cont_web/intro.do",
     color: "border-emerald-500",
@@ -99,7 +101,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     staffOnly: true,
     access: "approved",
     editable: true,
-    category: "customer",
+    category: "coverage",
   },
   {
     id: "show_car_accident",
@@ -141,7 +143,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     staffOnly: true,
     access: "approved",
     editable: true,
-    category: "planning",
+    category: "coverage",
   },
   {
     id: "show_surgery",
@@ -183,7 +185,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     staffOnly: true,
     access: "approved",
     editable: true,
-    category: "customer",
+    category: "coverage",
   },
   {
     id: "show_insu",
@@ -211,7 +213,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     staffOnly: true,
     access: "approved",
     editable: true,
-    category: "planning",
+    category: "financial",
   },
   {
     id: "show_finance",
@@ -225,7 +227,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     staffOnly: true,
     access: "approved",
     editable: true,
-    category: "planning",
+    category: "financial",
   },
   {
     id: "show_gongsi",
