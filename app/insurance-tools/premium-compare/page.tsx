@@ -10,6 +10,7 @@ type CompanyType = "생명" | "손해"
 type CompanyFilter = "전체" | CompanyType
 type PlanId = "min" | "standard" | "max"
 type Disclosure = "325" | "335" | "355" | "standard"
+type ProductScenario = "general" | "mzHealth10" | "child" | "simpleHealth"
 type AgeBand = "30s" | "40s" | "50s" | "60s"
 type SensitivityTag = "나이" | "성별" | "유병력"
 
@@ -250,14 +251,26 @@ const deathCoverages: Coverage[] = [
 // ─── 레이블/상수 ─────────────────────────────────────────
 const planLabels: Record<PlanId, string> = { min: "1안 최소", standard: "2안 표준", max: "3안 최대" }
 const disclosureLabels: Record<Disclosure, string> = { standard: "일반고지", "325": "간편 3·2·5", "335": "간편 3·3·5", "355": "간편 3·5·5" }
+const productScenarioLabels: Record<ProductScenario, string> = {
+  general: "일반 종합",
+  mzHealth10: "MZ 건강고지 10년",
+  child: "자녀 종합",
+  simpleHealth: "간편 건강",
+}
+const productScenarioFactors: Record<ProductScenario, Partial<Record<string, number>>> = {
+  general: {},
+  mzHealth10: { cancer: 0.96, similar: 0.94, brain: 0.98, heart: 0.98, surgery: 0.92, nSurgery: 0.94, cancerTreatment: 1.08, circulatory: 1.05, care: 0.88 },
+  child: { cancer: 0.72, similar: 0.78, brain: 0.62, heart: 0.60, surgery: 0.70, nSurgery: 0.68, cancerTreatment: 0.74, circulatory: 0.66, care: 0.58, whole: 0.55, term: 0.52, diseaseDeath: 0.50 },
+  simpleHealth: { cancer: 1.12, similar: 1.10, brain: 1.18, heart: 1.20, surgery: 1.12, nSurgery: 1.15, cancerTreatment: 1.14, circulatory: 1.18, care: 1.22, whole: 1.10, term: 1.08, diseaseDeath: 1.12 },
+}
 const refundYears = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40]
 
 const formatWon = (value: number) => `${Math.round(value).toLocaleString()}원`
 const formatMan = (value: number) => `${value.toLocaleString()}만원`
 
 // ─── 보험료 계산 (담보×회사 개별 계수 적용) ─────────────
-function premiumFor(company: Company, coverage: Coverage, plan: PlanId, age: number, gender: string, disclosure: Disclosure, delayYears = 0) {
-  const amount = coverage.amount[plan]
+function premiumFor(company: Company, coverage: Coverage, plan: PlanId, age: number, gender: string, disclosure: Disclosure, delayYears = 0, amountOverride?: number, productScenario: ProductScenario = "general") {
+  const amount = amountOverride ?? coverage.amount[plan]
   const targetAge = age + delayYears
 
   // 나이대별 계수 + 구간 내 보간
@@ -274,8 +287,9 @@ function premiumFor(company: Company, coverage: Coverage, plan: PlanId, age: num
   const genderFactor = coverageGenderFactors[coverage.id]?.[gender] ?? 1.0
   const disclosureFactor = companyDisclosureFactors[company.id]?.[disclosure] ?? 1.0
   const covCompFactor = coverageCompanyFactors[coverage.id]?.[company.id] ?? 1.0
+  const productFactor = productScenarioFactors[productScenario]?.[coverage.id] ?? 1.0
 
-  return Math.round(amount * coverage.baseRate * ageFactor * genderFactor * disclosureFactor * covCompFactor)
+  return Math.round(amount * coverage.baseRate * ageFactor * genderFactor * disclosureFactor * covCompFactor * productFactor)
 }
 
 function refundRateFor(company: Company, year: number, payYears: number) {
@@ -297,13 +311,22 @@ function refundAmountFor(company: Company, year: number, monthlySaving: number, 
 // ─── 메인 컴포넌트 ────────────────────────────────────────
 type AppliedConditions = {
   age: number; gender: string; disclosure: Disclosure
-  companyFilter: CompanyFilter; plan: PlanId
+  companyFilter: CompanyFilter; plan: PlanId; productScenario: ProductScenario
   payYears: number; delayYears: number; monthlySaving: number
+}
+
+type CoverageRow = {
+  coverage: Coverage
+  amount: number
+  premiums: { company: Company; premium: number; later: number }[]
+  best: { company: Company; premium: number; later: number }
+  worst: { company: Company; premium: number; later: number }
+  sorted: { company: Company; premium: number; later: number }[]
 }
 
 const DEFAULT_CONDITIONS: AppliedConditions = {
   age: 41, gender: "남성", disclosure: "standard",
-  companyFilter: "전체", plan: "standard",
+  companyFilter: "전체", plan: "standard", productScenario: "general",
   payYears: 20, delayYears: 1, monthlySaving: 300000,
 }
 
@@ -315,27 +338,36 @@ export default function PremiumComparePage() {
   const [age, setAge] = useState(41)
   const [gender, setGender] = useState("남성")
   const [disclosure, setDisclosure] = useState<Disclosure>("standard")
+  const [productScenario, setProductScenario] = useState<ProductScenario>("general")
   const [companyFilter, setCompanyFilter] = useState<CompanyFilter>("전체")
   const [plan, setPlan] = useState<PlanId>("standard")
   const [payYears, setPayYears] = useState(20)
   const [delayYears, setDelayYears] = useState(1)
   const [monthlySaving, setMonthlySaving] = useState(300000)
+  const [coverageAmounts, setCoverageAmounts] = useState<Record<string, number>>({})
 
-  // 조회 버튼 클릭 후 실제 계산에 사용되는 확정 조건
-  const [applied, setApplied] = useState<AppliedConditions>(DEFAULT_CONDITIONS)
-
-  const handleSearch = () => {
-    setApplied({ age, gender, disclosure, companyFilter, plan, payYears, delayYears, monthlySaving })
-  }
+  const applied = useMemo<AppliedConditions>(() => ({
+    age,
+    gender,
+    disclosure,
+    productScenario,
+    companyFilter,
+    plan,
+    payYears,
+    delayYears,
+    monthlySaving,
+  }), [age, gender, disclosure, productScenario, companyFilter, plan, payYears, delayYears, monthlySaving])
 
   const handleReset = () => {
     setAge(41); setGender("남성"); setDisclosure("standard")
+    setProductScenario("general")
     setPlan("standard"); setDelayYears(1); setPayYears(20)
     setCompanyFilter("전체"); setMonthlySaving(300000)
-    setApplied(DEFAULT_CONDITIONS)
+    setCoverageAmounts({})
   }
 
   const coverages = mainTab === "death" ? deathCoverages : healthCoverages
+  const amountFor = (coverage: Coverage) => coverageAmounts[coverage.id] ?? coverage.amount[applied.plan]
   const visibleCompanies = useMemo(
     () => companies.filter((c) => applied.companyFilter === "전체" || c.type === applied.companyFilter),
     [applied]
@@ -343,23 +375,24 @@ export default function PremiumComparePage() {
 
   const rows = useMemo(() => {
     return coverages.map((coverage) => {
+      const amount = amountFor(coverage)
       const premiums = visibleCompanies.map((company) => ({
         company,
-        premium: premiumFor(company, coverage, applied.plan, applied.age, applied.gender, applied.disclosure, 0),
-        later: premiumFor(company, coverage, applied.plan, applied.age, applied.gender, applied.disclosure, applied.delayYears),
+        premium: premiumFor(company, coverage, applied.plan, applied.age, applied.gender, applied.disclosure, 0, amount, applied.productScenario),
+        later: premiumFor(company, coverage, applied.plan, applied.age, applied.gender, applied.disclosure, applied.delayYears, amount, applied.productScenario),
       }))
       const sorted = [...premiums].sort((a, b) => a.premium - b.premium)
-      return { coverage, premiums, best: sorted[0], worst: sorted[sorted.length - 1], sorted }
+      return { coverage, amount, premiums, best: sorted[0], worst: sorted[sorted.length - 1], sorted }
     })
-  }, [applied, coverages, mainTab, visibleCompanies])
+  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
 
   const companyResults = useMemo(() => {
     return visibleCompanies.map((company) => {
-      const total = coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, applied.age, applied.gender, applied.disclosure), 0)
-      const later = coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, applied.age, applied.gender, applied.disclosure, applied.delayYears), 0)
+      const total = coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, applied.age, applied.gender, applied.disclosure, 0, amountFor(cov), applied.productScenario), 0)
+      const later = coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, applied.age, applied.gender, applied.disclosure, applied.delayYears, amountFor(cov), applied.productScenario), 0)
       return { company, total, later }
     }).sort((a, b) => a.total - b.total)
-  }, [applied, coverages, mainTab, visibleCompanies])
+  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
 
   const crossTotal = rows.reduce((sum, row) => sum + row.best.premium, 0)
   const crossLater = rows.reduce((sum, row) => sum + row.best.later, 0)
@@ -372,13 +405,13 @@ export default function PremiumComparePage() {
       const values = (["standard", "325", "335", "355"] as Disclosure[]).map((disc) => {
         const best = visibleCompanies.map((company) => ({
           company,
-          total: coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, targetAge, applied.gender, disc), 0),
+          total: coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, targetAge, applied.gender, disc, 0, amountFor(cov), applied.productScenario), 0),
         })).sort((a, b) => a.total - b.total)[0]
         return { disclosure: disc, best }
       })
       return { age: targetAge, values }
     })
-  }, [applied, coverages, mainTab, visibleCompanies])
+  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
 
   const savingResults = useMemo(() => {
     return companies.map((company) => {
@@ -398,7 +431,7 @@ export default function PremiumComparePage() {
           <div className="flex flex-col gap-4 px-6 py-6 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-[12px] font-black tracking-[0.2em] text-blue-100">PREMIUM COMPARISON</p>
-              <h1 className="mt-2 text-3xl font-black">회사별/담보별 보험료 비교</h1>
+              <h1 className="mt-2 text-3xl font-black">보험료 비교</h1>
               <p className="mt-3 max-w-4xl text-[14px] font-bold leading-7 text-white/80">
                 나이·성별·유병력에 따라 보험사별 요율과 인수 기준이 달라집니다. 조건을 바꿔가며 최적 설계 방향을 확인하세요.
               </p>
@@ -421,17 +454,18 @@ export default function PremiumComparePage() {
         {/* 조건 입력 */}
         <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="mb-3 text-[12px] font-black text-slate-400 tracking-wider">고객 조건 입력</p>
-          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-9">
             <Input label="나이" value={age} onChange={(v) => setAge(Number(v) || 0)} />
             <Select label="성별" value={gender} onChange={setGender} options={["남성", "여성"]} />
             <Select label="유병력 고지" value={disclosure} onChange={(v) => setDisclosure(v as Disclosure)} options={["standard", "325", "335", "355"]} labels={disclosureLabels} />
+            <Select label="상품유형" value={productScenario} onChange={(v) => setProductScenario(v as ProductScenario)} options={["general", "mzHealth10", "child", "simpleHealth"]} labels={productScenarioLabels} />
             <Select label="보험사 기준" value={companyFilter} onChange={(v) => setCompanyFilter(v as CompanyFilter)} options={["전체", "생명", "손해"]} />
             <Select label="가입안" value={plan} onChange={(v) => setPlan(v as PlanId)} options={["min", "standard", "max"]} labels={planLabels} />
             <Input label="납입기간" value={payYears} onChange={(v) => setPayYears(Number(v) || 20)} />
             <Input label="몇 년 뒤 가입" value={delayYears} onChange={(v) => setDelayYears(Number(v) || 0)} />
             {mainTab === "saving" && <Input label="월 납입액" value={monthlySaving} onChange={(v) => setMonthlySaving(Number(v) || 0)} />}
             <button
-              onClick={() => { setAge(41); setGender("남성"); setDisclosure("standard"); setPlan("standard"); setDelayYears(1) }}
+              onClick={handleReset}
               className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-100 text-[13px] font-black text-slate-600 hover:bg-slate-200">
               <RotateCcw size={16} /> 초기화
             </button>
@@ -440,28 +474,43 @@ export default function PremiumComparePage() {
 
         {mainTab !== "saving" && (
           <>
+            <CoverageAmountPanel
+              coverages={coverages}
+              plan={applied.plan}
+              amounts={coverageAmounts}
+              onReset={() => setCoverageAmounts({})}
+              onChange={(coverage, nextAmount) => {
+                setCoverageAmounts((prev) => {
+                  const next = { ...prev }
+                  if (!nextAmount || nextAmount === coverage.amount[applied.plan]) delete next[coverage.id]
+                  else next[coverage.id] = nextAmount
+                  return next
+                })
+              }}
+            />
+
             {/* 핵심 비교 배너 */}
             <CrossDesignBanner
               bestSingle={bestSingle}
               crossTotal={crossTotal}
               crossLater={crossLater}
-              delayYears={delayYears}
+              delayYears={applied.delayYears}
               months={months}
-              age={age}
-              gender={gender}
-              disclosure={disclosure}
+              age={applied.age}
+              gender={applied.gender}
+              disclosure={applied.disclosure}
             />
 
             {/* 나이·고지 변동 패널 */}
             <AgeDisclosurePanel rows={ageDisclosureRows} />
 
             {/* 조건 민감도 안내 */}
-            <ConditionInsightPanel coverages={coverages} rows={rows} gender={gender} disclosure={disclosure} age={age} />
+            <ConditionInsightPanel coverages={coverages} rows={rows} gender={applied.gender} disclosure={applied.disclosure} age={applied.age} />
           </>
         )}
 
         {mainTab === "saving" ? (
-          <SavingView results={savingResults} monthlySaving={monthlySaving} payYears={payYears} />
+          <SavingView results={savingResults} monthlySaving={applied.monthlySaving} payYears={applied.payYears} />
         ) : (
           <>
             <section className="mb-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
@@ -472,7 +521,7 @@ export default function PremiumComparePage() {
             {viewTab === "company" ? (
               <CompanyView results={companyResults} rows={rows} months={months} crossTotal={crossTotal} />
             ) : (
-              <CoverageView rows={rows} plan={plan} />
+              <CoverageView rows={rows} />
             )}
           </>
         )}
@@ -483,6 +532,64 @@ export default function PremiumComparePage() {
         </section>
       </div>
     </main>
+  )
+}
+
+function CoverageAmountPanel({
+  coverages, plan, amounts, onChange, onReset,
+}: {
+  coverages: Coverage[]
+  plan: PlanId
+  amounts: Record<string, number>
+  onChange: (coverage: Coverage, amount: number) => void
+  onReset: () => void
+}) {
+  return (
+    <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-[12px] font-black tracking-wider text-slate-400">가입안 기준 담보금액 조정</p>
+          <h2 className="mt-1 text-lg font-black text-[#153968]">같은 보장금액으로 회사별 예상 보험료를 비교합니다</h2>
+          <p className="mt-1 text-[13px] font-bold leading-6 text-slate-500">
+            금액을 바꾸면 회사별 총액, 담보별 1위, 교차설계 절감액이 즉시 다시 계산됩니다. 실제 설계 시에는 직업, 고지, 심사 결과에 따라 달라질 수 있습니다.
+          </p>
+        </div>
+        <button
+          onClick={onReset}
+          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-[13px] font-black text-slate-600 hover:bg-slate-100"
+        >
+          가입안 금액으로 초기화
+        </button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {coverages.map((coverage) => {
+          const currentAmount = amounts[coverage.id] ?? coverage.amount[plan]
+          const changed = currentAmount !== coverage.amount[plan]
+          return (
+            <label key={coverage.id} className={`rounded-2xl border p-4 ${changed ? "border-blue-300 bg-blue-50/60" : "border-slate-200 bg-slate-50/70"}`}>
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[14px] font-black text-slate-900">{coverage.title}</p>
+                  <p className="mt-1 text-[11px] font-bold text-slate-500">{coverage.category} · 기준 {formatMan(coverage.amount[plan])}</p>
+                </div>
+                {changed && <span className="shrink-0 rounded-full bg-blue-600 px-2 py-1 text-[10px] font-black text-white">변경</span>}
+              </div>
+              <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-400">
+                <input
+                  type="number"
+                  min={0}
+                  step={coverage.unit === "만원" ? 10 : 1}
+                  value={currentAmount}
+                  onChange={(event) => onChange(coverage, Number(event.target.value) || 0)}
+                  className="min-w-0 flex-1 px-3 py-3 text-[15px] font-black outline-none"
+                />
+                <span className="shrink-0 border-l border-slate-100 px-3 text-[12px] font-black text-slate-500">{coverage.unit}</span>
+              </div>
+            </label>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
@@ -718,9 +825,8 @@ const tagConfig: Record<SensitivityTag, { label: string; color: string }> = {
   "유병력": { label: "유병력민감", color: "bg-purple-100 text-purple-700" },
 }
 
-function CoverageView({ rows, plan }: {
-  rows: { coverage: Coverage; premiums: { company: Company; premium: number }[]; best: { company: Company; premium: number }; worst: { company: Company; premium: number }; sorted: { company: Company; premium: number }[] }[]
-  plan: PlanId
+function CoverageView({ rows }: {
+  rows: CoverageRow[]
 }) {
   const [expanded, setExpanded] = useState<string | null>(null)
 
@@ -764,7 +870,7 @@ function CoverageView({ rows, plan }: {
                       ))}
                     </div>
                   </td>
-                  <td className="p-4 text-center font-black text-[#2563eb]">{formatMan(row.coverage.amount[plan])}</td>
+                  <td className="p-4 text-center font-black text-[#2563eb]">{formatMan(row.amount)}</td>
                   <td className="p-4 text-center font-black text-blue-600">{row.best.company.name}</td>
                   <td className="p-4 text-center font-black text-blue-600">{formatWon(row.best.premium)}</td>
                   <td className="p-4 text-center font-bold text-red-500">{row.worst.company.name}</td>

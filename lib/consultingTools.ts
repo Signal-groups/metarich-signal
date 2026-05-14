@@ -147,8 +147,8 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
   },
   {
     id: "show_premium_compare",
-    title: "교차설계 보험료 비교",
-    label: "교차설계 보험료 비교",
+    title: "보험료 비교",
+    label: "보험료 비교",
     desc: "건강보험, 종신, 저축성 비교",
     icon: "compare",
     url: "/insurance-tools/premium-compare",

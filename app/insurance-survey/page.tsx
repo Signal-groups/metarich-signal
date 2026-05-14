@@ -98,7 +98,14 @@ export default function InsuranceSurveyPage() {
     const cloneInputs = Array.from(clone.querySelectorAll("input"))
     cloneInputs.forEach((input, index) => {
       const source = sourceInputs[index]
-      input.setAttribute("value", source?.value || "")
+      const replacement = document.createElement("div")
+      const style = input.getAttribute("style") || ""
+      replacement.setAttribute(
+        "style",
+        `${style};box-sizing:border-box;min-height:34px;display:flex;align-items:center;white-space:pre-wrap;overflow:hidden;`
+      )
+      replacement.textContent = source?.value || ""
+      input.replaceWith(replacement)
     })
 
     const sourceSelects = Array.from(node.querySelectorAll("select"))
@@ -112,14 +119,13 @@ export default function InsuranceSurveyPage() {
       select.replaceWith(replacement)
     })
 
-    const html = new XMLSerializer().serializeToString(clone)
+    const html = `<div xmlns="http://www.w3.org/1999/xhtml">${clone.outerHTML}</div>`
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}">
         <foreignObject width="100%" height="100%">${html}</foreignObject>
       </svg>
     `
-    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
+    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
     const image = new Image()
     image.onload = () => {
       const canvas = document.createElement("canvas")
@@ -129,30 +135,31 @@ export default function InsuranceSurveyPage() {
       const ctx = canvas.getContext("2d")
       if (!ctx) {
         setSaving(false)
-        URL.revokeObjectURL(url)
         return
       }
       ctx.fillStyle = "#ffffff"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
-      URL.revokeObjectURL(url)
       const link = document.createElement("a")
       link.download = `내보험바로알기_${customerName || "고객"}_${Date.now()}.png`
       link.href = canvas.toDataURL("image/png")
+      document.body.appendChild(link)
       link.click()
+      link.remove()
       setSaving(false)
     }
     image.onerror = () => {
-      URL.revokeObjectURL(url)
       setSaving(false)
       window.print()
     }
     image.src = url
   }
 
-  const completeSurvey = async () => {
+  const completeSurvey = () => {
     setCompleted(true)
-    await captureAsImage()
+    window.setTimeout(() => {
+      void captureAsImage()
+    }, 180)
   }
 
   return (
