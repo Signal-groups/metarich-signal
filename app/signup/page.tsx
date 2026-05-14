@@ -36,6 +36,7 @@ export default function SignupPage() {
     email: "",
     password: "",
     name: "",
+    phone: "",
     headquarter: "",
     department: "",
     branch: "",
@@ -94,6 +95,7 @@ export default function SignupPage() {
             id: authData.user.id,
             email: formData.email.trim(),
             name: formData.name,
+            phone: formData.phone.trim(),
             role: "agent",
             role_level: "staff",
             rank: "agent",
@@ -167,6 +169,18 @@ export default function SignupPage() {
                 className={inputClass}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-xs font-bold text-slate-500">휴대폰 번호</span>
+              <input
+                type="tel"
+                placeholder="010-0000-0000"
+                required
+                className={inputClass}
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </label>
           </div>

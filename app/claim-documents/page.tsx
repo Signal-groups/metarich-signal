@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { Check, ClipboardCopy, FileText, HeartPulse, Search, ShieldPlus, Stethoscope } from "lucide-react"
 import {
@@ -11,6 +11,7 @@ import {
   InsurerType,
   VisitType,
 } from "../../lib/claimDocuments"
+import { supabase } from "../../lib/supabase"
 
 type GuideMode = "claim" | "notice" | "monitoring"
 
@@ -31,9 +32,30 @@ const INSURER_FILTERS: { id: "all" | InsurerType; label: string }[] = [
   { id: "nonlife", label: "손해보험" },
 ]
 
-const MONITORING_PRODUCT_TYPES = ["보장성", "저축성", "종신·사망", "건강보험·암보험", "운전자·상해"]
+const MONITORING_PRODUCT_TYPES = ["보장성", "저축성", "종신·사망", "건강보험", "운전자·상해"]
 const MONITORING_RENEWAL_TYPES = ["갱신", "비갱신", "일부특약갱신"]
 const MONITORING_DELIVERY_TYPES = ["서류", "모바일"]
+
+const onlyDigits = (value: string) => value.replace(/[^\d]/g, "")
+
+const formatWithComma = (value: string) => {
+  const digits = onlyDigits(value)
+  return digits ? Number(digits).toLocaleString("ko-KR") : ""
+}
+
+const formatMonitoringPayPeriod = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return "00년납"
+  if (/^\d+$/.test(trimmed)) return `${trimmed}년납`
+  return trimmed
+}
+
+const formatMonitoringMaturity = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return "00세 만기"
+  if (/^\d+$/.test(trimmed)) return `${trimmed}세 만기`
+  return trimmed
+}
 
 export default function ClaimDocumentsPage() {
   const [guideMode, setGuideMode] = useState<GuideMode>("claim")
@@ -64,6 +86,30 @@ export default function ClaimDocumentsPage() {
 
   const selectedCoverages = COVERAGES.filter((coverage) => selectedCoverageIds.includes(coverage.id))
   const selectedInsurers = INSURERS.filter((insurer) => selectedInsurerIds.includes(insurer.id))
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadAdvisorProfile() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const { data } = await supabase
+        .from("users")
+        .select("name, phone")
+        .eq("id", session.user.id)
+        .maybeSingle()
+
+      if (!mounted || !data) return
+      if (!advisorLabel.trim() && data.name) setAdvisorLabel(`${data.name} 보험 전문가`)
+      if (!advisorPhone.trim() && data.phone) setAdvisorPhone(data.phone)
+    }
+
+    loadAdvisorProfile()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const filteredInsurers = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
@@ -113,6 +159,9 @@ export default function ClaimDocumentsPage() {
 
     if (guideMode === "monitoring") {
       const selectedProduct = monitoringProductDetail.trim() || `${monitoringProductType} 상품`
+      const advisorLine = advisorLabel.trim() || advisorPhone.trim()
+        ? `${advisorLabel.trim() || "000 보험 전문가"}${advisorPhone.trim() ? `, ${advisorPhone.trim()}` : ""}`
+        : ""
       const insurerMonitoringLines = selectedInsurers.length > 0
         ? selectedInsurers.flatMap((insurer) => [
           `${insurer.name}`,
@@ -126,13 +175,17 @@ export default function ClaimDocumentsPage() {
 
       return [
         "안녕하세요 고객님 모니터링 연락처 및 가입내용 안내드립니다.",
+        ...(advisorLine ? [advisorLine] : []),
         "",
         "[보험사 연락처]",
         ...insurerMonitoringLines,
         "",
+        "안내 드리는 보험회사에서 연락이 옵니다!",
+        "전화 통화 잘 부탁드립니다.",
+        "",
         "[가입내용 확인]",
-        `1. ${monitoringPayPeriod.trim() || "00년납"} ${monitoringMaturity.trim() || "00만기"} (${monitoringRenewalType || "갱신/비갱신/일부특약갱신"})형 ${selectedProduct}입니다.`,
-        `2. 월 보험료는 ${monitoringPremium.trim() || "000,000"}원이며 매월 ${monitoringPayDay.trim() || "00"}일에 결제가 됩니다.`,
+        `1. ${formatMonitoringPayPeriod(monitoringPayPeriod)} ${formatMonitoringMaturity(monitoringMaturity)} ${monitoringRenewalType || "갱신/비갱신/일부특약갱신"}형 ${selectedProduct}입니다.`,
+        `2. 월 보험료는 ${formatWithComma(monitoringPremium) || "000,000"}원이며 매월 ${monitoringPayDay.trim() || "00"}일에 결제가 됩니다.`,
         `3. ${monitoringExemptionDays.trim() || "00"}일 면책, ${monitoringReductionYears.trim() || "00"}년 감액 기간이 있으며 감액기간의 경우 ${monitoringReductionRate.trim() || "00"}%가 지급됩니다.`,
         `4. 상품설명서 및 주요내용은 ${monitoringDocumentMethod || "서류/모바일"} 전달 해드리며 같이 확인하였습니다.`,
         `5. 서명은 자필서명으로 ${monitoringSignMethod || "서류/모바일"}청약으로 진행했습니다.`,
@@ -439,6 +492,11 @@ export default function ClaimDocumentsPage() {
               <Panel title="2. 모니터링 가입내용 입력" icon={<Stethoscope className="h-5 w-5" />}>
                 <div className="grid gap-4">
                   <div className="grid gap-4 md:grid-cols-2">
+                    <TextInput label="담당자 표기" value={advisorLabel} onChange={setAdvisorLabel} placeholder="예: 000 보험 전문가" />
+                    <TextInput label="담당자 연락처" value={advisorPhone} onChange={setAdvisorPhone} placeholder="예: 000-0000-0000" />
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
                     <label className="grid gap-2">
                       <span className="text-[13px] font-black text-slate-700">상품 구분</span>
                       <select
@@ -456,15 +514,15 @@ export default function ClaimDocumentsPage() {
                       <input
                         value={monitoringProductDetail}
                         onChange={(event) => setMonitoringProductDetail(event.target.value)}
-                        placeholder="예: 종신·사망, 건강보험·암보험, 운전자·상해"
+                        placeholder="예: 종신·사망, 건강보험, 운전자·상해"
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] font-bold outline-none focus:border-[#2563eb]"
                       />
                     </label>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3">
-                    <TextInput label="납입기간" value={monitoringPayPeriod} onChange={setMonitoringPayPeriod} placeholder="예: 20년납" />
-                    <TextInput label="만기" value={monitoringMaturity} onChange={setMonitoringMaturity} placeholder="예: 90세만기" />
+                    <TextInput label="납입기간" value={monitoringPayPeriod} onChange={setMonitoringPayPeriod} placeholder="예: 20" />
+                    <TextInput label="만기" value={monitoringMaturity} onChange={setMonitoringMaturity} placeholder="예: 90" />
                     <label className="grid gap-2">
                       <span className="text-[13px] font-black text-slate-700">갱신 유형</span>
                       <select
@@ -480,7 +538,7 @@ export default function ClaimDocumentsPage() {
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3">
-                    <TextInput label="월 보험료" value={monitoringPremium} onChange={setMonitoringPremium} placeholder="예: 120,000" />
+                    <TextInput label="월 보험료" value={monitoringPremium} onChange={(value) => setMonitoringPremium(formatWithComma(value))} placeholder="예: 120,000" />
                     <TextInput label="결제일" value={monitoringPayDay} onChange={setMonitoringPayDay} placeholder="예: 25" />
                     <TextInput label="면책 기간" value={monitoringExemptionDays} onChange={setMonitoringExemptionDays} placeholder="예: 90" />
                   </div>

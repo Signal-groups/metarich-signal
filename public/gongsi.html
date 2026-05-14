@@ -138,7 +138,7 @@
     gap:8px;
   }
   .filter{
-    border:1px solid var(--line);
+    border:1.5px solid var(--line);
     border-radius:999px;
     background:#fff;
     padding:9px 13px;
@@ -148,9 +148,9 @@
     cursor:pointer;
   }
   .filter.active{
-    border-color:#162848;
-    background:#162848;
-    color:#fff;
+    border-color:#5aa17f;
+    background:#f3fbf7;
+    color:#176947;
   }
   .summary{
     display:grid;
@@ -183,33 +183,86 @@
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:16px;
   }
+  .view-toggle{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin:-4px 0 14px;
+  }
+  .view-btn{
+    min-height:38px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    background:#fff;
+    padding:0 13px;
+    color:#66748a;
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .view-btn.active{
+    border-color:#5aa17f;
+    color:#176947;
+    background:#f3fbf7;
+  }
+  .grid.list-mode{
+    grid-template-columns:1fr;
+  }
+  .grid.list-mode .card{
+    display:grid;
+    grid-template-columns:260px minmax(0,1fr) 330px;
+    align-items:center;
+  }
+  .grid.list-mode .card-head{
+    border-bottom:0;
+  }
+  .grid.list-mode .card-body{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:0 18px;
+  }
+  .grid.list-mode .actions{
+    padding:16px;
+  }
   .card{
     overflow:hidden;
     border:1px solid var(--line);
+    border-top:4px solid var(--card-color,#dbe4ef);
     border-radius:20px;
     background:#fff;
     box-shadow:0 12px 30px rgba(15,30,60,.07);
   }
   .card-head{
-    min-height:76px;
+    min-height:88px;
     padding:16px;
-    color:#fff;
-    background:var(--navy);
+    color:var(--text);
+    background:#fff;
     display:flex;
     align-items:center;
     gap:12px;
+    border-bottom:1px solid #edf2f7;
   }
-  .initial{
-    width:42px;
+  .logo-box{
+    width:68px;
     height:42px;
-    border-radius:14px;
+    border-radius:12px;
     display:grid;
     place-items:center;
-    background:rgba(255,255,255,.18);
-    border:1px solid rgba(255,255,255,.2);
-    font-size:13px;
-    font-weight:900;
+    background:#fff;
+    border:1px solid #edf2f7;
+    padding:7px;
     flex:0 0 auto;
+  }
+  .logo-box img{
+    max-width:100%;
+    max-height:100%;
+    object-fit:contain;
+    display:block;
+  }
+  .logo-fallback{
+    font-size:12px;
+    font-weight:900;
+    color:#475569;
   }
   .company-name{
     margin:0;
@@ -221,7 +274,24 @@
     margin-top:4px;
     font-size:12px;
     font-weight:800;
-    opacity:.85;
+    color:#66748a;
+  }
+  .favorite-btn{
+    margin-left:auto;
+    width:34px;
+    height:34px;
+    border:1px solid #dbe4ef;
+    border-radius:50%;
+    background:#fff;
+    color:#9aa8ba;
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .favorite-btn.active{
+    border-color:#d5a11e;
+    color:#d5a11e;
+    background:#fffbeb;
   }
   .card-body{
     padding:16px;
@@ -249,7 +319,7 @@
   }
   .action{
     min-height:42px;
-    border:1px solid var(--line);
+    border:1.5px solid var(--line);
     border-radius:13px;
     background:#f8fafc;
     color:#10213f;
@@ -261,9 +331,9 @@
     cursor:pointer;
   }
   .action.primary{
-    background:#152744;
-    border-color:#152744;
-    color:#fff;
+    background:#fff;
+    border-color:var(--card-color,#152744);
+    color:#10213f;
   }
   .action:hover{filter:brightness(.97)}
   .empty{
@@ -298,6 +368,7 @@
   @media (max-width:980px){
     .hero{grid-template-columns:1fr}
     .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid.list-mode .card{grid-template-columns:1fr}
     .summary{grid-template-columns:repeat(2,1fr)}
   }
   @media (max-width:640px){
@@ -337,6 +408,7 @@
         </div>
         <div class="filters" id="filters">
           <button class="filter active" data-type="all">전체</button>
+          <button class="filter" data-type="favorite">즐겨찾기</button>
           <button class="filter" data-type="damage">손해보험</button>
           <button class="filter" data-type="life">생명보험</button>
           <button class="filter" data-type="gongjae">공제·보증</button>
@@ -352,61 +424,104 @@
       <div class="summary-card"><b id="etcCount">0</b><span>공제·디지털</span></div>
     </section>
 
+    <section class="view-toggle" aria-label="보기 방식">
+      <button class="view-btn active" type="button" data-view="grid">카드 보기</button>
+      <button class="view-btn" type="button" data-view="list">리스트 보기</button>
+    </section>
+
     <section class="grid" id="companyGrid"></section>
     <section class="empty" id="emptyState">검색 조건에 맞는 보험사가 없습니다.</section>
   </main>
 
   <div class="toast" id="toast">연락처가 복사되었습니다.</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = "https://wnffguwcipylmyymhwqb.supabase.co"
+const SUPABASE_ANON_KEY = "sb_publishable_yljvPu4bRxKfDZVLj18KRQ_tqWEd6ma"
+const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
 const COMPANIES = [
-  {name:"삼성화재", type:"damage", phone:"1588-5114", monitoring:"1566-0563", color:"#123d8c", disclose:"https://www.samsungfire.com/disclosure/P_P03_01_01_001.html"},
-  {name:"현대해상", type:"damage", phone:"1588-5656", monitoring:"1577-3223", color:"#8b4b24", disclose:"https://www.hi.co.kr/serviceAction.do?menuId=100120"},
-  {name:"DB손해보험", type:"damage", phone:"1588-0100", monitoring:"1568-0757", color:"#007a3d", disclose:"https://www.idbins.com/FWCUSV1030.do"},
-  {name:"KB손해보험", type:"damage", phone:"1544-0114", monitoring:"1544-0019", color:"#c58b00", disclose:"https://www.kbinsure.co.kr/CG302010001.ec"},
-  {name:"메리츠화재", type:"damage", phone:"1566-7711", monitoring:"1577-7711", color:"#ff4d20", disclose:"https://www.meritzfire.com/disclosure.do#!/disclosure/pdDisclosure"},
-  {name:"한화손해보험", type:"damage", phone:"1566-8000", monitoring:"02-6299-6821", color:"#f05a00", disclose:"https://www.hwgeneralins.com/productDisclosure/index.do"},
-  {name:"NH농협손해보험", type:"damage", phone:"1644-9000", monitoring:"1644-9600", color:"#087c42", disclose:"https://www.nhfire.co.kr/product/retrieveProductDisclosure.nhfire"},
-  {name:"롯데손해보험", type:"damage", phone:"1588-3344", monitoring:"1600-5132", color:"#b91c1c", disclose:"https://www.lotteins.co.kr/web/C/D/A/cda040_01.jsp"},
-  {name:"MG손해보험", type:"damage", phone:"1588-5959", monitoring:"1577-3777", color:"#078b50", disclose:"https://www.mggeneralins.com/disclosure/product.do"},
-  {name:"흥국화재", type:"damage", phone:"1688-1688", monitoring:"확인 필요", color:"#9a3412", disclose:"https://www.heungkukfire.co.kr/FRW/dsclosure/gds_dsc/gds_dsc.do"},
-  {name:"AXA손해보험", type:"damage", phone:"1566-1566", monitoring:"확인 필요", color:"#00008f", disclose:"https://www.axa.co.kr/AsianPlatformInternet/html/axacms/common/ap/html/disclosure/productDisclosure.html"},
-  {name:"하나손해보험", type:"damage", phone:"1688-1688", monitoring:"확인 필요", color:"#00856f", disclose:"https://www.hanainsure.co.kr/w/product/productDisclosure"},
-  {name:"신한EZ손해보험", type:"digital", phone:"1544-2580", monitoring:"확인 필요", color:"#0046ff", disclose:"https://www.shinhanez.co.kr/disclosure/product"},
-  {name:"캐롯손해보험", type:"digital", phone:"1566-3000", monitoring:"확인 필요", color:"#f26b00", disclose:"https://www.carrotins.com/disclosure/product"},
-  {name:"카카오페이손해보험", type:"digital", phone:"확인 필요", monitoring:"확인 필요", color:"#f7d900", disclose:"https://kakaopayinscorp.co.kr/disclosure/product"},
-  {name:"AIG손해보험", type:"damage", phone:"1544-2792", monitoring:"확인 필요", color:"#002554", disclose:"https://www.aig.co.kr/personal/disclosure"},
-  {name:"처브손해보험", type:"damage", phone:"1544-0100", monitoring:"확인 필요", color:"#1f5f8b", disclose:"https://www.chubb.com/kr-kr/footer/product-disclosure.html"},
-  {name:"ACE손해(Chubb)", type:"damage", phone:"1566-5800", monitoring:"확인 필요", color:"#1f5f8b", disclose:"https://www.chubb.com/kr-kr/footer/product-disclosure.html"},
-
-  {name:"삼성생명", type:"life", phone:"1588-3114", monitoring:"1588-3115", color:"#173c9f", disclose:"https://www.samsunglife.com/individual/insu/product/insuProductList.html"},
-  {name:"한화생명", type:"life", phone:"1588-6363", monitoring:"확인 필요", color:"#f06b1f", disclose:"https://www.hanwhalife.com/disclosure/product/product-disclosure.do"},
-  {name:"교보생명", type:"life", phone:"1588-1001", monitoring:"1588-1838", color:"#049b80", disclose:"https://www.kyobo.com/dgt/web/product-information"},
-  {name:"신한라이프", type:"life", phone:"1588-5580", monitoring:"1522-7215", color:"#0046ff", disclose:"https://www.shinhanlife.co.kr/hp/cdhg0110.do"},
-  {name:"KB라이프", type:"life", phone:"1588-9922", monitoring:"1588-3374", color:"#c58b00", disclose:"https://www.kblife.co.kr/products/disclosure"},
-  {name:"DB생명", type:"life", phone:"1588-3131", monitoring:"02-6470-7863", color:"#007a3d", disclose:"https://www.idblife.com/common/disclosure/product"},
-  {name:"동양생명", type:"life", phone:"1577-1004", monitoring:"080-899-1004", color:"#00a0e9", disclose:"https://www.myangel.co.kr/process/product/goodsDisclosure"},
-  {name:"흥국생명", type:"life", phone:"1588-2288", monitoring:"확인 필요", color:"#be123c", disclose:"https://www.heungkuklife.co.kr/front/productDisclosure.do"},
-  {name:"미래에셋생명", type:"life", phone:"1588-0220", monitoring:"확인 필요", color:"#f04b23", disclose:"https://life.miraeasset.com/product/PD00000000.do"},
-  {name:"라이나생명", type:"life", phone:"1588-0058", monitoring:"1588-2442", color:"#008bd2", disclose:"https://www.lina.co.kr/productDisclosure/productList"},
-  {name:"ABL생명", type:"life", phone:"1588-6500", monitoring:"확인 필요", color:"#143c8c", disclose:"https://www.abllife.co.kr/product/disclosure"},
-  {name:"AIA생명", type:"life", phone:"1588-9898", monitoring:"1588-2513", color:"#c1002b", disclose:"https://www.aia.co.kr/ko/help-and-support/disclosure-center.html"},
-  {name:"NH농협생명", type:"life", phone:"1544-4000", monitoring:"1544-4222", color:"#087c42", disclose:"https://www.nhlife.co.kr/ho/ig/HOIG0002M00.nhl"},
-  {name:"IBK연금보험", type:"life", phone:"1577-4117", monitoring:"02-2270-1661", color:"#0067ac", disclose:"https://www.ibki.co.kr/process/disclosure/product"},
-  {name:"KDB생명", type:"life", phone:"1588-4040", monitoring:"확인 필요", color:"#133b8c", disclose:"https://www.kdblife.co.kr/product/disclosure"},
-  {name:"DGB생명", type:"life", phone:"1588-4770", monitoring:"확인 필요", color:"#0081c8", disclose:"https://www.dgbfnlife.com/product/disclosure"},
-  {name:"BNP생명", type:"life", phone:"1688-1118", monitoring:"확인 필요", color:"#00915a", disclose:"https://www.cardif.co.kr/disclosure/product"},
-  {name:"MetLife생명", type:"life", phone:"1588-9600", monitoring:"확인 필요", color:"#007abc", disclose:"https://www.metlife.co.kr/disclosure/product"},
-  {name:"푸본현대생명", type:"life", phone:"1577-3311", monitoring:"확인 필요", color:"#005bbb", disclose:"https://www.fubonhyundai.com/disclosure/product"},
-  {name:"처브라이프생명", type:"life", phone:"1599-4600", monitoring:"확인 필요", color:"#1f5f8b", disclose:"https://www.chubblife.co.kr/disclosure/product"},
-  {name:"하나생명", type:"life", phone:"1577-1112", monitoring:"확인 필요", color:"#00856f", disclose:"https://www.hanalife.co.kr/disclosure/product"},
-  {name:"오렌지라이프", type:"life", phone:"1566-3000", monitoring:"확인 필요", color:"#f58220", disclose:"https://www.shinhanlife.co.kr"},
-
-  {name:"서울보증보험", type:"gongjae", phone:"1670-7000", monitoring:"1670-1882", color:"#00549f", disclose:"https://www.sgic.co.kr/chp/main.mvc"},
-  {name:"우체국보험", type:"gongjae", phone:"1599-0100", monitoring:"확인 필요", color:"#e4002b", disclose:"https://www.epostlife.go.kr"},
-  {name:"수협보험", type:"gongjae", phone:"1599-0100", monitoring:"확인 필요", color:"#0054a6", disclose:"https://www.suhyup.co.kr"},
-  {name:"예별손보", type:"gongjae", phone:"1588-5959", monitoring:"확인 필요", color:"#316b46", disclose:"https://www.knia.or.kr"}
+  {name:"ABL생명", type:"life", phone:"1588-6500", monitoring:"1566-1002", color:"#143c8c", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/abl-life.png", disclose:"https://abllife.co.kr/st/custDesk/cspCntr/fncLvngInfo/fncLvngInfo3?page=index"},
+  {name:"AIA생명", type:"life", phone:"1588-9898", monitoring:"1588-2513", color:"#c1002b", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/aia-life.png", disclose:"https://www.aia.co.kr/ko/our-products.html"},
+  {name:"AIG손해보험", type:"damage", phone:"1544-2792", monitoring:"1600-4600", color:"#002554", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/aig-fire.png", disclose:"https://m.aig.co.kr/wm/content.html?contentId=DPWMS701"},
+  {name:"AXA손해보험", type:"digital", phone:"1566-1566", monitoring:"확인 필요", color:"#00008f", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/digital/axa-digital.png", disclose:"https://www.axa.co.kr/AsianPlatformInternet/html/axacms/common/intro/disclosure/insurance/index.html"},
+  {name:"BNP파리바카디프", type:"life", phone:"1688-1118", monitoring:"1688-1118", color:"#00915a", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/bnp-life.png", disclose:"https://www.cardif.co.kr/disclosure/papag101.do"},
+  {name:"DB생명", type:"life", phone:"1588-3131", monitoring:"02-6470-7663", color:"#007a3d", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/db-life.png", disclose:"https://market.idblife.com/main.do"},
+  {name:"DB손해보험", type:"damage", phone:"1588-0100", monitoring:"1566-0757", color:"#007a3d", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/db-fire.png", disclose:"https://www.idbins.com/FWMAIV1534.do"},
+  {name:"IM라이프", type:"life", phone:"1588-4770", monitoring:"1588-4770", color:"#0081c8", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/im-life.png", disclose:"https://www.dgbfnlife.com/BA/BA_A020.do"},
+  {name:"KB라이프생명", type:"life", phone:"1588-9922", monitoring:"1566-2730", color:"#c58b00", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/kb-life.png", disclose:"https://www.kblife.co.kr/customer-common/productList.do"},
+  {name:"KB손해보험", type:"damage", phone:"1544-0114", monitoring:"1544-0019", color:"#c58b00", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/kb-fire.png", disclose:"http://www.kbinsure.co.kr/CG802030001.ec"},
+  {name:"KDB생명", type:"life", phone:"1588-4040", monitoring:"1588-4040", color:"#133b8c", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/kdb-life.png", disclose:"https://www.kdblife.com/ajax.do?scrId=HDLMA000M00P&pcmode=1"},
+  {name:"MetLife생명", type:"life", phone:"1588-9600", monitoring:"1588-9609", color:"#007abc", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/met-life.png", disclose:"https://brand.metlife.co.kr/pn/paReal/insuProductDisclMain.do"},
+  {name:"MG새마을금고", type:"gongjae", phone:"1599-9000", monitoring:"확인 필요", color:"#078b50", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/mg-fire.png", disclose:"https://insure.kfcc.co.kr/#/PGE_IHJ_00003"},
+  {name:"MG손해보험", type:"damage", phone:"1588-5959", monitoring:"1577-3777", color:"#078b50", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/mg-fire.png", disclose:"https://www.mggeneralins.com/PB031210DM.scp?menuId=MN0803006"},
+  {name:"NH농협생명", type:"life", phone:"1544-4000", monitoring:"1544-4422", color:"#087c42", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/nh-life.png", disclose:"https://www.nhlife.co.kr/ho/on/HOON0004M00.nhl"},
+  {name:"NH농협손해보험", type:"damage", phone:"1644-9000", monitoring:"1644-9600", color:"#087c42", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/nh-fire.png", disclose:"https://www.nhfire.co.kr/announce/productAnnounce/retrieveInsuranceProductsAnnounce.nhfire"},
+  {name:"교보라이프플래닛", type:"digital", phone:"1566-0999", monitoring:"확인 필요", color:"#049b80", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/digital/kyobo-digital%20(1).png", disclose:"https://www.lifeplanet.co.kr/disclosure/good/HPDA01S0.dev"},
+  {name:"교보생명", type:"life", phone:"1588-1001", monitoring:"1588-1636", color:"#049b80", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/kyobo-life.png", disclose:"https://www.kyobo.com/dgt/web/product-official/all-product/search"},
+  {name:"동양생명", type:"life", phone:"1577-1004", monitoring:"080-899-1004", color:"#00a0e9", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/tongyang-life.png", disclose:"https://pbano.myangel.co.kr/notice/product/WE_PA_AP_01_00_00.jsp"},
+  {name:"더케이손해보험", type:"gongjae", phone:"1577-3993", monitoring:"확인 필요", color:"#335c9d", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/gongje/thek-gongje.png", disclose:"https://www.ktcu.or.kr/index#none"},
+  {name:"라이나생명", type:"life", phone:"1588-0058", monitoring:"1588-2442", color:"#008bd2", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/lina-life.png", disclose:"https://www.lina.co.kr/disclosure/insurance.htm"},
+  {name:"롯데손해보험", type:"damage", phone:"1588-3344", monitoring:"1600-5182", color:"#b91c1c", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/lotte-fire.png", disclose:"http://www.lotteins.co.kr/web/C/D/H/cdh190.jsp"},
+  {name:"메리츠화재", type:"damage", phone:"1566-7711", monitoring:"1577-7711", color:"#ff4d20", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/meritz-fire.png", disclose:"https://www.meritzfire.com/disclosure/product-announcement/product-list.do#!/"},
+  {name:"미래에셋생명", type:"life", phone:"1588-0220", monitoring:"1588-0220", color:"#f04b23", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/miraeasset-life.png", disclose:"https://life.miraeasset.com/micro/disclosure/product/PC-HO-080301-000000.do"},
+  {name:"삼성생명", type:"life", phone:"1588-3114", monitoring:"1588-3115", color:"#173c9f", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/samsung-life.png", disclose:"https://www.samsunglife.com/individual/products/disclosure/sales/PDO-PRPRI010110M"},
+  {name:"삼성화재", type:"damage", phone:"1588-5114", monitoring:"1566-0553", color:"#1428a0", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/samsung-fire.png", disclose:"https://www.samsungfire.com/page/VH.REIF0011.do"},
+  {name:"수협보험", type:"gongjae", phone:"1599-0100", monitoring:"확인 필요", color:"#0054a6", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/gongje/suhyup-gongje.png", disclose:"https://www.suhyup-bank.com/product/disclosure"},
+  {name:"신한EZ손해보험", type:"digital", phone:"1544-2580", monitoring:"확인 필요", color:"#0046ff", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/digital/shinhan-digital.png", disclose:"https://www.shinhanez.co.kr/static/pub/PUB2000T021.html"},
+  {name:"신한라이프", type:"life", phone:"1588-5580", monitoring:"1522-2285", color:"#0046ff", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/shinhan-life.png", disclose:"https://www.shinhanlife.co.kr/hp/cdhi0030.do"},
+  {name:"신협공제", type:"gongjae", phone:"1544-3030", monitoring:"확인 필요", color:"#0f8b5f", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/gongje/shinhyup-gongje.png", disclose:"https://www.cu.co.kr/product/cm/cntnts/cntntsView.do?mi=100183&cntntsId=1235"},
+  {name:"우체국보험", type:"gongjae", phone:"1599-0100", monitoring:"확인 필요", color:"#e4002b", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/gongje/wuchegook-gongje.png", disclose:"https://www.epostlife.go.kr/ASISDM00AT.do"},
+  {name:"처브라이프", type:"life", phone:"1599-4600", monitoring:"1599-4600", color:"#1f5f8b", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/chubb-life.png", disclose:"https://www.chubblife.co.kr/front/official/sale/list.do"},
+  {name:"카카오페이손보", type:"digital", phone:"1544-0022", monitoring:"확인 필요", color:"#f7d900", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/digital/kakao-digital.png", disclose:"https://kakaopayinscorp.co.kr/disclosure/goods?code=goods_list"},
+  {name:"캐롯손해보험", type:"digital", phone:"1566-0300", monitoring:"확인 필요", color:"#f26b00", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/digital/carrot-digital.png", disclose:"https://www.hwgeneralins.com/notice/ir/product-ing01.do"},
+  {name:"푸본현대생명", type:"life", phone:"1577-3311", monitoring:"확인 필요", color:"#005bbb", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/fubon-life.png", disclose:"https://www.fubonhyundai.com/#CUSI150102010101"},
+  {name:"하나생명", type:"life", phone:"1577-1112", monitoring:"1577-1112", color:"#00856f", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/hana-life.png", disclose:"https://hanalife.co.kr/anm/product/allProduct.do?status=on"},
+  {name:"하나손해보험", type:"damage", phone:"1566-3000", monitoring:"02-6299-6821", color:"#00856f", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/hana-fire.png", disclose:"https://www.hanainsure.co.kr/w/disclosure/product/saleProduct"},
+  {name:"한화생명", type:"life", phone:"1588-6363", monitoring:"1800-6633", color:"#f06b1f", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/hanhwa-life.png", disclose:"https://www.hanwhalife.com/index.jsp"},
+  {name:"한화손해보험", type:"damage", phone:"1566-8000", monitoring:"1670-1882", color:"#f58220", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/hanhwa-fire.png", disclose:"https://www.hwgeneralins.com/notice/ir/product-ing01.do"},
+  {name:"현대해상", type:"damage", phone:"1588-5656", monitoring:"1577-3223", color:"#f58220", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/hyundai-fire.png", disclose:"https://www.hi.co.kr/bin/CI/ON/CION3200G.jsp"},
+  {name:"흥국생명", type:"life", phone:"1588-2288", monitoring:"1877-7066", color:"#be123c", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/life/heungkuk-life.png", disclose:"https://www.heungkuklife.co.kr/front/public/saleProduct.do?searchFlgSale=Y"},
+  {name:"흥국화재", type:"damage", phone:"1688-1688", monitoring:"1688-6997", color:"#9a3412", logo:"https://oomhivvzfyckwfubxveb.supabase.co/storage/v1/object/public/insurers_logo/fire/heungkuk-fire.png", disclose:"https://www.heungkukfire.co.kr/FRW/announce/insGoodsGongsiSale.do"}
 ]
+
+const CONTACT_DETAILS = {
+  "삼성화재": {helpdesk:"1899-5005", claimFax:"0505-162-0872"},
+  "한화손해보험": {helpdesk:"02-316-0111", claimFax:"0502-779-1004"},
+  "현대해상": {helpdesk:"02-2628-4567", claimFax:"0507-774-6060"},
+  "메리츠화재": {helpdesk:"02-3786-2777", claimFax:"0505-021-3400"},
+  "DB손해보험": {helpdesk:"02-2262-1241", claimFax:"0505-181-4862"},
+  "KB손해보험": {helpdesk:"1544-8119", claimFax:"0505-136-6500"},
+  "흥국화재": {helpdesk:"031-786-8088", claimFax:"0504-800-0700"},
+  "NH농협손해보험": {helpdesk:"1644-0090", claimFax:"0505-060-7000"},
+  "롯데손해보험": {helpdesk:"1599-8260", claimFax:"0507-333-9999"},
+  "AIG손해보험": {helpdesk:"02-2260-6855", claimFax:"02-2011-4607"},
+  "하나손해보험": {helpdesk:"02-6670-8110", claimFax:"0505-152-0698"},
+  "MG손해보험": {helpdesk:"02-3788-2261", claimFax:"0505-088-1646"},
+  "삼성생명": {helpdesk:"02-311-4500", claimFax:"콜센터 개별접수"},
+  "한화생명": {helpdesk:"1522-6379", claimFax:"콜센터 개별접수"},
+  "교보생명": {helpdesk:"02-721-3130", claimFax:"콜센터 개별접수"},
+  "MetLife생명": {helpdesk:"1899-0751", claimFax:"콜센터 개별접수"},
+  "NH농협생명": {helpdesk:"02-3786-8800", claimFax:"02-6971-6040"},
+  "신한라이프": {helpdesk:"02-3455-4119", claimFax:"콜센터 개별접수"},
+  "KB라이프생명": {helpdesk:"1899-3899", claimFax:"02-6220-9912"},
+  "흥국생명": {helpdesk:"031-786-8088", claimFax:"콜센터 개별접수"},
+  "ABL생명": {helpdesk:"02-3787-8583", claimFax:"02-3299-5544"},
+  "미래에셋생명": {helpdesk:"02-3271-5108", claimFax:"콜센터 개별접수"},
+  "동양생명": {helpdesk:"02-728-9900", claimFax:"02-3289-4517"},
+  "KDB생명": {helpdesk:"02-6303-2771", claimFax:"콜센터 개별접수"},
+  "DB생명": {helpdesk:"02-2119-5151", claimFax:"0505-129-3134"},
+  "AIA생명": {helpdesk:"1588-2937", claimFax:"02-2021-4540"},
+  "IM라이프": {helpdesk:"02-2087-9594", claimFax:"0505-083-5420"},
+  "라이나생명": {helpdesk:"02-3781-2006", claimFax:"02-6944-1200"},
+  "처브라이프": {helpdesk:"1599-4646", claimFax:"02-3480-7801"},
+  "하나생명": {helpdesk:"02-3709-8602", claimFax:"02-6719-6722"},
+  "BNP파리바카디프": {helpdesk:"1577-3435", claimFax:"콜센터 개별접수"},
+  "푸본현대생명": {helpdesk:"080-860-1212", claimFax:"0505-106-0311"}
+}
+
+COMPANIES.forEach(company => Object.assign(company, CONTACT_DETAILS[company.name] || {}))
 
 const TYPE_LABELS = {
   damage:"손해보험",
@@ -416,10 +531,14 @@ const TYPE_LABELS = {
 }
 
 let activeType = "all"
+let currentUserId = null
+let favoriteKeys = new Set()
+let viewMode = "grid"
 const grid = document.getElementById("companyGrid")
 const emptyState = document.getElementById("emptyState")
 const searchInput = document.getElementById("searchInput")
 const filters = document.querySelectorAll(".filter")
+const viewButtons = document.querySelectorAll(".view-btn")
 const toast = document.getElementById("toast")
 
 function closePage(){
@@ -439,26 +558,76 @@ function copyContact(company){
   })
 }
 
+async function initFavorites(){
+  if (!supabaseClient) return
+  const { data: { session } } = await supabaseClient.auth.getSession()
+  currentUserId = session?.user?.id || null
+  if (!currentUserId) {
+    render()
+    return
+  }
+  const { data, error } = await supabaseClient
+    .from("insurer_favorites")
+    .select("insurer_key")
+    .eq("user_id", currentUserId)
+  if (!error && data) favoriteKeys = new Set(data.map(item => item.insurer_key))
+  render()
+}
+
+async function toggleFavorite(insurerKey, insurerName){
+  if (!currentUserId) {
+    alert("로그인 후 즐겨찾기를 사용할 수 있습니다.")
+    return
+  }
+
+  if (favoriteKeys.has(insurerKey)) {
+    const { error } = await supabaseClient
+      .from("insurer_favorites")
+      .delete()
+      .eq("user_id", currentUserId)
+      .eq("insurer_key", insurerKey)
+    if (!error) favoriteKeys.delete(insurerKey)
+  } else {
+    const { error } = await supabaseClient
+      .from("insurer_favorites")
+      .insert({ user_id: currentUserId, insurer_key: insurerKey, insurer_name: insurerName })
+    if (!error) favoriteKeys.add(insurerKey)
+  }
+  render()
+}
+
 function render(){
   const keyword = normalize(searchInput.value)
   const items = COMPANIES.filter(company => {
-    const typeOk = activeType === "all" || company.type === activeType
+    const favoriteOk = activeType !== "favorite" || favoriteKeys.has(company.name)
+    const typeOk = activeType === "all" || activeType === "favorite" || company.type === activeType
     const keywordOk = !keyword || normalize(`${company.name} ${company.phone} ${company.monitoring}`).includes(keyword)
-    return typeOk && keywordOk
+    return favoriteOk && typeOk && keywordOk
+  }).sort((a,b) => {
+    const favoriteDiff = Number(favoriteKeys.has(b.name)) - Number(favoriteKeys.has(a.name))
+    if (activeType === "all" && favoriteDiff) return favoriteDiff
+    return a.name.localeCompare(b.name, "ko-KR", { numeric:true, sensitivity:"base" })
   })
 
+  grid.classList.toggle("list-mode", viewMode === "list")
+
   grid.innerHTML = items.map(company => `
-    <article class="card">
-      <div class="card-head" style="background:${company.color}">
-        <div class="initial">${company.name.slice(0,2)}</div>
+    <article class="card" style="--card-color:${company.color}">
+      <div class="card-head">
+        <div class="logo-box">
+          ${company.logo ? `<img src="${company.logo}" alt="${company.name}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-fallback',textContent:'${company.name.slice(0,2)}'}))">` : `<span class="logo-fallback">${company.name.slice(0,2)}</span>`}
+        </div>
         <div>
           <h2 class="company-name">${company.name}</h2>
           <div class="company-type">${TYPE_LABELS[company.type]}</div>
         </div>
+        <button class="favorite-btn ${favoriteKeys.has(company.name) ? "active" : ""}" type="button" title="즐겨찾기" onclick='toggleFavorite(${JSON.stringify(company.name)}, ${JSON.stringify(company.name)})'>${favoriteKeys.has(company.name) ? "★" : "☆"}</button>
       </div>
       <div class="card-body">
         <div class="info-row"><span>대표번호</span><strong>${company.phone}</strong></div>
         <div class="info-row"><span>모니터링</span><strong>${company.monitoring}</strong></div>
+        <div class="info-row"><span>전산헬프데스크</span><strong>${company.helpdesk || "확인 필요"}</strong></div>
+        <div class="info-row"><span>청구팩스</span><strong>${company.claimFax || "확인 필요"}</strong></div>
       </div>
       <div class="actions">
         <a class="action primary" href="${company.disclose}" target="_blank" rel="noopener">상품공시</a>
@@ -484,8 +653,17 @@ filters.forEach(button => {
   })
 })
 
+viewButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    viewButtons.forEach(item => item.classList.remove("active"))
+    button.classList.add("active")
+    viewMode = button.dataset.view
+    render()
+  })
+})
+
 searchInput.addEventListener("input", render)
-render()
+initFavorites()
 </script>
 </body>
 </html>
