@@ -209,9 +209,39 @@ export default function FinancialCalc() {
   const reset = () => setState(DEFAULT_STATE)
 
   return (
-    <div style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#F5F7FA", minHeight: "100vh", padding: "26px 16px" }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto", display: "grid", gridTemplateColumns: "minmax(0,1fr) 260px", gap: 20, alignItems: "start" }}>
-        <main style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 20, padding: 28, boxShadow: "0 12px 30px rgba(15,30,53,0.06)" }}>
+    <div style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#F5F7FA", minHeight: "100vh", padding: "28px 20px" }}>
+      <div style={{ maxWidth: 1320, margin: "0 auto", display: "grid", gridTemplateColumns: "260px minmax(0,1fr)", gap: 22, alignItems: "start" }}>
+        <aside style={{ position: "sticky", top: 76, background: C.navy, borderRadius: 22, padding: 16, color: "#fff", boxShadow: "0 16px 28px rgba(15,30,53,0.18)" }}>
+          <div style={{ padding: "8px 8px 14px", borderBottom: "1px solid rgba(255,255,255,0.09)", marginBottom: 12 }}>
+            <p style={{ margin: 0, color: C.gold, fontSize: 12, fontWeight: 950, letterSpacing: "0.4px" }}>계산 메뉴</p>
+            <p style={{ margin: "5px 0 0", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>상담 목적에 맞춰 계산기를 선택하세요.</p>
+          </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {MENU.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                style={{
+                  width: "100%",
+                  minHeight: 72,
+                  border: `1px solid ${tab === item.id ? C.gold : "rgba(255,255,255,0.08)"}`,
+                  background: tab === item.id ? "rgba(201,168,76,0.16)" : "rgba(255,255,255,0.055)",
+                  color: "#fff",
+                  borderRadius: 16,
+                  padding: "13px 14px",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  transition: "all 0.16s ease",
+                }}
+              >
+                <strong style={{ display: "block", color: tab === item.id ? C.gold : "#fff", fontSize: 13, fontWeight: 950 }}>{item.label}</strong>
+                <span style={{ display: "block", marginTop: 5, color: "rgba(255,255,255,0.58)", fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>{item.desc}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <main style={{ minWidth: 0, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22, padding: 28, boxShadow: "0 12px 30px rgba(15,30,53,0.06)" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
             <div>
               <p style={{ margin: "0 0 7px", color: C.blue, fontSize: 11, fontWeight: 900, letterSpacing: "1px" }}>FINANCIAL CALCULATOR</p>
@@ -229,31 +259,6 @@ export default function FinancialCalc() {
           {tab === "compound" && <CompoundCalc age={state.age} />}
           {tab === "variable" && <VariableCalc />}
         </main>
-
-        <aside style={{ position: "sticky", top: 72, background: C.navy, borderRadius: 20, padding: 14, color: "#fff", boxShadow: "0 16px 28px rgba(15,30,53,0.18)" }}>
-          <p style={{ margin: "6px 8px 12px", color: C.gold, fontSize: 12, fontWeight: 900 }}>계산 메뉴</p>
-          <div style={{ display: "grid", gap: 8 }}>
-            {MENU.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setTab(item.id)}
-                style={{
-                  width: "100%",
-                  border: `1px solid ${tab === item.id ? C.gold : "rgba(255,255,255,0.08)"}`,
-                  background: tab === item.id ? "rgba(201,168,76,0.16)" : "rgba(255,255,255,0.06)",
-                  color: "#fff",
-                  borderRadius: 14,
-                  padding: "13px 14px",
-                  textAlign: "left",
-                  cursor: "pointer",
-                }}
-              >
-                <strong style={{ display: "block", color: tab === item.id ? C.gold : "#fff", fontSize: 13 }}>{item.label}</strong>
-                <span style={{ display: "block", marginTop: 4, color: "rgba(255,255,255,0.58)", fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>{item.desc}</span>
-              </button>
-            ))}
-          </div>
-        </aside>
       </div>
     </div>
   )
@@ -261,8 +266,10 @@ export default function FinancialCalc() {
 
 function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: (next: Partial<typeof DEFAULT_STATE>) => void }) {
   const [levelId, setLevelId] = useState<RetirementLevelId>("standard")
+  const [imageLevelId, setImageLevelId] = useState<RetirementLevelId | null>(null)
   const [copied, setCopied] = useState(false)
   const level = RETIREMENT_LEVELS.find((item) => item.id === levelId) || RETIREMENT_LEVELS[2]
+  const imageLevel = RETIREMENT_LEVELS.find((item) => item.id === imageLevelId) || null
 
   const nationalPension = useMemo(() => {
     const yearsFactor = Math.min(Math.max(state.nationalJoinYears, 0), 40) / 20
@@ -309,6 +316,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
     const next = RETIREMENT_LEVELS.find((item) => item.id === id)
     if (!next) return
     setLevelId(id)
+    setImageLevelId(id)
     patch({ monthlyExpense: next.expense })
   }
 
@@ -334,25 +342,28 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
   }
 
   return (
-    <div style={{ display: "grid", gap: 26 }}>
+    <div style={{ display: "grid", gap: 24 }}>
       <section>
         <SectionTitle title="노후 생활 수준 미리보기" desc="고객이 필요한 월 생활비를 모를 때 4단계 예시로 먼저 감을 잡습니다." />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 10, marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 10 }}>
           {RETIREMENT_LEVELS.map((item) => (
-            <button key={item.id} onClick={() => applyLevel(item.id)} style={{ border: `2px solid ${levelId === item.id ? C.blue : C.border}`, borderRadius: 14, background: levelId === item.id ? C.blueLight : "#fff", padding: 14, textAlign: "left", cursor: "pointer" }}>
+            <button key={item.id} onClick={() => applyLevel(item.id)} style={{ border: `2px solid ${levelId === item.id ? C.blue : C.border}`, borderRadius: 14, background: levelId === item.id ? C.blueLight : "#fff", padding: 14, textAlign: "left", cursor: "pointer", minHeight: 118 }}>
               <strong style={{ display: "block", color: C.navy, fontSize: 14 }}>{item.title}</strong>
               <span style={{ display: "block", marginTop: 5, color: C.muted, fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>{item.subtitle}</span>
               <span style={{ display: "block", marginTop: 8, color: item.expense > item.income ? C.rose : C.teal, fontSize: 12, fontWeight: 900 }}>월 {fmt(item.expense)}원 기준</span>
+              <span style={{ display: "inline-flex", marginTop: 9, borderRadius: 999, background: levelId === item.id ? "#fff" : C.slateLight, color: C.blue, padding: "5px 9px", fontSize: 10, fontWeight: 900 }}>이미지 보기</span>
             </button>
           ))}
         </div>
-        <div style={{ overflow: "hidden", borderRadius: 18, border: `1px solid ${C.border}`, background: C.slateLight }}>
-          <img src={level.image} alt={level.title} style={{ display: "block", width: "100%", height: "auto" }} />
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 12 }}>
+          <Metric label="선택 수준" value={level.title} tone={C.blue} sub={level.subtitle} />
+          <Metric label="기준 월 생활비" value={`${fmt(level.expense)}원`} tone={level.expense > level.income ? C.rose : C.teal} />
+          <Metric label="예시 월 수입" value={`${fmt(level.income)}원`} tone={C.gold} />
         </div>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div>
+      <section style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 18 }}>
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
           <SectionTitle title="은퇴 목표 설정" desc="먼저 언제 은퇴하고 월 얼마가 필요한지 정합니다." />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <InputRow label="현재 나이" value={state.age} onChange={(v) => patch({ age: v })} unit="세" />
@@ -366,7 +377,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
           </div>
         </div>
 
-        <div>
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
           <SectionTitle title="국민연금 계산기" desc="정확 조회가 아닌 상담용 간편 예상입니다." />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
             <InputRow label="예상 가입기간" value={state.nationalJoinYears} onChange={(v) => patch({ nationalJoinYears: v })} unit="년" />
@@ -376,7 +387,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
         </div>
       </section>
 
-      <section>
+      <section style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
         <SectionTitle title="퇴직연금 계산기" desc="DB, DC, IRP 방식별로 고객 상황에 맞게 대략적인 월 환산액을 확인합니다." />
         <MiniTabs value={state.pensionType} onChange={(id) => patch({ pensionType: id })} options={[{ id: "db", label: "DB형" }, { id: "dc", label: "DC형" }, { id: "irp", label: "IRP" }]} />
         <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: 18 }}>
@@ -409,7 +420,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
         </div>
       </section>
 
-      <section>
+      <section style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <SectionTitle title="최종 노후자금 계산" desc="연금과 자산소득을 합산해 매월 부족한 금액과 지금부터 준비할 금액을 보여줍니다." />
           <button onClick={copySummary} style={{ border: "none", background: C.navy, color: C.gold, borderRadius: 12, padding: "12px 16px", fontSize: 12, fontWeight: 900, cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -434,6 +445,26 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
           </p>
         </div>
       </section>
+
+      {imageLevel && (
+        <div
+          onClick={() => setImageLevelId(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(15,30,53,0.68)", padding: 24, display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <div onClick={(event) => event.stopPropagation()} style={{ width: "min(1120px, 96vw)", maxHeight: "92vh", background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: "0 28px 80px rgba(0,0,0,0.35)", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
+              <div>
+                <p style={{ margin: 0, color: C.blue, fontSize: 11, fontWeight: 950, letterSpacing: "0.8px" }}>노후 생활 예시</p>
+                <h3 style={{ margin: "4px 0 0", color: C.navy, fontSize: 20, fontWeight: 950 }}>{imageLevel.title}</h3>
+              </div>
+              <button onClick={() => setImageLevelId(null)} style={{ border: `1px solid ${C.border}`, background: "#fff", color: C.slate, width: 38, height: 38, borderRadius: 12, cursor: "pointer", fontSize: 20, fontWeight: 900 }}>×</button>
+            </div>
+            <div style={{ overflow: "auto", background: C.slateLight, padding: 16, minHeight: 420 }}>
+              <img src={imageLevel.image} alt={imageLevel.title} style={{ display: "block", width: "100%", maxHeight: "calc(92vh - 112px)", height: "auto", objectFit: "contain", borderRadius: 14 }} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

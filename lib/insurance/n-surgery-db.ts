@@ -163,7 +163,9 @@ const commonEndocrineUrinaryKeywords = [
 ]
 
 const commonSpineJointKeywords = [
-  '관절', '척추', '추간판', '디스크', '골다공증', '골수염', '근육', '인대', '연골',
+  '관절', '척추', '추간판', '디스크', '척추관협착', '척추관협착증', '허리디스크',
+  '목디스크', '풍선', '풍선확장술', '감압', '감압술', '신경감압술', '신경성형술',
+  '골다공증', '골수염', '근육', '인대', '연골',
 ]
 
 export const N_SURGERY_COVERAGES: NSurgeryCoverage[] = [

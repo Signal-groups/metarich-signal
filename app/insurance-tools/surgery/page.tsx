@@ -87,6 +87,30 @@ const SURGERY_REFERENCE_IMAGES = [
   },
 ] as const
 
+const FIELD_SEARCH_GUIDES = [
+  {
+    title: '지방종·피지낭종·피부 혹',
+    keywords: ['지방종', '피지낭종', '표피낭종', '피부혹', '혹', '양성종양', '양성신생물', '연조직종양', '덩어리'],
+    searchTerms: ['피부', '양성신생물', 'D17', 'L72'],
+    note: '지방종(D17), 피지낭종·표피낭종(L72)은 고객 표현만으로 종수술비를 단정하기 어렵습니다. 수술확인서의 수술명, 진단서의 질병코드, 조직검사 결과지를 확인하고 일반 질병수술비 또는 N대 양성신생물 담보 여부를 따로 점검하세요.',
+    docs: ['진단서 또는 진료확인서', '수술확인서', '진료비 영수증 및 세부내역서', '조직검사 결과지'],
+  },
+  {
+    title: '허리 풍선·감압·신경성형술',
+    keywords: ['허리풍선', '풍선', '풍선확장', '풍선확장술', '감압', '갑압', '감압술', '신경감압', '신경성형', '신경성형술', '추간공확장', '경막외강', '허리시술'],
+    searchTerms: ['척추', '추간판', '88-2', '신경성형술'],
+    note: '약관상 척추 관혈수술은 3종 후보이고, 내시경·카테터 등 경피적 척추 수술은 88-2항 2종 후보입니다. 다만 신경차단술, 흡인·천자, 약물주입만 시행한 경우는 제외 또는 별도 특약 확인이 필요합니다.',
+    docs: ['수술확인서의 정확한 수술명', '진단서의 M48/M50/M51 등 질병코드', '시술기록지 또는 수술기록지', '영상판독지(MRI/CT)'],
+  },
+  {
+    title: '용종·폴립 제거',
+    keywords: ['용종', '폴립', 'polyp', '대장용종', '위용종', 'EMR', 'ESD'],
+    searchTerms: ['용종', '대장용종', '88-3', 'K63.5'],
+    note: '내시경 절제술은 부위와 수술 방식에 따라 88항 후보가 됩니다. 단순 검사, 조직검사 목적 생검, 약물주입만 시행한 경우는 수술비 지급 대상이 아닐 수 있습니다.',
+    docs: ['내시경 수술기록지', '조직검사 결과지', '진단서 또는 진료확인서', '진료비 세부내역서'],
+  },
+] as const
+
 // ─────────────────────────────────────────────────────────
 // 유틸리티 함수
 // ─────────────────────────────────────────────────────────
@@ -145,6 +169,12 @@ function matchItem(item: SurgeryItem, q: string): boolean {
     item.synonyms.some(s => s.toLowerCase().includes(ql)) ||
     matchesNSurgeryText(item, q)
   )
+}
+
+function matchesGuide(guide: typeof FIELD_SEARCH_GUIDES[number], q: string): boolean {
+  const normalized = q.toLowerCase().replace(/\s/g, '')
+  if (!normalized) return false
+  return guide.keywords.some(keyword => normalized.includes(keyword.toLowerCase().replace(/\s/g, '')))
 }
 
 // ─────────────────────────────────────────────────────────
@@ -218,6 +248,10 @@ export default function SurgeryPage() {
       return catOk && typeOk && textOk
     })
   }, [query, category, typeFilter])
+
+  const matchedGuides = useMemo(() => {
+    return query ? FIELD_SEARCH_GUIDES.filter(guide => matchesGuide(guide, query)) : []
+  }, [query])
 
   const handleAmountChange = useCallback((key: keyof ExtendedSurgeryAmounts, val: string) => {
     setAmounts(prev => ({ ...prev, [key]: Number(val) || 0 }))
@@ -474,7 +508,7 @@ export default function SurgeryPage() {
           <div className="bg-white rounded-2xl shadow-sm p-4 border border-white mb-3">
             <div className="flex items-center gap-2 mb-2.5">
               <span className="text-[11px] font-black text-slate-400">예:</span>
-              {['담낭', 'K80', '복강경', '백내장', '충수절제'].map(hint => (
+              {['지방종', '허리 풍선', '감압', '용종', '담낭', '백내장', '충수절제'].map(hint => (
                 <button
                   key={hint}
                   onClick={() => { setInputQuery(hint); setQuery(hint); setAcOpen(true) }}
@@ -567,6 +601,37 @@ export default function SurgeryPage() {
               )}
             </div>
           </div>
+
+          {matchedGuides.length > 0 && (
+            <div className="mb-4 space-y-3">
+              {matchedGuides.map(guide => (
+                <div key={guide.title} className="rounded-2xl border-2 border-amber-100 bg-amber-50/70 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-[13px] font-black text-amber-800">현장 검색 안내 · {guide.title}</p>
+                      <p className="mt-1 text-[12px] font-bold leading-relaxed text-amber-700">{guide.note}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 lg:justify-end">
+                      {guide.searchTerms.map(term => (
+                        <button
+                          key={term}
+                          onClick={() => { setInputQuery(term); setQuery(term); setAcOpen(false) }}
+                          className="rounded-lg border border-amber-200 bg-white px-2.5 py-1.5 text-[11px] font-black text-amber-700 hover:bg-amber-100"
+                        >
+                          {term} 조회
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {guide.docs.map(doc => (
+                      <span key={doc} className="rounded-lg border border-amber-100 bg-white px-2 py-1 text-[10px] font-bold text-amber-700">{doc}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 필터 탭 */}
           <div className="flex flex-col gap-1.5 mb-4 px-1">
