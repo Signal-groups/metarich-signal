@@ -41,6 +41,15 @@ const futureValueMonthly = (monthly: number, annualRate: number, months: number)
   if (r === 0) return monthly * months
   return monthly * ((Math.pow(1 + r, months) - 1) / r)
 }
+const toManwon = (won: number) => Math.round((Number.isFinite(won) ? won : 0) / 10000)
+const fromManwon = (manwon: number) => Math.round((Number.isFinite(manwon) ? manwon : 0) * 10000)
+const dcaPriceAt = (index: number) => {
+  const pattern = [1000, 1200, 800, 600, 900, 1100, 950, 720, 860, 1040, 1180, 980]
+  if (index < pattern.length) return pattern[index]
+  const prev = pattern[index % pattern.length]
+  const cycle = Math.floor(index / pattern.length)
+  return Math.max(420, Math.round(prev * (1 + cycle * 0.045)))
+}
 
 const MENU: { id: TabId; label: string; desc: string }[] = [
   { id: "retirement", label: "노후 자금 계산", desc: "국민연금·퇴직연금·필요 생활비" },
@@ -153,6 +162,28 @@ function InputRow({
       </span>
       {hint && <span style={{ color: C.blue, fontSize: 11, fontWeight: 700 }}>{hint}</span>}
     </label>
+  )
+}
+
+function MoneyInputRow({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string
+  value: number
+  onChange: (value: number) => void
+  hint?: string
+}) {
+  return (
+    <InputRow
+      label={label}
+      value={toManwon(value)}
+      onChange={(v) => onChange(fromManwon(v))}
+      unit="만원"
+      hint={hint || `${fmt(value)}원`}
+    />
   )
 }
 
@@ -381,7 +412,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
             <InputRow label="현재 나이" value={state.age} onChange={(v) => patch({ age: v })} unit="세" />
             <InputRow label="은퇴 나이" value={state.retireAge} onChange={(v) => patch({ retireAge: v })} unit="세" />
             <InputRow label="기대 수명" value={state.lifeAge} onChange={(v) => patch({ lifeAge: v })} unit="세" />
-            <InputRow label="희망 월 생활비" value={state.monthlyExpense} onChange={(v) => patch({ monthlyExpense: v })} unit="원" hint={`${fmt(state.monthlyExpense)}원`} />
+            <MoneyInputRow label="희망 월 생활비" value={state.monthlyExpense} onChange={(v) => patch({ monthlyExpense: v })} />
           </div>
           <div style={{ background: C.goldLight, border: `1px solid ${C.gold}55`, borderRadius: 14, padding: 16, color: C.navy, fontSize: 13, fontWeight: 800, lineHeight: 1.7 }}>
             {level.quote}<br />
@@ -393,7 +424,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
           <SectionTitle title="국민연금 계산기" desc="정확 조회가 아닌 상담용 간편 예상입니다." />
           <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 14 }}>
             <InputRow label="예상 가입기간" value={state.nationalJoinYears} onChange={(v) => patch({ nationalJoinYears: v })} unit="년" />
-            <InputRow label="평균 월소득" value={state.nationalAvgIncome} onChange={(v) => patch({ nationalAvgIncome: v })} unit="원" hint={`${fmt(state.nationalAvgIncome)}원`} />
+            <MoneyInputRow label="평균 월소득" value={state.nationalAvgIncome} onChange={(v) => patch({ nationalAvgIncome: v })} />
           </div>
           <Metric label="예상 국민연금 월 수령액" value={`${fmt(nationalPension)}원`} tone={C.teal} sub="국민연금공단 예상연금 조회와 차이가 있을 수 있습니다." />
         </div>
@@ -406,20 +437,20 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
           <div style={{ background: C.slateLight, borderRadius: 16, padding: 18, minHeight: 156 }}>
             {state.pensionType === "db" && (
               <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12 }}>
-                <InputRow label="평균 월급여" value={state.salary} onChange={(v) => patch({ salary: v })} unit="원" hint={`${fmt(state.salary)}원`} />
+                <MoneyInputRow label="평균 월급여" value={state.salary} onChange={(v) => patch({ salary: v })} />
                 <InputRow label="총 근속 예상" value={state.workYears} onChange={(v) => patch({ workYears: v })} unit="년" />
               </div>
             )}
             {state.pensionType === "dc" && (
               <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
-                <InputRow label="연봉" value={state.dcAnnualSalary} onChange={(v) => patch({ dcAnnualSalary: v })} unit="원" hint={`${fmt(state.dcAnnualSalary)}원`} />
+                <MoneyInputRow label="연봉" value={state.dcAnnualSalary} onChange={(v) => patch({ dcAnnualSalary: v })} />
                 <InputRow label="운용 기간" value={state.dcYears} onChange={(v) => patch({ dcYears: v })} unit="년" />
                 <InputRow label="예상 수익률" value={state.dcRate} onChange={(v) => patch({ dcRate: v })} unit="%" step={0.1} />
               </div>
             )}
             {state.pensionType === "irp" && (
               <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
-                <InputRow label="월 납입액" value={state.irpMonthly} onChange={(v) => patch({ irpMonthly: v })} unit="원" hint={`${fmt(state.irpMonthly)}원`} />
+                <MoneyInputRow label="월 납입액" value={state.irpMonthly} onChange={(v) => patch({ irpMonthly: v })} />
                 <InputRow label="납입 기간" value={state.irpYears} onChange={(v) => patch({ irpYears: v })} unit="년" />
                 <InputRow label="예상 수익률" value={state.irpRate} onChange={(v) => patch({ irpRate: v })} unit="%" step={0.1} />
               </div>
@@ -440,8 +471,12 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
           </button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 14 }}>
-          <InputRow label="개인연금 월 수령" value={state.monthlyPrivatePension} onChange={(v) => patch({ monthlyPrivatePension: v })} unit="원" />
-          <InputRow label="자산소득 월 수입" value={state.monthlyAssetIncome} onChange={(v) => patch({ monthlyAssetIncome: v })} unit="원" />
+          <Metric label="국민연금 반영액" value={`${fmt(nationalPension)}원`} tone={C.blue} sub="위 국민연금 계산기 결과" />
+          <Metric label="퇴직연금 반영액" value={`${fmt(selectedRetirementMonthly)}원`} tone={C.gold} sub={`${state.pensionType.toUpperCase()} 계산 결과`} />
+          <MoneyInputRow label="개인연금 월 수령" value={state.monthlyPrivatePension} onChange={(v) => patch({ monthlyPrivatePension: v })} />
+          <MoneyInputRow label="자산소득 월 수입" value={state.monthlyAssetIncome} onChange={(v) => patch({ monthlyAssetIncome: v })} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 14 }}>
           <Metric label="월 예상 수입" value={`${fmt(totalIncome)}원`} tone={C.teal} />
           <Metric label="월 부족·여유" value={`${monthlyGap > 0 ? "-" : "+"}${fmt(Math.abs(monthlyGap))}원`} tone={monthlyGap > 0 ? C.rose : C.teal} />
         </div>
@@ -494,7 +529,7 @@ function CompareCalc() {
     <div>
       <SectionTitle title="보험 vs 은행 저축 비교" desc="보험과 은행은 적금이 아닌 저축이라는 표현으로 안내합니다." />
       <div style={{ display: "grid", gridTemplateColumns: inputGrid(4), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16, overflow: "hidden" }}>
-        <InputRow label="월 납입액" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" />
+        <MoneyInputRow label="월 납입액" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} />
         <InputRow label="저축 기간" value={inp.years} onChange={(v) => setInp({ ...inp, years: v })} unit="년" />
         <InputRow label="은행 저축 이율" value={inp.bankRate} onChange={(v) => setInp({ ...inp, bankRate: v })} unit="%" step={0.1} />
         <InputRow label="보험 환급률" value={inp.insuranceReturn} onChange={(v) => setInp({ ...inp, insuranceReturn: v })} unit="%" />
@@ -523,11 +558,30 @@ function InflationCalc() {
   const [confirmed, setConfirmed] = useState(false)
   const futurePower = Math.round(inp.amount / Math.pow(1 + inp.inflation / 100, inp.years))
   const need = Math.round(inp.amount * Math.pow(1 + inp.inflation / 100, inp.years))
+  const lossRate = Math.max(0, Math.min(100, Math.round((1 - futurePower / Math.max(inp.amount, 1)) * 100)))
   return (
     <div>
       <SectionTitle title="화폐가치 하락" desc="물가상승률에 따라 현재 돈의 구매력이 어떻게 바뀌는지 보여줍니다." />
+      <div style={{ marginBottom: 16, borderRadius: 18, background: `linear-gradient(135deg, ${C.navy}, ${C.blue})`, color: "#fff", padding: 22, overflow: "hidden" }}>
+        <p style={{ margin: 0, color: C.gold, fontSize: 12, fontWeight: 950 }}>현재 돈의 체감 가치</p>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto minmax(0,1fr)", alignItems: "center", gap: 16, marginTop: 12 }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 800 }}>오늘의 {fmt(inp.amount)}원</p>
+            <p style={{ margin: "5px 0 0", fontSize: 26, fontWeight: 950 }}>{fmt(inp.amount)}원</p>
+          </div>
+          <span style={{ color: C.gold, fontSize: 24, fontWeight: 950 }}>→</span>
+          <div>
+            <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 800 }}>{inp.years}년 후 체감 가치</p>
+            <p style={{ margin: "5px 0 0", fontSize: 26, fontWeight: 950, color: C.gold }}>{fmt(futurePower)}원</p>
+          </div>
+        </div>
+        <div style={{ marginTop: 16, height: 12, borderRadius: 999, background: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
+          <div style={{ width: `${100 - lossRate}%`, height: "100%", borderRadius: 999, background: C.gold }} />
+        </div>
+        <p style={{ margin: "8px 0 0", fontSize: 12, color: "rgba(255,255,255,0.75)", fontWeight: 800 }}>구매력 약 {lossRate}% 감소 예상</p>
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16, overflow: "hidden" }}>
-        <InputRow label="현재 금액" value={inp.amount} onChange={(v) => setInp({ ...inp, amount: v })} unit="원" />
+        <MoneyInputRow label="현재 금액" value={inp.amount} onChange={(v) => setInp({ ...inp, amount: v })} />
         <InputRow label="기간" value={inp.years} onChange={(v) => setInp({ ...inp, years: v })} unit="년" />
         <InputRow label="물가상승률" value={inp.inflation} onChange={(v) => setInp({ ...inp, inflation: v })} unit="%" step={0.1} />
       </div>
@@ -549,18 +603,27 @@ function CompoundCalc({ age }: { age: number }) {
   const [confirmed, setConfirmed] = useState(false)
   const saveMonths = inp.saveYears * 12
   const holdYears = Math.max(inp.holdUntilAge - age - inp.saveYears, 0)
+  const rule72 = inp.rate > 0 ? Math.round((72 / inp.rate) * 10) / 10 : 0
   const saved = mode === "single"
     ? inp.principal * Math.pow(1 + inp.rate / 100, inp.saveYears)
     : futureValueMonthly(inp.monthly, inp.rate, saveMonths)
   const final = Math.round(saved * Math.pow(1 + inp.rate / 100, holdYears))
+  const chartYears = Array.from({ length: Math.min(Math.max(inp.saveYears + holdYears, 1), 20) + 1 }, (_, index) => index)
+  const chartValues = chartYears.map((year) => {
+    if (mode === "single") return inp.principal * Math.pow(1 + inp.rate / 100, year)
+    const savingYear = Math.min(year, inp.saveYears)
+    const savingValue = futureValueMonthly(inp.monthly, inp.rate, savingYear * 12)
+    return savingValue * Math.pow(1 + inp.rate / 100, Math.max(year - inp.saveYears, 0))
+  })
+  const chartMax = Math.max(...chartValues, 1)
   return (
     <div>
       <SectionTitle title="복리 계산" desc="일시납과 월적립식 중 선택하고, 저축기간 이후 거치기간까지 함께 계산합니다." />
       <MiniTabs value={mode} onChange={setMode} options={[{ id: "single", label: "일시납" }, { id: "monthly", label: "월적립식" }]} />
       <div style={{ display: "grid", gridTemplateColumns: inputGrid(4), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, margin: "16px 0", overflow: "hidden" }}>
         {mode === "single"
-          ? <InputRow label="일시납 원금" value={inp.principal} onChange={(v) => setInp({ ...inp, principal: v })} unit="원" />
-          : <InputRow label="월 적립액" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" />}
+          ? <MoneyInputRow label="일시납 원금" value={inp.principal} onChange={(v) => setInp({ ...inp, principal: v })} />
+          : <MoneyInputRow label="월 적립액" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} />}
         <InputRow label="저축기간" value={inp.saveYears} onChange={(v) => setInp({ ...inp, saveYears: v })} unit="년" />
         <InputRow label="거치 종료 나이" value={inp.holdUntilAge} onChange={(v) => setInp({ ...inp, holdUntilAge: v })} unit="세" hint={`현재 나이 ${age}세 기준`} />
         <InputRow label="연 수익률" value={inp.rate} onChange={(v) => setInp({ ...inp, rate: v })} unit="%" step={0.1} />
@@ -573,6 +636,24 @@ function CompoundCalc({ age }: { age: number }) {
         <Metric label="이후 거치기간" value={`${fmt(holdYears)}년`} tone={C.gold} />
         <Metric label="최종 예상 금액" value={`${fmt(final)}원`} tone={C.teal} />
       </div>
+      <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "260px minmax(0,1fr)", gap: 14, alignItems: "stretch" }}>
+        <div style={{ borderRadius: 16, background: C.goldLight, border: `1px solid ${C.gold}66`, padding: 18 }}>
+          <p style={{ margin: 0, color: C.navy, fontSize: 13, fontWeight: 950 }}>72의 법칙</p>
+          <p style={{ margin: "8px 0 0", color: C.text, fontSize: 26, fontWeight: 950 }}>{rule72 ? `약 ${rule72}년` : "-"}</p>
+          <p style={{ margin: "6px 0 0", color: C.slate, fontSize: 12, fontWeight: 800, lineHeight: 1.5 }}>연 {inp.rate}% 수익률이면 원금이 2배가 되는 대략적인 시간입니다.</p>
+        </div>
+        <div style={{ borderRadius: 16, background: C.slateLight, padding: 18, minWidth: 0 }}>
+          <p style={{ margin: "0 0 12px", color: C.slate, fontSize: 12, fontWeight: 950 }}>복리 성장 그래프</p>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${chartValues.length}, minmax(6px,1fr))`, gap: 5, alignItems: "end", height: 150 }}>
+            {chartValues.map((value, index) => (
+              <div key={index} title={`${index}년 ${fmt(value)}원`} style={{ height: Math.max(8, (value / chartMax) * 140), borderRadius: "8px 8px 3px 3px", background: index <= inp.saveYears ? C.blue : C.teal }} />
+            ))}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, color: C.muted, fontSize: 11, fontWeight: 800 }}>
+            <span>시작</span><span>{chartYears[chartYears.length - 1]}년 후</span>
+          </div>
+        </div>
+      </div>
       {confirmed && <ResultHero title="상담 포인트" tone={C.teal} body={`${mode === "single" ? "일시납" : "월적립식"} 기준으로 저축 후 ${holdYears}년 거치하면 최종 예상 금액은 약 ${fmt(final)}원입니다.`} />}
     </div>
   )
@@ -582,7 +663,8 @@ function VariableCalc() {
   const [inp, setInp] = useState({ lump: 6000000, monthly: 1000000, months: 6 })
   const [confirmed, setConfirmed] = useState(false)
   const [showVisual, setShowVisual] = useState(false)
-  const prices = [1000, 1200, 800, 600, 900, 1100].slice(0, Math.max(1, Math.min(inp.months, 6)))
+  const months = Math.max(1, Math.min(Math.round(inp.months), 36))
+  const prices = Array.from({ length: months }, (_, index) => dcaPriceAt(index))
   const endPrice = prices[prices.length - 1]
   const lumpQty = inp.lump / prices[0]
   const lumpValue = Math.round(lumpQty * endPrice)
@@ -593,8 +675,8 @@ function VariableCalc() {
     <div>
       <SectionTitle title="코스트 애버리지 비교" desc="주가 상승·하락 상황에서 일시납과 월적립식 투자를 비교합니다." />
       <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12, background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 16, overflow: "hidden" }}>
-        <InputRow label="일시납 투자금" value={inp.lump} onChange={(v) => setInp({ ...inp, lump: v })} unit="원" />
-        <InputRow label="월적립 투자금" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" />
+        <MoneyInputRow label="일시납 투자금" value={inp.lump} onChange={(v) => setInp({ ...inp, lump: v })} />
+        <MoneyInputRow label="월적립 투자금" value={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} />
         <InputRow label="비교 기간" value={inp.months} onChange={(v) => setInp({ ...inp, months: v })} unit="개월" />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 10, marginBottom: 14 }}>
@@ -616,7 +698,7 @@ function VariableCalc() {
           body={monthlyValue >= lumpValue ? `이 변동 구간에서는 월적립식이 일시납보다 ${fmt(monthlyValue - lumpValue)}원 높게 평가됩니다.` : `이 변동 구간에서는 일시납이 월적립식보다 ${fmt(lumpValue - monthlyValue)}원 높게 평가됩니다.`}
         />
       )}
-      <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ background: C.navy, color: C.gold }}>
@@ -655,7 +737,7 @@ function VariableCalc() {
                 <Metric label="월적립식 평가" value={`${fmt(monthlyValue)}원`} tone={C.teal} sub={`가격 변동마다 나눠 매수`} />
               </div>
               <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 18, padding: 18 }}>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${prices.length}, minmax(0,1fr))`, gap: 8, alignItems: "end", height: 220 }}>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${prices.length}, minmax(18px,1fr))`, gap: 7, alignItems: "end", height: 220, overflowX: "auto" }}>
                   {prices.map((price, index) => {
                     const h = Math.max(28, (price / Math.max(...prices)) * 180)
                     return (
