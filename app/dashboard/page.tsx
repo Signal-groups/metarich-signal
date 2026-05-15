@@ -16,6 +16,7 @@ import {
   FileSearch,
   Hospital,
   PieChart,
+  Pill,
   Scale,
   Search,
   ShieldCheck,
@@ -41,6 +42,8 @@ function ToolIcon({ icon }: { icon: string }) {
       return <Search className={className} />
     case "hospital":
       return <Hospital className={className} />
+    case "pill":
+      return <Pill className={className} />
     case "crash":
       return <Scale className={className} />
     case "chart":
@@ -290,8 +293,8 @@ export default function DashboardPage() {
                   <section className="mb-8 space-y-4">
                     <div className="flex items-end justify-between border-b border-slate-200 pb-3">
                       <div>
-                        <h2 className="text-xl font-black text-[#1a3a6e]">기본 바로가기</h2>
-                        <p className="mt-1 text-[12px] font-bold text-slate-400">승인 전 게스트도 바로 이용할 수 있는 안내 도구</p>
+                        <h2 className="text-xl font-black text-[#1a3a6e]">정보확인</h2>
+                        <p className="mt-1 text-[12px] font-bold text-slate-400">고객의 정보를 확인합니다.</p>
                       </div>
                       <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">{highlightTools.length}개</span>
                     </div>
