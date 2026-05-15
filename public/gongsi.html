@@ -66,6 +66,23 @@
     font-weight:900;
     cursor:pointer;
   }
+  .top-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .nav-btn{
+    min-height:40px;
+    border:1px solid rgba(255,255,255,.28);
+    border-radius:12px;
+    padding:0 15px;
+    color:#fff;
+    background:rgba(255,255,255,.14);
+    font-weight:900;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+  }
   .wrap{
     width:min(1220px,calc(100% - 40px));
     margin:28px auto 54px;
@@ -373,6 +390,8 @@
   }
   @media (max-width:640px){
     .topbar{padding:0 14px}
+    .top-actions{gap:6px}
+    .nav-btn,.close-btn{padding:0 10px;font-size:12px}
     .wrap{width:calc(100% - 24px);margin-top:16px}
     .intro{padding:22px}
     h1{font-size:26px}
@@ -388,7 +407,10 @@
       <div class="brand-mark">📊</div>
       <div>보험사 공시·연락처 포털</div>
     </div>
-    <button class="close-btn" onclick="closePage()">창 닫기</button>
+    <div class="top-actions">
+      <a class="nav-btn" href="/claim-documents" target="_blank" rel="noopener">청구서류 안내</a>
+      <button class="close-btn" onclick="closePage()">창 닫기</button>
+    </div>
   </header>
 
   <main class="wrap">

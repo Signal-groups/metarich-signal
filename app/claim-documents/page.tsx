@@ -327,6 +327,12 @@ export default function ClaimDocumentsPage() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
+                onClick={() => window.open("/gongsi.html", "_blank", "noopener,noreferrer")}
+                className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-[14px] font-black text-[#1a3a6e] transition hover:bg-blue-100"
+              >
+                보험회사 공시실
+              </button>
+              <button
                 onClick={() => {
                   if (window.opener) {
                     window.close()
