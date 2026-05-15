@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 
-type TabId = "process" | "db" | "appointment" | "objection" | "fc" | "coach"
+type TabId = "process" | "db" | "appointment" | "objection" | "preObjection" | "fc" | "coach"
 type StageId = "prospecting" | "ta" | "ap" | "ff" | "pt" | "closing" | "service"
 
 type Stage = {
@@ -33,10 +33,11 @@ type FcTheme = {
 }
 
 const tabs: { id: TabId; label: string }[] = [
-  { id: "process", label: "7단계 프로세스" },
+  { id: "process", label: "세일즈 프로세스" },
   { id: "db", label: "DB 영업" },
   { id: "appointment", label: "약속잡기" },
   { id: "objection", label: "거절/반론" },
+  { id: "preObjection", label: "선거절 멘트" },
   { id: "fc", label: "이런 방법도 있어요!" },
   { id: "coach", label: "상황 코치" },
 ]
@@ -229,28 +230,45 @@ const stages: Stage[] = [
 ]
 
 const dbPlaybooks = [
+  { title: "DB 세일즈 프로세스", focus: "DB 고객은 설득보다 출처 확인, 신청 이유 확인, 방문 약속 확정이 우선입니다. 통화에서 설명을 길게 하지 말고 고객이 부담 없이 만날 명분을 만들어야 합니다.", script: "출처 확인 → 고객 관심 이유 확인 → 점검 목적 안내 → 시간/장소 선택 → 문자 확정 순서로 진행합니다. DB 유형별로 첫 문장만 다르게 잡고, 목표는 항상 AP 약속 확정으로 둡니다." },
   { title: "숨은 보험금 DB", focus: "환급, 미청구, 청구 가능성처럼 고객이 이미 관심을 보인 주제로 진입합니다.", script: "고객님께서 확인하신 숨은 보험금 관련 내용은 실제 증권과 청구 이력을 같이 봐야 정확합니다. 지금 통화에서는 접수만 도와드리고, 전문가가 15분 정도 확인드리면 됩니다." },
   { title: "보장분석 DB", focus: "가입 권유보다 중복, 공백, 갱신 부담을 확인하는 점검으로 포지션을 잡습니다.", script: "가입을 권유드리려는 통화가 아니라 현재 보험에서 중복되거나 비어 있는 부분을 확인드리는 서비스입니다. 확인 후 필요 없으면 그대로 유지하시면 됩니다." },
   { title: "이벤트/랜딩 DB", focus: "고객이 눌렀던 행동을 먼저 확인하고, 과한 설명보다 짧은 예약으로 연결합니다.", script: "남겨주신 내용 중 어떤 부분이 가장 궁금하셨는지 확인하려고 연락드렸습니다. 자료를 보고 필요한 부분만 짧게 점검해드리겠습니다." },
   { title: "소개/지인 DB", focus: "관계 훼손을 막기 위해 가입보다 점검과 도움으로 접근합니다.", script: "OO님께서 보험 내용을 한번 점검받아보면 좋겠다고 말씀 주셔서 연락드렸습니다. 부담 갖지 마시고 현재 내용에서 놓친 부분이 있는지만 확인해보시면 됩니다." },
+  { title: "실버 DB", focus: "60대 이상 고객님 대상 DB입니다. 전문가의 포지션보다 친근한 느낌으로 다가가는 것이 좋습니다. 이제 보험을 많이 활용하실 나이대라 관심도 높고, 주변 경험 때문에 필요성과 두려움이 함께 있습니다.", script: "보험 가입 권유가 아니라 부담되는 부분과 놓치기 쉬운 보험금, 병원비, 간병 걱정을 같이 점검해드리는 방향이 좋습니다. 차 한잔하는 시간 정도로 현재 보험이 앞으로 도움이 되는지 확인해드리겠습니다." },
+  { title: "화재보험 DB", focus: "박람회 등의 공간에서 수집된 DB입니다. 실제 입주자를 대상으로 1년간 무료 화재보험을 가입시켜드리고, 함께 다른 보장을 분석해 안내하는 방식이 유리합니다.", script: "입주자분들께 1년 무료 화재보험 안내를 먼저 드리고 있습니다. 화재보험 가입을 도와드리면서 현재 가지고 계신 다른 보장도 함께 점검해드리면 더 정확하게 안내드릴 수 있습니다." },
 ]
 
 const appointmentScripts = [
-  { type: "전화", tip: "전화는 반응 확인과 시간 확정에 가장 적합합니다.", script: "지금 길게 설명드리기보다 가능하신 시간만 잡고, 그때 자료 기준으로 정확히 안내드리겠습니다. 오늘 저녁과 내일 오전 중 어느 쪽이 편하실까요?" },
-  { type: "문자", tip: "문자는 부재중, 첫 안내, 재접촉에 좋습니다.", script: "안녕하세요. 보험 점검 신청/문의 내용 확인차 연락드렸습니다. 통화 가능하신 시간 알려주시면 짧게 안내드리겠습니다." },
-  { type: "카톡", tip: "카톡은 자료, 이미지, 리포트 전달과 사후 요약에 좋습니다.", script: "말씀드린 내용 핵심만 정리해서 보내드립니다. 보신 뒤 보험료 조정과 보장 보완 중 어느 쪽이 더 궁금하신지 알려주세요." },
-  { type: "소개 요청", tip: "소개는 만족이 확인된 직후, 대상을 좁혀 요청해야 합니다.", script: "혹시 주변에 보험료를 오래 내고 있지만 제대로 되어 있는지 모르는 분이 계실까요? 제가 가입 권유가 아니라 점검만 같은 방식으로 도와드리겠습니다." },
+  { type: "전화", tip: "전화는 약속을 잡기 위한 수단입니다. 시간, 장소, 방문 목적만 안내하고 빠르게 종료합니다.", script: "직접 뵙고 보장을 보며 안내드리고 궁금한 점이 있으신지 준비를 추가로 잘 해서 방문드리겠습니다. 오늘 저녁과 내일 오전 중 어느 시간이 편하실까요?" },
+  { type: "문자", tip: "방문 약속이 확정되었다면 5분 이내로 발송합니다. 날짜, 시간, 장소와 주변 카페 위치까지 빠르게 안내합니다.", script: "000님 보장점검으로 방문 약속한 000 보험 전문가입니다. 00일 00시 00에서 뵙겠습니다. 날짜 장소 확인하셨으면 \"확인\"으로 답장 부탁드립니다." },
+  { type: "카카오톡", tip: "자료, 이미지, PDF파일을 보내는 데 유용합니다. PDF보다 이미지로 보내고 하단에 설명을 붙이면 고객이 보기 편합니다.", script: "A와 B 두 가지 제안을 드립니다. 보시고 보험료와 보장 중 수정이나 변경이 필요하시면 반영해드립니다." },
+  { type: "소개 요청", tip: "소개는 고객이 만족했다면 바로 해도 됩니다. 단 대상을 좁혀서 요청해야 확률이 높습니다.", script: "오늘 제가 00부분을 체크하면서 만족하셨을텐데 주변에도 비슷한 분들이 꼭 계시더라고요. 소개해 주시면 보험제안이 아닌 000님처럼 만족하실 만한 부분만 빠르고 쉽게 도와드리겠습니다." },
 ]
 
 const objectionLibrary = [
   { phase: "TA", scene: "바빠요", answer: "지금 설명드리려는 것이 아니라 가능하신 시간만 확인하겠습니다.", close: "오늘 6시 이후와 내일 오전 중 어느 쪽이 편하실까요?" },
   { phase: "TA", scene: "관심 없어요", answer: "가입 권유가 아니라 놓치기 쉬운 보장과 청구 가능 여부 확인입니다.", close: "필요 없으시면 바로 정리해드릴 수 있게 30초만 확인드릴까요?" },
+  { phase: "TA", scene: "관리해주는 사람 있어요", answer: "네 정말 잘 되셨습니다. 요즘 상담을 하다 보면 지인을 믿고 가입했지만 설명이 미흡하거나 애매해도 다시 물어보기 힘든 경우가 많더라고요. 000님도 비슷한 상황이실 수 있으니 제가 점검만 도와드립니다.", close: "확인만 해보시는 것으로 앞으로 00년은 부담 없이 잘 유지하시면 됩니다." },
+  { phase: "TA", scene: "나중에 할게요", answer: "네 다음에 하셔도 됩니다. 다만 무료상담으로 진행이 이번 달에 가능하시기 때문에 나중에는 전문가 상담이 제한될 수 있습니다.", close: "부담 없이 편하게 점검만 도와드리겠습니다." },
+  { phase: "TA", scene: "나중에 할게요", answer: "나중으로 미루고 후회하시는 경우가 더러 있습니다. 그때 점검해서 조정이라도 할걸, 또는 내 보험이 이렇게 좋았구나 하는 분들이 많습니다.", close: "000님도 이번 기회에 점검을 통해 바로 알면 앞으로 편하실겁니다." },
+  { phase: "실버 TA", scene: "필요없어요", answer: "작년 기준으로 숨은보험금이 12조가 넘는데 확인만 해보셔도 이득입니다. 차 한잔 하는 시간으로 조회 가능하니 이번에 도와드리겠습니다.", close: "내일과 모레 언제 방문드릴까요?" },
+  { phase: "실버 TA", scene: "나이가 많아 보험 부담돼요/필요없어요", answer: "보험 가입권유로 방문드리는 게 아닙니다. 부담되는 부분을 점검해드리는 겁니다. 차 한잔할 시간만 내시면 됩니다.", close: "주중과 주말 편한 시간대에 제가 직접 방문드리니 뵙고 안내드리겠습니다." },
+  { phase: "실버 AP", scene: "자녀들이 관리해요", answer: "맞습니다. 저도 저희 부모님 보험은 당연히 관리해드리고 있어요. 그래도 제가 자녀분들보다는 보험에 관해서는 더 전문가니 제가 봐드리는 게 맞지 않을까요?", close: "자녀분과 통화를 해보겠습니다." },
   { phase: "AP", scene: "보험은 이미 많아요", answer: "많을수록 중복과 공백을 같이 봐야 합니다. 추가 가입보다 정리가 먼저입니다.", close: "현재 내용에서 유지할 것과 줄일 것만 구분해보겠습니다." },
   { phase: "PT", scene: "비싸요", answer: "보장을 먼저 맞출지, 금액을 먼저 맞출지 기준을 정해야 합니다.", close: "월 부담 가능 금액 안에서 우선순위를 다시 조정해보겠습니다." },
   { phase: "PT", scene: "가족과 상의할게요", answer: "가족분께 설명하기 쉽게 핵심 비교표로 정리해드리겠습니다.", close: "상의 후 헷갈리는 부분만 확인하는 시간을 잡아둘까요?" },
   { phase: "C", scene: "생각해볼게요", answer: "어떤 부분을 생각해보시면 결정이 쉬우실까요? 필요성, 보험료, 가족 상의 중 어디가 가장 크실까요?", close: "그 부분만 정리해서 내일 10분만 다시 확인하겠습니다." },
   { phase: "C", scene: "나중에 할게요", answer: "나중의 기준이 있어야 같은 고민을 반복하지 않습니다.", close: "언제, 어떤 조건이면 다시 볼지 정해두겠습니다." },
   { phase: "증권전달", scene: "소개할 사람이 없어요", answer: "바로 떠오르지 않으실 수 있습니다. 보험료가 부담되거나 보험을 오래 방치한 분 기준으로 생각해보시면 됩니다.", close: "제가 짧은 안내 문구를 드릴 테니 전달만 해주셔도 됩니다." },
+]
+
+const preObjectionScripts = [
+  { title: "보험료", purpose: "설계안 구성이 가능해집니다.", script: "보험료는 현재 부담은 없으신가요? 혹은 보장이 늘어나고 추가되면 당연히 보험료는 오를 텐데 어느 정도까지 가능할까요?" },
+  { title: "가입의사", purpose: "가족을 함께 만나는 방향으로 안내해야 합니다.", script: "제가 제안을 드린다면 결정은 누가 하시나요? 000님이 직접하시나요, 아니면 가족과 상의를 함께 해봐야 하시나요?" },
+  { title: "관리", purpose: "대응 방안을 준비할 수 있습니다.", script: "보험의 관리는 누가 하고 있나요? 가족이나 담당 설계사가 있으신가요?" },
+  { title: "불만", purpose: "고객의 불만만 없애줘도 클로징 확률이 올라갑니다.", script: "현재 보험을 유지하시면서 불편한 점은 어떤 것이 있으신가요?" },
+  { title: "보험료 이체일 확인", purpose: "신규 제안 시 고객의 부담을 줄이고 가능한 날짜를 한 번 더 확인합니다.", script: "기존 보험의 유지와 해약을 함께 검토할 수 있으니 보험료 이체일이 언제인지 먼저 확인해보겠습니다." },
 ]
 
 const fcThemes: FcTheme[] = [
@@ -384,29 +402,37 @@ export default function SalesMasterPage() {
                 세일즈 프로세스의 목적, 단계별 실행 내용, 훈련 방법, DB 접근, 약속잡기, 거절 대응, 증권전달과 소개 요청 흐름을 한 화면에서 확인합니다.
               </p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => window.open("/sales-book", "_blank", "noopener,noreferrer")} className="rounded-xl bg-white/10 px-5 py-3 text-[13px] font-black text-white hover:bg-white/20">세일즈 북</button>
-              <button onClick={() => window.open("/dashboard", "_self")} className="rounded-xl bg-white/10 px-5 py-3 text-[13px] font-black text-white hover:bg-white/20">대시보드</button>
-              <button onClick={() => window.close()} className="rounded-xl bg-white px-5 py-3 text-[13px] font-black text-[#173b72]">창 닫기</button>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => window.open("/sales-book", "_blank", "noopener,noreferrer")} className="whitespace-nowrap rounded-xl bg-white/10 px-4 py-3 text-[13px] font-black text-white hover:bg-white/20">세일즈 북</button>
+              <button onClick={() => window.open("/dashboard", "_self")} className="whitespace-nowrap rounded-xl bg-white/10 px-4 py-3 text-[13px] font-black text-white hover:bg-white/20">대시보드</button>
+              <button onClick={() => window.close()} className="whitespace-nowrap rounded-xl bg-white px-4 py-3 text-[13px] font-black text-[#173b72]">창 닫기</button>
             </div>
           </div>
         </section>
 
-        <nav className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-white p-2 shadow-sm md:grid-cols-6">
-          {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => { setActiveTab(tab.id); if (tab.id !== "process") setSelectedStageId(null) }} className={`rounded-xl px-3 py-3 text-[13px] font-black transition ${activeTab === tab.id ? "bg-[#173b72] text-white" : "text-slate-500 hover:bg-slate-100"}`}>
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+        <div className="grid gap-5 lg:grid-cols-[250px_1fr]">
+          <aside className="h-fit rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-5">
+            <p className="px-3 pb-2 pt-1 text-[12px] font-black tracking-[0.16em] text-slate-400">SALES MENU</p>
+            <nav className="grid gap-2">
+              {tabs.map((tab) => (
+                <button key={tab.id} onClick={() => { setActiveTab(tab.id); if (tab.id !== "process") setSelectedStageId(null) }} className={`rounded-xl px-4 py-3 text-left text-[13px] font-black transition ${activeTab === tab.id ? "bg-[#173b72] text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"}`}>
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
 
-        {activeTab === "process" && !selectedStage && <ProcessHome onSelect={setSelectedStageId} />}
-        {activeTab === "process" && selectedStage && <StageDetail stage={selectedStage} onBack={() => setSelectedStageId(null)} />}
-        {activeTab === "db" && <DbSection />}
-        {activeTab === "appointment" && <AppointmentSection />}
-        {activeTab === "objection" && <ObjectionSection />}
-        {activeTab === "fc" && <FcSection onSelect={setSelectedFcTheme} />}
-        {activeTab === "coach" && <CoachSection customerType={customerType} setCustomerType={setCustomerType} phase={phase} setPhase={setPhase} situation={situation} setSituation={setSituation} advice={advice} />}
+          <section className="min-w-0">
+            {activeTab === "process" && !selectedStage && <ProcessHome onSelect={setSelectedStageId} />}
+            {activeTab === "process" && selectedStage && <StageDetail stage={selectedStage} onBack={() => setSelectedStageId(null)} />}
+            {activeTab === "db" && <DbSection />}
+            {activeTab === "appointment" && <AppointmentSection />}
+            {activeTab === "objection" && <ObjectionSection />}
+            {activeTab === "preObjection" && <PreObjectionSection />}
+            {activeTab === "fc" && <FcSection onSelect={setSelectedFcTheme} />}
+            {activeTab === "coach" && <CoachSection customerType={customerType} setCustomerType={setCustomerType} phase={phase} setPhase={setPhase} situation={situation} setSituation={setSituation} advice={advice} />}
+          </section>
+        </div>
         {selectedFcTheme && <FcModal theme={selectedFcTheme} onClose={() => setSelectedFcTheme(null)} />}
       </div>
     </main>
@@ -566,7 +592,11 @@ function AppointmentSection() {
 
 function ObjectionSection() {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section className="grid gap-4">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[15px] font-black leading-7 text-amber-900">
+        ★ 거절과 반론은 선거절 처리로 하는 것이 최선의 방법입니다 ★
+      </div>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="grid grid-cols-[90px_170px_1fr_1fr] gap-3 bg-[#173b72] px-5 py-4 text-[13px] font-black text-white">
         <div>단계</div>
         <div>상황</div>
@@ -581,6 +611,32 @@ function ObjectionSection() {
           <div className="text-[#2563eb]">{item.close}</div>
         </div>
       ))}
+      </div>
+    </section>
+  )
+}
+
+function PreObjectionSection() {
+  return (
+    <section className="grid gap-5">
+      <div className="rounded-2xl bg-[#173b72] p-6 text-white shadow-sm">
+        <p className="text-[13px] font-black tracking-[0.18em] text-sky-200">PRE OBJECTION</p>
+        <h2 className="mt-2 text-2xl font-black">선거절 멘트</h2>
+        <p className="mt-3 max-w-4xl text-[14px] font-bold leading-7 text-white/75">
+          고객이 거절하기 전에 보험료, 결정권자, 관리 주체, 불만, 이체일을 먼저 확인하면 상담 방향이 선명해집니다.
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {preObjectionScripts.map((item) => (
+          <InfoCard key={item.title} title={item.title}>
+            <p className="mb-4 rounded-xl bg-slate-50 p-4 text-[14px] font-bold leading-7 text-slate-700">{item.script}</p>
+            <div className="rounded-xl border-l-4 border-[#2563eb] bg-[#eff6ff] p-4 text-[13px] font-black leading-6 text-[#173b72]">
+              {item.purpose}
+            </div>
+          </InfoCard>
+        ))}
+      </div>
     </section>
   )
 }
