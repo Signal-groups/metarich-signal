@@ -7,7 +7,14 @@ import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 import { canAccessCrm, normalizeRole } from '../../lib/roles'
 
-const NAV = [
+type NavItem = {
+  href: string
+  label: string
+  exact: boolean
+  icon: React.ReactNode
+}
+
+const NAV: NavItem[] = [
   {
     href: '/crm', label: '대시보드', exact: true,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" rx="1" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" rx="1" strokeWidth="2"/><rect x="14" y="14" width="7" height="7" rx="1" strokeWidth="2"/></svg>
@@ -68,6 +75,10 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
 
       setUser({ ...mergedUser, effectiveRole })
       setChecking(false)
+    }).catch(async () => {
+      await supabase.auth.signOut().catch(() => {})
+      const redirectTo = encodeURIComponent(pathname || '/crm')
+      router.replace(`/login?redirectTo=${redirectTo}`)
     })
   }, [pathname, router])
 

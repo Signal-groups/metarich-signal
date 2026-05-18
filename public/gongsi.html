@@ -309,6 +309,112 @@
     white-space:nowrap;
   }
   .disclosure-link:hover{filter:brightness(.97)}
+  .cardpay-button{
+    border:0;
+    border-radius:999px;
+    background:#e8fff5;
+    color:#069669;
+    padding:5px 10px;
+    font-size:11px;
+    font-weight:900;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .cardpay-button.no-info{
+    background:#f1f5f9;
+    color:#94a3b8;
+  }
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:80;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(15,30,60,.42);
+    backdrop-filter:blur(8px);
+  }
+  .modal-backdrop.show{display:flex}
+  .cardpay-modal{
+    width:min(450px,100%);
+    max-height:min(760px,calc(100vh - 40px));
+    overflow:hidden;
+    border-radius:16px;
+    border:1px solid #dbe4ef;
+    background:#fff;
+    box-shadow:0 24px 70px rgba(15,30,60,.24);
+  }
+  .modal-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:16px 20px;
+    border-bottom:1px solid #edf2f7;
+  }
+  .modal-title{
+    margin:0;
+    color:#10213f;
+    font-size:17px;
+    font-weight:900;
+  }
+  .modal-icon{
+    color:#0f8b5f;
+    font-size:17px;
+  }
+  .modal-close{
+    width:32px;
+    height:32px;
+    border:0;
+    border-radius:50%;
+    background:#f8fafc;
+    color:#94a3b8;
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .modal-body{
+    max-height:calc(100vh - 150px);
+    overflow:auto;
+    padding:18px 20px 20px;
+  }
+  .modal-note{
+    margin:0 0 16px;
+    color:#8a97aa;
+    font-size:13px;
+    font-weight:700;
+    line-height:1.55;
+  }
+  .cardpay-table{
+    display:grid;
+    gap:13px;
+  }
+  .cardpay-row{
+    display:grid;
+    grid-template-columns:112px minmax(0,1fr);
+    gap:12px;
+    font-size:14px;
+    line-height:1.65;
+  }
+  .cardpay-row dt{
+    color:#26344f;
+    font-weight:900;
+  }
+  .cardpay-row dd{
+    margin:0;
+    color:#111827;
+    font-weight:700;
+  }
+  .cardpay-empty{
+    border-radius:14px;
+    background:#f8fafc;
+    padding:22px;
+    color:#64748b;
+    text-align:center;
+    font-size:15px;
+    font-weight:900;
+  }
   .company-type{
     margin-top:4px;
     font-size:12px;
@@ -453,6 +559,15 @@
   </main>
 
   <div class="toast" id="toast">연락처가 복사되었습니다.</div>
+  <div class="modal-backdrop" id="cardPayModal" aria-hidden="true">
+    <section class="cardpay-modal" role="dialog" aria-modal="true" aria-labelledby="cardPayTitle">
+      <div class="modal-head">
+        <h2 class="modal-title" id="cardPayTitle"><span class="modal-icon">▱</span> 카드납 정보</h2>
+        <button class="modal-close" type="button" onclick="closeCardPayModal()" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body" id="cardPayBody"></div>
+    </section>
+  </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -542,6 +657,171 @@ const CONTACT_DETAILS = {
 
 COMPANIES.forEach(company => Object.assign(company, CONTACT_DETAILS[company.name] || {}))
 
+const CARD_PAYMENT_INFO = {
+  "삼성화재": {
+    "구분": "초회, 계속분 가능",
+    "수납": "설계사 카드수납",
+    "신청 방법": "해당사항 없음",
+    "1회성수납": "해당사항 없음",
+    "카드 범위": "계약자 카드만 가능",
+    "제휴사": "KB국민카드, 롯데카드, BC카드, 삼성카드, 신한카드, 하나SK카드, 외환카드, NH농협카드, 씨티카드, 현대카드, 하나카드, 광주은행, 전북은행, 수협은행, 제주은행, 해외카드",
+    "기타": "보장성만 가능",
+  },
+  "한화손해보험": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "고객센터 내방, 한화손보지점 내방(콜센터 신청 불가)",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 피보험자 카드만 가능",
+    "제휴사": "KB국민카드, BC카드, 신한카드, NH농협카드, 현대카드, 하나카드, 롯데카드, 삼성카드(삼성체크카드 불가)",
+    "기타": "보장성만 가능",
+  },
+  "현대해상": {
+    "구분": "초회, 계속분 가능",
+    "수납": "설계사 카드수납",
+    "신청 방법": "해당사항 없음",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 배우자, 직계존비속, 형제자매 가능",
+    "제휴사": "KB국민카드, 롯데카드, BC카드, 삼성카드, 신한카드, NH농협카드, 씨티카드, 현대카드, 하나카드",
+    "기타": "보장성만 가능",
+  },
+  "메리츠화재": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 배우자, 직계가족 가능",
+    "제휴사": "BC카드, KB국민카드, 롯데카드, 삼성카드, 신한카드, 하나카드, 현대카드, NH농협카드",
+    "기타": "보장성만 가능",
+  },
+  "DB손해보험": {
+    "구분": "초회, 계속분 가능",
+    "수납": "설계사 카드수납",
+    "신청 방법": "해당사항 없음",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 배우자, 직계존비속, 형제자매 가능",
+    "제휴사": "KB국민카드, 롯데카드, BC카드, 삼성카드, 신한카드, 하나카드, NH농협카드, 현대카드",
+    "기타": "보장성만 가능",
+  },
+  "KB손해보험": {
+    "구분": "초회, 계속분 가능",
+    "수납": "설계사 카드수납",
+    "신청 방법": "해당사항 없음",
+    "1회성수납": "해당사항 없음",
+    "카드 범위": "계약자, 배우자, 직계가족 가능",
+    "제휴사": "KB국민카드, 롯데카드, BC카드, 삼성카드, 신한카드, 우리카드, NH농협카드, 씨티카드, 현대카드, 하나카드",
+    "기타": "보장성만 가능",
+  },
+  "흥국화재": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 배우자, 직계가족 가능",
+    "제휴사": "BC카드, 하나카드, KB국민카드, 삼성카드, 신한카드, 롯데카드, 현대카드, NH농협카드",
+    "기타": "보장성만 가능",
+  },
+  "NH농협손해보험": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "농협, 농축협, 농협손보 내방",
+    "1회성수납": "해당없음",
+    "카드 범위": "계약자 카드만 가능",
+    "제휴사": "NH농협카드, BC카드, KB국민카드, 신한카드, 삼성카드, 하나카드",
+    "기타": "보장성만 가능",
+  },
+  "롯데손해보험": {
+    "구분": "초회, 계속분 가능",
+    "수납": "설계사 카드수납",
+    "신청 방법": "해당없음",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 배우자, 직계가족 카드 가능",
+    "제휴사": "BC카드, KB국민카드, NH농협카드, 롯데카드, 삼성카드, 신한카드, 씨티카드, 하나카드, 현대카드",
+    "기타": "보장성만 가능",
+  },
+  "AIG손해보험": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 직계가족 가능",
+    "제휴사": "KB국민카드, 롯데카드, BC카드, 삼성카드, 신한카드, 우리카드, 하나SK카드, 외환카드, NH농협카드, 씨티카드, 현대카드, 하나카드, 수협카드, 제주카드, 광주카드, 전북카드, 해외(아멕스, JCB, 비자, 마스터, DISCOVER, CUP, 다이너스)카드",
+    "기타": "해당사항 없음",
+  },
+  "하나손해보험": {
+    "구분": "초회만 가능",
+    "수납": "해당없음",
+    "신청 방법": "해당없음",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자 카드만 가능",
+    "제휴사": "KB국민카드, 롯데카드, BC카드, 삼성카드, 신한카드, 우리카드, 하나SK카드, 외환카드, NH농협카드, 씨티카드, 현대카드, 하나카드, 갤러리아카드",
+    "기타": "해당없음",
+  },
+  "삼성생명": {
+    "구분": "계속분만 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자 카드만 가능",
+    "제휴사": "삼성카드",
+    "기타": "순수 보장성만 가능",
+  },
+  "NH농협생명": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자",
+    "제휴사": "BC카드, NH농협카드, 현대카드, 롯데카드",
+    "기타": "보장성만 가능",
+  },
+  "동양생명": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자",
+    "제휴사": "신한카드, 현대카드, 삼성카드, 롯데카드, BC카드, KB카드",
+    "기타": "보장성만 가능",
+  },
+  "AIA생명": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 배우자, 직계존비속, 형제자매 가능",
+    "제휴사": "농협카드, 롯데카드, 국민카드, 비씨카드, 삼성카드, 신한카드, 씨티카드, 하나카드, 현대카드",
+    "기타": "보장성만 가능",
+  },
+  "라이나생명": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 배우자, 직계존비속, 형제자매, 시부모(장인, 장모), 사위, 며느리 카드 가능",
+    "제휴사": "BC카드, 신한카드, 국민카드, 삼성카드, 현대카드, 롯데카드, 하나카드, NH농협카드, 씨티카드",
+    "기타": "종신(신계약 시 카드이체불가, 성립 후 콜센터 통해 카드이체 등록 가능), 종신 외 보험(신계약 시 카드이체 가능)",
+  },
+  "처브라이프": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "신계약 청약시 신청",
+    "1회성수납": "해당없음",
+    "카드 범위": "계약자, 배우자, 직계가족 카드 가능",
+    "제휴사": "국내 전 카드사",
+    "기타": "보장성 상품 중 월보험료 15만원 이하 건(GA채널의 경우 전자서명 청약시 가능)",
+  },
+  "푸본현대생명": {
+    "구분": "초회, 계속분 가능",
+    "수납": "카드 자동이체 가능",
+    "신청 방법": "계약 후 고객이 콜센터 통해 신청",
+    "1회성수납": "콜센터 통해 가능",
+    "카드 범위": "계약자, 피보험자 가능",
+    "제휴사": "현대카드, BC카드, 신한카드, 국민카드",
+    "기타": "보장성만 가능",
+  },
+}
+
 const TYPE_LABELS = {
   damage:"손해보험",
   life:"생명보험",
@@ -559,6 +839,9 @@ const searchInput = document.getElementById("searchInput")
 const filters = document.querySelectorAll(".filter")
 const viewButtons = document.querySelectorAll(".view-btn")
 const toast = document.getElementById("toast")
+const cardPayModal = document.getElementById("cardPayModal")
+const cardPayBody = document.getElementById("cardPayBody")
+const cardPayTitle = document.getElementById("cardPayTitle")
 
 function closePage(){
   if(window.opener){ window.close(); return }
@@ -569,6 +852,16 @@ function normalize(value){
   return String(value || "").replace(/\s/g,"").toLowerCase()
 }
 
+function escapeHTML(value){
+  return String(value || "").replace(/[&<>"']/g, (char) => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#039;"
+  }[char]))
+}
+
 function copyContact(company){
   const text = `${company.name}\n보험회사 ${company.phone}\n모니터링 ${company.monitoring}`
   navigator.clipboard.writeText(text).then(() => {
@@ -576,6 +869,47 @@ function copyContact(company){
     setTimeout(() => toast.classList.remove("show"), 1500)
   })
 }
+
+function openCardPayModal(companyName){
+  const info = CARD_PAYMENT_INFO[companyName]
+  cardPayTitle.innerHTML = `<span class="modal-icon">▱</span> ${escapeHTML(companyName)} 카드납 정보`
+  if (!info) {
+    cardPayBody.innerHTML = `
+      <p class="modal-note">참고용으로만 사용하시고, 정확한 정보는 보험사 담당자에게 문의 부탁드립니다.</p>
+      <div class="cardpay-empty">해당사항 없음</div>
+    `
+  } else {
+    const rows = ["구분", "수납", "신청 방법", "1회성수납", "카드 범위", "제휴사", "기타"]
+      .map((label) => `
+        <div class="cardpay-row">
+          <dt>${label}</dt>
+          <dd>${escapeHTML(info[label] || "해당사항 없음")}</dd>
+        </div>
+      `).join("")
+    cardPayBody.innerHTML = `
+      <p class="modal-note">참고용으로만 사용하시고, 정확한 정보는 보험사 담당자에게 문의 부탁드립니다.</p>
+      <dl class="cardpay-table">${rows}</dl>
+    `
+  }
+  cardPayModal.classList.add("show")
+  cardPayModal.setAttribute("aria-hidden", "false")
+}
+
+function closeCardPayModal(){
+  cardPayModal.classList.remove("show")
+  cardPayModal.setAttribute("aria-hidden", "true")
+}
+
+window.openCardPayModal = openCardPayModal
+window.closeCardPayModal = closeCardPayModal
+
+cardPayModal.addEventListener("click", (event) => {
+  if (event.target === cardPayModal) closeCardPayModal()
+})
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && cardPayModal.classList.contains("show")) closeCardPayModal()
+})
 
 async function initFavorites(){
   if (!supabaseClient) return
@@ -648,6 +982,7 @@ function render(){
       <div class="card-body">
         <div class="info-row"><span>대표번호</span><strong>${company.phone}</strong></div>
         <div class="info-row"><span>모니터링</span><strong>${company.monitoring}</strong></div>
+        <div class="info-row"><span>카드납</span><strong><button class="cardpay-button ${CARD_PAYMENT_INFO[company.name] ? "" : "no-info"}" type="button" onclick='openCardPayModal(${JSON.stringify(company.name)})'>${CARD_PAYMENT_INFO[company.name] ? "정보 보기" : "해당사항 없음"}</button></strong></div>
         <div class="info-row"><span>전산헬프데스크</span><strong>${company.helpdesk || "확인 필요"}</strong></div>
         <div class="info-row"><span>청구팩스</span><strong>${company.claimFax || "확인 필요"}</strong></div>
       </div>

@@ -33,20 +33,6 @@ export const CONSULTING_TOOL_CATEGORIES: {
 
 export const CONSULTING_TOOLS: ConsultingTool[] = [
   {
-    id: "show_cafe",
-    title: "보험정보 카페",
-    label: "보험정보 카페",
-    desc: "네이버 카페 바로가기",
-    icon: "cafe",
-    url: "https://cafe.naver.com/signal1035",
-    color: "border-emerald-500",
-    cardColor: "border-emerald-500 text-emerald-600",
-    fixed: true,
-    access: "public",
-    highlight: true,
-    editable: false,
-  },
-  {
     id: "show_cont",
     title: "숨은보험금",
     label: "숨은보험금",

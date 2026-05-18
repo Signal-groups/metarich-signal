@@ -217,6 +217,28 @@ export default function Sidebar({
     }
   };
 
+  const openContentStudio = () => {
+    const popup = window.open(
+      `${window.location.origin}/content-studio`,
+      "metarich-content-studio",
+      "width=1280,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes"
+    );
+    if (!popup) window.open(`${window.location.origin}/content-studio`, "_blank", "noopener,noreferrer");
+    setIsOpen(false);
+  };
+
+  const openInsuranceCafe = () => {
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    const url = isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035";
+    window.open(url, "_blank", "noopener,noreferrer");
+    setIsOpen(false);
+  };
+
+  const openInsuranceChat = () => {
+    window.open("https://open.kakao.com/o/g8ND5toi", "_blank", "noopener,noreferrer");
+    setIsOpen(false);
+  };
+
   return (
     <>
       <button 
@@ -276,6 +298,31 @@ export default function Sidebar({
                 label="상담 도구" 
                 active={mode === 'consulting'} 
                 onClick={() => setIsConsultModalOpen(true)} 
+              />
+
+              {isApproved && (
+                <NavItem
+                  icon="DM"
+                  label="DM 및 정보 작성"
+                  active={false}
+                  onClick={openContentStudio}
+                />
+              )}
+
+              <NavItem
+                icon="N"
+                label="보험의 기준 카페"
+                active={false}
+                onClick={openInsuranceCafe}
+                variant="naver"
+              />
+
+              <NavItem
+                icon="톡"
+                label="보험의 기준 단톡방"
+                active={false}
+                onClick={openInsuranceChat}
+                variant="kakao"
               />
 
               {canAccessCrm(user) && (
@@ -457,14 +504,30 @@ export default function Sidebar({
   );
 }
 
-function NavItem({ icon, label, active, onClick }: { icon: string, label: string, active?: boolean, onClick: () => void }) {
+function NavItem({ icon, label, active, onClick, variant }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" }) {
+  const variantClass =
+    variant === "naver"
+      ? "bg-[#03c75a] text-white hover:bg-[#02b150] shadow-lg shadow-emerald-950/20"
+      : variant === "kakao"
+        ? "bg-[#FEE500] text-[#191919] hover:bg-[#f4d900] shadow-lg shadow-yellow-950/20"
+        : active
+          ? "bg-white/15 text-white"
+          : "text-white/60 hover:text-white hover:bg-white/5";
+
+  const iconClass =
+    variant === "naver"
+      ? "bg-white text-[#03c75a] font-black rounded-md w-6 h-6 flex items-center justify-center text-[15px]"
+      : variant === "kakao"
+        ? "bg-[#191919] text-[#FEE500] font-black rounded-full w-6 h-6 flex items-center justify-center text-[13px]"
+        : `text-lg transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`;
+
   return (
     <button 
       onClick={onClick} 
-      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${active ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${variantClass}`}
     >
-      <span className={`text-lg transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>{icon}</span>
-      <span className="text-[13px] font-medium">{label}</span>
+      <span className={iconClass}>{icon}</span>
+      <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
       {active && <div className="ml-auto w-1 h-4 bg-[#0ea5e9] rounded-full"></div>}
     </button>
   );
