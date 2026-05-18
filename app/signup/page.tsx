@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { HEADQUARTER_OPTIONS } from "@/lib/roles"
 
+type SignupAccountType = "signal" | "external"
+
 type OrgRow = {
   id?: string | number
   name: string
@@ -33,6 +35,7 @@ export default function SignupPage() {
   const [branches, setBranches] = useState<OrgRow[]>([])
 
   const [formData, setFormData] = useState({
+    accountType: "signal" as SignupAccountType,
     email: "",
     password: "",
     name: "",
@@ -40,6 +43,8 @@ export default function SignupPage() {
     headquarter: "",
     department: "",
     branch: "",
+    companyName: "",
+    position: "",
   })
 
   useEffect(() => {
@@ -82,6 +87,7 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
+      const isExternal = formData.accountType === "external"
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim(),
         password: formData.password,
@@ -96,15 +102,15 @@ export default function SignupPage() {
             email: formData.email.trim(),
             name: formData.name,
             phone: formData.phone.trim(),
-            role: "agent",
-            role_level: "staff",
-            rank: "agent",
-            headquarter: formData.headquarter,
-            headquarter_name: formData.headquarter,
-            department: formData.department || "",
-            department_name: formData.department || "",
-            team: formData.branch || "",
-            branch_name: formData.branch || "",
+            role: isExternal ? "guest" : "agent",
+            role_level: isExternal ? "guest" : "staff",
+            rank: isExternal ? "guest" : "agent",
+            headquarter: isExternal ? "타사" : formData.headquarter,
+            headquarter_name: isExternal ? "타사" : formData.headquarter,
+            department: isExternal ? formData.companyName.trim() : formData.department || "",
+            department_name: isExternal ? formData.companyName.trim() : formData.department || "",
+            team: isExternal ? formData.position.trim() : formData.branch || "",
+            branch_name: isExternal ? formData.position.trim() : formData.branch || "",
             is_approved: false,
           },
         ])
@@ -131,6 +137,19 @@ export default function SignupPage() {
 
   const inputClass = "w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-bold text-slate-900 outline-none transition focus:border-[#2563eb] focus:bg-white"
   const selectClass = "w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 font-bold text-slate-900 outline-none transition focus:border-[#2563eb] focus:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+  const accountTypeClass = (type: SignupAccountType) =>
+    `flex min-h-[58px] items-center gap-3 rounded-2xl border p-4 text-left transition ${formData.accountType === type ? "border-[#1a3a6e] bg-[#eef3fb] text-[#1a3a6e]" : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-white"}`
+  const setAccountType = (accountType: SignupAccountType) => {
+    setFormData((prev) => ({
+      ...prev,
+      accountType,
+      headquarter: accountType === "external" ? "" : prev.headquarter,
+      department: accountType === "external" ? "" : prev.department,
+      branch: accountType === "external" ? "" : prev.branch,
+      companyName: accountType === "signal" ? "" : prev.companyName,
+      position: accountType === "signal" ? "" : prev.position,
+    }))
+  }
 
   return (
     <div className="min-h-screen bg-[#eef3fb] px-5 py-8 text-slate-900">
@@ -183,48 +202,100 @@ export default function SignupPage() {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </label>
+
+            <div>
+              <span className="mb-2 block text-xs font-bold text-slate-500">소속 구분</span>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className={accountTypeClass("signal")}>
+                  <input
+                    type="checkbox"
+                    checked={formData.accountType === "signal"}
+                    onChange={() => setAccountType("signal")}
+                    className="h-4 w-4 accent-[#1a3a6e]"
+                  />
+                  <span className="text-sm font-black">시그널그룹 임직원</span>
+                </label>
+                <label className={accountTypeClass("external")}>
+                  <input
+                    type="checkbox"
+                    checked={formData.accountType === "external"}
+                    onChange={() => setAccountType("external")}
+                    className="h-4 w-4 accent-[#1a3a6e]"
+                  />
+                  <span className="text-sm font-black">타사</span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
-            <label>
-              <span className="mb-2 block text-xs font-bold text-slate-500">본부</span>
-              <select
-                required
-                className={selectClass}
-                value={formData.headquarter}
-                onChange={(e) => setFormData({ ...formData, headquarter: e.target.value, department: "", branch: "" })}
-              >
-                <option value="">본부 선택</option>
-                {HEADQUARTER_OPTIONS.map((name) => <option key={name} value={name}>{name}</option>)}
-              </select>
-            </label>
+          {formData.accountType === "signal" ? (
+            <div className="grid gap-5 md:grid-cols-3">
+              <label>
+                <span className="mb-2 block text-xs font-bold text-slate-500">본부</span>
+                <select
+                  required
+                  className={selectClass}
+                  value={formData.headquarter}
+                  onChange={(e) => setFormData({ ...formData, headquarter: e.target.value, department: "", branch: "" })}
+                >
+                  <option value="">본부 선택</option>
+                  {HEADQUARTER_OPTIONS.map((name) => <option key={name} value={name}>{name}</option>)}
+                </select>
+              </label>
 
-            <label>
-              <span className="mb-2 block text-xs font-bold text-slate-500">사업부 <span className="font-medium text-slate-400">(선택)</span></span>
-              <select
-                disabled={!formData.headquarter}
-                className={selectClass}
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value, branch: "" })}
-              >
-                <option value="">나중에 배정</option>
-                {filteredDepts.map((dept) => <option key={dept.id || dept.name} value={dept.name}>{dept.name}</option>)}
-              </select>
-            </label>
+              <label>
+                <span className="mb-2 block text-xs font-bold text-slate-500">사업부 <span className="font-medium text-slate-400">(선택)</span></span>
+                <select
+                  disabled={!formData.headquarter}
+                  className={selectClass}
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value, branch: "" })}
+                >
+                  <option value="">나중에 배정</option>
+                  {filteredDepts.map((dept) => <option key={dept.id || dept.name} value={dept.name}>{dept.name}</option>)}
+                </select>
+              </label>
 
-            <label>
-              <span className="mb-2 block text-xs font-bold text-slate-500">지점 <span className="font-medium text-slate-400">(선택)</span></span>
-              <select
-                disabled={!formData.department}
-                className={selectClass}
-                value={formData.branch}
-                onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-              >
-                <option value="">나중에 배정</option>
-                {filteredBranches.map((branch) => <option key={branch.id || branch.name} value={branch.name}>{branch.name}</option>)}
-              </select>
-            </label>
-          </div>
+              <label>
+                <span className="mb-2 block text-xs font-bold text-slate-500">지점 <span className="font-medium text-slate-400">(선택)</span></span>
+                <select
+                  disabled={!formData.department}
+                  className={selectClass}
+                  value={formData.branch}
+                  onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
+                >
+                  <option value="">나중에 배정</option>
+                  {filteredBranches.map((branch) => <option key={branch.id || branch.name} value={branch.name}>{branch.name}</option>)}
+                </select>
+              </label>
+            </div>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2">
+              <label>
+                <span className="mb-2 block text-xs font-bold text-slate-500">회사명</span>
+                <input
+                  type="text"
+                  placeholder="소속 회사를 입력하세요"
+                  required
+                  className={inputClass}
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                />
+              </label>
+
+              <label>
+                <span className="mb-2 block text-xs font-bold text-slate-500">직급</span>
+                <input
+                  type="text"
+                  placeholder="직급을 입력하세요"
+                  required
+                  className={inputClass}
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                />
+              </label>
+            </div>
+          )}
 
           <label>
             <span className="mb-2 block text-xs font-bold text-slate-500">비밀번호</span>

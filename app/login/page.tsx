@@ -16,9 +16,13 @@ export default function LoginPage() {
     const value = params.get("redirectTo") || "/dashboard"
     const nextRedirect = value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard"
     setRedirectPath(nextRedirect)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && params.get("redirectTo")) router.replace(nextRedirect)
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (session && params.get("redirectTo")) router.replace(nextRedirect)
+      })
+      .catch(async () => {
+        await supabase.auth.signOut()
+      })
   }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -45,26 +49,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#eef3fb] flex items-center justify-center p-6 text-slate-900">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-2xl md:grid-cols-[1.05fr_.95fr]">
-        <section className="bg-[#1a3a6e] p-8 text-white md:p-12">
-          <div className="mb-16">
-            <p className="text-xs font-bold tracking-[0.35em] text-sky-200">METARICH SIGNAL</p>
-            <h1 className="mt-4 text-4xl font-black leading-tight md:text-5xl">시그널 워크센터</h1>
-            <p className="mt-5 max-w-sm text-sm leading-7 text-white/70">
-              매일의 실적, 상담 준비, 고객관리 흐름을 한 화면에서 확인하고 팀별 진행 상황을 빠르게 점검할 수 있습니다.
-            </p>
-          </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0f1e3c] p-6 text-slate-900">
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-35"
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1800&q=85')" }}
+      />
+      <div className="absolute inset-0 bg-[#0f1e3c]/70" />
 
-          <div className="grid gap-3 text-sm text-white/85">
-            <div className="rounded-2xl bg-white/10 p-4">오늘 입력한 실적과 활동을 기준으로 목표 달성률을 확인합니다.</div>
-            <div className="rounded-2xl bg-white/10 p-4">고객 상담 전 필요한 자료와 관리 도구를 바로 열어 활용합니다.</div>
-            <div className="rounded-2xl bg-white/10 p-4">직급별 권한에 맞춰 팀, 사업부, 본부 현황을 안전하게 관리합니다.</div>
-          </div>
-        </section>
+      <main className="relative z-10 flex w-full max-w-md flex-col items-center gap-7">
+        <h1 className="text-center font-black leading-tight text-white drop-shadow">
+          <span className="block text-4xl md:text-6xl">보험의 기준</span>
+          <span className="mt-3 block text-2xl tracking-wide md:text-4xl">Insu-Work Center</span>
+        </h1>
 
-        <section className="p-8 md:p-12">
-          <div className="mb-8">
+        <section className="w-full rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur md:p-10">
+          <div className="mb-8 text-center">
             <p className="text-xs font-bold tracking-[0.25em] text-[#2563eb]">LOGIN</p>
             <h2 className="mt-2 text-3xl font-black text-[#1a3a6e]">로그인</h2>
           </div>
@@ -104,7 +103,7 @@ export default function LoginPage() {
             </button>
           </div>
         </section>
-      </div>
+      </main>
     </div>
   )
 }

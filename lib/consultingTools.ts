@@ -27,7 +27,7 @@ export const CONSULTING_TOOL_CATEGORIES: {
   { id: "customer", title: "고객 상담", desc: "고객 안내와 상담 근거 확인에 필요한 도구", tone: "border-sky-500 text-sky-600", countTone: "bg-sky-50 text-sky-700" },
   { id: "coverage", title: "보장 분석", desc: "보장 통계, 인수 기준, 교차설계 비교에 필요한 도구", tone: "border-sky-500 text-sky-600", countTone: "bg-sky-50 text-sky-700" },
   { id: "financial", title: "재무설계 상담", desc: "재무 분석과 금융 계산에 필요한 상담 도구", tone: "border-indigo-500 text-indigo-600", countTone: "bg-indigo-50 text-indigo-700" },
-  { id: "planning", title: "설계 및 보장분석", desc: "보장 점검과 사고 상담에 필요한 도구", tone: "border-indigo-500 text-indigo-600", countTone: "bg-indigo-50 text-indigo-700" },
+  { id: "planning", title: "조회 및 서류안내", desc: "보장 조회와 청구 서류 안내에 필요한 도구", tone: "border-indigo-500 text-indigo-600", countTone: "bg-indigo-50 text-indigo-700" },
   { id: "claims", title: "수술 및 후유장해", desc: "질병, 수술, 장해 기준 확인에 필요한 도구", tone: "border-rose-500 text-rose-600", countTone: "bg-rose-50 text-rose-700" },
 ];
 
@@ -267,9 +267,23 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-slate-400",
     cardColor: "border-slate-400 text-slate-500",
     fixed: true,
-    access: "approved",
+    access: "public",
+    highlight: true,
     editable: false,
-    placement: "office",
+  },
+  {
+    id: "show_claim_docs",
+    title: "서류 안내",
+    label: "서류 안내",
+    desc: "보험금 청구 서류와 보험사 연락처 안내",
+    icon: "document",
+    url: "/claim-documents",
+    color: "border-teal-500",
+    cardColor: "border-teal-500 text-teal-600",
+    fixed: true,
+    access: "public",
+    editable: false,
+    category: "planning",
   },
 ];
 

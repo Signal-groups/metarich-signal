@@ -30,7 +30,6 @@ type ManagementViewProps = {
 const QUICK_LINKS = [
   { href: "https://meta-on.kr/#/login", label: "메타온" },
   { href: "https://xn--on3bi2e18htop.com/", label: "보험ON" },
-  { href: "/gongsi.html", label: "보험상품 공시" },
   { href: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm", label: "교육자료" },
   { href: "/sales-master", label: "세일즈 마스터" },
   { href: "/sales-book", label: "세일즈 북" },
@@ -190,7 +189,6 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
     { id: "perf", label: "실적 관리" },
     { id: "act", label: "활동 및 분석" },
     { id: "edu", label: "교육 관리" },
-    { id: "docs", label: "서류 안내", external: true },
     ...(canOpenSettings ? [{ id: "sys", label: "설정 관리" }] : []),
     ...(canOpenOrgManagement ? [{ id: "users", label: "직원 관리" }] : []),
   ]
@@ -268,10 +266,6 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
           <button
             key={tab.id}
             onClick={() => {
-              if ("external" in tab && tab.external) {
-                window.open(`${window.location.origin}/claim-documents`, "_blank", "noopener,noreferrer")
-                return
-              }
               setActiveTab(tab.id)
             }}
             className={`${activeTab === tab.id ? "bg-[#1a3a6e] text-white shadow-md" : "bg-white text-slate-600 hover:bg-slate-50"} rounded-2xl border border-slate-200 px-1 py-4 text-center text-[13px] font-black transition-all md:text-sm`}

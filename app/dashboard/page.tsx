@@ -278,9 +278,11 @@ export default function DashboardPage() {
                     <p className="text-[#94a3b8] font-bold text-sm mt-1 tracking-widest">{isApproved ? "승인된 상담 도구를 사용할 수 있습니다" : "게스트 모드로 이용 중입니다"}</p>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setViewMode("select"); setActiveTab(null); }} className="rounded-xl bg-slate-100 px-4 py-3 text-xs font-black text-slate-600 hover:bg-slate-200">
-                      처음 화면
-                    </button>
+                    {!isGuest && (
+                      <button onClick={() => { setViewMode("select"); setActiveTab(null); }} className="rounded-xl bg-slate-100 px-4 py-3 text-xs font-black text-slate-600 hover:bg-slate-200">
+                        처음 화면
+                      </button>
+                    )}
                     {isMaster && (
                       <button onClick={() => setIsConsultEditMode(!isConsultEditMode)} className={`rounded-xl px-4 py-3 text-xs font-black ${isConsultEditMode ? "bg-[#1a3a6e] text-white" : "bg-black text-[#d4af37]"}`}>
                         {isConsultEditMode ? "편집 완료" : "노출 편집"}

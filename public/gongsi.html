@@ -227,7 +227,7 @@
   }
   .grid.list-mode .card{
     display:grid;
-    grid-template-columns:260px minmax(0,1fr) 330px;
+    grid-template-columns:300px minmax(0,1fr);
     align-items:center;
   }
   .grid.list-mode .card-head{
@@ -237,9 +237,6 @@
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
     gap:0 18px;
-  }
-  .grid.list-mode .actions{
-    padding:16px;
   }
   .card{
     overflow:hidden;
@@ -287,6 +284,31 @@
     font-weight:900;
     line-height:1.2;
   }
+  .company-title{
+    min-width:0;
+  }
+  .company-title-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .disclosure-link{
+    min-height:30px;
+    padding:0 10px;
+    border:1.5px solid var(--card-color,#152744);
+    border-radius:999px;
+    background:#fff;
+    color:#10213f;
+    font-size:11px;
+    font-weight:900;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    white-space:nowrap;
+  }
+  .disclosure-link:hover{filter:brightness(.97)}
   .company-type{
     margin-top:4px;
     font-size:12px;
@@ -328,31 +350,6 @@
     color:#10213f;
     text-align:right;
   }
-  .actions{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:8px;
-    padding:0 16px 16px;
-  }
-  .action{
-    min-height:42px;
-    border:1.5px solid var(--line);
-    border-radius:13px;
-    background:#f8fafc;
-    color:#10213f;
-    font-size:12px;
-    font-weight:900;
-    text-decoration:none;
-    display:grid;
-    place-items:center;
-    cursor:pointer;
-  }
-  .action.primary{
-    background:#fff;
-    border-color:var(--card-color,#152744);
-    color:#10213f;
-  }
-  .action:hover{filter:brightness(.97)}
   .empty{
     display:none;
     padding:60px 20px;
@@ -397,7 +394,7 @@
     h1{font-size:26px}
     .grid{grid-template-columns:1fr}
     .summary{grid-template-columns:1fr}
-    .actions{grid-template-columns:1fr}
+    .company-title-row{align-items:flex-start}
   }
 </style>
 </head>
@@ -639,8 +636,11 @@ function render(){
         <div class="logo-box">
           ${company.logo ? `<img src="${company.logo}" alt="${company.name}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-fallback',textContent:'${company.name.slice(0,2)}'}))">` : `<span class="logo-fallback">${company.name.slice(0,2)}</span>`}
         </div>
-        <div>
-          <h2 class="company-name">${company.name}</h2>
+        <div class="company-title">
+          <div class="company-title-row">
+            <h2 class="company-name">${company.name}</h2>
+            <a class="disclosure-link" href="${company.disclose}" target="_blank" rel="noopener">약관확인</a>
+          </div>
           <div class="company-type">${TYPE_LABELS[company.type]}</div>
         </div>
         <button class="favorite-btn ${favoriteKeys.has(company.name) ? "active" : ""}" type="button" title="즐겨찾기" onclick='toggleFavorite(${JSON.stringify(company.name)}, ${JSON.stringify(company.name)})'>${favoriteKeys.has(company.name) ? "★" : "☆"}</button>
@@ -650,11 +650,6 @@ function render(){
         <div class="info-row"><span>모니터링</span><strong>${company.monitoring}</strong></div>
         <div class="info-row"><span>전산헬프데스크</span><strong>${company.helpdesk || "확인 필요"}</strong></div>
         <div class="info-row"><span>청구팩스</span><strong>${company.claimFax || "확인 필요"}</strong></div>
-      </div>
-      <div class="actions">
-        <a class="action primary" href="${company.disclose}" target="_blank" rel="noopener">상품공시</a>
-        <a class="action" href="/claim-documents" target="_blank" rel="noopener">청구서류</a>
-        <button class="action" type="button" onclick='copyContact(${JSON.stringify(company)})'>연락처 복사</button>
       </div>
     </article>
   `).join("")

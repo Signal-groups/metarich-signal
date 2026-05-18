@@ -36,8 +36,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     salesMaster: "/sales-master",
     salesBook: "/sales-book",
     productAll: "/product-all",
-    gongsi: "/gongsi.html",
-    claimDocs: "/claim-documents",
   };
   const canUseCrm = canAccessCrm(user);
 
@@ -181,12 +179,10 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         <div className="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-center">
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-[#f8fafc] text-[#475569]" />
-          <QuickBtn label="공시실" url={LINKS.gongsi} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="세일즈 마스터" url={LINKS.salesMaster} color="bg-[#1a3a6e] text-white" />
           <QuickBtn label="세일즈 북" url={LINKS.salesBook} color="bg-[#2563eb] text-white" />
           <QuickBtn label="상품의 모든것" url={LINKS.productAll} color="bg-[#f59e0b] text-white" />
-          <QuickBtn label="서류 안내" url={LINKS.claimDocs} color="bg-[#0f766e] text-white" />
           {canUseCrm && (
             <QuickBtn
               label="고객관리"
