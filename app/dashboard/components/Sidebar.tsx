@@ -234,6 +234,11 @@ export default function Sidebar({
     setIsOpen(false);
   };
 
+  const openCustomerSupportApp = () => {
+    window.open("https://drive.google.com/file/d/100qSbwVs3mVSpV-oin44xryavNW40GMa/view?usp=sharing", "_blank", "noopener,noreferrer");
+    setIsOpen(false);
+  };
+
   const openInsuranceChat = () => {
     window.open("https://open.kakao.com/o/g8ND5toi", "_blank", "noopener,noreferrer");
     setIsOpen(false);
@@ -308,6 +313,14 @@ export default function Sidebar({
                   onClick={openContentStudio}
                 />
               )}
+
+              <NavItem
+                icon="APP"
+                label="고객관리서포트앱"
+                active={false}
+                onClick={openCustomerSupportApp}
+                variant="support"
+              />
 
               <NavItem
                 icon="N"
@@ -504,22 +517,26 @@ export default function Sidebar({
   );
 }
 
-function NavItem({ icon, label, active, onClick, variant }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" }) {
+function NavItem({ icon, label, active, onClick, variant }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" | "support" }) {
   const variantClass =
     variant === "naver"
       ? "bg-[#03c75a] text-white hover:bg-[#02b150] shadow-lg shadow-emerald-950/20"
       : variant === "kakao"
         ? "bg-[#FEE500] text-[#191919] hover:bg-[#f4d900] shadow-lg shadow-yellow-950/20"
-        : active
-          ? "bg-white/15 text-white"
-          : "text-white/60 hover:text-white hover:bg-white/5";
+        : variant === "support"
+          ? "bg-[#2563eb] text-white hover:bg-[#1d4ed8] shadow-lg shadow-blue-950/20"
+          : active
+            ? "bg-white/15 text-white"
+            : "text-white/60 hover:text-white hover:bg-white/5";
 
   const iconClass =
     variant === "naver"
       ? "bg-white text-[#03c75a] font-black rounded-md w-6 h-6 flex items-center justify-center text-[15px]"
       : variant === "kakao"
         ? "bg-[#191919] text-[#FEE500] font-black rounded-full w-6 h-6 flex items-center justify-center text-[13px]"
-        : `text-lg transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`;
+        : variant === "support"
+          ? "bg-white text-[#2563eb] font-black rounded-md px-1.5 h-6 flex items-center justify-center text-[10px]"
+          : `text-lg transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`;
 
   return (
     <button 
