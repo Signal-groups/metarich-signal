@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts'
+
+const UPLOAD_STORAGE_KEY = 'signal-crm-upload-files'
 
 const statusLabels: Record<string, string> = {
   new: '신규',
@@ -53,23 +54,12 @@ const notifBadges: Record<string, string> = {
   consulting: 'badge-green',
 }
 
-const categoryNames: Record<string, string> = {
-  cancer: '암',
-  brain: '뇌혈관',
-  heart: '심장',
-  surgery: '수술',
-  hospitalization: '입원',
-  nursing: '간병',
-  driver: '운전자',
-  fire: '화재',
-}
-
 export default function CrmDashboard() {
   const [loading, setLoading] = useState(true)
   const [advisorName, setAdvisorName] = useState('담당자')
   const [customers, setCustomers] = useState<any[]>([])
   const [notifications, setNotifications] = useState<any[]>([])
-  const [radarData, setRadarData] = useState<{ category: string; value: number; recommended: number }[]>([])
+  const [uploadItems, setUploadItems] = useState<any[]>([])
 
   useEffect(() => {
     const load = async () => {
@@ -100,36 +90,25 @@ export default function CrmDashboard() {
           .from('notifications')
           .select('*')
           .in('customer_id', custIds)
-          .eq('is_done', false)
           .order('due_date', { ascending: true })
-          .limit(10)
+          .limit(30)
         : { data: [] }
 
       setNotifications(notifs || [])
-
-      if (custIds.length > 0) {
-        const { data: coverages } = await supabase
-          .from('coverages')
-          .select('category, amount')
-          .in('customer_id', custIds)
-
-        const categoryTotals: Record<string, number> = {}
-        ;(coverages || []).forEach((coverage: any) => {
-          categoryTotals[coverage.category] = (categoryTotals[coverage.category] || 0) + (coverage.amount || 0)
-        })
-
-        const maxAmount = Math.max(...Object.values(categoryTotals), 1)
-        setRadarData(Object.entries(categoryNames).map(([key, label]) => ({
-          category: label,
-          value: Math.round(((categoryTotals[key] || 0) / maxAmount) * 100),
-          recommended: 100,
-        })))
-      }
 
       setLoading(false)
     }
 
     load()
+  }, [])
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(UPLOAD_STORAGE_KEY)
+      setUploadItems(saved ? JSON.parse(saved) : [])
+    } catch {
+      setUploadItems([])
+    }
   }, [])
 
   const stats = useMemo(() => {
@@ -141,11 +120,32 @@ export default function CrmDashboard() {
       total: customers.length,
       thisMonth: customers.filter((customer) => customer.join_date?.startsWith(thisMonth)).length,
       totalPremium,
-      pendingNotif: notifications.length,
-      birthday: notifications.filter((item) => item.type === 'birthday').length,
-      renewal: notifications.filter((item) => String(item.type).includes('renewal')).length,
+      pendingNotif: notifications.filter((item) => !item.is_done).length,
+      doneNotif: notifications.filter((item) => item.is_done).length,
+      birthday: notifications.filter((item) => item.type === 'birthday' && !item.is_done).length,
+      renewal: notifications.filter((item) => String(item.type).includes('renewal') && !item.is_done).length,
     }
   }, [customers, notifications])
+
+  const analysisSuggestions = useMemo(() => {
+    const latestByCustomer: Record<string, string> = {}
+    uploadItems
+      .filter((item) => item.category === '보장분석' || item.structuredAnalysis)
+      .forEach((item) => {
+        const key = item.customerId || normalizeName(item.customerName)
+        if (!key) return
+        const date = item.date || ''
+        if (!latestByCustomer[key] || date > latestByCustomer[key]) latestByCustomer[key] = date
+      })
+
+    const now = new Date()
+    return customers.map((customer) => {
+      const latest = latestByCustomer[customer.id] || latestByCustomer[normalizeName(customer.name)] || ''
+      const days = latest ? daysBetween(latest, now) : 9999
+      const reason = !latest ? '분석 이력 없음' : days >= 365 ? '1년 경과' : days >= 180 ? '6개월 경과' : ''
+      return { customer, latest, days, reason }
+    }).filter((item) => item.reason).slice(0, 6)
+  }, [customers, uploadItems])
 
   if (loading) {
     return (
@@ -187,17 +187,21 @@ export default function CrmDashboard() {
         <StatCard icon="⏳" iconBg="#fff7ed" label="면책/감액 알림" value={notifications.filter((n) => n.type === 'indemnity_end' || n.type === 'reduction_end').length} unit="건" sub="처리 필요" color="#ea580c" />
         <StatCard icon="🔔" iconBg="#eff6ff" label="갱신 알림" value={stats.renewal} unit="건" sub="D-60 / D-30" color="#2563eb" />
         <StatCard icon="👥" iconBg="#ecfeff" label="전체 고객" value={stats.total} unit="명" sub={`신규 ${stats.thisMonth}명`} color="#0891b2" />
-        <StatCard icon="💬" iconBg="#f0fdf4" label="미처리 알림" value={stats.pendingNotif} unit="건" sub="오늘 확인" color="#16a34a" />
+        <StatCard icon="💬" iconBg="#f0fdf4" label="알림" value={stats.pendingNotif} unit="건" sub={`완료 ${stats.doneNotif}건`} color="#16a34a" />
         <StatCard icon="₩" iconBg="#faf5ff" label="월 보험료" value={Math.round(stats.totalPremium / 10000)} unit="만" sub="전체 합계" color="#7c3aed" />
       </div>
 
       <div className="grid-3" style={{ marginBottom: 16 }}>
         <div className="card card-p" style={{ gridColumn: 'span 2' }}>
           <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>미처리 알림</div>
+            <div className="card-title" style={{ marginBottom: 0 }}>알림</div>
             <Link href="/crm/alerts" className="link">전체보기</Link>
           </div>
-          {notifications.slice(0, 6).map((item) => (
+          <div className="grid-2" style={{ marginBottom: 12 }}>
+            <MiniStatus label="미완료" value={stats.pendingNotif} color="#dc2626" />
+            <MiniStatus label="완료" value={stats.doneNotif} color="#16a34a" />
+          </div>
+          {notifications.filter((item) => !item.is_done).slice(0, 6).map((item) => (
             <div key={item.id} className={`alert-item ${!item.is_read ? 'unread' : ''}`} style={{ marginLeft: -20, marginRight: -20 }}>
               {!item.is_read && <div className="alert-unread-dot" />}
               <span className={`badge ${notifBadges[item.type] || 'badge-gray'}`}>{notifTypeLabels[item.type] || item.type}</span>
@@ -208,25 +212,25 @@ export default function CrmDashboard() {
               <div className="alert-date">{item.due_date}</div>
             </div>
           ))}
-          {notifications.length === 0 && <EmptyState text="현재 처리할 알림이 없습니다." />}
+          {stats.pendingNotif === 0 && <EmptyState text="현재 미완료 알림이 없습니다." />}
         </div>
 
         <div className="card card-p">
-          <div className="card-title">전체 보장 현황</div>
-          {radarData.length > 0 ? (
-            <div className="radar-wrap" style={{ height: 250 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="category" tick={{ fontSize: 10 }} />
-                  <Radar name="현재" dataKey="value" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.25} />
-                  <Radar name="권장" dataKey="recommended" stroke="#E2E8F0" fill="none" strokeDasharray="4 2" />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <EmptyState text="보장 데이터가 등록되면 표시됩니다." />
-          )}
+          <div className="flex justify-between items-center mb-16">
+            <div className="card-title" style={{ marginBottom: 0 }}>분석 제안</div>
+            <Link href="/crm/analysis" className="link">보장분석</Link>
+          </div>
+          {analysisSuggestions.map(({ customer, latest, reason }) => (
+            <Link key={customer.id} href={`/crm/analysis?customerId=${customer.id}`} className="family-card" style={{ textDecoration: 'none', marginBottom: 8 }}>
+              <div className="family-avatar" style={{ background: '#eff6ff', color: '#2563eb' }}>{customer.name?.slice(0, 1)}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="fw-700" style={{ fontSize: 13 }}>{customer.name}</div>
+                <div className="text-muted" style={{ fontSize: 11 }}>{latest ? `최근 분석 ${latest}` : '분석 이력 없음'}</div>
+              </div>
+              <span className={`badge ${reason.includes('1년') ? 'badge-red' : reason.includes('6개월') ? 'badge-yellow' : 'badge-blue'}`}>{reason}</span>
+            </Link>
+          ))}
+          {analysisSuggestions.length === 0 && <EmptyState text="분석 제안 고객이 없습니다." />}
         </div>
       </div>
 
@@ -282,7 +286,7 @@ export default function CrmDashboard() {
               </tr>
             </thead>
             <tbody>
-              {customers.slice(0, 6).map((customer) => (
+              {customers.slice(0, 5).map((customer) => (
                 <tr key={customer.id}>
                   <td>
                     <Link href={`/crm/customers/${customer.id}`} className="fw-700 text-blue">
@@ -330,8 +334,27 @@ function StatCard({ icon, iconBg, label, value, unit, sub, color }: {
   )
 }
 
+function MiniStatus({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="bg-gray rounded p-12" style={{ textAlign: 'center' }}>
+      <div className="text-muted" style={{ fontSize: 11 }}>{label}</div>
+      <div className="fw-700" style={{ fontSize: 20, color }}>{value}</div>
+    </div>
+  )
+}
+
 function EmptyState({ text }: { text: string }) {
   return <div style={{ padding: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{text}</div>
+}
+
+function normalizeName(value: any) {
+  return String(value ?? '').replace(/\s/g, '').trim()
+}
+
+function daysBetween(dateText: string, now: Date) {
+  const target = new Date(dateText)
+  if (Number.isNaN(target.getTime())) return 9999
+  return Math.floor((now.getTime() - target.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function CalendarIcon() {
