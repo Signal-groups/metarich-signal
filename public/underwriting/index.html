@@ -4,205 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>간편보험 인수기준 비교 | 메타리치·시그널그룹</title>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#f0f2f5;--surface:#fff;--s2:#f8f9fb;--border:#e4e8ed;--border2:#cdd3dc;
-  --navy:#1a2d4f;--blue:#2563eb;--blue-l:#dbeafe;
-  --green:#059669;--green-l:#d1fae5;
-  --amber:#d97706;--amber-l:#fef3c7;
-  --red:#dc2626;--red-l:#fee2e2;
-  --purple:#7c3aed;--purple-l:#ede9fe;
-  --text:#111827;--t2:#374151;--t3:#6b7280;--t4:#9ca3af;
-  --sh:0 1px 3px rgba(0,0,0,.07);--sh-md:0 4px 16px rgba(0,0,0,.09);
-  --r:10px;--rs:6px;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
-
-/* 헤더 */
-.hdr{background:var(--navy);color:#fff;padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;box-shadow:var(--sh-md);}
-.hdr-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;}
-.hbadge{background:rgba(255,255,255,.15);font-size:10px;padding:2px 8px;border-radius:12px;font-weight:400;}
-.hdr-meta{font-size:11px;opacity:.5;}
-
-/* 레이아웃 */
-.layout{display:flex;min-height:calc(100vh - 54px);}
-
-/* 사이드바 */
-.sidebar{width:300px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto;}
-.sb-sec{padding:14px 16px;border-bottom:1px solid var(--border);}
-.sb-lbl{font-size:10px;font-weight:700;color:var(--t4);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-
-/* 폼 요소 */
-.ig{margin-bottom:10px;}
-.il{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:5px;display:block;}
-.inp{width:100%;height:36px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--rs);font-family:inherit;font-size:13px;color:var(--text);background:var(--s2);outline:none;transition:border-color .15s;}
-.inp:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08);}
-.inp-row{display:flex;gap:6px;}
-.inp-row .inp{flex:1;}
-select.inp{cursor:pointer;}
-
-/* 직업 자동완성 */
-.job-ac{position:relative;}
-.job-ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-radius:var(--rs);z-index:200;max-height:200px;overflow-y:auto;box-shadow:var(--sh-md);display:none;}
-.job-ac-list.show{display:block;}
-.job-ac-item{padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);transition:background .1s;font-size:13px;}
-.job-ac-item:hover{background:var(--s2);}
-.job-ac-item:last-child{border-bottom:none;}
-.jac-grade{width:28px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
-.g1{background:#d1fae5;color:#065f46;}
-.g2{background:#dbeafe;color:#1e40af;}
-.g3{background:#fef3c7;color:#92400e;}
-.g4{background:#fee2e2;color:#991b1b;}
-.job-result{margin-top:6px;display:none;}
-.job-result.show{display:block;}
-.grade-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--rs);font-size:12px;font-weight:700;}
-.grade-desc{font-size:11px;margin-top:4px;color:var(--t3);line-height:1.6;}
-
-/* 상품 */
-.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.pchip{padding:7px 8px;border:1px solid var(--border);border-radius:var(--rs);background:var(--s2);cursor:pointer;font-size:11px;color:var(--t3);text-align:center;transition:all .15s;font-family:inherit;}
-.pchip:hover{border-color:var(--blue);color:var(--blue);}
-.pchip.on{font-weight:600;}
-.pchip.손해.on{background:#dbeafe;color:#1e40af;border-color:#93c5fd;}
-.pchip.생명.on{background:#ede9fe;color:#6d28d9;border-color:#c4b5fd;}
-.pchip.건강.on{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
-.pchip.간병.on{background:#fef3c7;color:#92400e;border-color:#fcd34d;}
-.pchip.치매.on{background:#fce7f3;color:#9d174d;border-color:#f9a8d4;}
-
-/* 질환 검색 */
-.srch-wrap{position:relative;}
-.srch-inp{width:100%;height:38px;padding:0 38px 0 12px;border:1.5px solid var(--border);border-radius:var(--rs);font-family:inherit;font-size:13px;color:var(--text);background:var(--s2);outline:none;transition:all .2s;}
-.srch-inp:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08);}
-.srch-icon{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--t4);}
-.srch-hint{font-size:11px;color:var(--t4);margin-top:4px;}
-.ac{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-radius:var(--rs);z-index:200;max-height:260px;overflow-y:auto;box-shadow:var(--sh-md);display:none;}
-.ac.show{display:block;}
-.ac-item{padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);transition:background .1s;}
-.ac-item:last-child{border-bottom:none;}
-.ac-item:hover{background:var(--s2);}
-.ac-code{font-family:'JetBrains Mono',monospace;font-size:10px;color:#1e40af;background:var(--blue-l);padding:2px 6px;border-radius:3px;min-width:46px;text-align:center;flex-shrink:0;}
-.ac-name{font-size:13px;color:var(--text);flex:1;}
-.ac-cat{font-size:10px;color:var(--t4);flex-shrink:0;}
-.ac-body{font-size:10px;color:#7c3aed;background:var(--purple-l);padding:1px 5px;border-radius:3px;flex-shrink:0;}
-.hl{color:var(--blue);font-weight:700;}
-
-/* 태그 */
-.tag-area{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;min-height:28px;}
-.dtag{font-size:11px;padding:3px 8px;background:var(--blue-l);color:#1e40af;border-radius:12px;display:flex;align-items:center;gap:4px;font-weight:500;}
-.dtag-x{cursor:pointer;color:#93c5fd;font-size:14px;}
-
-/* 빠른 선택 */
-.quick-list{display:flex;flex-direction:column;gap:3px;}
-.qi{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--rs);border:1px solid transparent;background:var(--s2);cursor:pointer;transition:all .15s;}
-.qi:hover{background:#eff6ff;border-color:#bfdbfe;}
-.qi.sel{background:var(--blue-l);border-color:#93c5fd;}
-.qi-box{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.qi.sel .qi-box{background:var(--blue);border-color:var(--blue);}
-.qi-chk{width:8px;height:8px;background:#fff;border-radius:1px;clip-path:polygon(14% 44%,0 65%,50% 100%,100% 16%,80% 0%,43% 62%);display:none;}
-.qi.sel .qi-chk{display:block;}
-.qi-name{font-size:12px;color:var(--t2);flex:1;}
-.qi-code{font-size:10px;padding:1px 5px;border-radius:3px;background:#f1f5f9;color:var(--t3);font-family:'JetBrains Mono',monospace;}
-.qi-cat{font-size:10px;padding:1px 5px;border-radius:3px;}
-.cat-근골격{background:#e0e7ff;color:#3730a3;}
-.cat-소화기{background:#d1fae5;color:#065f46;}
-.cat-비뇨생식{background:#fce7f3;color:#9d174d;}
-.cat-호흡기{background:#f0fdf4;color:#166534;}
-.cat-감각기{background:#fef3c7;color:#92400e;}
-.cat-감염{background:#fee2e2;color:#991b1b;}
-.cat-피부{background:#fdf4ff;color:#7e22ce;}
-.cat-순환기{background:#fff1f2;color:#9f1239;}
-.cat-내분비{background:#fef9c3;color:#854d0e;}
-.cat-신경{background:#f0f9ff;color:#0c4a6e;}
-.cat-임신{background:#fdf2f8;color:#831843;}
-.cat-기타{background:#f3f4f6;color:#6b7280;}
-
-/* CTA */
-.cta{margin:0 16px 16px;padding:13px;background:linear-gradient(135deg,#1a2d4f,#2563eb);color:#fff;border:none;border-radius:var(--r);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;}
-.cta:hover{opacity:.9;}
-.cta-b{background:rgba(255,255,255,.2);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:400;}
-
-/* 메인 */
-.main{flex:1;padding:20px;overflow-x:hidden;}
-.empty{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:64px 20px;text-align:center;}
-.empty-icon{font-size:52px;margin-bottom:16px;}
-.empty-title{font-size:17px;font-weight:700;margin-bottom:8px;}
-.empty-desc{font-size:13px;color:var(--t3);line-height:1.8;}
-
-/* 결과 요소들 */
-.rbanner{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.rb-lbl{font-size:12px;color:var(--t3);}
-.rb-chip{font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;}
-.rb-prod{background:var(--blue-l);color:#1e40af;}
-.rb-dis{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
-.baseline{background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--rs);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e;line-height:1.7;}
-.sum-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
-.sum-card{background:var(--surface);border-radius:var(--rs);border:1px solid var(--border);padding:12px 14px;}
-.sum-n{font-size:22px;font-weight:700;line-height:1;margin-bottom:2px;}
-.sum-l{font-size:11px;color:var(--t3);}
-.cg{color:var(--green);}.ca{color:var(--amber);}.cr{color:var(--red);}.cb{color:var(--blue);}
-.sec-title{font-size:13px;font-weight:700;color:var(--t2);display:flex;align-items:center;gap:6px;margin-bottom:10px;}
-.sdot{width:6px;height:6px;border-radius:50%;}
-.rank-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
-.rcard{background:var(--surface);border-radius:var(--r);overflow:hidden;border:1px solid var(--border);transition:box-shadow .15s;}
-.rcard:hover{box-shadow:var(--sh-md);}
-.rcard.t1{border-left:4px solid var(--green);}
-.rcard.t2{border-left:4px solid var(--blue);}
-.rcard.t3{border-left:4px solid var(--amber);}
-.rc-top{display:flex;align-items:center;padding:12px 14px 8px;gap:10px;}
-.rc-rank{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
-.rk1{background:#fef3c7;color:#92400e;}.rk2{background:#f1f5f9;color:#475569;}.rk3{background:#fde8d8;color:#9a3412;}.rkn{background:#f3f4f6;color:#6b7280;}
-.rc-co{font-size:15px;font-weight:700;flex:1;}
-.rc-type{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;}
-.손해t{background:#dbeafe;color:#1e40af;}.생명t{background:#ede9fe;color:#6d28d9;}
-.rc-badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600;}
-.b-best{background:var(--green-l);color:#065f46;}.b-cond{background:var(--amber-l);color:#92400e;}.b-warn{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
-.rc-body{padding:0 14px 12px 48px;}
-.rc-det{font-size:12px;color:var(--t3);background:var(--s2);border-radius:var(--rs);padding:7px 10px;line-height:1.7;margin-bottom:6px;}
-.rc-2q{font-size:11px;color:#7c3aed;background:var(--purple-l);border-radius:4px;padding:4px 8px;font-weight:600;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px;}
-.score-bar{display:flex;align-items:center;gap:8px;margin-top:6px;}
-.score-lbl{font-size:10px;color:var(--t4);width:58px;}
-.score-track{flex:1;background:var(--bg);border-radius:4px;height:5px;overflow:hidden;}
-.score-fill{height:100%;border-radius:4px;transition:width .5s ease;}
-.dis-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
-.dis-chip{font-size:10px;padding:2px 7px;border-radius:10px;background:#f1f5f9;color:var(--t3);}
-.dis-chip.ok{background:var(--green-l);color:#065f46;}
-.dis-chip.ng{background:var(--red-l);color:#991b1b;}
-.dis-chip.conditional{background:var(--amber-l);color:#92400e;}
-.ng-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px;}
-.ng-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;}
-.ng-l{font-size:13px;color:var(--t3);display:flex;align-items:center;}
-.ng-chips{padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:5px;}
-.ng-chip{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--red-l);color:#991b1b;}
-.tab-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:20px;}
-.tab-bar{display:flex;background:var(--s2);border-bottom:1px solid var(--border);}
-.tbtn{padding:11px 18px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;font-size:13px;font-weight:500;color:var(--t3);cursor:pointer;transition:all .15s;white-space:nowrap;}
-.tbtn:hover{color:var(--text);}
-.tbtn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
-.tpane{display:none;padding:16px;}
-.tpane.active{display:block;}
-.ctbl{width:100%;border-collapse:collapse;}
-.ctbl th{padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;background:var(--s2);border-bottom:1px solid var(--border);white-space:nowrap;}
-.ctbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
-.ctbl tr:last-child td{border-bottom:none;}
-.ctbl tr:hover td{background:#f8faff;}
-.dok{color:var(--green);font-size:16px;}.dcond{color:var(--amber);font-size:16px;}.dng{color:var(--red);font-size:16px;}
-.code-badge{font-family:'JetBrains Mono',monospace;font-size:11px;background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:3px;}
-.legend-bar{display:flex;gap:14px;flex-wrap:wrap;padding:10px 0;font-size:12px;color:var(--t3);}
-.info-box{border-radius:var(--rs);padding:12px 16px;font-size:13px;line-height:2;margin-bottom:10px;}
-.info-blue{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;}
-.info-amber{background:#fff7ed;border:1px solid #fed7aa;color:#92400e;}
-
-/* 로딩 */
-.loading{display:flex;align-items:center;justify-content:center;height:200px;font-size:13px;color:var(--t3);}
-.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;margin-right:10px;}
-@keyframes spin{to{transform:rotate(360deg);}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-.fade-in{animation:fadeIn .25s ease both;}
-::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--s2);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
-@media(max-width:768px){.sidebar{display:none;}.main{padding:12px;}.sum-row{grid-template-columns:1fr 1fr;}}
-</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Black+Han+Sans&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/app.css">
 </head>
 <body>
 
@@ -212,6 +16,69 @@ select.inp{cursor:pointer;}
     <span class="hbadge" style="opacity:.6">메타리치·시그널그룹</span>
   </div>
   <div class="hdr-meta">기준일 2025년 · 최종 심사는 각사 확인 필수</div>
+</div>
+
+<div class="mobile-app" id="mobileApp">
+  <section class="mobile-hero">
+    <div>
+      <p class="mobile-kicker">간편보험 인수기준 비교</p>
+      <h1>필요한 항목만 빠르게 확인하세요</h1>
+      <p>상품을 고르고, 고지 질환을 선택하면 회사별 가능성을 바로 비교합니다.</p>
+    </div>
+    <div class="mobile-count">10개사<br><strong>비교</strong></div>
+  </section>
+
+  <nav class="mobile-tabs" aria-label="모바일 주요 메뉴">
+    <button class="mobile-tab active" type="button" data-mtab="products" onclick="setMobileTab('products')">상품 선택</button>
+    <button class="mobile-tab" type="button" data-mtab="search" onclick="setMobileTab('search')">질환 검색</button>
+    <button class="mobile-tab" type="button" data-mtab="quick" onclick="setMobileTab('quick')">자주 고지</button>
+  </nav>
+
+  <section class="mobile-panel active" id="mobilePanel-products">
+    <div class="mobile-card">
+      <div class="mobile-card-title">확인할 상품</div>
+      <div class="mobile-product-grid">
+        <button class="mobile-product pchip 손해 on" type="button" onclick="toggleProduct(this)">실손보험</button>
+        <button class="mobile-product pchip 생명" type="button" onclick="toggleProduct(this)">종신/정기</button>
+        <button class="mobile-product pchip 건강" type="button" onclick="toggleProduct(this)">건강보험</button>
+        <button class="mobile-product pchip 간병" type="button" onclick="toggleProduct(this)">간병보험</button>
+        <button class="mobile-product pchip 치매" type="button" onclick="toggleProduct(this)">치매보험</button>
+        <button class="mobile-product pchip 생명" type="button" onclick="toggleProduct(this)">암보험</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mobile-panel" id="mobilePanel-search">
+    <div class="mobile-card">
+      <div class="mobile-card-title">질환 검색</div>
+      <div class="mobile-search">
+        <input type="text" id="mobileDisInp" placeholder="예: 고혈압, 당뇨, 디스크, 갑상선" autocomplete="off" oninput="onMobileDisSearch(this.value)">
+        <button type="button" onclick="onMobileDisSearch(document.getElementById('mobileDisInp').value)">검색</button>
+      </div>
+      <div class="mobile-search-list" id="mobileDisList"></div>
+    </div>
+  </section>
+
+  <section class="mobile-panel" id="mobilePanel-quick">
+    <div class="mobile-card">
+      <div class="mobile-card-title">자주 고지되는 질환</div>
+      <div class="mobile-quick-grid" id="mobileQuickList">
+        <div class="loading"><div class="spinner"></div>로딩 중...</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mobile-card mobile-selected">
+    <div class="mobile-card-title">선택한 질환</div>
+    <div class="tag-area" id="mobileTagArea"><span style="font-size:12px;color:#9ca3af">선택된 질환 없음</span></div>
+  </section>
+
+  <button class="mobile-query" type="button" onclick="APP.query()">
+    가능 보험사 조회
+    <span id="mobileCtaBadge">선택 없음</span>
+  </button>
+
+  <div class="mobile-result" id="mobileResultArea"></div>
 </div>
 
 <div class="layout">

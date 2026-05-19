@@ -63,6 +63,9 @@ const APP = {
     }
     this.renderTags();
     this.renderQuick();
+    this.renderMobileTags();
+    this.renderMobileQuick();
+    this.renderMobileSearch(document.getElementById('mobileDisInp')?.value || '');
     this.updateBadge();
   },
 
@@ -101,11 +104,15 @@ const APP = {
     );
 
     this.renderResult(sorted, selDiseases, scores, maxSc, baseCount);
+    this.renderMobileResult(sorted, selDiseases, maxSc, baseCount);
   },
 
   // ── 초기화
   render() {
     this.renderQuick();
+    this.renderMobileQuick();
+    this.renderMobileTags();
+    this.renderMobileSearch('');
     this.updateBadge();
   },
 
@@ -143,6 +150,68 @@ const APP = {
   updateBadge() {
     const el = document.getElementById('ctaBadge');
     if (el) el.textContent = this.selectedDiseases.length ? `질환 ${this.selectedDiseases.length}개 선택` : '선택 없음';
+    const mobileEl = document.getElementById('mobileCtaBadge');
+    if (mobileEl) mobileEl.textContent = this.selectedDiseases.length ? `${this.selectedDiseases.length}개 선택` : '선택 없음';
+  },
+
+  renderMobileTags() {
+    const el = document.getElementById('mobileTagArea');
+    if (!el) return;
+    if (!this.selectedDiseases.length) {
+      el.innerHTML = '<span style="font-size:12px;color:#9ca3af">선택된 질환 없음</span>';
+      return;
+    }
+    el.innerHTML = this.selectedDiseases.map(code => {
+      const d = this.diseases.find(x => x.code === code);
+      const name = d ? d.name : code;
+      return `<span class="dtag">${name}<span class="dtag-x" onclick="APP.toggleDis('${code}')">×</span></span>`;
+    }).join('');
+  },
+
+  renderMobileQuick() {
+    const QUICK = ['I10','E11','E78','M10','D12','D34','M51','D27','N20','D25','H26','I83','K80','K64','J35'];
+    const el = document.getElementById('mobileQuickList');
+    if (!el) return;
+    el.innerHTML = QUICK.map(code => {
+      const d = this.diseases.find(x => x.code === code);
+      if (!d) return '';
+      const sel = this.selectedDiseases.includes(code);
+      return `<button class="qi ${sel ? 'sel' : ''}" type="button" onclick="APP.toggleDis('${code}')">
+        <div class="qi-box"><div class="qi-chk"></div></div>
+        <span class="qi-name">${d.name}</span>
+        <span class="qi-cat cat-${d.cat}">${d.cat}</span>
+        <span class="qi-code">${d.code}</span>
+      </button>`;
+    }).join('');
+  },
+
+  renderMobileSearch(q) {
+    const el = document.getElementById('mobileDisList');
+    if (!el) return;
+    const keyword = q.trim();
+    if (!keyword) {
+      el.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:4px 2px">질환명이나 부위를 입력하면 결과가 표시됩니다.</div>';
+      return;
+    }
+    const matches = this.searchDis(keyword);
+    if (!matches.length) {
+      el.innerHTML = '<div style="font-size:12px;color:#dc2626;padding:4px 2px">검색 결과가 없습니다. 다른 단어로 검색해보세요.</div>';
+      return;
+    }
+    el.innerHTML = matches.map(d => {
+      const sel = this.selectedDiseases.includes(d.code);
+      return `<button class="mobile-dis-item ${sel ? 'sel' : ''}" type="button" onclick="APP.toggleDis('${d.code}')">
+        <div class="mobile-dis-main">
+          <div class="mobile-dis-name">${d.name}</div>
+          <div class="mobile-dis-meta">
+            <span class="mobile-code">${d.code}</span>
+            <span class="qi-cat cat-${d.cat}">${d.cat}</span>
+            ${d.body?.[0] ? `<span class="mobile-body">${d.body[0]}</span>` : ''}
+          </div>
+        </div>
+        <span class="mobile-plus">${sel ? '✓' : '+'}</span>
+      </button>`;
+    }).join('');
   },
 
   renderResult(sorted, selDiseases, scores, maxSc, baseCount) {
@@ -150,7 +219,7 @@ const APP = {
     const age = document.getElementById('age')?.value;
     const gender = document.getElementById('gender')?.value;
     const job = document.getElementById('jobInp')?.value;
-    const prods = [...document.querySelectorAll('.pchip.on')].map(el => el.textContent).join(', ');
+    const prods = [...new Set([...document.querySelectorAll('.pchip.on')].map(el => el.textContent.trim()))].join(', ');
     const cInfo = [age && `만 ${age}세`, gender === 'M' ? '남성' : gender === 'F' ? '여성' : '', job].filter(Boolean).join(' · ');
 
     const t1 = sorted.filter(([, s]) => s.ng === 0 && s.cond === 0);
@@ -273,6 +342,49 @@ const APP = {
         </div>
       </div>
     </div>`;
+  },
+
+  renderMobileResult(sorted, selDiseases, maxSc, baseCount) {
+    const el = document.getElementById('mobileResultArea');
+    if (!el) return;
+    const t1 = sorted.filter(([, s]) => s.ng === 0 && s.cond === 0);
+    const t2 = sorted.filter(([, s]) => s.ng === 0 && s.cond > 0);
+    const t3 = sorted.filter(([, s]) => s.ng > 0);
+    const badge = sc => sc.ng === 0 && sc.cond === 0
+      ? ['전담보 가능', 'b-best']
+      : sc.ng === 0
+        ? ['조건부 포함', 'b-cond']
+        : ['일부 불가', 'b-warn'];
+
+    const rows = sorted.slice(0, 6).map(([cid, sc], idx) => {
+      const co = this.companies.find(c => c.id === cid) || { name: cid };
+      const pct = Math.round(sc.tot / maxSc * 100);
+      const [text, cls] = badge(sc);
+      const color = sc.ng === 0 && sc.cond === 0 ? 'var(--green)' : sc.ng === 0 ? 'var(--amber)' : 'var(--red)';
+      return `<article class="mobile-company-card">
+        <div class="mobile-company-top">
+          <div class="mobile-rank">${idx + 1}</div>
+          <div class="mobile-company-name">${co.name || cid}</div>
+          <span class="mobile-company-badge ${cls}">${text}</span>
+        </div>
+        <div class="mobile-company-note">${sc.dets.map(d => `<strong>${d.name}</strong>: ${d.note || '-'}`).join('<br>')}</div>
+        <div class="mobile-score">
+          <span class="score-lbl">인수 유리도</span>
+          <div class="score-track"><div class="score-fill" style="width:${pct}%;background:${color}"></div></div>
+          <span style="font-size:12px;color:#6b7280;min-width:34px;text-align:right">${pct}%</span>
+        </div>
+      </article>`;
+    }).join('');
+
+    el.innerHTML = `<div class="mobile-result-title">조회 결과</div>
+      <div class="sum-row">
+        <div class="sum-card"><div class="sum-n cg">${t1.length}</div><div class="sum-l">전담보 가능</div></div>
+        <div class="sum-card"><div class="sum-n ca">${t2.length}</div><div class="sum-l">조건부 포함</div></div>
+        <div class="sum-card"><div class="sum-n cr">${t3.length}</div><div class="sum-l">일부 불가</div></div>
+        <div class="sum-card"><div class="sum-n cb">${baseCount}</div><div class="sum-l">공통 가능</div></div>
+      </div>
+      ${rows}`;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 };
 
@@ -282,6 +394,26 @@ function swTab(btn, pid) {
   btn.closest('.tab-wrap').querySelectorAll('.tpane').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(pid).classList.add('active');
+}
+
+function setMobileTab(id) {
+  document.querySelectorAll('.mobile-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mtab === id);
+  });
+  document.querySelectorAll('.mobile-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === `mobilePanel-${id}`);
+  });
+  if (id === 'search') {
+    setTimeout(() => document.getElementById('mobileDisInp')?.focus(), 80);
+  }
+}
+
+function toggleProduct(btn) {
+  btn.classList.toggle('on');
+}
+
+function onMobileDisSearch(v) {
+  APP.renderMobileSearch(v);
 }
 
 // ── 직업 검색 핸들러
