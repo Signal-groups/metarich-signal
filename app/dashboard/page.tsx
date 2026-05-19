@@ -224,6 +224,15 @@ export default function DashboardPage() {
           </h1>
         </div>
         
+        <div className="mb-5 w-full max-w-4xl">
+          <button
+            onClick={() => window.open(`${window.location.origin}/usage-guide`, "_blank")}
+            className="w-full rounded-2xl border border-[#dbeafe] bg-white px-5 py-4 text-sm font-black text-[#1a3a6e] shadow-sm transition hover:-translate-y-0.5 hover:border-[#2563eb] hover:shadow-md"
+          >
+            사용 가이드 보기 · 사무실업무 / 고객상담업무 활용법
+          </button>
+        </div>
+
         <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl">
           <button 
             onClick={() => setViewMode('office')} 
