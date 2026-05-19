@@ -49,6 +49,7 @@ export default function AlertsPage() {
       .from('customers')
       .select('id')
       .eq('advisor_id', session.user.id)
+      .is('deleted_at', null)
 
     const customerIds = (customers || []).map((customer: any) => customer.id)
     if (!customerIds.length) {

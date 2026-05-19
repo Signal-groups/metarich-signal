@@ -29,6 +29,7 @@ export default function FamilyPage() {
       .from('customers')
       .select('id, name, phone, monthly_premium, policy_count, family_count')
       .eq('advisor_id', session.user.id)
+      .is('deleted_at', null)
       .order('name', { ascending: true })
 
     if (!customers?.length) {

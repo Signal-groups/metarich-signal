@@ -26,7 +26,7 @@ export default function DmPage() {
     const [{ data: userData }, { data: templateData }, { data: customerData }, { data: logData }] = await Promise.all([
       supabase.from('users').select('name, phone').eq('id', session.user.id).single(),
       supabase.from('dm_templates').select('*').order('created_at', { ascending: true }),
-      supabase.from('customers').select('id, name, phone, monthly_premium, policy_count').eq('advisor_id', session.user.id).order('name', { ascending: true }),
+      supabase.from('customers').select('id, name, phone, monthly_premium, policy_count').eq('advisor_id', session.user.id).is('deleted_at', null).order('name', { ascending: true }),
       supabase.from('dm_logs').select('content, sent_at, dm_templates(title), customers(name)').order('sent_at', { ascending: false }).limit(5),
     ])
 

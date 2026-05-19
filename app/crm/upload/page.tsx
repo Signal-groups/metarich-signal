@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../../../lib/supabase'
-import { deleteLocalFile, getLocalFile, saveLocalFile } from '../../../lib/crmLocalFiles'
+import { blobToDataUrl, deleteLocalFile, getLocalFile, saveLocalFile } from '../../../lib/crmLocalFiles'
 
-const CATEGORIES = ['전체', '암', '뇌', '심장', '수술', '간병', '재가', '치매']
+const CATEGORIES = ['전체', '보장분석', '암', '뇌', '심장', '수술', '간병', '재가', '치매']
 const STORAGE_KEY = 'signal-crm-upload-files'
+const GPTS_ANALYSIS_URL = 'https://chatgpt.com/g/g-6a0c10ad0478819192a11b8ffc28c760-boheomyi-gijun-bojangbunseog-ai'
 
 type UploadItem = {
   id: string
@@ -23,6 +24,9 @@ type UploadItem = {
   includeInReport: boolean
   hasLocalFile: boolean
   localFileType: string
+  analysisResult?: string
+  analysisStatus?: 'idle' | 'running' | 'done' | 'error'
+  structuredAnalysis?: any
 }
 
 const statusConf = {
@@ -76,6 +80,8 @@ export default function UploadPage() {
   const [excelRows, setExcelRows] = useState<ExcelRow[]>([])
   const [excelMapping, setExcelMapping] = useState<Record<string, string>>({})
   const [importing, setImporting] = useState(false)
+  const [gptsCode, setGptsCode] = useState('')
+  const [gptsError, setGptsError] = useState('')
 
   useEffect(() => {
     try {
@@ -92,6 +98,7 @@ export default function UploadPage() {
         .from('customers')
         .select('id, name, phone')
         .eq('advisor_id', session.user.id)
+        .is('deleted_at', null)
         .order('name', { ascending: true })
       const list = data || []
       setCustomers(list)
@@ -192,6 +199,48 @@ export default function UploadPage() {
     setItems((prev) => prev.filter((item) => item.id !== id))
   }
 
+  const analyzeItem = async (item: UploadItem) => {
+    updateItem(item.id, { status: 'analyzing', analysisStatus: 'running', analysisResult: '' })
+    try {
+      const localFile = item.hasLocalFile ? await getLocalFile(item.id) : null
+      const imageDataUrl = localFile?.type?.startsWith('image/')
+        ? await blobToDataUrl(localFile.blob)
+        : ''
+      const fileDataUrl = localFile?.type === 'application/pdf' && localFile.size <= 20 * 1024 * 1024
+        ? await blobToDataUrl(localFile.blob)
+        : ''
+
+      const response = await fetch('/api/crm-upload-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: item.name,
+          fileType: item.type,
+          category: item.category,
+          customerName: item.customerName,
+          memo: item.memo,
+          imageDataUrl,
+          fileDataUrl,
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data?.error || '자료 분석에 실패했습니다.')
+      updateItem(item.id, {
+        status: 'done',
+        analysisStatus: 'done',
+        analysisResult: data.analysis || '분석 결과가 없습니다.',
+        structuredAnalysis: data.structured || null,
+        memo: item.memo || firstLine(data.analysis || ''),
+      })
+    } catch (error: any) {
+      updateItem(item.id, {
+        status: 'pending',
+        analysisStatus: 'error',
+        analysisResult: error?.message || '자료 분석에 실패했습니다.',
+      })
+    }
+  }
+
   const mappedRows = useMemo(() => {
     return excelRows.map((row) => {
       const mapped: Record<string, any> = {}
@@ -236,11 +285,16 @@ export default function UploadPage() {
         consulting_summary: row.consulting_summary || null,
         tags: row.tags,
         join_date: new Date().toISOString().slice(0, 10),
+        deleted_at: null,
+        updated_at: new Date().toISOString(),
       }
 
       if (existing?.id) {
         const { error } = await supabase.from('customers').update(payload).eq('id', existing.id)
         if (!error) updated += 1
+      } else if (row.phone) {
+        const { error } = await supabase.from('customers').upsert(payload, { onConflict: 'advisor_id,phone' })
+        if (!error) created += 1
       } else {
         const { error } = await supabase.from('customers').insert(payload)
         if (!error) created += 1
@@ -251,10 +305,47 @@ export default function UploadPage() {
       .from('customers')
       .select('id, name, phone')
       .eq('advisor_id', session.user.id)
+      .is('deleted_at', null)
       .order('name', { ascending: true })
     setCustomers(data || [])
     setImporting(false)
     alert(`엑셀 반영 완료\n신규 ${created}명 / 업데이트 ${updated}명`)
+  }
+
+  const applyGptsCode = () => {
+    setGptsError('')
+    try {
+      const parsed = parseGptsJsonCode(gptsCode)
+      const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId)
+      const customerName = parsed?.customer?.name || parsed?.customer_name || selectedCustomer?.name || 'GPT 보장분석'
+      const id = `gpts-analysis-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const summary = formatGptsAnalysis(parsed)
+
+      setItems((prev) => [{
+        id,
+        name: `${customerName}-GPTs-보장분석.json`,
+        size: new Blob([JSON.stringify(parsed)]).size,
+        type: 'application/json',
+        category: '보장분석',
+        date: new Date().toISOString().slice(0, 10),
+        status: 'done',
+        memo: firstLine(summary),
+        customerId: selectedCustomer?.id || '',
+        customerName,
+        driveUrl: '',
+        includeInReport: true,
+        hasLocalFile: false,
+        localFileType: 'application/json',
+        analysisStatus: 'done',
+        analysisResult: summary,
+        structuredAnalysis: parsed,
+      }, ...prev])
+      setGptsCode('')
+      setCategory('보장분석')
+      setSelectedCategory('보장분석')
+    } catch (error: any) {
+      setGptsError(error?.message || 'JSON 코드를 확인해 주세요.')
+    }
   }
 
   return (
@@ -323,6 +414,39 @@ export default function UploadPage() {
             <MiniStat label="전체 자료" value={items.length} />
             <MiniStat label="정리 완료" value={items.filter((item) => item.status === 'done').length} />
           </div>
+        </div>
+      </div>
+
+      <div className="card card-p" style={{ marginBottom: 16 }}>
+        <div className="flex justify-between items-center mb-16" style={{ gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div className="card-title" style={{ marginBottom: 3 }}>GPTs 보장분석 코드 적용</div>
+            <div className="text-muted" style={{ fontSize: 12 }}>
+              GPTs에서 PDF를 분석한 뒤 생성된 JSON 코드를 붙여넣으면 보장분석 자료로 저장됩니다.
+            </div>
+          </div>
+          <a className="btn btn-primary btn-sm" href={GPTS_ANALYSIS_URL} target="_blank" rel="noreferrer">
+            GPTs로 분석하기
+          </a>
+        </div>
+        <textarea
+          className="form-input"
+          value={gptsCode}
+          onChange={(event) => {
+            setGptsCode(event.target.value)
+            setGptsError('')
+          }}
+          placeholder="GPTs가 생성한 JSON 코드를 여기에 붙여넣으세요."
+          style={{ minHeight: 150, resize: 'vertical', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: 12, lineHeight: 1.6 }}
+        />
+        {gptsError && <div style={{ marginTop: 8, color: '#b91c1c', fontSize: 12 }}>{gptsError}</div>}
+        <div className="flex justify-between items-center" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+          <div className="text-muted" style={{ fontSize: 12 }}>
+            코드블록 표시가 함께 복사되어도 자동으로 JSON 부분만 읽습니다.
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={applyGptsCode} disabled={!gptsCode.trim()} style={{ opacity: gptsCode.trim() ? 1 : 0.45 }}>
+            분석 적용하기
+          </button>
         </div>
       </div>
 
@@ -413,6 +537,11 @@ export default function UploadPage() {
                 )}
                 <input className="form-input" value={item.memo} onChange={(event) => updateItem(item.id, { memo: event.target.value })} placeholder="메모 입력" style={{ marginTop: 8, padding: '6px 10px', fontSize: 12 }} />
                 <input className="form-input" value={item.driveUrl || ''} onChange={(event) => updateItem(item.id, { driveUrl: event.target.value })} placeholder="Google Drive 링크 입력" style={{ marginTop: 6, padding: '6px 10px', fontSize: 12 }} />
+                {item.analysisResult && (
+                  <pre style={{ marginTop: 8, padding: 12, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 12, lineHeight: 1.6, color: item.analysisStatus === 'error' ? '#b91c1c' : '#334155', background: item.analysisStatus === 'error' ? '#fef2f2' : '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                    {item.analysisResult}
+                  </pre>
+                )}
               </div>
               <select
                 className="form-input"
@@ -438,6 +567,9 @@ export default function UploadPage() {
                   <input type="checkbox" checked={item.includeInReport !== false} onChange={(event) => updateItem(item.id, { includeInReport: event.target.checked })} />
                   리포트
                 </label>
+                <button className="btn btn-primary btn-xs" onClick={() => analyzeItem(item)} disabled={item.analysisStatus === 'running'} style={{ opacity: item.analysisStatus === 'running' ? 0.5 : 1 }}>
+                  {item.analysisStatus === 'running' ? '분석 중' : 'AI 분석'}
+                </button>
                 <button className="btn btn-secondary btn-xs" onClick={() => removeItem(item.id)}>삭제</button>
               </div>
             </div>
@@ -512,8 +644,60 @@ function statusLabel(value: string) {
   return Object.entries(STATUS_WORDS).find(([, status]) => status === value)?.[0] || '신규'
 }
 
+function firstLine(value: string) {
+  return String(value || '').split('\n').map((line) => line.trim()).find(Boolean) || ''
+}
+
 function normalizeHeader(value: any) {
   return String(value ?? '').toLowerCase().replace(/\s|_|-|\(|\)|\[|\]/g, '')
+}
+
+function parseGptsJsonCode(value: string) {
+  const raw = String(value || '').trim()
+  if (!raw) throw new Error('붙여넣은 코드가 없습니다.')
+  const withoutFence = raw
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+  const start = withoutFence.indexOf('{')
+  const end = withoutFence.lastIndexOf('}')
+  if (start < 0 || end < start) throw new Error('JSON 형식의 중괄호를 찾지 못했습니다.')
+  const jsonText = withoutFence.slice(start, end + 1)
+  const parsed = JSON.parse(jsonText)
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('JSON 객체 형식으로 생성해 주세요.')
+  return parsed
+}
+
+function formatGptsAnalysis(data: any) {
+  const customer = data.customer || {}
+  const analysis = data.analysis || {}
+  const coverage = data.coverage_summary || {}
+  const policies = Array.isArray(data.policies) ? data.policies : Array.isArray(data.contracts) ? data.contracts : []
+  const lines = [
+    `[GPTs 보장분석] ${customer.name || data.customer_name || '고객명 미확인'}`,
+    customer.monthly_premium || data.monthly_premium ? `월 보험료: ${Number(customer.monthly_premium || data.monthly_premium).toLocaleString()}원` : '',
+    customer.contract_count || data.contract_count ? `계약 건수: ${customer.contract_count || data.contract_count}건` : '',
+    policies.length ? `가입 상품: ${policies.map((policy: any) => policy.company || policy.product_name || policy.product).filter(Boolean).slice(0, 5).join(', ')}` : '',
+    '',
+    '[주요 보장 요약]',
+    coverage.cancer ? `암 진단비: ${Number(coverage.cancer).toLocaleString()}원` : '',
+    coverage.similar_cancer ? `유사암: ${Number(coverage.similar_cancer).toLocaleString()}원` : '',
+    coverage.brain_vascular ? `뇌혈관: ${Number(coverage.brain_vascular).toLocaleString()}원` : '',
+    coverage.ischemic_heart ? `허혈성심장질환: ${Number(coverage.ischemic_heart).toLocaleString()}원` : '',
+    coverage.disease_surgery ? `질병수술비: ${Number(coverage.disease_surgery).toLocaleString()}원` : '',
+    coverage.injury_surgery ? `상해수술비: ${Number(coverage.injury_surgery).toLocaleString()}원` : '',
+    '',
+    listSection('강점', analysis.strengths),
+    listSection('부족/확인 필요', analysis.weaknesses || analysis.missing_coverages),
+    listSection('추천 방향', analysis.recommendation),
+  ]
+  return lines.filter(Boolean).join('\n')
+}
+
+function listSection(title: string, value: any) {
+  const list = Array.isArray(value) ? value : value ? [value] : []
+  if (list.length === 0) return ''
+  return [`[${title}]`, ...list.map((item) => `- ${String(item)}`)].join('\n')
 }
 
 function isExcelFile(name: string) {

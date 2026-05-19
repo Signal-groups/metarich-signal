@@ -57,10 +57,11 @@ export default function NewCustomerPage() {
       return
     }
 
-    const { error: dbError } = await supabase.from('customers').insert({
+    const phone = normalizePhone(form.phone)
+    const { error: dbError } = await supabase.from('customers').upsert({
       advisor_id: session.user.id,
       name: form.name,
-      phone: form.phone,
+      phone,
       birth_date: form.birth_date || null,
       gender: form.gender,
       address: form.address || null,
@@ -73,7 +74,9 @@ export default function NewCustomerPage() {
       family_count: form.family_count ? Number(form.family_count) : null,
       consulting_summary: form.consulting_summary || null,
       tags: form.tags,
-    })
+      deleted_at: null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'advisor_id,phone' })
 
     if (dbError) {
       setError(dbError.message)
@@ -176,6 +179,12 @@ export default function NewCustomerPage() {
       </form>
     </>
   )
+}
+
+function normalizePhone(value: string) {
+  const digits = value.replace(/[^\d]/g, '')
+  if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+  return value.trim()
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

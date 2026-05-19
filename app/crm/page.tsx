@@ -88,6 +88,7 @@ export default function CrmDashboard() {
         .from('customers')
         .select('*')
         .eq('advisor_id', session.user.id)
+        .is('deleted_at', null)
         .order('join_date', { ascending: false })
 
       const custList = custs || []

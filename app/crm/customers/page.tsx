@@ -44,6 +44,7 @@ export default function CustomersPage() {
       .from('customers')
       .select('*')
       .eq('advisor_id', session.user.id)
+      .is('deleted_at', null)
       .order('join_date', { ascending: false })
 
     setCustomers(data || [])

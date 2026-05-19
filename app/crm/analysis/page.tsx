@@ -50,6 +50,7 @@ export default function AnalysisPage() {
       .from('customers')
       .select('*')
       .eq('advisor_id', session.user.id)
+      .is('deleted_at', null)
 
     const customerList = customerData || []
     setCustomers(customerList)

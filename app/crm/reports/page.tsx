@@ -33,6 +33,7 @@ export default function ReportsPage() {
         .from('customers')
         .select('*')
         .eq('advisor_id', session.user.id)
+        .is('deleted_at', null)
         .order('name', { ascending: true })
       const list = data || []
       setCustomers(list)

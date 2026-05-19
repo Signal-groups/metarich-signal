@@ -116,6 +116,22 @@ export default function SignupPage() {
         ])
 
         if (dbError) throw dbError
+        fetch("/api/notify-signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: "web",
+            email: formData.email.trim(),
+            name: formData.name,
+            phone: formData.phone.trim(),
+            accountType: formData.accountType,
+            headquarter: formData.headquarter,
+            department: formData.department,
+            branch: formData.branch,
+            companyName: formData.companyName,
+            position: formData.position,
+          }),
+        }).catch(() => {})
         alert("가입 신청이 완료되었습니다. 관리자 승인 후 이용 가능합니다.")
         router.push("/login")
       }

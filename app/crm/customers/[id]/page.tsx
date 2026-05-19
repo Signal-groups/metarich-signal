@@ -96,7 +96,7 @@ export default function CustomerDetailPage() {
     setAdvisorPhone(userData?.phone || '')
 
     const [{ data: cust }, { data: policyData }, { data: coverageData }, { data: familyData }, { data: alertData }] = await Promise.all([
-      supabase.from('customers').select('*').eq('id', id).single(),
+      supabase.from('customers').select('*').eq('id', id).eq('advisor_id', session.user.id).is('deleted_at', null).single(),
       supabase.from('policies').select('*').eq('customer_id', id).order('start_date', { ascending: false }),
       supabase.from('coverages').select('*').eq('customer_id', id),
       supabase.from('families').select('*').eq('customer_id', id),
@@ -147,6 +147,7 @@ export default function CustomerDetailPage() {
       family_count: editForm.family_count ? Number(editForm.family_count) : null,
       consulting_summary: editForm.consulting_summary || null,
       tags: editForm.tags || [],
+      updated_at: new Date().toISOString(),
     }).eq('id', id)
     setCustomer({ ...customer, ...editForm })
     setEditing(false)
@@ -181,8 +182,11 @@ export default function CustomerDetailPage() {
   }
 
   const deleteCustomer = async () => {
-    if (!confirm(`${customer?.name} 고객을 삭제하시겠습니까? 관련 데이터도 함께 삭제됩니다.`)) return
-    await supabase.from('customers').delete().eq('id', id)
+    if (!confirm(`${customer?.name} 고객을 삭제하시겠습니까? 앱과 PC 목록에서 함께 숨김 처리됩니다.`)) return
+    await supabase.from('customers').update({
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
     router.push('/crm/customers')
   }
 
