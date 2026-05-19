@@ -68,6 +68,29 @@ type SearchItem = {
   action: () => void
 }
 
+const keywordAliases: Record<string, string[]> = {
+  암: ["암", "일반암", "폐암", "간암", "위암", "대장암", "유방암", "항암", "항암제", "방사선"],
+  위: ["위", "위암", "위염", "위축성위염", "위장", "gastric"],
+  간: ["간", "간암", "간염", "B형간염", "간질환", "liver"],
+  폐: ["폐", "폐암", "폐렴", "호흡곤란", "pneumonia", "lung"],
+  뇌: ["뇌", "뇌혈관", "뇌졸중", "뇌출혈", "뇌경색", "후유장해", "stroke"],
+  심장: ["심장", "심장질환", "심근경색", "허혈성", "급성심정지", "cardio", "heart"],
+  치아: ["치아", "치과", "잇몸", "치주", "임플란트", "충치"],
+  면책: ["면책", "감액", "보장개시일", "보장시작", "치아보험"],
+  노후: ["노후", "장수", "고령", "노인", "100세", "의료비", "생활비"],
+  치매: ["치매", "간병", "장기요양", "인지", "CDR"],
+}
+
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/[\s,./·ㆍ|()[\]{}:;'"!?_-]/g, "")
+}
+
+function expandSearchText(value: string) {
+  const base = value.trim().toLowerCase()
+  const aliases = keywordAliases[base] || []
+  return [base, ...aliases.map((alias) => alias.toLowerCase())]
+}
+
 const toneClass: Record<Tone, string> = {
   blue: "border-blue-100 bg-blue-50 text-blue-800",
   emerald: "border-emerald-100 bg-emerald-50 text-emerald-800",
@@ -749,20 +772,11 @@ export default function CoverageStatsPage() {
         },
       })),
       ...(tab.costTabs || []).flatMap((costTab) => {
+        const tabImagePaths = new Set(tab.images.map((image) => image.image))
         const images = costTab.images || (costTab.image ? [{ title: costTab.title, image: costTab.image }] : [])
-        return [
-          {
-            id: `cost-${tab.id}-${costTab.id}`,
-            type: "cost" as const,
-            title: costTab.title,
-            subtitle: `${tab.title} 치료행위별 비용`,
-            keywords: `${tab.title} ${costTab.title} ${costTab.subtitle} ${costTab.cost} ${costTab.body} ${costTab.coverage} ${costTab.items.map((item) => `${item.label} ${item.value} ${item.note || ""}`).join(" ")}`,
-            action: () => {
-              changeTab(tab.id)
-              setActiveCostTabId(costTab.id)
-            },
-          },
-          ...images.map((image) => ({
+        return images
+          .filter((image) => !tabImagePaths.has(image.image))
+          .map((image) => ({
             id: `cost-image-${tab.id}-${costTab.id}-${image.image}`,
             type: image.title.includes("영수증") || image.title.includes("곸닔利") ? ("receipt" as const) : ("image" as const),
             title: image.title,
@@ -773,8 +787,7 @@ export default function CoverageStatsPage() {
               setActiveCostTabId(costTab.id)
               setSelectedImage(image)
             },
-          })),
-        ]
+          }))
       }),
     ])
 
@@ -783,7 +796,7 @@ export default function CoverageStatsPage() {
       type: "stat" as const,
       title: item.title,
       subtitle: item.tags.join(" / "),
-      keywords: `${item.title} ${item.subtitle} ${item.summary} ${item.tags.join(" ")}`,
+      keywords: `${item.id} ${item.category} ${item.title} ${item.subtitle} ${item.summary} ${item.talkPoint} ${item.source} ${item.tags.join(" ")}`,
       action: () => setSelected(item),
     }))
 
@@ -1001,11 +1014,12 @@ function MaterialButtonList({
 function SearchSidebar({ items }: { items: SearchItem[] }) {
   const [keyword, setKeyword] = useState("")
   const [activeFilter, setActiveFilter] = useState<SearchItem["type"] | "all">("all")
-  const q = keyword.trim().toLowerCase()
+  const queryTerms = expandSearchText(keyword)
+    .map((term) => normalizeSearchText(term))
+    .filter(Boolean)
   const filterOptions: { id: SearchItem["type"] | "all"; label: string; hint: string }[] = [
     { id: "all", label: "전체", hint: "모든 자료" },
     { id: "roadmap", label: "치료과정", hint: "순서·필요보장" },
-    { id: "cost", label: "비용", hint: "치료행위별 금액" },
     { id: "receipt", label: "영수증", hint: "실제 서류" },
     { id: "stat", label: "통계", hint: "기존 자료" },
     { id: "material", label: "추가자료", hint: "운전자·화재 등" },
@@ -1021,9 +1035,13 @@ function SearchSidebar({ items }: { items: SearchItem[] }) {
   }
   const filtered = items
     .filter((item) => activeFilter === "all" || item.type === activeFilter)
-    .filter((item) => !q || `${item.title} ${item.subtitle} ${item.keywords} ${typeLabel[item.type]}`.toLowerCase().includes(q))
+    .filter((item) => {
+      if (queryTerms.length === 0) return true
+      const haystack = normalizeSearchText(`${item.title} ${item.subtitle} ${item.keywords} ${typeLabel[item.type]}`)
+      return queryTerms.some((term) => haystack.includes(term))
+    })
     .slice(0, 80)
-  const materialCount = items.filter((item) => item.type === "stat" || item.type === "material").length
+  const materialCount = items.length
 
   return (
     <aside className="xl:sticky xl:top-5 xl:self-start">
@@ -1032,7 +1050,7 @@ function SearchSidebar({ items }: { items: SearchItem[] }) {
           <p className="text-[12px] font-black tracking-[0.18em] text-[#1f5597]">ALL MATERIALS</p>
           <h2 className="mt-1 text-xl font-black text-slate-900">전체 자료 검색</h2>
           <p className="mt-2 text-[12px] font-bold leading-5 text-slate-500">
-            치료과정, 비용, 영수증, 통계자료, 추가 상담자료까지 이곳에서 한 번에 찾을 수 있습니다.
+            치료과정, 이미지, 영수증, 통계자료, 추가 상담자료까지 이곳에서 한 번에 찾을 수 있습니다.
           </p>
           <div className="mt-3 rounded-2xl bg-blue-50 px-4 py-3 text-[12px] font-black text-[#1f5597]">
             전체 자료 모음 {materialCount}개가 사이드바 검색에 포함되어 있습니다.
@@ -1042,7 +1060,7 @@ function SearchSidebar({ items }: { items: SearchItem[] }) {
             <input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
-              placeholder="비용, 수술, 입원, 영수증, 운전자, 화재 검색"
+              placeholder="암, 뇌, 심장, 위, 간, 폐, 수술 검색"
               className="h-12 min-w-0 flex-1 bg-transparent text-[13px] font-bold outline-none"
             />
           </label>
@@ -1306,54 +1324,28 @@ function ImageModal({ item, onClose }: { item: { title: string; image: string };
 
 function PreviewModal({ item, onClose }: { item: CoverageStatItem; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
-            <p className="text-[11px] font-black tracking-[0.2em] text-[#1f5597]">PREVIEW</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-900">{item.title}</h2>
+            <p className="text-[11px] font-black tracking-[0.2em] text-[#1f5597]">IMAGE MATERIAL</p>
+            <h2 className="mt-1 text-xl font-black text-slate-900">{item.title}</h2>
           </div>
           <button onClick={onClose} className="rounded-full bg-slate-900 p-3 text-white hover:bg-slate-700">
             <X className="h-5 w-5" />
           </button>
         </div>
-
-        <div className="grid gap-6 p-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative min-h-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-            <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-amber-50 via-white to-blue-50 p-8 text-center">
+        <div className="overflow-auto bg-slate-100 p-4">
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt={item.title} className="mx-auto max-h-[78vh] w-auto max-w-full rounded-2xl bg-white object-contain shadow-sm" />
+          ) : (
+            <div className="grid min-h-[420px] place-items-center rounded-2xl bg-white text-center">
               <div>
                 <ImageIcon className="mx-auto h-16 w-16 text-[#1f5597]/30" />
                 <p className="mt-4 text-lg font-black text-slate-700">{item.title}</p>
-                <p className="mt-2 text-sm font-bold text-slate-400">이미지를 넣으면 이 영역에 통계 자료가 표시됩니다.</p>
               </div>
             </div>
-            {item.imageUrl ? (
-              <img src={item.imageUrl} alt={item.title} className="relative z-10 min-h-[420px] w-full object-contain" onError={(e) => { e.currentTarget.style.display = "none" }} />
-            ) : null}
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-2xl bg-slate-50 p-5">
-              <p className="text-[12px] font-black text-slate-400">자료 내용</p>
-              <p className="mt-2 text-[15px] font-bold leading-7 text-slate-700">{item.summary}</p>
-            </div>
-            <div className="rounded-2xl bg-[#1f5597] p-5 text-white">
-              <p className="text-[12px] font-black text-blue-100">고객 안내 문구</p>
-              <p className="mt-2 text-[15px] font-bold leading-7">{item.talkPoint}</p>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {item.metrics.map((metric) => (
-                <div key={metric.label} className={`rounded-2xl border p-4 ${toneClass[metric.tone || "blue"]}`}>
-                  <p className="text-[11px] font-black opacity-70">{metric.label}</p>
-                  <p className="mt-1 text-lg font-black">{metric.value}</p>
-                </div>
-              ))}
-            </div>
-            <p className="rounded-2xl border border-slate-200 p-4 text-[12px] font-bold leading-6 text-slate-500">
-              출처: {item.source}<br />
-              이미지 하단의 출처와 기준 연도를 함께 확인해야 합니다.
-            </p>
-          </div>
+          )}
         </div>
       </div>
     </div>

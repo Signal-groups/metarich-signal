@@ -4,6 +4,10 @@ import { useRef, useState } from "react"
 
 type SurveyState = Record<string, string[]>
 
+const A4_IMAGE_WIDTH = 1240
+const A4_IMAGE_HEIGHT = 1754
+const A4_IMAGE_PADDING = 52
+
 const QUESTIONS = [
   {
     id: "q1",
@@ -88,71 +92,53 @@ export default function InsuranceSurveyPage() {
     const node = sheetRef.current
     if (!node) return
     setSaving(true)
-    await new Promise((resolve) => window.setTimeout(resolve, 80))
 
-    const rect = node.getBoundingClientRect()
-    const clone = node.cloneNode(true) as HTMLElement
-    clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml")
+    try {
+      await document.fonts?.ready
+      await new Promise((resolve) => window.setTimeout(resolve, 120))
 
-    const sourceInputs = Array.from(node.querySelectorAll("input"))
-    const cloneInputs = Array.from(clone.querySelectorAll("input"))
-    cloneInputs.forEach((input, index) => {
-      const source = sourceInputs[index]
-      const replacement = document.createElement("div")
-      const style = input.getAttribute("style") || ""
-      replacement.setAttribute(
-        "style",
-        `${style};box-sizing:border-box;min-height:34px;display:flex;align-items:center;white-space:pre-wrap;overflow:hidden;`
-      )
-      replacement.textContent = source?.value || ""
-      input.replaceWith(replacement)
-    })
+      const html2canvas = (await import("html2canvas")).default
+      const captured = await html2canvas(node, {
+        backgroundColor: "#ffffff",
+        logging: false,
+        scale: 2,
+        useCORS: true,
+        windowHeight: Math.max(node.scrollHeight, Math.ceil(node.getBoundingClientRect().height)),
+        windowWidth: Math.max(node.scrollWidth, Math.ceil(node.getBoundingClientRect().width)),
+      })
 
-    const sourceSelects = Array.from(node.querySelectorAll("select"))
-    const cloneSelects = Array.from(clone.querySelectorAll("select"))
-    cloneSelects.forEach((select, index) => {
-      const source = sourceSelects[index]
-      const selected = source?.selectedOptions?.[0]?.textContent || ""
-      const replacement = document.createElement("div")
-      replacement.setAttribute("style", "min-height:34px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-weight:900;color:#0f172a;")
-      replacement.textContent = selected
-      select.replaceWith(replacement)
-    })
-
-    const html = `<div xmlns="http://www.w3.org/1999/xhtml">${clone.outerHTML}</div>`
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}">
-        <foreignObject width="100%" height="100%">${html}</foreignObject>
-      </svg>
-    `
-    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
-    const image = new Image()
-    image.onload = () => {
       const canvas = document.createElement("canvas")
-      const scale = 2
-      canvas.width = Math.ceil(rect.width * scale)
-      canvas.height = Math.ceil(rect.height * scale)
+      canvas.width = A4_IMAGE_WIDTH
+      canvas.height = A4_IMAGE_HEIGHT
+
       const ctx = canvas.getContext("2d")
-      if (!ctx) {
-        setSaving(false)
-        return
-      }
+      if (!ctx) throw new Error("이미지 저장 준비에 실패했습니다.")
+
       ctx.fillStyle = "#ffffff"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+      ctx.fillRect(0, 0, A4_IMAGE_WIDTH, A4_IMAGE_HEIGHT)
+
+      const maxWidth = A4_IMAGE_WIDTH - A4_IMAGE_PADDING * 2
+      const maxHeight = A4_IMAGE_HEIGHT - A4_IMAGE_PADDING * 2
+      const ratio = Math.min(maxWidth / captured.width, maxHeight / captured.height)
+      const drawWidth = captured.width * ratio
+      const drawHeight = captured.height * ratio
+      const drawX = (A4_IMAGE_WIDTH - drawWidth) / 2
+      const drawY = (A4_IMAGE_HEIGHT - drawHeight) / 2
+
+      ctx.drawImage(captured, drawX, drawY, drawWidth, drawHeight)
+
       const link = document.createElement("a")
       link.download = `내보험바로알기_${customerName || "고객"}_${Date.now()}.png`
       link.href = canvas.toDataURL("image/png")
       document.body.appendChild(link)
       link.click()
       link.remove()
+    } catch (error) {
+      console.error(error)
+      alert("이미지 저장에 실패했습니다. 잠시 후 다시 시도해주세요.")
+    } finally {
       setSaving(false)
     }
-    image.onerror = () => {
-      setSaving(false)
-      window.print()
-    }
-    image.src = url
   }
 
   const completeSurvey = () => {

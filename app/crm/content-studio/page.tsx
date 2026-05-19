@@ -384,16 +384,6 @@ export default function ContentStudioPage() {
           </div>
 
           <div className="card card-p">
-            <div className="card-title">기본 정보</div>
-            <div className="form-stack">
-              <Field label="{{brand}} 브랜드명" value={form.brand} onChange={(value) => update('brand', value)} />
-              <Field label="{{company}} 소속" value={form.company} onChange={(value) => update('company', value)} />
-              <Field label="{{name}} 이름" value={form.name} onChange={(value) => update('name', value)} />
-              <Field label="{{phone}} 전화번호" value={form.phone} onChange={(value) => update('phone', value)} />
-            </div>
-          </div>
-
-          <div className="card card-p">
             <div className="card-title">문구 설정</div>
             <div className="form-stack">
               <TextArea label="상단 문구" value={form.topText} onChange={(value) => update('topText', value)} />
@@ -406,6 +396,16 @@ export default function ContentStudioPage() {
                   <button key={item} onClick={() => copyText(item, item)}>{copied === item ? '복사됨' : item}</button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="card card-p">
+            <div className="card-title">기본 정보</div>
+            <div className="form-stack">
+              <Field label="{{brand}} 브랜드명" value={form.brand} onChange={(value) => update('brand', value)} />
+              <Field label="{{company}} 소속" value={form.company} onChange={(value) => update('company', value)} />
+              <Field label="{{name}} 이름" value={form.name} onChange={(value) => update('name', value)} />
+              <Field label="{{phone}} 전화번호" value={form.phone} onChange={(value) => update('phone', value)} />
             </div>
           </div>
         </section>

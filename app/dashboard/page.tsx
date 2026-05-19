@@ -263,11 +263,13 @@ export default function DashboardPage() {
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}
+        onOpenOffice={() => { setViewMode('office'); setActiveTab(null); }}
+        onOpenConsulting={() => { setViewMode('consulting'); setActiveTab(null); }}
         onTabChange={(val: string) => setActiveTab(val.startsWith('tab:') ? val.split(':')[1] : val)} 
         activeTab={activeTab} 
       />
 
-      <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[300px]' : 'lg:ml-0'}`}>
+      <main className={`flex-1 p-4 pb-28 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[300px]' : 'lg:ml-0'}`}>
         <div className="max-w-[1400px] mx-auto">
           {(
             viewMode === 'office' ? renderOfficeView() : (

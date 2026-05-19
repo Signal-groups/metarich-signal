@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability */
 
 import { useState, useEffect } from "react"
+import type React from "react"
 import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
 import {
@@ -13,13 +14,17 @@ import {
   CarFront,
   ClipboardCheck,
   FileSearch,
+  Home,
   Hospital,
+  MessageSquareText,
+  MoreHorizontal,
   PieChart,
   Scale,
   Search,
   ShieldCheck,
   Stethoscope,
   ScrollText,
+  Users,
 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
@@ -65,7 +70,7 @@ function ToolIcon({ icon }: { icon: string }) {
 export default function Sidebar({ 
   user, selectedDate, onDateChange, mode, onBack, 
   externalMenuStatus, onMenuStatusChange, onTabChange, activeTab,
-  isOpen, setIsOpen 
+  isOpen, setIsOpen, onOpenOffice, onOpenConsulting
 }: any) {
   const router = useRouter();
   
@@ -244,14 +249,32 @@ export default function Sidebar({
     setIsOpen(false);
   };
 
+  const openCrm = () => {
+    window.open(`${window.location.origin}/crm`, "_blank", "noopener,noreferrer");
+    setIsOpen(false);
+  };
+
+  const openOffice = () => {
+    if (onOpenOffice) onOpenOffice();
+    else router.push('/dashboard');
+    setIsOpen(false);
+  };
+
+  const openConsulting = () => {
+    if (onOpenConsulting) onOpenConsulting();
+    setIsOpen(false);
+  };
+
   return (
     <>
-      <button 
-        onClick={() => setIsOpen(!isOpen)} 
-        className="fixed top-5 left-5 z-[60] bg-[#1a3a6e] text-white p-3 rounded-2xl shadow-lg font-bold text-[10px] transition-all active:scale-90 lg:hidden"
-      >
-        {isOpen ? 'CLOSE' : 'MENU'}
-      </button>
+      {isOpen && (
+        <button
+          onClick={() => setIsOpen(false)}
+          className="fixed top-5 left-5 z-[60] bg-[#1a3a6e] text-white px-4 py-3 rounded-2xl shadow-lg font-bold text-[10px] transition-all active:scale-90 lg:hidden"
+        >
+          닫기
+        </button>
+      )}
 
       <aside className={`fixed inset-y-0 left-0 z-50 bg-[#1a3a6e] flex flex-col shadow-xl transition-all duration-300 ${isOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full lg:w-[300px] lg:translate-x-0'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden lg:flex'}`}>
@@ -295,7 +318,7 @@ export default function Sidebar({
                 icon="🏠" 
                 label="대시보드" 
                 active={mode === 'office'} 
-                onClick={() => { router.push('/dashboard'); setIsOpen(false); }} 
+                onClick={openOffice}
               />
               
               <NavItem 
@@ -343,10 +366,7 @@ export default function Sidebar({
                   icon="📋"
                   label="고객관리"
                   active={false}
-                  onClick={() => {
-                    window.open(`${window.location.origin}/crm`, "_blank", "noopener,noreferrer");
-                    setIsOpen(false);
-                  }}
+                  onClick={openCrm}
                 />
               )}
 
@@ -443,6 +463,26 @@ export default function Sidebar({
         </div>
       </aside>
 
+      <div className={`${isOpen ? 'hidden' : 'block'} fixed inset-x-0 bottom-0 z-[55] border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,.12)] backdrop-blur lg:hidden`}>
+        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+          <MobileNavButton label="홈" active={mode === 'office'} onClick={openOffice}>
+            <Home className="h-5 w-5" />
+          </MobileNavButton>
+          <MobileNavButton label="고객" onClick={openCrm} disabled={!canAccessCrm(user)}>
+            <Users className="h-5 w-5" />
+          </MobileNavButton>
+          <MobileNavButton label="상담" active={mode === 'consulting'} onClick={openConsulting}>
+            <MessageSquareText className="h-5 w-5" />
+          </MobileNavButton>
+          <MobileNavButton label="작성" onClick={openContentStudio} disabled={!isApproved}>
+            <ClipboardCheck className="h-5 w-5" />
+          </MobileNavButton>
+          <MobileNavButton label="더보기" active={isOpen} onClick={() => setIsOpen(true)}>
+            <MoreHorizontal className="h-5 w-5" />
+          </MobileNavButton>
+        </div>
+      </div>
+
       {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-xl rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
@@ -514,6 +554,21 @@ export default function Sidebar({
 
       {isOpen && <div onClick={() => setIsOpen(false)} className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" />}
     </>
+  );
+}
+
+function MobileNavButton({ children, label, active, disabled, onClick }: { children: React.ReactNode; label: string; active?: boolean; disabled?: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-black transition-all active:scale-95 ${
+        active ? 'bg-[#1a3a6e] text-white shadow-lg shadow-blue-950/20' : 'text-slate-500 hover:bg-slate-100'
+      } ${disabled ? 'opacity-35' : ''}`}
+    >
+      {children}
+      <span>{label}</span>
+    </button>
   );
 }
 
