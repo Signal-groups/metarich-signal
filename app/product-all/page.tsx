@@ -397,13 +397,24 @@ export default function ProductAllPage() {
     setSelectedId(topics.find((topic) => topic.category === id)?.id || topics[0].id)
   }
 
+  const closePage = () => {
+    window.close()
+    window.setTimeout(() => {
+      if (window.history.length > 1) {
+        window.history.back()
+        return
+      }
+      window.location.href = "/dashboard"
+    }, 120)
+  }
+
   return (
     <main className="min-h-screen bg-[#eef2f7] text-slate-900">
       <div className="grid min-h-screen lg:grid-cols-[310px_1fr]">
         <aside className="bg-[#142132] text-slate-200 lg:sticky lg:top-0 lg:h-screen">
           <div className="flex h-full flex-col">
             <div className="border-b border-white/10 px-5 py-5">
-              <button onClick={() => window.close()} className="mb-5 inline-flex items-center gap-2 text-[13px] font-bold text-slate-300 hover:text-white">
+              <button onClick={closePage} className="mb-5 inline-flex items-center gap-2 text-[13px] font-bold text-slate-300 hover:text-white">
                 <ArrowLeft size={16} />
                 창 닫기
               </button>

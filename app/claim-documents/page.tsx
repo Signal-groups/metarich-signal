@@ -313,6 +313,17 @@ export default function ClaimDocumentsPage() {
     setCopied(false)
   }
 
+  const closePage = () => {
+    window.close()
+    window.setTimeout(() => {
+      if (window.history.length > 1) {
+        window.history.back()
+        return
+      }
+      window.location.href = "/dashboard"
+    }, 120)
+  }
+
   return (
     <main className="min-h-screen bg-[#f3f6fb] px-4 py-6 text-slate-950 md:px-8 md:py-8">
       <div className="mx-auto max-w-[1500px] space-y-6">
@@ -333,13 +344,7 @@ export default function ClaimDocumentsPage() {
                 보험회사 공시실
               </button>
               <button
-                onClick={() => {
-                  if (window.opener) {
-                    window.close()
-                    return
-                  }
-                  window.history.back()
-                }}
+                onClick={closePage}
                 className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-[14px] font-black text-slate-600 transition hover:bg-slate-50"
               >
                 창 닫기
