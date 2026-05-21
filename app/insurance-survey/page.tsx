@@ -150,10 +150,15 @@ export default function InsuranceSurveyPage() {
 
       const html2canvas = (await import("html2canvas")).default
       const captured = await html2canvas(node, {
-        backgroundColor: "#ffffff",
+        backgroundColor: "#e8f4ff",
         logging: false,
         scale: 2,
         useCORS: true,
+        allowTaint: true,
+        removeContainer: true,
+        foreignObjectRendering: false,
+        scrollX: 0,
+        scrollY: 0,
         windowHeight: Math.max(node.scrollHeight, Math.ceil(node.getBoundingClientRect().height)),
         windowWidth: Math.max(node.scrollWidth, Math.ceil(node.getBoundingClientRect().width)),
       })
@@ -169,16 +174,24 @@ export default function InsuranceSurveyPage() {
       const ctx = canvas.getContext("2d")
       if (!ctx) throw new Error("이미지 저장 준비에 실패했습니다.")
 
-      ctx.fillStyle = "#ffffff"
+      ctx.fillStyle = "#e8f4ff"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(captured, IMAGE_PADDING, IMAGE_PADDING, drawWidth, drawHeight)
 
       const link = document.createElement("a")
       link.download = `내보험바로알기_${customerName || "고객"}_${Date.now()}.png`
-      link.href = canvas.toDataURL("image/png")
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          alert("이미지 저장에 실패했습니다. 잠시 후 다시 시도해주세요.")
+          return
+        }
+        const url = URL.createObjectURL(blob)
+        link.href = url
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }, "image/png")
     } catch (error) {
       console.error(error)
       alert("이미지 저장에 실패했습니다. 잠시 후 다시 시도해주세요.")
@@ -629,7 +642,7 @@ const styles = `
 .medical-list em{color:#94a3b8;font-size:13px;font-style:normal;font-weight:800}
 .action-panel{display:flex;justify-content:flex-end}
 .save-button{min-width:180px}
-.capture-host{position:fixed;left:-12000px;top:0;width:940px;pointer-events:none;opacity:1}
+.capture-host{position:absolute;left:0;top:0;width:940px;pointer-events:none;opacity:1;transform:translateX(-1200px);z-index:-1}
 .capture-stack{width:940px;display:grid;gap:24px;background:#eef3f8;padding:0}
 .sheet-page{position:relative;overflow:hidden;width:940px;min-height:1329px;background:linear-gradient(180deg,rgba(232,244,255,.72) 0%,rgba(246,251,255,.88) 42%,rgba(238,247,255,.78) 100%);border:1px solid #9fb4cc;padding:56px 56px 50px;box-sizing:border-box;box-shadow:0 20px 60px rgba(15,23,42,.10)}
 .sheet-page:before{content:"";position:absolute;inset:18px;border:1px solid rgba(148,163,184,.55);border-radius:2px;pointer-events:none}
