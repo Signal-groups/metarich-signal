@@ -159,6 +159,8 @@
 .crm-app .btn-primary:hover { background: #2563eb; }
 .crm-app .btn-secondary { background: #fff; color: #475569; border: 1px solid #e2e8f0; }
 .crm-app .btn-secondary:hover { background: #f8fafc; }
+.crm-app .btn-danger { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+.crm-app .btn-danger:hover { background: #ffe4e6; }
 .crm-app .btn-sm { padding: 6px 12px; font-size: 12px; }
 .crm-app .btn-xs { padding: 4px 10px; font-size: 11px; border-radius: 8px; }
 
@@ -342,13 +344,100 @@
   border-radius: 24px;
 }
 .report-sheet {
-  min-height: 900px;
+  width: 1600px;
+  min-height: 1131px;
   background: #fff;
   border: 1px solid #dbe5ef;
   border-radius: 24px;
   padding: 42px;
   color: #0f172a;
   box-shadow: 0 14px 32px rgba(15, 23, 42, .08);
+}
+.report-pdf-page {
+  box-sizing: border-box;
+}
+.report-cover {
+  position: relative;
+  display: grid;
+  align-content: space-between;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(201,169,110,.22), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #f8fafc 54%, #eef6ff 100%);
+  border-top: 12px solid #1A2744;
+}
+.report-cover:after {
+  content: "";
+  position: absolute;
+  right: -120px;
+  bottom: -160px;
+  width: 540px;
+  height: 540px;
+  border-radius: 50%;
+  border: 86px solid rgba(37,99,235,.08);
+}
+.report-cover-brand {
+  position: relative;
+  z-index: 1;
+  justify-self: start;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: #1A2744;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.report-cover-content {
+  position: relative;
+  z-index: 1;
+  max-width: 920px;
+}
+.report-cover-kicker {
+  margin-bottom: 18px;
+  color: #C9A96E;
+  font-size: 22px;
+  font-weight: 900;
+}
+.report-cover h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 96px;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+.report-cover p {
+  margin-top: 28px;
+  max-width: 780px;
+  color: #475569;
+  font-size: 28px;
+  line-height: 1.55;
+  font-weight: 700;
+}
+.report-cover-meta {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.report-cover-meta div {
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.82);
+  border: 1px solid #dbe5ef;
+}
+.report-cover-meta span {
+  color: #64748b;
+  font-size: 17px;
+  font-weight: 800;
+}
+.report-cover-meta b {
+  color: #0f172a;
+  font-size: 25px;
+  font-weight: 900;
 }
 .report-client { border-top: 12px solid #2563eb; }
 .report-advisor { border-top: 12px solid #0f766e; }
@@ -631,6 +720,127 @@
 /* ── POLICY ── */
 .policy-row { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; align-items: center; }
 .policy-row:last-child { border-bottom: none; }
+.policy-group-card {
+  margin-bottom: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: border .15s, box-shadow .15s, transform .15s;
+}
+.policy-group-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+  transform: translateY(-1px);
+}
+.policy-group-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ── CRM MODAL ── */
+.crm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .46);
+}
+.crm-modal {
+  width: min(1040px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 22px;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+}
+.policy-detail-modal { width: min(1120px, 100%); }
+.contract-editor-modal { width: min(1180px, 100%); }
+.crm-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.crm-modal-title {
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 900;
+}
+.crm-modal-subtitle {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #475569;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.modal-close:hover { background: #f8fafc; }
+.crm-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+.contract-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.contract-editor-grid label,
+.coverage-edit-row {
+  display: grid;
+  gap: 6px;
+}
+.contract-editor-grid label span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+.contract-editor-grid input,
+.coverage-edit-row input {
+  width: 100%;
+  border: 1px solid #dbe5ef;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+}
+.contract-editor-coverages {
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.coverage-edit-row {
+  grid-template-columns: 130px 1fr 150px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #e2e8f0;
+}
+.coverage-edit-row:first-of-type { border-top: none; }
 
 /* ── COPY BTN ── */
 .copy-btn { padding: 6px 14px; background: #eff6ff; color: #2563eb; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: background .15s; }
@@ -700,6 +910,37 @@
   .coverage-column {
     width: 32px;
     height: 110px;
+  }
+  .policy-group-card > .flex {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .policy-group-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .policy-group-actions .btn {
+    flex: 1;
+  }
+  .crm-modal-backdrop {
+    align-items: flex-end;
+    padding: 10px;
+  }
+  .crm-modal {
+    max-height: calc(100vh - 20px);
+    padding: 16px;
+    border-radius: 18px;
+  }
+  .contract-editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .coverage-edit-row {
+    grid-template-columns: 1fr;
+    padding: 12px 0;
+  }
+  .crm-modal-foot {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 .crm-mobile-btn {

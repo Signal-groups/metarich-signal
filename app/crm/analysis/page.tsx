@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../../lib/supabase'
+import type { jsPDF as JsPDFType } from 'jspdf'
 
 const UPLOAD_STORAGE_KEY = 'signal-crm-upload-files'
 const TARGET_STORAGE_KEY = 'signal-crm-coverage-targets'
@@ -99,7 +100,9 @@ export default function AnalysisPage() {
   const [dbPolicies, setDbPolicies] = useState<any[]>([])
   const [dbCoverages, setDbCoverages] = useState<any[]>([])
   const [openAnalysis, setOpenAnalysis] = useState<Record<string, boolean>>({})
-  const [openGroup, setOpenGroup] = useState<Record<string, boolean>>({})
+  const [selectedGroup, setSelectedGroup] = useState<PolicyGroup | null>(null)
+  const [editingContract, setEditingContract] = useState<{ itemId?: string; index?: number; group: PolicyGroup } | null>(null)
+  const [advisor, setAdvisor] = useState({ name: '담당자', phone: '' })
   const [targets, setTargets] = useState<CoverageTargets>(() => defaultTargets())
   const [savingReport, setSavingReport] = useState(false)
   const reportRef = useRef<HTMLDivElement | null>(null)
@@ -111,6 +114,9 @@ export default function AnalysisPage() {
       setLoading(false)
       return
     }
+
+    const { data: userData } = await supabase.from('users').select('name, phone').eq('id', session.user.id).maybeSingle()
+    setAdvisor({ name: userData?.name || session.user.email?.split('@')[0] || '담당자', phone: userData?.phone || '' })
 
     const { data: customerData } = await supabase
       .from('customers')
@@ -232,7 +238,40 @@ export default function AnalysisPage() {
   }, [primaryAnalysis, reportGroups, targets])
 
   const toggleAnalysis = (id: string) => setOpenAnalysis((prev) => ({ ...prev, [id]: !prev[id] }))
-  const toggleGroup = (id: string) => setOpenGroup((prev) => ({ ...prev, [id]: !prev[id] }))
+
+  const saveUploadItems = (next: UploadItem[]) => {
+    setUploadItems(next)
+    window.localStorage.setItem(UPLOAD_STORAGE_KEY, JSON.stringify(next))
+  }
+
+  const updateAnalysisContract = (itemId: string | undefined, index: number | undefined, group: PolicyGroup) => {
+    if (!itemId && typeof index !== 'number') return
+    const next = uploadItems.map((item) => {
+      if (item.id !== itemId) return item
+      const source = item.structuredAnalysis || {}
+      const contracts = firstArray(source.contracts, source.policies).slice()
+      const targetIndex = typeof index === 'number' ? index : contracts.length
+      const payload = policyGroupToContract(group)
+      if (targetIndex >= contracts.length) contracts.push(payload)
+      else contracts[targetIndex] = { ...contracts[targetIndex], ...payload }
+      return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
+    })
+    saveUploadItems(next)
+    setEditingContract(null)
+  }
+
+  const deleteAnalysisContract = (itemId?: string, index?: number) => {
+    if (!itemId || typeof index !== 'number') return
+    if (!confirm('해당 계약을 삭제할까요?')) return
+    const next = uploadItems.map((item) => {
+      if (item.id !== itemId) return item
+      const source = item.structuredAnalysis || {}
+      const contracts = firstArray(source.contracts, source.policies).filter((_: any, contractIndex: number) => contractIndex !== index)
+      return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
+    })
+    saveUploadItems(next)
+    setSelectedGroup(null)
+  }
   const downloadLandscapeReport = async () => {
     if (!selectedCustomer || !reportRef.current) {
       alert('저장할 보장분석 리포트가 없습니다.')
@@ -242,21 +281,27 @@ export default function AnalysisPage() {
     setSavingReport(true)
     try {
       const html2canvas = (await import('html2canvas')).default
-      const canvas = await html2canvas(reportRef.current, {
-        backgroundColor: '#eef3f8',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      })
-      const link = document.createElement('a')
+      const { jsPDF } = await import('jspdf')
+      const pages = Array.from(reportRef.current.querySelectorAll<HTMLElement>('.report-pdf-page'))
+      if (pages.length === 0) throw new Error('PDF page not found')
+
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }) as JsPDFType
+      for (const [index, page] of pages.entries()) {
+        const canvas = await html2canvas(page, {
+          backgroundColor: '#eef3f8',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        })
+        if (index > 0) pdf.addPage('a4', 'landscape')
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 297, 210, undefined, 'FAST')
+      }
       const customerName = normalizeFileName(selectedCustomer.name || '고객')
       const today = new Date().toISOString().slice(0, 10)
-      link.download = `보장분석_가로리포트_${customerName}_${today}.png`
-      link.href = canvas.toDataURL('image/png')
-      link.click()
+      pdf.save(`보장분석_가로A4_${customerName}_${today}.pdf`)
     } catch (error) {
       console.error(error)
-      alert('가로 리포트 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      alert('가로 A4 PDF 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
     } finally {
       setSavingReport(false)
     }
@@ -271,7 +316,7 @@ export default function AnalysisPage() {
         </div>
         <div className="header-right">
           <button className="btn btn-secondary btn-sm" onClick={downloadLandscapeReport} disabled={!hasAnyData || savingReport}>
-            {savingReport ? '저장 중...' : '가로 리포트 저장'}
+            {savingReport ? '저장 중...' : '가로 A4 PDF 저장'}
           </button>
           <Link href="/crm/upload" className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>업로드 분석으로 이동</Link>
         </div>
@@ -316,6 +361,7 @@ export default function AnalysisPage() {
               groups={reportGroups}
               targets={targets}
               strengths={reportStrengths}
+              advisor={advisor}
             />
           )}
 
@@ -338,9 +384,17 @@ export default function AnalysisPage() {
                     {item.name} · {item.date || '-'} · 월 보험료 {formatWon(item.normalized.monthlyPremium)}
                   </div>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={() => toggleAnalysis(item.id)}>
-                  {openAnalysis[item.id] ? '상세 닫기' : '상세 보기'}
-                </button>
+                <div className="flex" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setEditingContract({ itemId: item.id, index: item.normalized.groups.length, group: emptyPolicyGroup() })}
+                  >
+                    계약 추가
+                  </button>
+                  <button className="btn btn-primary btn-sm" onClick={() => toggleAnalysis(item.id)}>
+                    {openAnalysis[item.id] ? '상세 닫기' : '상세 보기'}
+                  </button>
+                </div>
               </div>
 
               <div className="grid-3" style={{ marginTop: 16 }}>
@@ -357,9 +411,15 @@ export default function AnalysisPage() {
               {openAnalysis[item.id] && (
                 <div style={{ marginTop: 18 }}>
                   <SectionTitle title="회사별 보험과 담보" />
-                  {item.normalized.groups.length > 0 ? item.normalized.groups.map((group: PolicyGroup) => (
-                    <PolicyGroupCard key={`${item.id}-${group.key}`} group={group} isOpen={!!openGroup[`${item.id}-${group.key}`]} onToggle={() => toggleGroup(`${item.id}-${group.key}`)} />
-                  )) : <EmptyState text="회사별 담보 상세가 없습니다. GPTs 출력에 policies/products coverages 항목을 포함하면 더 자세히 표시됩니다." />}
+                  {item.normalized.groups.length > 0 ? item.normalized.groups.map((group: PolicyGroup, groupIndex: number) => (
+                    <PolicyGroupCard
+                      key={`${item.id}-${group.key}`}
+                      group={group}
+                      onView={() => setSelectedGroup(group)}
+                      onEdit={() => setEditingContract({ itemId: item.id, index: groupIndex, group })}
+                      onDelete={() => deleteAnalysisContract(item.id, groupIndex)}
+                    />
+                  )) : <EmptyState text="회사별 담보 상세가 없습니다. GPTs 출력에 contracts 또는 policies와 coverages 항목을 포함하면 더 자세히 표시됩니다." />}
 
                   <div className="grid-2" style={{ marginTop: 14 }}>
                     <ListPanel title="강점" items={item.normalized.strengths} />
@@ -377,11 +437,20 @@ export default function AnalysisPage() {
               <SectionTitle title="직접 등록한 보험계약/담보" />
               <CoverageGoalChart groups={dbPolicyGroups} targets={targets} />
               {dbPolicyGroups.map((group) => (
-                <PolicyGroupCard key={group.key} group={group} isOpen={!!openGroup[group.key]} onToggle={() => toggleGroup(group.key)} />
+                <PolicyGroupCard key={group.key} group={group} onView={() => setSelectedGroup(group)} />
               ))}
             </div>
           )}
         </>
+      )}
+
+      {selectedGroup && <PolicyDetailModal group={selectedGroup} onClose={() => setSelectedGroup(null)} />}
+      {editingContract && (
+        <ContractEditorModal
+          value={editingContract.group}
+          onClose={() => setEditingContract(null)}
+          onSave={(group) => updateAnalysisContract(editingContract.itemId, editingContract.index, group)}
+        />
       )}
     </>
   )
@@ -459,6 +528,7 @@ function LandscapeReportPreview({
   groups,
   targets,
   strengths,
+  advisor,
 }: {
   reportRef: { current: HTMLDivElement | null }
   customer: any
@@ -466,6 +536,7 @@ function LandscapeReportPreview({
   groups: PolicyGroup[]
   targets: CoverageTargets
   strengths: string[]
+  advisor: { name: string; phone: string }
 }) {
   const rows = buildCoverageRows(groups, targets)
   const premiumTotal = analysis?.monthlyPremium || sum(groups.map((group) => group.premium || 0))
@@ -486,12 +557,35 @@ function LandscapeReportPreview({
       <div className="landscape-report-toolbar">
         <div>
           <div className="fw-700 text-blue">가로 저장 미리보기</div>
-          <div className="text-muted" style={{ fontSize: 12 }}>고객 안내용과 설계사 점검용을 한 이미지로 저장합니다.</div>
+          <div className="text-muted" style={{ fontSize: 12 }}>표지, 고객 안내용, 설계사 점검용을 가로 A4 PDF로 저장합니다.</div>
         </div>
       </div>
 
       <div ref={reportRef} className="landscape-report-preview">
-        <section className="report-sheet report-client">
+        <section className="report-sheet report-cover report-pdf-page">
+          <div className="report-cover-brand">보험의 기준</div>
+          <div className="report-cover-content">
+            <div className="report-cover-kicker">COVERAGE ANALYSIS REPORT</div>
+            <h1>{customer.name || analysis?.customerName || '고객'}님<br />보장 분석</h1>
+            <p>현재 가입 보험의 보험료, 납입 현황, 주요 담보를 상담용으로 깔끔하게 정리했습니다.</p>
+          </div>
+          <div className="report-cover-meta">
+            <div>
+              <span>담당자</span>
+              <b>{advisor.name || '담당자'}</b>
+            </div>
+            <div>
+              <span>연락처</span>
+              <b>{advisor.phone || '-'}</b>
+            </div>
+            <div>
+              <span>분석일</span>
+              <b>{new Date().toISOString().slice(0, 10)}</b>
+            </div>
+          </div>
+        </section>
+
+        <section className="report-sheet report-client report-pdf-page">
           <div className="report-topline">
             <div>
               <div className="report-kicker">고객 안내용</div>
@@ -535,7 +629,7 @@ function LandscapeReportPreview({
           </div>
         </section>
 
-        <section className="report-sheet report-advisor">
+        <section className="report-sheet report-advisor report-pdf-page">
           <div className="report-topline">
             <div>
               <div className="report-kicker">설계사 점검용</div>
@@ -621,6 +715,41 @@ function ReportBar({ row }: { row: ReturnType<typeof buildCoverageRows>[number] 
       </div>
     </div>
   )
+}
+
+function emptyPolicyGroup(): PolicyGroup {
+  return {
+    key: `manual-${Date.now()}`,
+    company: '',
+    product_name: '',
+    start_date: '',
+    payment_period: '',
+    maturity_age: '',
+    coverages: [],
+  }
+}
+
+function policyGroupToContract(group: PolicyGroup) {
+  return {
+    company: group.company,
+    product_name: group.product_name,
+    monthly_premium: group.premium || 0,
+    premium: group.premium || 0,
+    start_date: group.start_date || '',
+    payment_period: group.payment_period || '',
+    maturity: group.maturity || '',
+    maturity_age: group.maturity_age || '',
+    paid_premium_total: group.paid_premium_total || 0,
+    remaining_premium_total: group.remaining_premium_total || 0,
+    coverages: group.coverages.map((coverage) => ({
+      category: translateCategory(coverage.category),
+      coverage_name: coverage.coverage_name,
+      amount: coverage.amount || 0,
+      coverage_amount: coverage.amount || 0,
+      unit: coverage.unit || '원',
+      note: coverage.note || '',
+    })),
+  }
 }
 
 function normalizeAnalysis(data: any, fallbackName = '') {
@@ -728,9 +857,19 @@ function normalizeCoverages(value: any, company?: string, productName?: string):
   })
 }
 
-function PolicyGroupCard({ group, isOpen, onToggle }: { group: PolicyGroup; isOpen: boolean; onToggle: () => void }) {
+function PolicyGroupCard({
+  group,
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  group: PolicyGroup
+  onView: () => void
+  onEdit?: () => void
+  onDelete?: () => void
+}) {
   return (
-    <div className="bg-gray rounded p-16" style={{ marginBottom: 10 }}>
+    <div className="policy-group-card" onClick={onView}>
       <div className="flex justify-between items-center" style={{ gap: 10 }}>
         <div>
           <div className="fw-700" style={{ fontSize: 14 }}>{group.company} · {group.product_name}</div>
@@ -741,11 +880,38 @@ function PolicyGroupCard({ group, isOpen, onToggle }: { group: PolicyGroup; isOp
             현재까지 납부 {formatWon(group.paid_premium_total)} · 남은 보험료 {formatWon(group.remaining_premium_total)}
           </div>
         </div>
-        <button className="btn btn-secondary btn-xs" onClick={onToggle}>{isOpen ? '닫기' : `담보 ${group.coverages.length}개`}</button>
+        <div className="policy-group-actions" onClick={(event) => event.stopPropagation()}>
+          <button className="btn btn-secondary btn-xs" onClick={onView}>담보 {group.coverages.length}개</button>
+          {onEdit && <button className="btn btn-secondary btn-xs" onClick={onEdit}>수정</button>}
+          {onDelete && <button className="btn btn-danger btn-xs" onClick={onDelete}>삭제</button>}
+        </div>
       </div>
+    </div>
+  )
+}
 
-      {isOpen && (
-        <div className="tbl-wrap" style={{ marginTop: 12 }}>
+function PolicyDetailModal({ group, onClose }: { group: PolicyGroup; onClose: () => void }) {
+  return (
+    <div className="crm-modal-backdrop" onClick={onClose}>
+      <div className="crm-modal policy-detail-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="crm-modal-head">
+          <div>
+            <div className="crm-modal-title">{group.company}</div>
+            <div className="crm-modal-subtitle">{group.product_name}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="grid-3" style={{ marginBottom: 14 }}>
+          <MiniInfo label="월 보험료" value={formatWon(group.premium)} />
+          <MiniInfo label="가입일 / 납부기간" value={`${group.start_date || '-'} / ${group.payment_period || '-'}`} />
+          <MiniInfo label="만기" value={formatMaturity(group)} />
+          <MiniInfo label="현재까지 납부" value={formatWon(group.paid_premium_total)} />
+          <MiniInfo label="남은 보험료" value={formatWon(group.remaining_premium_total)} />
+          <MiniInfo label="담보 수" value={`${group.coverages.length}개`} />
+        </div>
+
+        <div className="tbl-wrap">
           <table>
             <thead>
               <tr>
@@ -770,7 +936,116 @@ function PolicyGroupCard({ group, isOpen, onToggle }: { group: PolicyGroup; isOp
             </tbody>
           </table>
         </div>
-      )}
+      </div>
+    </div>
+  )
+}
+
+function ContractEditorModal({
+  value,
+  onClose,
+  onSave,
+}: {
+  value: PolicyGroup
+  onClose: () => void
+  onSave: (group: PolicyGroup) => void
+}) {
+  const [draft, setDraft] = useState<PolicyGroup>(() => ({
+    ...value,
+    coverages: value.coverages.map((coverage) => ({ ...coverage })),
+  }))
+
+  const updateField = (key: keyof PolicyGroup, nextValue: any) => {
+    setDraft((prev) => ({ ...prev, [key]: nextValue }))
+  }
+
+  const updateCoverage = (index: number, key: keyof CoverageRow, nextValue: any) => {
+    setDraft((prev) => ({
+      ...prev,
+      coverages: prev.coverages.map((coverage, coverageIndex) => (
+        coverageIndex === index ? { ...coverage, [key]: nextValue } : coverage
+      )),
+    }))
+  }
+
+  const addCoverage = () => {
+    setDraft((prev) => ({
+      ...prev,
+      coverages: [...prev.coverages, { category: '기타', coverage_name: '', unit: '원', note: '' }],
+    }))
+  }
+
+  const removeCoverage = (index: number) => {
+    setDraft((prev) => ({
+      ...prev,
+      coverages: prev.coverages.filter((_, coverageIndex) => coverageIndex !== index),
+    }))
+  }
+
+  const submit = () => {
+    onSave({
+      ...draft,
+      company: draft.company.trim() || '보험사 미확인',
+      product_name: draft.product_name.trim() || '상품명 미확인',
+      premium: numberOrUndefined(draft.premium),
+      paid_premium_total: numberOrUndefined(draft.paid_premium_total),
+      remaining_premium_total: numberOrUndefined(draft.remaining_premium_total),
+      coverages: draft.coverages
+        .filter((coverage) => coverage.coverage_name.trim() || coverage.amount)
+        .map((coverage) => ({
+          ...coverage,
+          category: normalizeCategory(coverage.category, coverage.coverage_name),
+          coverage_name: coverage.coverage_name.trim() || '담보명 미확인',
+          amount: numberOrUndefined(coverage.amount),
+          unit: coverage.unit || '원',
+        })),
+    })
+  }
+
+  return (
+    <div className="crm-modal-backdrop" onClick={onClose}>
+      <div className="crm-modal contract-editor-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="crm-modal-head">
+          <div>
+            <div className="crm-modal-title">계약 추가/수정</div>
+            <div className="crm-modal-subtitle">회사, 보험료, 담보를 수정하면 보장분석 화면과 PDF에 바로 반영됩니다.</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="contract-editor-grid">
+          <label><span>보험사</span><input value={draft.company} onChange={(event) => updateField('company', event.target.value)} /></label>
+          <label><span>상품명</span><input value={draft.product_name} onChange={(event) => updateField('product_name', event.target.value)} /></label>
+          <label><span>월 보험료</span><input inputMode="numeric" value={draft.premium || ''} onChange={(event) => updateField('premium', event.target.value)} /></label>
+          <label><span>가입일</span><input value={draft.start_date || ''} onChange={(event) => updateField('start_date', event.target.value)} placeholder="2026.05.21" /></label>
+          <label><span>납부기간</span><input value={draft.payment_period || ''} onChange={(event) => updateField('payment_period', event.target.value)} placeholder="20년" /></label>
+          <label><span>만기</span><input value={draft.maturity_age || draft.maturity || ''} onChange={(event) => updateField('maturity_age', event.target.value)} placeholder="90세" /></label>
+          <label><span>현재까지 납부</span><input inputMode="numeric" value={draft.paid_premium_total || ''} onChange={(event) => updateField('paid_premium_total', event.target.value)} /></label>
+          <label><span>남은 보험료</span><input inputMode="numeric" value={draft.remaining_premium_total || ''} onChange={(event) => updateField('remaining_premium_total', event.target.value)} /></label>
+        </div>
+
+        <div className="contract-editor-coverages">
+          <div className="flex justify-between items-center" style={{ marginBottom: 10 }}>
+            <div className="fw-700 text-blue">담보</div>
+            <button className="btn btn-secondary btn-xs" onClick={addCoverage}>담보 추가</button>
+          </div>
+          {draft.coverages.map((coverage, index) => (
+            <div key={`${coverage.coverage_name}-${index}`} className="coverage-edit-row">
+              <input value={coverage.category} onChange={(event) => updateCoverage(index, 'category', event.target.value)} placeholder="분류" />
+              <input value={coverage.coverage_name} onChange={(event) => updateCoverage(index, 'coverage_name', event.target.value)} placeholder="담보명" />
+              <input inputMode="numeric" value={coverage.amount || ''} onChange={(event) => updateCoverage(index, 'amount', event.target.value)} placeholder="가입금액" />
+              <input value={coverage.note || ''} onChange={(event) => updateCoverage(index, 'note', event.target.value)} placeholder="내용" />
+              <button className="btn btn-danger btn-xs" onClick={() => removeCoverage(index)}>삭제</button>
+            </div>
+          ))}
+          {draft.coverages.length === 0 && <EmptyState text="등록된 담보가 없습니다. 담보 추가를 눌러 입력해주세요." />}
+        </div>
+
+        <div className="crm-modal-foot">
+          <button className="btn btn-secondary btn-sm" onClick={onClose}>취소</button>
+          <button className="btn btn-primary btn-sm" onClick={submit}>저장</button>
+        </div>
+      </div>
     </div>
   )
 }
