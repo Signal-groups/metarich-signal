@@ -119,7 +119,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
   const [isConsultEditMode, setIsConsultEditMode] = useState(false);
@@ -278,7 +278,7 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      <main className={`flex-1 p-4 pb-28 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[300px]' : 'lg:ml-0'}`}>
+      <main className="flex-1 p-4 pb-28 transition-all duration-300 lg:ml-[300px] lg:p-10">
         <div className="max-w-[1400px] mx-auto">
           {(
             viewMode === 'office' ? renderOfficeView() : (
