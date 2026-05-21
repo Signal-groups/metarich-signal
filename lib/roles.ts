@@ -100,7 +100,17 @@ export function isApprovedUser(user: any): boolean {
 }
 
 export function canAccessCrm(user: any): boolean {
-  return normalizeRole(user) === "master" || user?.crm_access === true || user?.crm_access === "true";
+  const role = normalizeRole(user);
+  return (
+    role === "master" ||
+    role === "headquarters" ||
+    role === "leader" ||
+    role === "manager" ||
+    user?.is_approved === true ||
+    user?.is_approved === "true" ||
+    user?.crm_access === true ||
+    user?.crm_access === "true"
+  );
 }
 
 export function canSeeUser(viewer: any, target: any): boolean {

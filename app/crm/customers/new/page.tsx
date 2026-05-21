@@ -58,7 +58,7 @@ export default function NewCustomerPage() {
     }
 
     const phone = normalizePhone(form.phone)
-    const { error: dbError } = await supabase.from('customers').upsert({
+    const payload = {
       advisor_id: session.user.id,
       name: form.name,
       phone,
@@ -76,10 +76,27 @@ export default function NewCustomerPage() {
       tags: form.tags,
       deleted_at: null,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'advisor_id,phone' })
+    }
+
+    const { data: existingCustomer, error: findError } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('advisor_id', session.user.id)
+      .eq('phone', phone)
+      .maybeSingle()
+
+    if (findError) {
+      setError(getCustomerSaveErrorMessage(findError.message))
+      setSaving(false)
+      return
+    }
+
+    const { error: dbError } = existingCustomer?.id
+      ? await supabase.from('customers').update(payload).eq('id', existingCustomer.id)
+      : await supabase.from('customers').insert(payload)
 
     if (dbError) {
-      setError(dbError.message)
+      setError(getCustomerSaveErrorMessage(dbError.message))
       setSaving(false)
       return
     }
@@ -185,6 +202,18 @@ function normalizePhone(value: string) {
   const digits = value.replace(/[^\d]/g, '')
   if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
   return value.trim()
+}
+
+function getCustomerSaveErrorMessage(message: string) {
+  if (message.includes('duplicate') || message.includes('unique')) {
+    return '이미 등록된 연락처입니다. 기존 고객 정보를 확인한 뒤 다시 시도해주세요.'
+  }
+
+  if (message.includes('permission') || message.includes('policy') || message.includes('row-level')) {
+    return '고객 등록 권한이 확인되지 않았습니다. 관리자에게 승인 상태와 고객관리 권한을 확인해주세요.'
+  }
+
+  return message || '고객 등록 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
