@@ -68,12 +68,16 @@ type UploadItem = {
 
 type CoverageRow = {
   category: string
+  sub_category?: string
   coverage_name: string
   amount?: number
   unit?: string
   note?: string
   company?: string
   product_name?: string
+  coverage_type?: string
+  renewal_type?: string
+  payment_method_type?: string
 }
 
 type PolicyGroup = {
@@ -316,7 +320,7 @@ export default function AnalysisPage() {
         </div>
         <div className="header-right">
           <button className="btn btn-secondary btn-sm" onClick={downloadLandscapeReport} disabled={!hasAnyData || savingReport}>
-            {savingReport ? '저장 중...' : '가로 A4 PDF 저장'}
+            {savingReport ? '저장 중...' : 'PDF 저장'}
           </button>
           <Link href="/crm/upload" className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>업로드 분석으로 이동</Link>
         </div>
@@ -354,15 +358,17 @@ export default function AnalysisPage() {
           <CoverageTargetEditor targets={targets} onChange={setTargets} />
 
           {hasAnyData && selectedCustomer && (
-            <LandscapeReportPreview
-              reportRef={reportRef}
-              customer={selectedCustomer}
-              analysis={primaryAnalysis}
-              groups={reportGroups}
-              targets={targets}
-              strengths={reportStrengths}
-              advisor={advisor}
-            />
+            <div className="pdf-render-only" aria-hidden="true">
+              <LandscapeReportPreview
+                reportRef={reportRef}
+                customer={selectedCustomer}
+                analysis={primaryAnalysis}
+                groups={reportGroups}
+                targets={targets}
+                strengths={reportStrengths}
+                advisor={advisor}
+              />
+            </div>
           )}
 
           {!hasAnyData && (
@@ -391,9 +397,6 @@ export default function AnalysisPage() {
                   >
                     계약 추가
                   </button>
-                  <button className="btn btn-primary btn-sm" onClick={() => toggleAnalysis(item.id)}>
-                    {openAnalysis[item.id] ? '상세 닫기' : '상세 보기'}
-                  </button>
                 </div>
               </div>
 
@@ -407,28 +410,19 @@ export default function AnalysisPage() {
               </div>
 
               <CoverageGoalChart groups={item.normalized.groups} targets={targets} />
+              <AgeRecommendationPanel customer={selectedCustomer} />
+              <CompanyCoverageBoard
+                groups={item.normalized.groups}
+                onEdit={(group, groupIndex) => setEditingContract({ itemId: item.id, index: groupIndex, group })}
+                onDelete={(groupIndex) => deleteAnalysisContract(item.id, groupIndex)}
+              />
 
-              {openAnalysis[item.id] && (
-                <div style={{ marginTop: 18 }}>
-                  <SectionTitle title="회사별 보험과 담보" />
-                  {item.normalized.groups.length > 0 ? item.normalized.groups.map((group: PolicyGroup, groupIndex: number) => (
-                    <PolicyGroupCard
-                      key={`${item.id}-${group.key}`}
-                      group={group}
-                      onView={() => setSelectedGroup(group)}
-                      onEdit={() => setEditingContract({ itemId: item.id, index: groupIndex, group })}
-                      onDelete={() => deleteAnalysisContract(item.id, groupIndex)}
-                    />
-                  )) : <EmptyState text="회사별 담보 상세가 없습니다. GPTs 출력에 contracts 또는 policies와 coverages 항목을 포함하면 더 자세히 표시됩니다." />}
-
-                  <div className="grid-2" style={{ marginTop: 14 }}>
-                    <ListPanel title="강점" items={item.normalized.strengths} />
-                    <ListPanel title="부족 또는 확인 필요" items={item.normalized.weaknesses} />
-                    <ListPanel title="추천 방향" items={item.normalized.recommendations} />
-                    <ListPanel title="주의사항" items={item.normalized.cautions} />
-                  </div>
-                </div>
-              )}
+              <div className="grid-2" style={{ marginTop: 14 }}>
+                <ListPanel title="강점" items={item.normalized.strengths} />
+                <ListPanel title="부족 또는 확인 필요" items={item.normalized.weaknesses} />
+                <ListPanel title="추천 방향" items={item.normalized.recommendations} />
+                <ListPanel title="주의사항" items={item.normalized.cautions} />
+              </div>
             </div>
           ))}
 
@@ -436,9 +430,7 @@ export default function AnalysisPage() {
             <div className="card card-p">
               <SectionTitle title="직접 등록한 보험계약/담보" />
               <CoverageGoalChart groups={dbPolicyGroups} targets={targets} />
-              {dbPolicyGroups.map((group) => (
-                <PolicyGroupCard key={group.key} group={group} onView={() => setSelectedGroup(group)} />
-              ))}
+              <CompanyCoverageBoard groups={dbPolicyGroups} />
             </div>
           )}
         </>
@@ -516,6 +508,145 @@ function CoverageGoalChart({ groups, targets }: { groups: PolicyGroup[]; targets
             <div className="coverage-target">권장 {formatCompactWon(row.target)}</div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function CompanyCoverageBoard({
+  groups,
+  onEdit,
+  onDelete,
+}: {
+  groups: PolicyGroup[]
+  onEdit?: (group: PolicyGroup, index: number) => void
+  onDelete?: (index: number) => void
+}) {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const activeGroup = groups[activeIndex] || groups[0]
+  const totalPremium = sum(groups.map((group) => group.premium || 0))
+
+  useEffect(() => {
+    if (activeIndex >= groups.length) setActiveIndex(0)
+  }, [activeIndex, groups.length])
+
+  if (groups.length === 0) {
+    return <EmptyState text="회사별 담보 상세가 없습니다. GPTs 출력에 contracts 또는 policies와 coverages 항목을 포함하면 더 자세히 표시됩니다." />
+  }
+
+  return (
+    <div className="company-board">
+      <div className="company-board-head">
+        <div>
+          <div className="fw-700 text-blue">회사별 가입 현황</div>
+          <div className="text-muted" style={{ fontSize: 12 }}>
+            총 {groups.length}건 · 월 보험료 {formatWon(totalPremium)}
+          </div>
+        </div>
+      </div>
+
+      <div className="company-tab-strip">
+        {groups.map((group, index) => (
+          <button
+            key={`${group.key}-${index}`}
+            className={`company-tab ${index === activeIndex ? 'active' : ''}`}
+            onClick={() => setActiveIndex(index)}
+          >
+            <span>{group.company}</span>
+            <b>{formatWon(group.premium)}</b>
+            <small>{group.coverages.length}개 담보 · {formatRenewalType(group)}</small>
+          </button>
+        ))}
+      </div>
+
+      {activeGroup && (
+        <div className="company-detail-panel">
+          <div className="company-detail-top">
+            <div>
+              <div className="company-detail-title">{activeGroup.company}</div>
+              <div className="company-detail-subtitle">{activeGroup.product_name}</div>
+              <div className="company-detail-meta">
+                가입 {activeGroup.start_date || '-'} · 납부 {activeGroup.payment_period || '-'} · 만기 {formatMaturity(activeGroup)}
+              </div>
+            </div>
+            <div className="company-detail-actions">
+              {onEdit && <button className="btn btn-secondary btn-xs" onClick={() => onEdit(activeGroup, activeIndex)}>수정</button>}
+              {onDelete && <button className="btn btn-danger btn-xs" onClick={() => onDelete(activeIndex)}>삭제</button>}
+            </div>
+          </div>
+
+          <div className="coverage-split-grid">
+            <CoverageBucketPanel
+              title="정액보상"
+              description="진단비, 수술비, 입원일당처럼 정해진 금액으로 지급되는 담보입니다."
+              groups={buildCoverageBuckets(activeGroup.coverages, 'fixed')}
+            />
+            <CoverageBucketPanel
+              title="실손보상"
+              description="실손의료비, 운전자 실손성 담보처럼 실제 손해액 기준으로 확인하는 담보입니다."
+              groups={buildCoverageBuckets(activeGroup.coverages, 'actual')}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CoverageBucketPanel({
+  title,
+  description,
+  groups,
+}: {
+  title: string
+  description: string
+  groups: Array<{ title: string; rows: CoverageRow[] }>
+}) {
+  return (
+    <div className="coverage-bucket-panel">
+      <div className="coverage-bucket-head">
+        <b>{title}</b>
+        <span>{description}</span>
+      </div>
+      {groups.length > 0 ? groups.map((group) => (
+        <div key={`${title}-${group.title}`} className="coverage-bucket-group">
+          <div className="coverage-bucket-title">{group.title}</div>
+          {group.rows.map((coverage, index) => (
+            <div key={`${coverage.coverage_name}-${index}`} className="coverage-bucket-row">
+              <div>
+                <b>{coverage.sub_category || getCoverageSubCategory(coverage)}</b>
+                <span>{coverage.coverage_name}</span>
+                <small>{formatRenewalTypeFromCoverage(coverage)}{coverage.note ? ` · ${coverage.note}` : ''}</small>
+              </div>
+              <strong>{formatWon(coverage.amount)}</strong>
+            </div>
+          ))}
+        </div>
+      )) : (
+        <div className="coverage-bucket-empty">해당 보상 방식의 담보가 없습니다.</div>
+      )}
+    </div>
+  )
+}
+
+function AgeRecommendationPanel({ customer }: { customer: any }) {
+  const fullAge = getFullAge(customer?.birth_date)
+  const guide = getAgeGuide(fullAge)
+  return (
+    <div className="age-guide-panel">
+      <div>
+        <div className="fw-700 text-blue">나이대별 보장 점검</div>
+        <div className="text-muted" style={{ fontSize: 12 }}>매월 업데이트 예정인 추천 기준입니다.</div>
+      </div>
+      <div className="age-guide-items">
+        <div>
+          <span>필요 보장</span>
+          <b>{guide.needs}</b>
+        </div>
+        <div>
+          <span>추천 상품 방향</span>
+          <b>{guide.products}</b>
+        </div>
       </div>
     </div>
   )
@@ -743,9 +874,15 @@ function policyGroupToContract(group: PolicyGroup) {
     remaining_premium_total: group.remaining_premium_total || 0,
     coverages: group.coverages.map((coverage) => ({
       category: translateCategory(coverage.category),
+      coverage_category: translateCategory(coverage.category),
+      coverage_sub_category: coverage.sub_category || getCoverageSubCategory(coverage),
       coverage_name: coverage.coverage_name,
+      coverage_name_original: coverage.coverage_name,
       amount: coverage.amount || 0,
       coverage_amount: coverage.amount || 0,
+      coverage_type: coverage.coverage_type || getCoveragePaymentType(coverage),
+      payment_method_type: coverage.payment_method_type || (isActualCoverage(coverage) ? '실손보상' : '정액보상'),
+      renewal_type: coverage.renewal_type || '',
       unit: coverage.unit || '원',
       note: coverage.note || '',
     })),
@@ -847,12 +984,16 @@ function normalizeCoverages(value: any, company?: string, productName?: string):
     const category = normalizeCategory(rawCategory, rawName)
     return {
       category,
+      sub_category: coverage.coverage_sub_category || coverage.sub_category || getCoverageSubCategory({ category, coverage_name: rawName, note: coverage.note || coverage.description || coverage.condition || '' }),
       coverage_name: translateCoverageName(rawName, category),
       amount: numberOrUndefined(coverage.amount || coverage.coverage_amount || coverage.value),
       unit: coverage.unit || '원',
       note: coverage.note || coverage.description || coverage.condition || '',
       company,
       product_name: productName,
+      coverage_type: coverage.coverage_type || coverage.type || '',
+      renewal_type: coverage.renewal_type || '',
+      payment_method_type: coverage.payment_method_type || '',
     }
   })
 }
@@ -995,6 +1136,7 @@ function ContractEditorModal({
         .map((coverage) => ({
           ...coverage,
           category: normalizeCategory(coverage.category, coverage.coverage_name),
+          sub_category: coverage.sub_category || getCoverageSubCategory(coverage),
           coverage_name: coverage.coverage_name.trim() || '담보명 미확인',
           amount: numberOrUndefined(coverage.amount),
           unit: coverage.unit || '원',
@@ -1032,8 +1174,10 @@ function ContractEditorModal({
           {draft.coverages.map((coverage, index) => (
             <div key={`${coverage.coverage_name}-${index}`} className="coverage-edit-row">
               <input value={coverage.category} onChange={(event) => updateCoverage(index, 'category', event.target.value)} placeholder="분류" />
+              <input value={coverage.sub_category || ''} onChange={(event) => updateCoverage(index, 'sub_category', event.target.value)} placeholder="세부분류" />
               <input value={coverage.coverage_name} onChange={(event) => updateCoverage(index, 'coverage_name', event.target.value)} placeholder="담보명" />
               <input inputMode="numeric" value={coverage.amount || ''} onChange={(event) => updateCoverage(index, 'amount', event.target.value)} placeholder="가입금액" />
+              <input value={coverage.renewal_type || ''} onChange={(event) => updateCoverage(index, 'renewal_type', event.target.value)} placeholder="갱신/비갱신" />
               <input value={coverage.note || ''} onChange={(event) => updateCoverage(index, 'note', event.target.value)} placeholder="내용" />
               <button className="btn btn-danger btn-xs" onClick={() => removeCoverage(index)}>삭제</button>
             </div>
@@ -1095,8 +1239,144 @@ function buildCoverageRows(groups: PolicyGroup[], targets: CoverageTargets) {
 }
 
 function matchesTarget(coverage: CoverageRow, target: typeof targetItems[number]) {
-  const text = `${coverage.category} ${coverage.coverage_name} ${coverage.note || ''}`.toLowerCase()
+  const text = `${coverage.category} ${coverage.sub_category || ''} ${coverage.coverage_name} ${coverage.note || ''}`.toLowerCase()
   return target.aliases.some((alias) => text.includes(alias.toLowerCase()))
+}
+
+const coverageSectionOrder = [
+  '암진단비',
+  '뇌혈관진단비',
+  '심장진단비',
+  '질병수술비',
+  '상해수술비',
+  '입원일당',
+  '간병일당',
+  '실손의료비',
+  '운전자',
+  '법률비용',
+  '사망',
+  '후유장해',
+  '치매',
+  '치아/화상/골절',
+  '기타',
+]
+
+function buildCoverageBuckets(coverages: CoverageRow[], mode: 'fixed' | 'actual') {
+  const filtered = coverages.filter((coverage) => mode === 'actual' ? isActualCoverage(coverage) : !isActualCoverage(coverage))
+  const map = new Map<string, CoverageRow[]>()
+  filtered.forEach((coverage) => {
+    const title = getMainCoverageCategory(coverage)
+    const rows = map.get(title) || []
+    rows.push({ ...coverage, sub_category: coverage.sub_category || getCoverageSubCategory(coverage) })
+    map.set(title, rows)
+  })
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => coverageSectionOrder.indexOf(a) - coverageSectionOrder.indexOf(b))
+    .map(([title, rows]) => ({
+      title,
+      rows: rows.sort((a, b) => (b.amount || 0) - (a.amount || 0)),
+    }))
+}
+
+function isActualCoverage(coverage: CoverageRow) {
+  const text = `${coverage.category} ${coverage.coverage_name} ${coverage.coverage_type || ''} ${coverage.payment_method_type || ''}`.toLowerCase()
+  return text.includes('실손') || text.includes('실비') || text.includes('actual') || text.includes('배상책임') || text.includes('처리지원') || text.includes('벌금') || text.includes('변호사')
+}
+
+function getCoveragePaymentType(coverage: CoverageRow) {
+  return isActualCoverage(coverage) ? '실손' : '정액'
+}
+
+function getMainCoverageCategory(coverage: CoverageRow) {
+  const text = `${coverage.category} ${coverage.coverage_name} ${coverage.note || ''}`.toLowerCase()
+  if (text.includes('암')) return '암진단비'
+  if (text.includes('뇌')) return '뇌혈관진단비'
+  if (text.includes('심장') || text.includes('허혈') || text.includes('심근') || text.includes('부정맥')) return '심장진단비'
+  if (text.includes('질병') && text.includes('수술')) return '질병수술비'
+  if (text.includes('상해') && text.includes('수술')) return '상해수술비'
+  if (text.includes('간병') || text.includes('간호')) return '간병일당'
+  if (text.includes('입원') || text.includes('일당')) return '입원일당'
+  if (text.includes('실손') || text.includes('실비')) return '실손의료비'
+  if (text.includes('운전자') || text.includes('교통') || text.includes('자부상') || text.includes('벌금') || text.includes('변호사')) return '운전자'
+  if (text.includes('배상') || text.includes('화재벌금') || text.includes('일상생활')) return '법률비용'
+  if (text.includes('사망')) return '사망'
+  if (text.includes('후유') || text.includes('장해')) return '후유장해'
+  if (text.includes('치매')) return '치매'
+  if (text.includes('치아') || text.includes('화상') || text.includes('골절') || text.includes('깁스')) return '치아/화상/골절'
+  return translateCategory(coverage.category) || '기타'
+}
+
+function getCoverageSubCategory(coverage: Pick<CoverageRow, 'category' | 'coverage_name' | 'note'>) {
+  const text = `${coverage.category} ${coverage.coverage_name} ${coverage.note || ''}`.toLowerCase()
+  if (text.includes('일반암')) return '일반암'
+  if (text.includes('특정암') || text.includes('고액암')) return text.includes('고액') ? '고액암' : '특정암'
+  if (text.includes('유사암') || text.includes('소액암') || text.includes('갑상선')) return text.includes('유사') ? '유사암' : '소액암'
+  if (text.includes('암')) return '일반암'
+  if (text.includes('뇌졸중')) return '뇌졸중'
+  if (text.includes('뇌출혈')) return '뇌출혈'
+  if (text.includes('뇌경색')) return '뇌경색'
+  if (text.includes('뇌혈관')) return '뇌혈관질환'
+  if (text.includes('급성심근')) return '급성심근경색'
+  if (text.includes('허혈')) return '허혈성심장질환'
+  if (text.includes('부정맥')) return '기타심장질환(부정맥등)'
+  if (text.includes('심장')) return '기타심장질환'
+  if (text.includes('n대') || /[0-9]+대/.test(text)) return 'N대수술'
+  if (text.includes('종수술') || text.includes('1종') || text.includes('2종') || text.includes('3종') || text.includes('4종') || text.includes('5종')) return '종수술'
+  if (text.includes('상급')) return '상급'
+  if (text.includes('질병') && text.includes('수술')) return '질병수술 일반'
+  if (text.includes('상해') && text.includes('수술')) return '상해수술 일반'
+  if (text.includes('요양병원') && text.includes('간병')) return '요양병원간병인'
+  if (text.includes('상해') && text.includes('간병')) return '상해간병인'
+  if (text.includes('질병') && text.includes('간병')) return '질병간병인'
+  if (text.includes('간호간병')) return '간호간병통합서비스'
+  if (text.includes('간병')) return '기타간병'
+  if (text.includes('상급종합')) return '상급종합병원일당'
+  if (text.includes('요양병원')) return '요양병원입원일당'
+  if (text.includes('상해') && text.includes('입원')) return '상해입원일당'
+  if (text.includes('질병') && text.includes('입원')) return '질병입원일당'
+  if (text.includes('자부상') || text.includes('자동차부상')) return '자동차부상치료비'
+  if (text.includes('처리지원') || text.includes('형사합의')) return '교통사고처리지원금'
+  if (text.includes('벌금') && text.includes('대물')) return '벌금대물'
+  if (text.includes('벌금')) return '벌금대인'
+  if (text.includes('급발진')) return '급발진변호사비'
+  if (text.includes('변호사')) return '변호사선임비'
+  if (text.includes('화재벌금')) return '화재벌금'
+  if (text.includes('일상') && text.includes('배상')) return '일상생활배상책임'
+  return '기타'
+}
+
+function formatRenewalType(group: PolicyGroup) {
+  const text = `${group.product_name} ${group.coverages.map((coverage) => coverage.renewal_type || coverage.coverage_name).join(' ')}`
+  if (text.includes('비갱신')) return '비갱신형'
+  if (text.includes('갱신')) return '갱신형'
+  return '갱신 확인'
+}
+
+function formatRenewalTypeFromCoverage(coverage: CoverageRow) {
+  const text = `${coverage.renewal_type || ''} ${coverage.coverage_name}`
+  if (text.includes('비갱신')) return '비갱신형'
+  if (text.includes('갱신')) return '갱신형'
+  return '갱신 확인'
+}
+
+function getFullAge(birthDate?: string) {
+  if (!birthDate) return undefined
+  const birth = new Date(birthDate)
+  if (Number.isNaN(birth.getTime())) return undefined
+  const today = new Date()
+  let fullAge = today.getFullYear() - birth.getFullYear()
+  const birthdayThisYear = new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
+  if (today < birthdayThisYear) fullAge -= 1
+  return fullAge
+}
+
+function getAgeGuide(age?: number) {
+  if (!age) return { needs: '암·뇌·심장 기본 진단비와 실손 점검', products: '건강보험, 실손, 운전자 기본 구성' }
+  if (age < 35) return { needs: '실손, 운전자, 상해·질병수술비 중심', products: '저보험료 비갱신 건강보험, 운전자보험' }
+  if (age < 45) return { needs: '암·뇌혈관·심장 진단비와 수술비 균형', products: '3대질병 진단비, 질병수술비, 가족일배책' }
+  if (age < 60) return { needs: '치료비, 간병, 입원일당, 갱신형 부담 점검', products: '간병인보험, 암주요치료비, 뇌·심장 확장담보' }
+  return { needs: '간병, 치매, 노후 의료비와 납입 부담 점검', products: '간편건강보험, 간병/치매, 실손 유지 점검' }
 }
 
 function normalizeCategory(category: any, name?: any) {
