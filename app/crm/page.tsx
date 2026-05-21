@@ -60,11 +60,13 @@ export default function CrmDashboard() {
   const [customers, setCustomers] = useState<any[]>([])
   const [notifications, setNotifications] = useState<any[]>([])
   const [uploadItems, setUploadItems] = useState<any[]>([])
+  const [currentUserId, setCurrentUserId] = useState('')
 
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
+      setCurrentUserId(session.user.id)
 
       const { data: userData } = await supabase
         .from('users')
@@ -129,7 +131,9 @@ export default function CrmDashboard() {
 
   const analysisSuggestions = useMemo(() => {
     const latestByCustomer: Record<string, string> = {}
+    const customerIds = new Set(customers.map((customer) => customer.id))
     uploadItems
+      .filter((item) => item.ownerId === currentUserId || (!item.ownerId && item.customerId && customerIds.has(item.customerId)))
       .filter((item) => item.category === '보장분석' || item.structuredAnalysis)
       .forEach((item) => {
         const key = item.customerId || normalizeName(item.customerName)
@@ -145,7 +149,7 @@ export default function CrmDashboard() {
       const reason = !latest ? '분석 이력 없음' : days >= 365 ? '1년 경과' : days >= 180 ? '6개월 경과' : ''
       return { customer, latest, days, reason }
     }).filter((item) => item.reason).slice(0, 6)
-  }, [customers, uploadItems])
+  }, [currentUserId, customers, uploadItems])
 
   if (loading) {
     return (

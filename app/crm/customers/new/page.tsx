@@ -92,7 +92,7 @@ export default function NewCustomerPage() {
     }
 
     const { error: dbError } = existingCustomer?.id
-      ? await supabase.from('customers').update(payload).eq('id', existingCustomer.id)
+      ? await supabase.from('customers').update(payload).eq('id', existingCustomer.id).eq('advisor_id', session.user.id)
       : await supabase.from('customers').insert(payload)
 
     if (dbError) {

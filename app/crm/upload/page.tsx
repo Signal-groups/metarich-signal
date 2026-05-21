@@ -11,6 +11,7 @@ const GPTS_ANALYSIS_URL = 'https://chatgpt.com/g/g-6a0c10ad0478819192a11b8ffc28c
 
 type UploadItem = {
   id: string
+  ownerId?: string
   name: string
   size: number
   type: string
@@ -73,6 +74,7 @@ export default function UploadPage() {
   const [selectedCategory, setSelectedCategory] = useState('암')
   const [items, setItems] = useState<UploadItem[]>([])
   const [customers, setCustomers] = useState<any[]>([])
+  const [currentUserId, setCurrentUserId] = useState('')
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({})
   const [excelFileName, setExcelFileName] = useState('')
@@ -84,16 +86,10 @@ export default function UploadPage() {
   const [gptsError, setGptsError] = useState('')
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY)
-      if (saved) setItems(JSON.parse(saved))
-    } catch {}
-  }, [])
-
-  useEffect(() => {
     const loadCustomers = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
+      setCurrentUserId(session.user.id)
       const { data } = await supabase
         .from('customers')
         .select('id, name, phone')
@@ -103,6 +99,16 @@ export default function UploadPage() {
       const list = data || []
       setCustomers(list)
       setSelectedCustomerId(list[0]?.id || '')
+      try {
+        const saved = window.localStorage.getItem(STORAGE_KEY)
+        const savedItems = saved ? JSON.parse(saved) : []
+        const ownCustomerIds = new Set(list.map((customer: any) => customer.id))
+        setItems(Array.isArray(savedItems)
+          ? savedItems.filter((item: UploadItem) => item.ownerId === session.user.id || (!item.ownerId && item.customerId && ownCustomerIds.has(item.customerId)))
+          : [])
+      } catch {
+        setItems([])
+      }
     }
     loadCustomers()
   }, [])
@@ -134,8 +140,8 @@ export default function UploadPage() {
   }, [items])
 
   const filteredItems = useMemo(() => (
-    category === '전체' ? items : items.filter((item) => item.category === category)
-  ), [category, items])
+    category === '전체' ? visibleItems(items, currentUserId, customers) : visibleItems(items, currentUserId, customers).filter((item) => item.category === category)
+  ), [category, currentUserId, customers, items])
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList?.length) return
@@ -154,6 +160,7 @@ export default function UploadPage() {
       }).catch(() => {})
       nextItems.push({
         id,
+        ownerId: currentUserId,
         name: file.name,
         size: file.size,
         type: file.type || file.name.split('.').pop()?.toUpperCase() || 'FILE',
@@ -323,6 +330,7 @@ export default function UploadPage() {
 
       setItems((prev) => [{
         id,
+        ownerId: currentUserId,
         name: `${customerName}-GPTs-보장분석.json`,
         size: new Blob([JSON.stringify(parsed)]).size,
         type: 'application/json',
@@ -602,6 +610,11 @@ function normalizeExcelCustomer(row: Record<string, any>) {
     consulting_summary: cleanText(row.consulting_summary),
     tags: parseTags(row.tags),
   }
+}
+
+function visibleItems(items: UploadItem[], ownerId: string, customers: any[]) {
+  const ownCustomerIds = new Set(customers.map((customer) => customer.id))
+  return items.filter((item) => item.ownerId === ownerId || (!item.ownerId && item.customerId && ownCustomerIds.has(item.customerId)))
 }
 
 function cleanText(value: any) {

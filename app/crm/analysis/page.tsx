@@ -57,6 +57,7 @@ const coverageDescriptions: Record<string, string> = {
 
 type UploadItem = {
   id: string
+  ownerId?: string
   name: string
   category?: string
   date?: string
@@ -99,6 +100,7 @@ type CoverageTargets = Record<string, number>
 export default function AnalysisPage() {
   const [loading, setLoading] = useState(true)
   const [customers, setCustomers] = useState<any[]>([])
+  const [currentUserId, setCurrentUserId] = useState('')
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
   const [dbPolicies, setDbPolicies] = useState<any[]>([])
@@ -118,6 +120,7 @@ export default function AnalysisPage() {
       setLoading(false)
       return
     }
+    setCurrentUserId(session.user.id)
 
     const { data: userData } = await supabase.from('users').select('name, phone').eq('id', session.user.id).maybeSingle()
     setAdvisor({ name: userData?.name || session.user.email?.split('@')[0] || '담당자', phone: userData?.phone || '' })
@@ -148,7 +151,8 @@ export default function AnalysisPage() {
     try {
       const savedUploads = window.localStorage.getItem(UPLOAD_STORAGE_KEY)
       const savedTargets = window.localStorage.getItem(TARGET_STORAGE_KEY)
-      setUploadItems(savedUploads ? JSON.parse(savedUploads) : [])
+      const parsedUploads = savedUploads ? JSON.parse(savedUploads) : []
+      setUploadItems(Array.isArray(parsedUploads) ? parsedUploads : [])
       setTargets(savedTargets ? { ...defaultTargets(), ...JSON.parse(savedTargets) } : defaultTargets())
     } catch {
       setUploadItems([])
@@ -167,6 +171,11 @@ export default function AnalysisPage() {
         setDbCoverages([])
         return
       }
+      if (!customers.some((customer) => customer.id === selectedCustomerId)) {
+        setDbPolicies([])
+        setDbCoverages([])
+        return
+      }
       const [policyRes, coverageRes] = await Promise.all([
         supabase.from('policies').select('*').eq('customer_id', selectedCustomerId).order('start_date', { ascending: false }),
         supabase.from('coverages').select('*').eq('customer_id', selectedCustomerId),
@@ -175,13 +184,14 @@ export default function AnalysisPage() {
       setDbCoverages(coverageRes.data || [])
     }
     loadCustomerDetails()
-  }, [selectedCustomerId])
+  }, [customers, selectedCustomerId])
 
   const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId)
 
   const customerAnalyses = useMemo(() => {
     if (!selectedCustomer) return []
     return uploadItems
+      .filter((item) => item.ownerId === currentUserId || (!item.ownerId && item.customerId && customers.some((customer) => customer.id === item.customerId)))
       .filter((item) => item.category === '보장분석' || item.structuredAnalysis)
       .filter((item) => {
         if (item.customerId && item.customerId === selectedCustomer.id) return true
@@ -189,7 +199,7 @@ export default function AnalysisPage() {
         return false
       })
       .map((item) => ({ ...item, normalized: normalizeAnalysis(item.structuredAnalysis, item.name) }))
-  }, [selectedCustomer, uploadItems])
+  }, [currentUserId, customers, selectedCustomer, uploadItems])
 
   const dbPolicyGroups = useMemo<PolicyGroup[]>(() => {
     const byPolicy: Record<string, PolicyGroup> = {}

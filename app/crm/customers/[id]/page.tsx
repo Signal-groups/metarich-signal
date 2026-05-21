@@ -95,18 +95,25 @@ export default function CustomerDetailPage() {
     setAdvisorName(userData?.name || session.user.email?.split('@')[0] || '담당자')
     setAdvisorPhone(userData?.phone || '')
 
-    const [{ data: cust }, { data: policyData }, { data: coverageData }, { data: familyData }, { data: alertData }] = await Promise.all([
-      supabase.from('customers').select('*').eq('id', id).eq('advisor_id', session.user.id).is('deleted_at', null).single(),
-      supabase.from('policies').select('*').eq('customer_id', id).order('start_date', { ascending: false }),
-      supabase.from('coverages').select('*').eq('customer_id', id),
-      supabase.from('families').select('*').eq('customer_id', id),
-      supabase.from('notifications').select('*').eq('customer_id', id).order('due_date', { ascending: true }),
-    ])
+    const { data: cust } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', id)
+      .eq('advisor_id', session.user.id)
+      .is('deleted_at', null)
+      .single()
 
     if (!cust) {
       router.push('/crm/customers')
       return
     }
+
+    const [{ data: policyData }, { data: coverageData }, { data: familyData }, { data: alertData }] = await Promise.all([
+      supabase.from('policies').select('*').eq('customer_id', cust.id).order('start_date', { ascending: false }),
+      supabase.from('coverages').select('*').eq('customer_id', cust.id),
+      supabase.from('families').select('*').eq('customer_id', cust.id),
+      supabase.from('notifications').select('*').eq('customer_id', cust.id).order('due_date', { ascending: true }),
+    ])
 
     setCustomer(cust)
     setEditForm(cust)
@@ -148,7 +155,7 @@ export default function CustomerDetailPage() {
       consulting_summary: editForm.consulting_summary || null,
       tags: editForm.tags || [],
       updated_at: new Date().toISOString(),
-    }).eq('id', id)
+    }).eq('id', id).eq('advisor_id', customer.advisor_id)
     setCustomer({ ...customer, ...editForm })
     setEditing(false)
     setSaving(false)
@@ -186,7 +193,7 @@ export default function CustomerDetailPage() {
     await supabase.from('customers').update({
       deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }).eq('id', id)
+    }).eq('id', id).eq('advisor_id', customer.advisor_id)
     router.push('/crm/customers')
   }
 

@@ -71,6 +71,7 @@ export default function AlertsPage() {
   useEffect(() => { load() }, [load])
 
   const handleDone = async (id: string) => {
+    if (!notifications.some((item) => item.id === id)) return
     await supabase.from('notifications').update({ is_done: true, is_read: true }).eq('id', id)
     setNotifications((prev) => prev.map((item) => item.id === id ? { ...item, is_done: true, is_read: true } : item))
   }
