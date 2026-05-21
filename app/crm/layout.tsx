@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 import { canAccessCrm, normalizeRole } from '../../lib/roles'
+import { ensureUserProfile } from '../../lib/userProfile'
 
 type NavItem = {
   href: string
@@ -64,8 +65,15 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const redirectTo = encodeURIComponent(pathname || '/crm')
       if (!session) { router.replace(`/login?redirectTo=${redirectTo}`); return }
-      const { data: userData } = await supabase
+      let { data: userData } = await supabase
         .from('users').select('*').eq('id', session.user.id).maybeSingle()
+      if (!userData) {
+        try {
+          userData = await ensureUserProfile(supabase, session.user)
+        } catch {
+          userData = null
+        }
+      }
       if (!userData) { router.replace(`/login?redirectTo=${redirectTo}`); return }
 
       const mergedUser = { ...session.user, ...userData, email: session.user.email }

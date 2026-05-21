@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { HEADQUARTER_OPTIONS } from "@/lib/roles"
+import { ensureUserProfile } from "@/lib/userProfile"
 
 type SignupAccountType = "signal" | "external"
 
@@ -87,35 +88,27 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      const isExternal = formData.accountType === "external"
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim(),
         password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            phone: formData.phone.trim(),
+            accountType: formData.accountType,
+            headquarter: formData.headquarter,
+            department: formData.department,
+            branch: formData.branch,
+            companyName: formData.companyName.trim(),
+            position: formData.position.trim(),
+          },
+        },
       })
 
       if (authError) throw authError
 
       if (authData.user) {
-        const { error: dbError } = await supabase.from("users").insert([
-          {
-            id: authData.user.id,
-            email: formData.email.trim(),
-            name: formData.name,
-            phone: formData.phone.trim(),
-            role: isExternal ? "guest" : "agent",
-            role_level: isExternal ? "guest" : "staff",
-            rank: isExternal ? "guest" : "agent",
-            headquarter: isExternal ? "타사" : formData.headquarter,
-            headquarter_name: isExternal ? "타사" : formData.headquarter,
-            department: isExternal ? formData.companyName.trim() : formData.department || "",
-            department_name: isExternal ? formData.companyName.trim() : formData.department || "",
-            team: isExternal ? formData.position.trim() : formData.branch || "",
-            branch_name: isExternal ? formData.position.trim() : formData.branch || "",
-            is_approved: false,
-          },
-        ])
-
-        if (dbError) throw dbError
+        await ensureUserProfile(supabase, authData.user, formData)
         fetch("/api/notify-signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -142,7 +135,20 @@ export default function SignupPage() {
           ? String((error as { message?: unknown }).message || "")
           : ""
       if (message.toLowerCase().includes("already registered")) {
-        alert("이미 인증 계정이 있는 이메일입니다. 조직관리 목록에 없다면 마스터가 직원 정보로 등록해야 합니다.")
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: formData.email.trim(),
+          password: formData.password,
+        })
+
+        if (loginError || !loginData.user) {
+          alert("이미 인증 계정이 있는 이메일입니다. 기존 비밀번호로 로그인하거나 비밀번호 재설정을 진행해주세요.")
+          return
+        }
+
+        await ensureUserProfile(supabase, loginData.user, formData)
+        await supabase.auth.signOut()
+        alert("기존 인증 계정과 직원정보를 다시 연결했습니다. 관리자 승인 후 로그인해주세요.")
+        router.push("/login")
       } else {
         alert(message || "가입 신청 중 오류가 발생했습니다.")
       }

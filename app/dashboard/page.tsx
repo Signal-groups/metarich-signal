@@ -32,6 +32,7 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { normalizeRole, roleLabel, isApprovedUser } from "../../lib/roles"
+import { ensureUserProfile } from "../../lib/userProfile"
 
 function ToolIcon({ icon }: { icon: string }) {
   const className = "h-7 w-7"
@@ -128,7 +129,14 @@ export default function DashboardPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return router.replace("/login");
 
-    const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
+    let { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
+    if (!userInfo) {
+      try {
+        userInfo = await ensureUserProfile(supabase, session.user);
+      } catch {
+        userInfo = null;
+      }
+    }
     if (!userInfo) return router.replace("/login");
 
     const { data: settings } = await supabase.from("team_settings").select("key, value");
