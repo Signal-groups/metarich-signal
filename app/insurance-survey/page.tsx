@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useRef, useState } from "react"
-import type { CSSProperties } from "react"
 
 type SurveyState = Record<string, string[]>
 type Question = {
@@ -9,7 +8,6 @@ type Question = {
   title: string
   options: string[]
   extra?: boolean
-  custom?: boolean
   targetPage?: 1 | 2
 }
 
@@ -54,26 +52,26 @@ const DEFAULT_QUESTIONS: Question[] = [
     id: "q6",
     title: "보험 가입 시 가장 중요하게 보는 기준은 무엇인가요?",
     options: ["보험료", "넓은 보장", "환급금", "쉬운 청구", "담당자 관리", "보험회사"],
-    targetPage: 2,
+    targetPage: 1,
   },
   {
     id: "q7",
     title: "가장 관심 있는 금전적인 부분은 무엇인가요? (중복 선택 가능)",
     options: ["대출자금", "사업자금", "은퇴자금", "노후 생활비", "부채상환", "교육자금"],
-    targetPage: 2,
+    targetPage: 1,
   },
   {
     id: "q8",
     title: "노후 의료비와 생활비는 매월 어느 정도 필요하다고 생각하시나요?",
     options: ["100만원 이하", "100~200만원", "200~300만원", "300~400만원", "400만원 이상"],
-    targetPage: 2,
+    targetPage: 1,
   },
   {
     id: "q9",
     title: "보험이나 저축에 대한 의사결정은 누가 주로 하시나요?",
     options: ["본인", "배우자", "부모님", "자녀", "기타"],
     extra: true,
-    targetPage: 2,
+    targetPage: 1,
   },
 ]
 
@@ -102,10 +100,8 @@ export default function InsuranceSurveyPage() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [editingQuestions, setEditingQuestions] = useState(false)
-  const [newQuestionTitle, setNewQuestionTitle] = useState("")
-  const [newQuestionOptions, setNewQuestionOptions] = useState("예, 아니오")
 
-  const activeQuestions = useMemo(() => questions, [questions])
+  const activeQuestions = useMemo(() => questions.slice(0, 9), [questions])
   const totalSteps = Math.max(1, Math.ceil(activeQuestions.length / 2))
   const visibleQuestions = activeQuestions.slice(step * 2, step * 2 + 2)
   const progress = Math.round(((step + 1) / totalSteps) * 100)
@@ -118,37 +114,10 @@ export default function InsuranceSurveyPage() {
     })
   }
 
-  const addMedicalItem = () => {
-    const value = medicalDraft.trim()
-    if (!value) return
-    setMedicalItems((prev) => [...prev, value])
-    setMedicalDraft("")
-  }
-
-  const addQuestion = () => {
-    const title = newQuestionTitle.trim()
-    const options = newQuestionOptions.split(",").map((item) => item.trim()).filter(Boolean)
-    if (!title || options.length === 0) return
-    const next = [
-      ...questions,
-      { id: `custom-${Date.now()}`, title, options, custom: true, targetPage: 2 as const },
-    ]
+  const updateQuestion = (id: string, patch: Partial<Question>) => {
+    const next = normalizeQuestions(questions.map((question) => (question.id === id ? { ...question, ...patch } : question)))
     saveQuestions(next)
     setQuestions(next)
-    setNewQuestionTitle("")
-    setNewQuestionOptions("예, 아니오")
-  }
-
-  const deleteQuestion = (id: string) => {
-    const next = questions.filter((question) => question.id !== id)
-    saveQuestions(next)
-    setQuestions(next.length > 0 ? next : DEFAULT_QUESTIONS)
-    setAnswers((prev) => {
-      const copy = { ...prev }
-      delete copy[id]
-      return copy
-    })
-    setStep(0)
   }
 
   const resetQuestions = () => {
@@ -157,6 +126,17 @@ export default function InsuranceSurveyPage() {
     setAnswers({})
     setExtras({})
     setStep(0)
+  }
+
+  const addMedicalItem = () => {
+    const value = medicalDraft.trim()
+    if (!value) return
+    setMedicalItems((prev) => [...prev, value])
+    setMedicalDraft("")
+  }
+
+  const updateMedicalBase = (key: string, value: string) => {
+    setMedicalBase((prev) => ({ ...prev, [key]: value }))
   }
 
   const captureAsImage = async () => {
@@ -215,7 +195,7 @@ export default function InsuranceSurveyPage() {
         <header className="survey-header">
           <div>
             <h1>내보험 바로알기</h1>
-            <p>모바일에서는 질문 2개씩 진행하고, 마지막에 결과지를 이미지로 저장합니다.</p>
+            <p>PC에서는 전체 질문을 한 번에 작성하고, 모바일에서는 2개씩 편하게 진행합니다.</p>
           </div>
           <button type="button" className="dark-button" onClick={() => window.close()}>창 닫기</button>
         </header>
@@ -233,41 +213,24 @@ export default function InsuranceSurveyPage() {
         <section className="panel">
           <div className="step-head">
             <div>
-              <div className="panel-title">질문 진행</div>
-              <p>{step + 1} / {totalSteps} 단계 · 현재 화면에는 2개 질문만 표시됩니다.</p>
+              <div className="panel-title">질문 작성</div>
+              <p className="desktop-copy">기본 9개 질문을 기존 방식대로 한 화면에서 선택합니다.</p>
+              <p className="mobile-copy">{step + 1} / {totalSteps} 단계 · 현재 화면에는 2개 질문만 표시됩니다.</p>
             </div>
             <button type="button" className="ghost-button" onClick={() => setEditingQuestions((prev) => !prev)}>
               질문 수정
             </button>
           </div>
-          <div className="progress"><span style={{ width: `${progress}%` }} /></div>
 
           {editingQuestions && (
-            <div className="editor-box">
-              <div className="editor-actions">
-                <button type="button" className="ghost-button" onClick={resetQuestions}>초기화</button>
-              </div>
-              <div className="editor-grid">
-                <Field label="추가 질문" value={newQuestionTitle} onChange={setNewQuestionTitle} placeholder="예: 최근 3개월 내 검사 소견이 있나요?" />
-                <Field label="선택지" value={newQuestionOptions} onChange={setNewQuestionOptions} placeholder="쉼표로 구분" />
-                <button type="button" className="primary-button" onClick={addQuestion}>추가</button>
-              </div>
-              <div className="question-list">
-                {questions.map((question, index) => (
-                  <div key={question.id} className="question-row">
-                    <span>{index + 1}. {question.title}</span>
-                    <button type="button" onClick={() => deleteQuestion(question.id)}>삭제</button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <QuestionEditor questions={activeQuestions} onUpdate={updateQuestion} onReset={resetQuestions} />
           )}
 
-          <div className="question-stack">
-            {visibleQuestions.map((question, index) => (
+          <div className="desktop-question-stack">
+            {activeQuestions.map((question, index) => (
               <QuestionCard
                 key={question.id}
-                number={step * 2 + index + 1}
+                number={index + 1}
                 question={question}
                 selected={answers[question.id] || []}
                 extra={extras[question.id] || ""}
@@ -277,19 +240,50 @@ export default function InsuranceSurveyPage() {
             ))}
           </div>
 
-          <div className="nav-actions">
-            <button type="button" className="ghost-button" disabled={step === 0} onClick={() => setStep((prev) => Math.max(0, prev - 1))}>이전</button>
-            {step < totalSteps - 1 ? (
-              <button type="button" className="primary-button" onClick={() => setStep((prev) => Math.min(totalSteps - 1, prev + 1))}>다음 질문</button>
-            ) : (
-              <button type="button" className="primary-button" onClick={captureAsImage} disabled={saving}>{saving ? "저장 중..." : "이미지 저장"}</button>
-            )}
+          <div className="mobile-question-flow">
+            <div className="progress"><span style={{ width: `${progress}%` }} /></div>
+            <div className="question-stack">
+              {visibleQuestions.map((question, index) => (
+                <QuestionCard
+                  key={question.id}
+                  number={step * 2 + index + 1}
+                  question={question}
+                  selected={answers[question.id] || []}
+                  extra={extras[question.id] || ""}
+                  onExtra={(value) => setExtras((prev) => ({ ...prev, [question.id]: value }))}
+                  onToggle={(option) => toggle(question.id, option)}
+                />
+              ))}
+            </div>
+            <div className="nav-actions">
+              <button type="button" className="ghost-button" disabled={step === 0} onClick={() => setStep((prev) => Math.max(0, prev - 1))}>이전</button>
+              {step < totalSteps - 1 ? (
+                <button type="button" className="primary-button" onClick={() => setStep((prev) => Math.min(totalSteps - 1, prev + 1))}>다음 질문</button>
+              ) : (
+                <button type="button" className="primary-button" onClick={captureAsImage} disabled={saving}>{saving ? "저장 중..." : "이미지 저장"}</button>
+              )}
+            </div>
           </div>
         </section>
 
         <section className="panel">
-          <div className="panel-title">병력사항 추가</div>
-          <p className="helper">하나씩 입력하면 결과지 2번째 장에 “병력고지 추가사항”으로 표시됩니다.</p>
+          <div className="panel-title">병력사항 입력</div>
+          <p className="helper">병력사항은 결과지 2페이지에 별도로 정리됩니다. 입력 내용이 없으면 결과지는 1장으로 저장됩니다.</p>
+
+          <div className="medical-base-form">
+            {MEDICAL_ROWS.map((label) => (
+              <div key={label} className="medical-base-row">
+                <strong>{label}</strong>
+                <select value={medicalBase[`${label}:yn`] || ""} onChange={(event) => updateMedicalBase(`${label}:yn`, event.target.value)}>
+                  <option value="">선택</option>
+                  <option value="있음">있음</option>
+                  <option value="없음">없음</option>
+                </select>
+                <input value={medicalBase[`${label}:memo`] || ""} onChange={(event) => updateMedicalBase(`${label}:memo`, event.target.value)} placeholder="질병명 / 치료내용" />
+              </div>
+            ))}
+          </div>
+
           <div className="medical-add">
             <input value={medicalDraft} onChange={(event) => setMedicalDraft(event.target.value)} placeholder="예: 2024년 위내시경 용종 제거, 추적검사 예정" />
             <button type="button" className="primary-button" onClick={addMedicalItem}>추가</button>
@@ -305,32 +299,71 @@ export default function InsuranceSurveyPage() {
           </div>
         </section>
 
-        <section className="panel preview-panel">
-          <div className="step-head">
-            <div>
-              <div className="panel-title">저장 미리보기</div>
-              <p>아래 결과지는 모바일 화면에 맞춰 축소해서 보여주고, 저장 시 원본 비율로 저장됩니다.</p>
-            </div>
-            <button type="button" className="primary-button" onClick={captureAsImage} disabled={saving}>{saving ? "저장 중..." : "이미지 저장"}</button>
-          </div>
-          <div className="preview-scroll">
-            <SurveySheets
-              sheetRef={sheetRef}
-              customerName={customerName}
-              birthDate={birthDate}
-              occupation={occupation}
-              advisorName={advisorName}
-              questions={questions}
-              answers={answers}
-              extras={extras}
-              medicalBase={medicalBase}
-              setMedicalBase={setMedicalBase}
-              medicalItems={medicalItems}
-            />
-          </div>
+        <section className="action-panel">
+          <button type="button" className="primary-button save-button" onClick={captureAsImage} disabled={saving}>
+            {saving ? "저장 중..." : "이미지 저장"}
+          </button>
         </section>
+
+        <div className="capture-host" aria-hidden="true">
+          <SurveySheets
+            sheetRef={sheetRef}
+            customerName={customerName}
+            birthDate={birthDate}
+            occupation={occupation}
+            advisorName={advisorName}
+            questions={activeQuestions}
+            answers={answers}
+            extras={extras}
+            medicalBase={medicalBase}
+            medicalItems={medicalItems}
+          />
+        </div>
       </div>
     </main>
+  )
+}
+
+function QuestionEditor({
+  questions,
+  onUpdate,
+  onReset,
+}: {
+  questions: Question[]
+  onUpdate: (id: string, patch: Partial<Question>) => void
+  onReset: () => void
+}) {
+  return (
+    <div className="editor-box">
+      <div className="editor-head">
+        <div>
+          <strong>기본 9문항 수정</strong>
+          <p>질문과 선택지는 수정할 수 있고, 초기화하면 기본 문항으로 돌아갑니다.</p>
+        </div>
+        <button type="button" className="ghost-button" onClick={onReset}>초기화</button>
+      </div>
+      <div className="question-edit-stack">
+        {questions.map((question, index) => (
+          <div key={question.id} className="question-edit-row">
+            <label>
+              <span>{index + 1}번 질문</span>
+              <input value={question.title} onChange={(event) => onUpdate(question.id, { title: event.target.value })} />
+            </label>
+            <label>
+              <span>선택지</span>
+              <input
+                value={question.options.join(", ")}
+                onChange={(event) =>
+                  onUpdate(question.id, {
+                    options: event.target.value.split(",").map((item) => item.trim()).filter(Boolean),
+                  })
+                }
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -344,7 +377,6 @@ function SurveySheets({
   answers,
   extras,
   medicalBase,
-  setMedicalBase,
   medicalItems,
 }: {
   sheetRef: React.RefObject<HTMLDivElement | null>
@@ -356,20 +388,17 @@ function SurveySheets({
   answers: SurveyState
   extras: Record<string, string>
   medicalBase: Record<string, string>
-  setMedicalBase: (value: Record<string, string>) => void
   medicalItems: string[]
 }) {
-  const pageOne = questions.filter((question) => question.targetPage !== 2 && !question.custom)
-  const customQuestions = questions.filter((question) => question.custom)
-  const pageTwoBase = questions.filter((question) => question.targetPage === 2 && !question.custom)
-  const pageTwo = [...customQuestions, ...pageTwoBase]
+  const hasMedicalPage = hasMedicalDisclosure(medicalBase, medicalItems)
+  const totalPages = hasMedicalPage ? 2 : 1
 
   return (
     <div ref={sheetRef} className="capture-stack">
-      <SheetPage page="1">
+      <SheetPage page="1" totalPages={totalPages}>
         <SheetHeader customerName={customerName} birthDate={birthDate} occupation={occupation} />
         <div className="sheet-question-grid">
-          {pageOne.map((question, index) => (
+          {questions.map((question, index) => (
             <SheetQuestion key={question.id} number={index + 1} question={question} answers={answers} extras={extras} />
           ))}
         </div>
@@ -377,55 +406,39 @@ function SurveySheets({
         <Signature customerName={customerName} advisorName={advisorName} />
       </SheetPage>
 
-      <SheetPage page="2">
-        <SheetHeader customerName={customerName} birthDate={birthDate} occupation={occupation} compact />
-        <div className="section-label">추가 질문 및 상담 확인사항</div>
-        <div className="sheet-question-grid compact">
-          {pageTwo.map((question, index) => (
-            <SheetQuestion key={question.id} number={index + 1} question={question} answers={answers} extras={extras} />
-          ))}
-        </div>
+      {hasMedicalPage && (
+        <SheetPage page="2" totalPages={totalPages}>
+          <SheetHeader customerName={customerName} birthDate={birthDate} occupation={occupation} compact />
+          <div className="section-label">병력고지 추가사항</div>
+          <div className="medical-sheet-grid readonly">
+            {MEDICAL_ROWS.map((label) => (
+              <div key={label}>
+                <strong>{label}</strong>
+                <span>{medicalBase[`${label}:yn`] || "-"}</span>
+                <em>{medicalBase[`${label}:memo`] || "-"}</em>
+              </div>
+            ))}
+          </div>
 
-        <div className="section-label">병력고지 추가사항</div>
-        <div className="medical-sheet-list">
-          {medicalItems.length > 0 ? medicalItems.map((item, index) => <div key={`${item}-${index}`}>{index + 1}. {item}</div>) : <div>추가 병력사항 없음</div>}
-        </div>
-
-        <div className="section-label">고지의무 기본 확인</div>
-        <div className="medical-sheet-grid">
-          {MEDICAL_ROWS.map((label) => (
-            <div key={label}>
-              <strong>{label}</strong>
-              <select
-                value={medicalBase[`${label}:yn`] || ""}
-                onChange={(event) => setMedicalBase({ ...medicalBase, [`${label}:yn`]: event.target.value })}
-              >
-                <option value="">선택</option>
-                <option value="있음">있음</option>
-                <option value="없음">없음</option>
-              </select>
-              <input
-                value={medicalBase[`${label}:memo`] || ""}
-                onChange={(event) => setMedicalBase({ ...medicalBase, [`${label}:memo`]: event.target.value })}
-                placeholder="질병명 / 치료내용"
-              />
-            </div>
-          ))}
-        </div>
-        <ConsentBox />
-        <Signature customerName={customerName} advisorName={advisorName} />
-      </SheetPage>
+          <div className="section-label">추가 입력 병력사항</div>
+          <div className="medical-sheet-list">
+            {medicalItems.length > 0 ? medicalItems.map((item, index) => <div key={`${item}-${index}`}>{index + 1}. {item}</div>) : <div>추가 병력사항 없음</div>}
+          </div>
+          <ConsentBox />
+          <Signature customerName={customerName} advisorName={advisorName} />
+        </SheetPage>
+      )}
     </div>
   )
 }
 
-function SheetPage({ children, page }: { children: React.ReactNode; page: string }) {
+function SheetPage({ children, page, totalPages }: { children: React.ReactNode; page: string; totalPages: number }) {
   return (
     <div className="sheet-page">
       <div className="corner left" />
       <div className="corner right" />
       {children}
-      <div className="page-count">{page} / 2</div>
+      <div className="page-count">{page} / {totalPages}</div>
     </div>
   )
 }
@@ -518,10 +531,10 @@ function QuestionCard({
         {question.options.map((option) => {
           const checked = selected.includes(option)
           return (
-            <button key={option} onClick={() => onToggle(option)} type="button" className={checked ? "option active" : "option"}>
-              <span>{checked ? "✓" : ""}</span>
-              {option}
-            </button>
+            <label key={option} className={checked ? "option active" : "option"}>
+              <input type="checkbox" checked={checked} onChange={() => onToggle(option)} />
+              <span>{option}</span>
+            </label>
           )
         })}
       </div>
@@ -532,110 +545,139 @@ function QuestionCard({
   )
 }
 
+function hasMedicalDisclosure(medicalBase: Record<string, string>, medicalItems: string[]) {
+  return medicalItems.length > 0 || Object.values(medicalBase).some((value) => value.trim().length > 0)
+}
+
+function normalizeQuestions(value: unknown): Question[] {
+  const saved = Array.isArray(value) ? value : []
+  return DEFAULT_QUESTIONS.map((base, index) => {
+    const item = saved[index] as Partial<Question> | undefined
+    const options = Array.isArray(item?.options) ? item.options.map(String).map((option) => option.trim()).filter(Boolean) : []
+    return {
+      ...base,
+      title: typeof item?.title === "string" && item.title.trim() ? item.title : base.title,
+      options: options.length > 0 ? options : base.options,
+      extra: typeof item?.extra === "boolean" ? item.extra : base.extra,
+      targetPage: 1,
+    }
+  })
+}
+
 function loadQuestions() {
   if (typeof window === "undefined") return DEFAULT_QUESTIONS
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     const parsed = saved ? JSON.parse(saved) : null
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_QUESTIONS
+    return normalizeQuestions(parsed)
   } catch {
     return DEFAULT_QUESTIONS
   }
 }
 
 function saveQuestions(questions: Question[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(questions))
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeQuestions(questions)))
 }
 
 const styles = `
 .survey-page{min-height:100vh;background:#e8eef6;padding:22px;font-family:'Pretendard Variable','Pretendard','Apple SD Gothic Neo',Arial,sans-serif;color:#17243a}
-.survey-shell{max-width:980px;margin:0 auto;display:grid;gap:14px}
+.survey-shell{max-width:1120px;margin:0 auto;display:grid;gap:14px}
 .survey-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .survey-header h1{margin:0;font-size:25px;font-weight:950}
-.survey-header p,.step-head p,.helper{margin:4px 0 0;color:#64748b;font-size:13px;font-weight:800;line-height:1.5}
+.survey-header p,.step-head p,.helper,.editor-head p{margin:4px 0 0;color:#64748b;font-size:13px;font-weight:800;line-height:1.5}
 .panel{background:#fff;border:1px solid #dbe4ef;border-radius:18px;padding:18px;box-shadow:0 16px 38px rgba(15,23,42,.08)}
 .panel-title{font-size:17px;font-weight:950;color:#17243a}
 .input-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
 .field{display:grid;gap:6px}
 .field span{font-size:13px;font-weight:950;color:#334155}
-.field input,.extra-input,.medical-add input,.medical-sheet-grid input,.medical-sheet-grid select{height:42px;border:1px solid #cbd5e1;border-radius:12px;padding:0 12px;font-size:15px;font-weight:800;color:#0f172a;outline:none;background:#fff}
+.field input,.extra-input,.medical-add input,.medical-base-row input,.medical-base-row select{height:42px;border:1px solid #cbd5e1;border-radius:12px;padding:0 12px;font-size:15px;font-weight:800;color:#0f172a;outline:none;background:#fff}
 .step-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.mobile-copy,.mobile-question-flow{display:none}
+.desktop-question-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
 .progress{height:9px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin:14px 0}
 .progress span{display:block;height:100%;background:linear-gradient(90deg,#1d4ed8,#0f766e);border-radius:999px}
 .question-stack{display:grid;gap:12px}
 .question-card{border:1px solid #dbe4ef;border-radius:16px;padding:16px;background:#f8fafc}
-.question-card p{margin:0 0 12px;font-size:18px;line-height:1.45;font-weight:950;color:#17243a}
+.question-card p{margin:0 0 12px;font-size:17px;line-height:1.45;font-weight:950;color:#17243a}
 .option-grid{display:flex;flex-wrap:wrap;gap:9px}
-.option{min-height:42px;border:1.5px solid #cbd5e1;border-radius:12px;background:#fff;padding:8px 12px;display:inline-flex;align-items:center;gap:7px;font-size:15px;font-weight:900;color:#334155;cursor:pointer}
-.option span{width:19px;height:19px;border:1px solid #94a3b8;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;color:#2563eb;font-size:13px;background:#fff}
+.option{min-height:42px;border:1.5px solid #cbd5e1;border-radius:12px;background:#fff;padding:8px 12px;display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:900;color:#334155;cursor:pointer}
+.option input{width:18px;height:18px;margin:0;accent-color:#2563eb;flex:0 0 auto}
+.option span{line-height:1.35}
 .option.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
-.option.active span{border-color:#2563eb;background:#dbeafe}
 .extra-input{margin-top:10px;width:100%}
 .nav-actions{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
 .primary-button,.ghost-button,.dark-button{min-height:42px;border:none;border-radius:12px;padding:0 16px;font-size:14px;font-weight:950;cursor:pointer}
 .primary-button{background:#2563eb;color:#fff}
 .ghost-button{background:#fff;color:#17243a;border:1px solid #cbd5e1}
 .dark-button{background:#17243a;color:#fff}
-.ghost-button:disabled{opacity:.45;cursor:not-allowed}
-.editor-box{border:1px solid #dbe4ef;border-radius:16px;background:#fff;padding:14px;margin-bottom:14px}
-.editor-actions{display:flex;justify-content:flex-end;margin-bottom:10px}
-.editor-grid{display:grid;grid-template-columns:1.2fr 1fr 100px;gap:10px;align-items:end}
-.question-list{display:grid;gap:7px;margin-top:12px;max-height:220px;overflow:auto}
-.question-row{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#f8fafc;border-radius:10px;padding:9px 10px;font-size:13px;font-weight:800;color:#334155}
-.question-row button,.medical-list button{border:none;background:#fee2e2;color:#b91c1c;border-radius:8px;padding:5px 8px;font-size:12px;font-weight:900;cursor:pointer}
+.ghost-button:disabled,.primary-button:disabled{opacity:.45;cursor:not-allowed}
+.editor-box{border:1px solid #dbe4ef;border-radius:16px;background:#fff;padding:14px;margin-top:14px}
+.editor-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.editor-head strong{font-size:15px;font-weight:950;color:#17243a}
+.question-edit-stack{display:grid;gap:10px}
+.question-edit-row{display:grid;grid-template-columns:1.2fr 1fr;gap:10px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:12px}
+.question-edit-row label{display:grid;gap:6px}
+.question-edit-row span{font-size:12px;font-weight:950;color:#64748b}
+.question-edit-row input{height:40px;border:1px solid #cbd5e1;border-radius:10px;padding:0 10px;font-size:14px;font-weight:800;color:#17243a}
+.medical-base-form{display:grid;gap:9px;margin-top:12px}
+.medical-base-row{display:grid;grid-template-columns:190px 110px 1fr;gap:10px;align-items:center;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;padding:10px}
+.medical-base-row strong{font-size:14px;font-weight:950;color:#334155}
 .medical-add{display:grid;grid-template-columns:1fr 100px;gap:10px;margin-top:12px}
 .medical-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .medical-list span{display:inline-flex;gap:8px;align-items:center;background:#f1f5f9;border-radius:999px;padding:7px 8px 7px 12px;font-size:13px;font-weight:850;color:#334155}
+.medical-list button{border:none;background:#fee2e2;color:#b91c1c;border-radius:8px;padding:5px 8px;font-size:12px;font-weight:900;cursor:pointer}
 .medical-list em{color:#94a3b8;font-size:13px;font-style:normal;font-weight:800}
-.preview-scroll{overflow:auto;border-radius:14px;background:#eef3f8;padding:14px;margin-top:12px}
+.action-panel{display:flex;justify-content:flex-end}
+.save-button{min-width:180px}
+.capture-host{position:fixed;left:-12000px;top:0;width:940px;pointer-events:none;opacity:1}
 .capture-stack{width:940px;display:grid;gap:24px;background:#eef3f8;padding:0}
-.sheet-page{position:relative;overflow:hidden;width:940px;min-height:1329px;background:#fff;border:1px solid #64748b;padding:58px 54px 46px;box-sizing:border-box;box-shadow:0 20px 60px rgba(15,23,42,.12)}
+.sheet-page{position:relative;overflow:hidden;width:940px;min-height:1329px;background:#fff;border:1px solid #64748b;padding:52px 54px 46px;box-sizing:border-box;box-shadow:0 20px 60px rgba(15,23,42,.12)}
 .corner.left{position:absolute;left:0;top:0;width:120px;height:120px;background:#263446;clip-path:polygon(0 0,100% 0,0 100%)}
 .corner.right{position:absolute;right:0;bottom:0;width:120px;height:120px;background:#263446;clip-path:polygon(100% 0,100% 100%,0 100%)}
-.sheet-header{display:grid;grid-template-columns:1fr 310px;gap:20px;align-items:start;margin-bottom:18px}
-.sheet-header h2{margin:0;color:#263446;font-size:34px;font-weight:950;letter-spacing:-.5px}
+.sheet-header{display:grid;grid-template-columns:1fr 310px;gap:20px;align-items:start;margin-bottom:14px}
+.sheet-header h2{margin:0;color:#263446;font-size:32px;font-weight:950;letter-spacing:-.5px}
 .sheet-header p{margin:8px 0 0;color:#64748b;font-size:15px;font-weight:850}
 .sheet-header.compact h2{font-size:29px}
 .sheet-info{display:grid;gap:7px;background:#f8fafc;border:1px solid #dbe4ef;border-radius:14px;padding:13px}
 .sheet-info span{display:flex;justify-content:space-between;font-size:13px;font-weight:850;color:#64748b}
 .sheet-info b{color:#17243a}
-.sheet-question-grid{display:grid;gap:11px}
-.sheet-question-grid.compact{gap:9px}
-.sheet-question{border-bottom:1px solid #e2e8f0;padding-bottom:10px}
-.sheet-question strong{display:block;font-size:16px;line-height:1.45;color:#1f2937;font-weight:950;margin-bottom:8px}
-.sheet-question div{display:flex;flex-wrap:wrap;gap:7px}
-.sheet-question span{border:1px solid #cbd5e1;border-radius:9px;padding:5px 8px;font-size:13px;font-weight:850;color:#475569}
+.sheet-question-grid{display:grid;gap:8px}
+.sheet-question{border-bottom:1px solid #e2e8f0;padding-bottom:8px}
+.sheet-question strong{display:block;font-size:15px;line-height:1.4;color:#1f2937;font-weight:950;margin-bottom:7px}
+.sheet-question div{display:flex;flex-wrap:wrap;gap:6px}
+.sheet-question span{border:1px solid #cbd5e1;border-radius:9px;padding:4px 7px;font-size:12.5px;font-weight:850;color:#475569}
 .sheet-question span.selected{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
-.sheet-question em{display:block;margin-top:7px;color:#0f766e;font-size:13px;font-weight:900;font-style:normal}
+.sheet-question em{display:block;margin-top:6px;color:#0f766e;font-size:12.5px;font-weight:900;font-style:normal}
 .section-label{display:inline-flex;margin:12px 0 9px;background:#17243a;color:#ffd72e;border-radius:10px;padding:8px 12px;font-size:15px;font-weight:950}
 .medical-sheet-list{display:grid;gap:7px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fafc;padding:12px;margin-bottom:6px;color:#334155;font-size:14px;font-weight:850;line-height:1.5}
 .medical-sheet-grid{display:grid;gap:8px}
-.medical-sheet-grid>div{display:grid;grid-template-columns:170px 110px 1fr;gap:8px;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:8px}
+.medical-sheet-grid>div{display:grid;grid-template-columns:190px 90px 1fr;gap:8px;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:8px}
 .medical-sheet-grid strong{font-size:14px;color:#334155}
-.medical-sheet-grid input,.medical-sheet-grid select{height:34px;border-radius:8px;font-size:13px}
-.consent-box{margin:18px auto 14px;max-width:620px;background:#ffd72e;color:#1f2937;padding:13px 18px;text-align:center;font-size:15px;line-height:1.55;font-weight:950}
+.medical-sheet-grid span{font-size:14px;font-weight:950;color:#1d4ed8}
+.medical-sheet-grid em{font-size:14px;font-style:normal;font-weight:850;color:#475569}
+.consent-box{margin:16px auto 12px;max-width:620px;background:#ffd72e;color:#1f2937;padding:12px 18px;text-align:center;font-size:14px;line-height:1.55;font-weight:950}
 .signature{width:560px;margin:0 auto;border:1px solid #64748b;display:grid;grid-template-columns:1fr 1fr}
-.signature div{min-height:88px;display:grid;grid-template-rows:34px 1fr;text-align:center;border-right:1px solid #cbd5e1}
+.signature div{min-height:78px;display:grid;grid-template-rows:32px 1fr;text-align:center;border-right:1px solid #cbd5e1}
 .signature div:last-child{border-right:none}
 .signature strong{display:flex;align-items:center;justify-content:center;background:#475569;color:#fff;font-size:15px}
 .signature span{display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:950;color:#0f172a}
 .page-count{position:absolute;right:34px;bottom:22px;color:#94a3b8;font-size:12px;font-weight:900}
-@media (max-width: 720px){
+@media (max-width: 820px){
   .survey-page{padding:12px;background:#f1f5f9}
+  .survey-shell{max-width:100%}
   .survey-header{align-items:flex-start}
   .survey-header h1{font-size:22px}
   .survey-header p{font-size:12px}
   .panel{padding:14px;border-radius:15px}
-  .input-grid,.editor-grid{grid-template-columns:1fr}
+  .input-grid,.question-edit-row{grid-template-columns:1fr}
+  .desktop-copy,.desktop-question-stack{display:none}
+  .mobile-copy,.mobile-question-flow{display:block}
   .step-head{align-items:center}
   .question-card p{font-size:17px}
   .option{width:100%;justify-content:flex-start;min-height:46px}
+  .medical-base-row{grid-template-columns:1fr}
   .medical-add{grid-template-columns:1fr}
-  .preview-panel{padding:12px}
-  .preview-scroll{padding:10px}
-  .capture-stack{transform:scale(.36);transform-origin:top left;width:940px;margin-bottom:-1680px}
-}
-@media (min-width: 721px) and (max-width: 1040px){
-  .capture-stack{transform:scale(.72);transform-origin:top left;margin-bottom:-740px}
+  .action-panel{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(241,245,249,0),#f1f5f9 26%);padding:24px 0 4px;z-index:5}
+  .save-button{width:100%}
 }
 `

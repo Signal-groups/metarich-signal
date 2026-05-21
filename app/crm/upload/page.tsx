@@ -659,6 +659,9 @@ function parseGptsJsonCode(value: string) {
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim()
+  if (withoutFence.includes('[CONTRACT]') || withoutFence.includes('[COVERAGE]')) {
+    return parseGptsBlockCode(withoutFence)
+  }
   const start = withoutFence.indexOf('{')
   const end = withoutFence.lastIndexOf('}')
   if (start < 0 || end < start) throw new Error('JSON 형식의 중괄호를 찾지 못했습니다.')
@@ -666,6 +669,149 @@ function parseGptsJsonCode(value: string) {
   const parsed = JSON.parse(jsonText)
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('JSON 객체 형식으로 생성해 주세요.')
   return parsed
+}
+
+function parseGptsBlockCode(value: string) {
+  const lines = String(value || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) =>
+      line
+      && !line.startsWith('---')
+      && !/^\d+차 출력/.test(line)
+      && line !== '1차 출력 완료'
+      && line !== '2차 출력 시작'
+      && line !== '2차 출력 완료'
+      && line !== '3차 출력 시작'
+      && line !== '3차 출력 완료'
+    )
+
+  const contracts: any[] = []
+  let index = 0
+  let currentContract: any = null
+
+  while (index < lines.length) {
+    const line = lines[index]
+    if (line === '[CONTRACT]') {
+      const fields = lines.slice(index + 1, index + 13).map(readPipeValue)
+      currentContract = buildContractFromFields(fields)
+      contracts.push(currentContract)
+      index += 13
+      continue
+    }
+    if (line === '[COVERAGE]') {
+      const fields = lines.slice(index + 1, index + 6).map(readPipeValue)
+      if (currentContract) currentContract.coverages.push(buildCoverageFromFields(fields))
+      index += 6
+      continue
+    }
+    index += 1
+  }
+
+  if (contracts.length === 0) throw new Error('[CONTRACT] 블록을 찾지 못했습니다.')
+
+  const monthlyTotal = sumValues(contracts.map((contract) => contract.monthly_premium))
+  const paidTotal = sumValues(contracts.map((contract) => contract.paid_premium_total))
+  const remainingTotal = sumValues(contracts.map((contract) => contract.remaining_premium_total))
+
+  return {
+    version: 'insurance-analysis-block-v1',
+    customer: {
+      name: '확인필요',
+      age: '확인필요',
+      insurance_age: '확인필요',
+      gender: '확인필요',
+      monthly_premium: monthlyTotal,
+      contract_count: contracts.length,
+    },
+    premium_summary: {
+      monthly_total: monthlyTotal,
+      paid_total: paidTotal,
+      remaining_total: remainingTotal,
+    },
+    contracts,
+    coverage_summary: buildCoverageSummary(contracts),
+  }
+}
+
+function readPipeValue(value: string) {
+  return String(value || '').replace(/\|$/, '').trim() || '확인필요'
+}
+
+function buildContractFromFields(fields: string[]) {
+  const monthlyPremium = blockNumber(fields[7])
+  const paidPremiumTotal = blockNumber(fields[10])
+  const remainingPremiumTotal = blockNumber(fields[11])
+  return {
+    company: fields[0] || '확인필요',
+    product_name: fields[1] || '확인필요',
+    contract_status: fields[2] || '확인필요',
+    start_date: fields[3] || '확인필요',
+    maturity: fields[4] || '확인필요',
+    maturity_date: fields[4] || '확인필요',
+    payment_type: fields[5] || '확인필요',
+    payment_period: fields[6] && fields[6] !== '확인필요' ? `${fields[6]}년` : '확인필요',
+    payment_period_years: fields[6] || '확인필요',
+    monthly_premium: monthlyPremium,
+    premium: monthlyPremium,
+    total_payment_count: fields[8] || '확인필요',
+    paid_count: fields[9] || '확인필요',
+    paid_premium_total: paidPremiumTotal,
+    remaining_premium_total: remainingPremiumTotal,
+    coverages: [],
+  }
+}
+
+function buildCoverageFromFields(fields: string[]) {
+  const category = fields[0] || '기타'
+  const originalName = fields[1] || '담보명 확인필요'
+  return {
+    category,
+    coverage_name: originalName,
+    coverage_name_original: originalName,
+    amount: blockNumber(fields[2]),
+    coverage_amount: blockNumber(fields[2]),
+    unit: '원',
+    coverage_type: fields[3] || '확인필요',
+    status: fields[4] || '확인필요',
+    coverage_status: fields[4] || '확인필요',
+    note: fields[3] && fields[3] !== '확인필요' ? fields[3] : '',
+  }
+}
+
+function blockNumber(value: any) {
+  const text = String(value ?? '').trim()
+  if (!text || text === '확인필요' || text === '미표시') return undefined
+  const parsed = Number(text.replace(/[^\d.-]/g, ''))
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function sumValues(values: Array<number | undefined>) {
+  return values.reduce<number>((total, value) => total + (Number(value) || 0), 0)
+}
+
+function buildCoverageSummary(contracts: any[]) {
+  const summary = {
+    cancer: 0,
+    similar_cancer: 0,
+    brain_vascular: 0,
+    ischemic_heart: 0,
+    disease_surgery: 0,
+    injury_surgery: 0,
+  }
+  contracts.flatMap((contract) => contract.coverages || []).forEach((coverage) => {
+    const category = String(coverage.category || '')
+    const name = String(coverage.coverage_name || '')
+    const amount = Number(coverage.amount || 0)
+    if (!amount) return
+    if (category.includes('암') && /유사|소액|기타피부|갑상선|제자리|경계성/.test(name)) summary.similar_cancer += amount
+    else if (category.includes('암')) summary.cancer += amount
+    else if (category.includes('뇌')) summary.brain_vascular += amount
+    else if (category.includes('심장') || name.includes('허혈성')) summary.ischemic_heart += amount
+    else if (category.includes('수술') && name.includes('상해')) summary.injury_surgery += amount
+    else if (category.includes('수술')) summary.disease_surgery += amount
+  })
+  return summary
 }
 
 function formatGptsAnalysis(data: any) {

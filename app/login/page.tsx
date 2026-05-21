@@ -32,7 +32,7 @@ export default function LoginPage() {
 
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        if (session && savedAutoLogin) router.replace(nextRedirect)
+        if (session) router.replace(nextRedirect)
       })
       .catch(async () => {
         await supabase.auth.signOut()
