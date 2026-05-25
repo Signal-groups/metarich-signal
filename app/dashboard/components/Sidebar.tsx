@@ -89,6 +89,8 @@ export default function Sidebar({
   const canManageStaff = isOrganizationAdminAccount(user);
   const isStaff = isAgent;
   const isApproved = isApprovedUser(user);
+  const canUseOffice = isStaff && isApproved;
+  const canUseCrm = canAccessCrm(user);
 
   const getRankDisplay = (role: string) => {
     if (!isApproved) return '게스트(승인대기)';
@@ -254,6 +256,21 @@ export default function Sidebar({
     setIsOpen(false);
   };
 
+  const openInsuranceLibrary = () => {
+    window.open(`${window.location.origin}/insurance-tools/coverage-stats`, "_blank", "noopener,noreferrer");
+    setIsOpen(false);
+  };
+
+  const showClaimAutomationStatus = () => {
+    alert("보험금 청구 자동화는 준비 중입니다. 현재는 마스터만 진행 상태를 확인할 수 있습니다.");
+    setIsOpen(false);
+  };
+
+  const showAiAutomationStatus = () => {
+    alert("AI 자동화 도구는 준비 중입니다. 카카오 자동전송, 네이버 키워드 분석, 금소법 검토 기능을 순차 검토 중입니다.");
+    setIsOpen(false);
+  };
+
   const openOffice = () => {
     if (onOpenOffice) onOpenOffice();
     else router.push('/dashboard');
@@ -303,35 +320,64 @@ export default function Sidebar({
 
             {/* Navigation List */}
             <nav className="space-y-1">
-              <p className="text-[10px] text-white/30 font-bold tracking-widest px-2 mb-2">주요 메뉴</p>
+              <p className="px-2 mb-2 text-[10px] font-bold tracking-widest text-white/30">주요 메뉴</p>
 
-              {onBack && (
-                <NavItem 
-                  icon="⌂" 
-                  label="처음 화면" 
-                  active={false} 
-                  onClick={() => { onBack(); setIsOpen(false); }} 
+              <NavItem
+                icon="홈"
+                label="홈"
+                active={mode === 'consulting' && !activeTab}
+                onClick={openConsulting}
+              />
+
+              {canUseOffice && (
+                <NavItem
+                  icon="업무"
+                  label="사무실 업무"
+                  active={mode === 'office'}
+                  onClick={openOffice}
                 />
               )}
-              
-              <NavItem 
-                icon="🏠" 
-                label="대시보드" 
-                active={mode === 'office'} 
-                onClick={openOffice}
-              />
-              
-              <NavItem 
-                icon="🤝" 
-                label="상담 도구" 
-                active={mode === 'consulting'} 
-                onClick={() => setIsConsultModalOpen(true)} 
+
+              {canUseCrm && (
+                <NavItem
+                  icon="CRM"
+                  label="고객 CRM"
+                  active={false}
+                  onClick={openCrm}
+                />
+              )}
+
+              {isMaster && (
+                <NavItem
+                  icon="청구"
+                  label="보험금 청구 자동화"
+                  active={false}
+                  onClick={showClaimAutomationStatus}
+                  badge="준비중"
+                />
+              )}
+
+              {isMaster && (
+                <NavItem
+                  icon="AI"
+                  label="AI 자동화 도구"
+                  active={false}
+                  onClick={showAiAutomationStatus}
+                  badge="준비중"
+                />
+              )}
+
+              <NavItem
+                icon="자료"
+                label="보험자료실"
+                active={false}
+                onClick={openInsuranceLibrary}
               />
 
               {isApproved && (
                 <NavItem
                   icon="DM"
-                  label="DM 및 정보 작성"
+                  label="고객 DM 발송"
                   active={false}
                   onClick={openContentStudio}
                 />
@@ -339,7 +385,7 @@ export default function Sidebar({
 
               <NavItem
                 icon="APP"
-                label="고객관리서포트앱"
+                label="고객관리 서포트앱"
                 active={false}
                 onClick={openCustomerSupportApp}
                 variant="support"
@@ -355,24 +401,15 @@ export default function Sidebar({
 
               <NavItem
                 icon="톡"
-                label="보험의 기준 단톡방"
+                label="보험의 기준 오픈채팅"
                 active={false}
                 onClick={openInsuranceChat}
                 variant="kakao"
               />
 
-              {canAccessCrm(user) && (
-                <NavItem
-                  icon="📋"
-                  label="고객관리"
-                  active={false}
-                  onClick={openCrm}
-                />
-              )}
-
               {canManageStaff && (
                 <NavItem
-                  icon="👥"
+                  icon="조직"
                   label="조직 관리"
                   active={showStaffManager}
                   onClick={() => setShowStaffManager(!showStaffManager)}
@@ -465,19 +502,19 @@ export default function Sidebar({
 
       <div className={`${isOpen ? 'hidden' : 'block'} fixed inset-x-0 bottom-0 z-[55] border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,.12)] backdrop-blur lg:hidden`}>
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-          <MobileNavButton label="홈" active={mode === 'office'} onClick={openOffice}>
-            <Home className="h-5 w-5" />
-          </MobileNavButton>
-          <MobileNavButton label="고객" onClick={openCrm} disabled={!canAccessCrm(user)}>
-            <Users className="h-5 w-5" />
-          </MobileNavButton>
-          <MobileNavButton label="상담" active={mode === 'consulting'} onClick={openConsulting}>
+          <MobileNavButton label="홈" active={mode === 'consulting'} onClick={openConsulting}>
             <MessageSquareText className="h-5 w-5" />
           </MobileNavButton>
-          <MobileNavButton label="작성" onClick={openContentStudio} disabled={!isApproved}>
+          <MobileNavButton label="업무" active={mode === 'office'} onClick={openOffice} disabled={!canUseOffice}>
+            <Home className="h-5 w-5" />
+          </MobileNavButton>
+          <MobileNavButton label="CRM" onClick={openCrm} disabled={!canUseCrm}>
+            <Users className="h-5 w-5" />
+          </MobileNavButton>
+          <MobileNavButton label="DM" onClick={openContentStudio} disabled={!isApproved}>
             <ClipboardCheck className="h-5 w-5" />
           </MobileNavButton>
-          <MobileNavButton label="더보기" active={isOpen} onClick={() => setIsOpen(true)}>
+          <MobileNavButton label="메뉴" active={isOpen} onClick={() => setIsOpen(true)}>
             <MoreHorizontal className="h-5 w-5" />
           </MobileNavButton>
         </div>
@@ -572,7 +609,7 @@ function MobileNavButton({ children, label, active, disabled, onClick }: { child
   );
 }
 
-function NavItem({ icon, label, active, onClick, variant }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" | "support" }) {
+function NavItem({ icon, label, active, onClick, variant, badge }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" | "support", badge?: string }) {
   const variantClass =
     variant === "naver"
       ? "bg-[#03c75a] text-white hover:bg-[#02b150] shadow-lg shadow-emerald-950/20"
@@ -600,7 +637,10 @@ function NavItem({ icon, label, active, onClick, variant }: { icon: string, labe
     >
       <span className={iconClass}>{icon}</span>
       <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
-      {active && <div className="ml-auto w-1 h-4 bg-[#0ea5e9] rounded-full"></div>}
+      <span className="ml-auto flex items-center gap-2">
+        {badge && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-white/70">{badge}</span>}
+        {active && <span className="h-4 w-1 rounded-full bg-[#0ea5e9]" />}
+      </span>
     </button>
   );
 }

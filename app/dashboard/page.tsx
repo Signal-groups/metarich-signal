@@ -31,7 +31,7 @@ import MasterView from "./components/MasterView"
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
-import { normalizeRole, roleLabel, isApprovedUser } from "../../lib/roles"
+import { normalizeRole, isApprovedUser } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
 function ToolIcon({ icon }: { icon: string }) {
@@ -119,7 +119,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
+  const [viewMode, setViewMode] = useState<'office' | 'consulting'>('consulting');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
@@ -146,9 +146,7 @@ export default function DashboardPage() {
     setMenuStatus(statusMap);
     setUser({ ...userInfo, effectiveRole });
 
-    if (effectiveRole === 'guest') {
-      setViewMode('consulting');
-    } else if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'office') {
+    if (effectiveRole !== 'guest' && isApprovedUser(userInfo) && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'office') {
       setViewMode('office');
     }
 
@@ -212,7 +210,7 @@ export default function DashboardPage() {
   const highlightTools = visibleConsultingTools.filter((tool) => tool.highlight);
 
   const renderOfficeView = () => {
-    if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
+    if (isGuest || !isApproved) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
     
     if (isMaster || isHeadquarters) return <MasterView {...props} />;
@@ -221,53 +219,6 @@ export default function DashboardPage() {
     return <AgentView {...props} />;
   };
 
-  if (viewMode === 'select' && !isGuest) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f0f4ff] p-6 text-center">
-        <div className="mb-12">
-          <p className="text-[12px] text-[#2563eb] font-bold tracking-widest uppercase mb-2">Welcome Back</p>
-          <h1 className="text-3xl md:text-5xl font-black text-[#1a3a6e] flex items-center justify-center gap-3">
-            <span>{user.name}</span>
-            <span className="text-sm md:text-lg px-3 py-1 bg-[#1a3a6e]/5 text-[#1a3a6e]/60 rounded-full font-bold">{roleLabel(user)}</span>
-          </h1>
-        </div>
-        
-        <div className="mb-5 w-full max-w-4xl">
-          <button
-            onClick={() => window.open(`${window.location.origin}/usage-guide`, "_blank")}
-            className="w-full rounded-2xl border border-[#dbeafe] bg-white px-5 py-4 text-sm font-black text-[#1a3a6e] shadow-sm transition hover:-translate-y-0.5 hover:border-[#2563eb] hover:shadow-md"
-          >
-            사용 가이드 보기 · 사무실업무 / 고객상담업무 활용법
-          </button>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl">
-          <button 
-            onClick={() => setViewMode('office')} 
-            className="flex-1 h-64 md:h-[320px] bg-white rounded-3xl flex flex-col items-center justify-center gap-6 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all group border border-white"
-          >
-            <div className="w-20 h-20 bg-[#eff6ff] rounded-2xl flex items-center justify-center text-5xl group-hover:scale-110 transition-transform">🏢</div>
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-[#1e293b]">사무실 업무</h2>
-              <p className="text-sm text-[#94a3b8] mt-1 font-medium">실적 관리 및 내근 업무</p>
-            </div>
-          </button>
-          
-          <button 
-            onClick={() => setViewMode('consulting')} 
-            className="flex-1 h-64 md:h-[320px] bg-gradient-to-br from-[#1a3a6e] to-[#2563eb] rounded-3xl flex flex-col items-center justify-center gap-6 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all group text-white border border-white/10"
-          >
-            <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center text-5xl group-hover:scale-110 transition-transform">🤝</div>
-            <div className="text-center">
-              <h2 className="text-2xl font-bold">고객 상담</h2>
-              <p className="text-sm text-white/60 mt-1 font-medium">영업 지원 및 상담 도구</p>
-            </div>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#f0f4ff] flex flex-col lg:flex-row overflow-x-hidden">
       <Sidebar 
@@ -275,7 +226,7 @@ export default function DashboardPage() {
         selectedDate={selectedDate} 
         onDateChange={setSelectedDate} 
         mode={viewMode} 
-        onBack={isGuest ? undefined : () => { setViewMode('select'); setActiveTab(null); }} 
+        onBack={undefined} 
         externalMenuStatus={menuStatus} 
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
@@ -297,11 +248,6 @@ export default function DashboardPage() {
                     <p className="text-[#94a3b8] font-bold text-sm mt-1 tracking-widest">{isApproved ? "승인된 상담 도구를 사용할 수 있습니다" : "게스트 모드로 이용 중입니다"}</p>
                   </div>
                   <div className="flex gap-2">
-                    {!isGuest && (
-                      <button onClick={() => { setViewMode("select"); setActiveTab(null); }} className="rounded-xl bg-slate-100 px-4 py-3 text-xs font-black text-slate-600 hover:bg-slate-200">
-                        처음 화면
-                      </button>
-                    )}
                     {isMaster && (
                       <button onClick={() => setIsConsultEditMode(!isConsultEditMode)} className={`rounded-xl px-4 py-3 text-xs font-black ${isConsultEditMode ? "bg-[#1a3a6e] text-white" : "bg-black text-[#d4af37]"}`}>
                         {isConsultEditMode ? "편집 완료" : "노출 편집"}

@@ -309,6 +309,20 @@
     white-space:nowrap;
   }
   .disclosure-link:hover{filter:brightness(.97)}
+  .company-actions{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  button.disclosure-link{
+    cursor:pointer;
+  }
+  .disclosure-link.system-link{
+    border-color:#dbe4ef;
+    background:#f8fafc;
+    color:#64748b;
+  }
   .cardpay-button{
     border:0;
     border-radius:999px;
@@ -414,6 +428,42 @@
     text-align:center;
     font-size:15px;
     font-weight:900;
+  }
+  .link-box{
+    border:1px solid #dbe4ef;
+    border-radius:14px;
+    background:#f8fafc;
+    padding:14px;
+    color:#10213f;
+    font-size:13px;
+    font-weight:800;
+    line-height:1.55;
+    word-break:break-all;
+  }
+  .modal-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:14px;
+  }
+  .modal-action{
+    min-height:42px;
+    border:0;
+    border-radius:12px;
+    background:#10213f;
+    color:#fff;
+    font-size:13px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .modal-action.secondary{
+    background:#eef4fb;
+    color:#10213f;
+  }
+  .modal-action:disabled{
+    background:#e5eaf1;
+    color:#9aa8ba;
+    cursor:not-allowed;
   }
   .company-type{
     margin-top:4px;
@@ -566,6 +616,23 @@
         <button class="modal-close" type="button" onclick="closeCardPayModal()" aria-label="닫기">×</button>
       </div>
       <div class="modal-body" id="cardPayBody"></div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="linkModal" aria-hidden="true">
+    <section class="cardpay-modal" role="dialog" aria-modal="true" aria-labelledby="linkModalTitle">
+      <div class="modal-head">
+        <h2 class="modal-title" id="linkModalTitle"><span class="modal-icon">⌂</span> 주소 확인</h2>
+        <button class="modal-close" type="button" onclick="closeLinkModal()" aria-label="닫기">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-note" id="linkModalNote">우편 또는 택배 발송 시 사용할 주소입니다.</p>
+        <div class="link-box" id="linkModalUrl"></div>
+        <div class="modal-actions">
+          <button class="modal-action secondary" type="button" onclick="copyLinkModalUrl()">주소 복사</button>
+          <button class="modal-action" id="linkModalOpenButton" type="button" onclick="closeLinkModal()">닫기</button>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -842,6 +909,13 @@ const toast = document.getElementById("toast")
 const cardPayModal = document.getElementById("cardPayModal")
 const cardPayBody = document.getElementById("cardPayBody")
 const cardPayTitle = document.getElementById("cardPayTitle")
+const linkModal = document.getElementById("linkModal")
+const linkModalTitle = document.getElementById("linkModalTitle")
+const linkModalNote = document.getElementById("linkModalNote")
+const linkModalUrl = document.getElementById("linkModalUrl")
+const linkModalOpenButton = document.getElementById("linkModalOpenButton")
+let currentLinkModalUrl = ""
+let currentLinkModalCanOpen = false
 
 function closePage(){
   if(window.opener){ window.close(); return }
@@ -868,6 +942,12 @@ function copyContact(company){
     toast.classList.add("show")
     setTimeout(() => toast.classList.remove("show"), 1500)
   })
+}
+
+function showToast(message = "복사되었습니다."){
+  toast.textContent = message
+  toast.classList.add("show")
+  setTimeout(() => toast.classList.remove("show"), 1500)
 }
 
 function openCardPayModal(companyName){
@@ -900,15 +980,60 @@ function closeCardPayModal(){
   cardPayModal.setAttribute("aria-hidden", "true")
 }
 
+function openLinkModal(kind, companyName, url, canOpen = true){
+  currentLinkModalUrl = url || "주소 등록 필요"
+  currentLinkModalCanOpen = Boolean(canOpen && url && url !== "주소 등록 필요")
+  linkModalTitle.innerHTML = `<span class="modal-icon">⌂</span> ${escapeHTML(companyName)} ${escapeHTML(kind)}`
+  linkModalNote.textContent = currentLinkModalCanOpen
+    ? "우편 또는 택배 발송 시 사용할 주소입니다. 필요하면 복사해서 붙여넣으세요."
+    : "주소는 아직 등록 전입니다. 추후 회사별 주소를 입력하면 바로 복사할 수 있습니다."
+  linkModalUrl.textContent = currentLinkModalUrl
+  linkModalOpenButton.disabled = false
+  linkModal.classList.add("show")
+  linkModal.setAttribute("aria-hidden", "false")
+}
+
+function closeLinkModal(){
+  linkModal.classList.remove("show")
+  linkModal.setAttribute("aria-hidden", "true")
+}
+
+function copyLinkModalUrl(){
+  navigator.clipboard.writeText(currentLinkModalUrl).then(() => showToast("주소가 복사되었습니다."))
+}
+
+function openLinkModalUrl(){
+  if (!currentLinkModalCanOpen) return
+  window.open(currentLinkModalUrl, "_blank", "noopener,noreferrer")
+}
+
+function openSystemSite(companyName, url){
+  if (!url) {
+    alert(`${companyName} 전산사이트 주소는 아직 등록 전입니다.`)
+    return
+  }
+  window.open(url, "_blank", "noopener,noreferrer")
+}
+
 window.openCardPayModal = openCardPayModal
 window.closeCardPayModal = closeCardPayModal
+window.openLinkModal = openLinkModal
+window.closeLinkModal = closeLinkModal
+window.copyLinkModalUrl = copyLinkModalUrl
+window.openLinkModalUrl = openLinkModalUrl
+window.openSystemSite = openSystemSite
 
 cardPayModal.addEventListener("click", (event) => {
   if (event.target === cardPayModal) closeCardPayModal()
 })
 
+linkModal.addEventListener("click", (event) => {
+  if (event.target === linkModal) closeLinkModal()
+})
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && cardPayModal.classList.contains("show")) closeCardPayModal()
+  if (event.key === "Escape" && linkModal.classList.contains("show")) closeLinkModal()
 })
 
 async function initFavorites(){
@@ -954,7 +1079,7 @@ function render(){
   const items = COMPANIES.filter(company => {
     const favoriteOk = activeType !== "favorite" || favoriteKeys.has(company.name)
     const typeOk = activeType === "all" || activeType === "favorite" || company.type === activeType
-    const keywordOk = !keyword || normalize(`${company.name} ${company.phone} ${company.monitoring}`).includes(keyword)
+    const keywordOk = !keyword || normalize(`${company.name} ${company.phone} ${company.monitoring} ${company.claimAddress || ""}`).includes(keyword)
     return favoriteOk && typeOk && keywordOk
   }).sort((a,b) => {
     const favoriteDiff = Number(favoriteKeys.has(b.name)) - Number(favoriteKeys.has(a.name))
@@ -973,7 +1098,10 @@ function render(){
         <div class="company-title">
           <div class="company-title-row">
             <h2 class="company-name">${company.name}</h2>
-            <a class="disclosure-link" href="${company.disclose}" target="_blank" rel="noopener">약관확인</a>
+            <div class="company-actions">
+              <a class="disclosure-link" href="${company.disclose}" target="_blank" rel="noopener">약관확인</a>
+              <button class="disclosure-link system-link" type="button" onclick='openSystemSite(${JSON.stringify(company.name)}, ${JSON.stringify(company.systemUrl || "")})'>전산사이트</button>
+            </div>
           </div>
           <div class="company-type">${TYPE_LABELS[company.type]}</div>
         </div>
@@ -985,6 +1113,7 @@ function render(){
         <div class="info-row"><span>카드납</span><strong><button class="cardpay-button ${CARD_PAYMENT_INFO[company.name] ? "" : "no-info"}" type="button" onclick='openCardPayModal(${JSON.stringify(company.name)})'>${CARD_PAYMENT_INFO[company.name] ? "정보 보기" : "해당사항 없음"}</button></strong></div>
         <div class="info-row"><span>전산헬프데스크</span><strong>${company.helpdesk || "확인 필요"}</strong></div>
         <div class="info-row"><span>청구팩스</span><strong>${company.claimFax || "확인 필요"}</strong></div>
+        <div class="info-row"><span>우편/택배 주소</span><strong><button class="cardpay-button ${company.claimAddress ? "" : "no-info"}" type="button" onclick='openLinkModal("우편/택배 주소", ${JSON.stringify(company.name)}, ${JSON.stringify(company.claimAddress || "주소 등록 필요")}, ${Boolean(company.claimAddress)})'>${company.claimAddress ? "주소 보기" : "등록 필요"}</button></strong></div>
       </div>
     </article>
   `).join("")
