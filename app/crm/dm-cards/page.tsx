@@ -2,7 +2,7 @@
 
 import type { ChangeEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CalendarDays, Copy, Download, Heart, ImageIcon, RefreshCw, Sparkles, Star, Sun } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
@@ -129,6 +129,8 @@ function pickUnused<T extends { id: string }>(pool: T[], userId: string, type: D
 
 export default function DmCardsPage() {
   const searchParams = useSearchParams()
+  const pathname = usePathname()
+  const backHref = pathname.startsWith('/dm') ? '/dm' : '/crm/dm'
   const initialTab = (searchParams.get('tab') as TabKey) || 'fortune'
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [checking, setChecking] = useState(true)
@@ -461,7 +463,7 @@ export default function DmCardsPage() {
     <>
       <div className="page-header">
         <div>
-          <Link href="/crm/dm" className="link" style={{ marginBottom: 8, display: 'inline-block' }}>← 고객 DM</Link>
+          <Link href={backHref} className="link" style={{ marginBottom: 8, display: 'inline-block' }}>← 고객 DM</Link>
           <div className="page-title">고객 DM 카드 발송</div>
           <div className="page-subtitle">운세, 기념일, 명언, 건강 정보를 이미지 카드와 복사 문구로 바로 준비합니다.</div>
         </div>

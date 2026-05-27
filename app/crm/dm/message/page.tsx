@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { supabase } from '../../../../lib/supabase'
 
 export default function DmMessagePage() {
+  const pathname = usePathname()
+  const backHref = pathname.startsWith('/dm') ? '/dm' : '/crm/dm'
   const [loading, setLoading] = useState(true)
   const [templates, setTemplates] = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
@@ -82,7 +85,7 @@ export default function DmMessagePage() {
     <>
       <div className="page-header">
         <div>
-          <Link href="/crm/dm" className="link" style={{ marginBottom: 8, display: 'inline-block' }}>← 고객 DM</Link>
+          <Link href={backHref} className="link" style={{ marginBottom: 8, display: 'inline-block' }}>← 고객 DM</Link>
           <div className="page-title">DM 메시지</div>
           <div className="page-subtitle">고객별 맞춤 메시지를 선택해 바로 복사합니다.</div>
         </div>

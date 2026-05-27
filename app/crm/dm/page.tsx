@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 type HubCard = {
   href: string
@@ -75,6 +75,14 @@ const HUB_CARDS: HubCard[] = [
 
 export default function DmHubPage() {
   const router = useRouter()
+  const pathname = usePathname()
+  const isStandaloneDm = pathname.startsWith('/dm')
+  const hubCards = HUB_CARDS.map((card) => ({
+    ...card,
+    href: isStandaloneDm
+      ? card.href.replace('/crm/dm/message', '/dm/message').replace('/crm/dm-cards', '/dm/cards')
+      : card.href,
+  }))
 
   const handleCardClick = (href: string) => {
     router.push(href)
@@ -94,7 +102,7 @@ export default function DmHubPage() {
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
         gap: 20,
       }}>
-        {HUB_CARDS.map((card) => (
+        {hubCards.map((card) => (
           <HubCard key={card.href} card={card} onClick={() => handleCardClick(card.href)} />
         ))}
       </div>

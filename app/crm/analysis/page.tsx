@@ -751,11 +751,6 @@ function LandscapeReportPreview({
   const paidTotal = analysis?.paidPremiumTotal || sum(groups.map((group) => group.paid_premium_total || 0))
   const remainingTotal = analysis?.remainingPremiumTotal || sum(groups.map((group) => group.remaining_premium_total || 0))
   const companyNames = Array.from(new Set(groups.map((group) => group.company).filter(Boolean)))
-  const topCoverages = groups.flatMap((group) => group.coverages.map((coverage) => ({
-    ...coverage,
-    company: coverage.company || group.company,
-    product_name: coverage.product_name || group.product_name,
-  }))).filter((coverage) => coverage.amount).sort((a, b) => (b.amount || 0) - (a.amount || 0)).slice(0, 8)
   const weakRows = rows.filter((row) => row.percent < 100).slice(0, 4)
   const detailedCoverages = groups.flatMap((group) => group.coverages.map((coverage) => ({
     ...coverage,
