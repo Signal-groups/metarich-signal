@@ -17,6 +17,9 @@
 3. **추정 금액 절대 금지** — 약관 또는 증권에 명시된 금액만 입력
 4. **담보명은 원문 그대로** — 약어 변환, 재해석 없이 증권에 표기된 그대로 입력
 5. **가입 이유 반영** — `customer.insurance_reason` 값이 있으면, 해당 목적에 맞는 보장 부족 여부를 `analysis.weaknesses`와 `analysis.recommendation`에 반드시 반영
+6. **담보 배열 반드시 채우기 (핵심)** — 각 계약의 `coverages` 배열은 절대 빈 배열(`[]`)로 두지 않습니다. 보험증권에서 읽을 수 있는 모든 특약·담보를 하나씩 추출하여 입력합니다. PDF 페이지가 부족하더라도 확인 가능한 담보는 모두 입력하고, 금액을 읽지 못한 경우에만 `"amount": null`로 처리합니다.
+
+> **⚠️ 중요**: `coverages: []`로 비워서 제출하면 보장분석표 Excel이 빈 파일로 생성됩니다. 담보 추출이 핵심 작업입니다.
 
 ---
 
@@ -188,7 +191,18 @@
 
 ---
 
-## 출력 예시 (최소 형식)
+## PDF가 많아 분할 출력이 필요한 경우
+
+계약 건수가 많거나 PDF 페이지가 많아 한 번에 출력하기 어려운 경우:
+1. **1차**: `policies` 배열 전체를 먼저 출력 (coverages 포함)
+2. **2차**: `coverage_summary`와 `analysis` 출력
+3. 최종 JSON은 위 두 결과를 합쳐서 제출
+
+각 계약의 `coverages`가 빈 배열이 되는 것은 허용하지 않습니다. 계약당 최소 1개 이상의 담보를 반드시 추출하세요.
+
+---
+
+## 출력 예시 (담보 포함 형식)
 
 ```json
 {
@@ -216,7 +230,23 @@
       "monthly_premium": 15,
       "coverages": [
         { "coverage_name": "일반암진단비", "amount": 3000, "category": "암", "coverage_type": "비갱신형", "status": "유효" },
-        { "coverage_name": "뇌졸중진단비", "amount": 2000, "category": "뇌", "coverage_type": "비갱신형", "status": "유효" }
+        { "coverage_name": "유사암진단비", "amount": 300, "category": "암", "coverage_type": "비갱신형", "status": "유효" },
+        { "coverage_name": "뇌졸중진단비", "amount": 2000, "category": "뇌", "coverage_type": "비갱신형", "status": "유효" },
+        { "coverage_name": "급성심근경색진단비", "amount": 2000, "category": "심장", "coverage_type": "비갱신형", "status": "유효" },
+        { "coverage_name": "질병수술비(1~5종)", "amount": 30, "category": "수술", "coverage_type": "비갱신형", "status": "유효" },
+        { "coverage_name": "질병입원일당", "amount": 5, "category": "입원", "coverage_type": "비갱신형", "status": "유효" }
+      ]
+    },
+    {
+      "company": "메리츠화재",
+      "product_name": "운전자상해종합보험",
+      "start_date": "2023.04.01",
+      "payment_period": "20년납65세만기",
+      "monthly_premium": 2,
+      "coverages": [
+        { "coverage_name": "교통사고처리지원금", "amount": 3000, "category": "운전자", "coverage_type": "갱신형", "status": "유효" },
+        { "coverage_name": "교통사고벌금", "amount": 500, "category": "운전자", "coverage_type": "갱신형", "status": "유효" },
+        { "coverage_name": "변호사선임비용", "amount": 500, "category": "운전자", "coverage_type": "갱신형", "status": "유효" }
       ]
     }
   ],

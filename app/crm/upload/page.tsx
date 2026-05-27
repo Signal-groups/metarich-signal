@@ -1052,11 +1052,28 @@ function downloadAnalysisExcel(item: UploadItem) {
   })
 
   // 합계보장(E열) + 각 보험별 금액(F~P열) 채우기
+  const hasAnyCoverage = amountGrid.some((row) => row.some((v) => v > 0))
   amountGrid.forEach((row, ri) => {
     const total = row.reduce((s, v) => s + v, 0)
     matrix[9 + ri][4] = total || null
     row.forEach((v, pi) => { matrix[9 + ri][5 + pi] = v || null })
   })
+
+  // 폴백: coverages가 모두 비어 있으면 coverage_summary로 E열 합계만 채움
+  if (!hasAnyCoverage && data.coverage_summary) {
+    const cs = data.coverage_summary
+    const summaryMap: { idx: number; value: number }[] = [
+      { idx: 3, value: Number(cs.cancer) || 0 },         // 일반암
+      { idx: 4, value: Number(cs.similar_cancer) || 0 }, // 유사암/소액암
+      { idx: 10, value: Number(cs.brain_vascular) || 0 }, // 뇌혈관질환 (대표)
+      { idx: 13, value: Number(cs.ischemic_heart) || 0 }, // 급성심근경색 (대표)
+      { idx: 32, value: Number(cs.disease_surgery) || 0 }, // 질병수술비
+      { idx: 34, value: Number(cs.injury_surgery) || 0 }, // 상해수술비
+    ]
+    summaryMap.forEach(({ idx, value }) => {
+      if (value > 0) matrix[9 + idx][4] = value
+    })
+  }
 
   // 납입보험료 합계 (E9)
   const totalPrem = policies.slice(0, 11).reduce((s: number, p: any) => {

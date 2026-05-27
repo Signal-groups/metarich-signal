@@ -7,6 +7,7 @@ import type { jsPDF as JsPDFType } from 'jspdf'
 
 const UPLOAD_STORAGE_KEY = 'signal-crm-upload-files'
 const TARGET_STORAGE_KEY = 'signal-crm-coverage-targets'
+const MANWON_TO_WON = 10000
 
 const categoryLabels: Record<string, string> = {
   cancer: '암',
@@ -111,6 +112,7 @@ export default function AnalysisPage() {
   const [advisor, setAdvisor] = useState({ name: '담당자', phone: '' })
   const [targets, setTargets] = useState<CoverageTargets>(() => defaultTargets())
   const [savingReport, setSavingReport] = useState(false)
+  const [savingExcel, setSavingExcel] = useState(false)
   const reportRef = useRef<HTMLDivElement | null>(null)
 
   const load = useCallback(async () => {
@@ -268,7 +270,7 @@ export default function AnalysisPage() {
       const payload = policyGroupToContract(group)
       if (targetIndex >= contracts.length) contracts.push(payload)
       else contracts[targetIndex] = { ...contracts[targetIndex], ...payload }
-      return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
+      return { ...item, structuredAnalysis: { ...source, version: 'insurance_manager_internal_v1', amount_unit: '원', contracts, policies: undefined } }
     })
     saveUploadItems(next)
     setEditingContract(null)
@@ -281,11 +283,36 @@ export default function AnalysisPage() {
       if (item.id !== itemId) return item
       const source = item.structuredAnalysis || {}
       const contracts = firstArray(source.contracts, source.policies).filter((_: any, contractIndex: number) => contractIndex !== index)
-      return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
+      return { ...item, structuredAnalysis: { ...source, version: 'insurance_manager_internal_v1', amount_unit: '원', contracts, policies: undefined } }
     })
     saveUploadItems(next)
     setSelectedGroup(null)
   }
+
+  const downloadExcelReport = async () => {
+    if (!selectedCustomer || reportGroups.length === 0) {
+      alert('저장할 보장분석 자료가 없습니다.')
+      return
+    }
+
+    setSavingExcel(true)
+    try {
+      const XLSX = await import('xlsx')
+      const workbook = buildCoverageWorkbook(XLSX, {
+        customerName: selectedCustomer.name || primaryAnalysis?.customerName || '고객',
+        advisorName: advisor.name,
+        groups: reportGroups,
+      })
+      const today = new Date().toISOString().slice(0, 10)
+      XLSX.writeFile(workbook, `${normalizeFileName(selectedCustomer.name || '고객')}_보장분석표_${today}.xlsx`)
+    } catch (error) {
+      console.error(error)
+      alert('엑셀 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setSavingExcel(false)
+    }
+  }
+
   const downloadLandscapeReport = async () => {
     if (!selectedCustomer || !reportRef.current) {
       alert('저장할 보장분석 리포트가 없습니다.')
@@ -329,6 +356,9 @@ export default function AnalysisPage() {
           <div className="page-subtitle">고객을 선택하면 GPTs 분석 결과와 회사별 담보를 한글 기준으로 확인합니다.</div>
         </div>
         <div className="header-right">
+          <button className="btn btn-secondary btn-sm" onClick={downloadExcelReport} disabled={!hasAnyData || savingExcel}>
+            {savingExcel ? '저장 중...' : '엑셀 저장'}
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={downloadLandscapeReport} disabled={!hasAnyData || savingReport}>
             {savingReport ? '저장 중...' : 'PDF 저장'}
           </button>
@@ -904,12 +934,13 @@ function normalizeAnalysis(data: any, fallbackName = '') {
   const analysis = data?.analysis || {}
   const extracted = data?.extracted || {}
   const groups = normalizePolicyGroups(data)
+  const multiplier = moneyMultiplierForSource(data)
   const companies = Array.from(new Set(groups.map((group) => group.company).filter(Boolean)))
   return {
     customerName: customer.name || data?.customer_name || extracted.insured_name || fallbackName.replace('-GPTs-보장분석.json', ''),
-    monthlyPremium: numberOrUndefined(customer.monthly_premium || data?.monthly_premium) || sum(groups.map((group) => group.premium || 0)),
-    paidPremiumTotal: numberOrUndefined(data?.premium_summary?.paid_total || data?.paid_premium_total || data?.total_paid_premium) || sum(groups.map((group) => group.paid_premium_total || 0)),
-    remainingPremiumTotal: numberOrUndefined(data?.premium_summary?.remaining_total || data?.remaining_premium_total || data?.total_remaining_premium) || sum(groups.map((group) => group.remaining_premium_total || 0)),
+    monthlyPremium: moneyValue(customer.monthly_premium || data?.monthly_premium, multiplier) || sum(groups.map((group) => group.premium || 0)),
+    paidPremiumTotal: moneyValue(data?.premium_summary?.paid_total || data?.paid_premium_total || data?.total_paid_premium, multiplier) || sum(groups.map((group) => group.paid_premium_total || 0)),
+    remainingPremiumTotal: moneyValue(data?.premium_summary?.remaining_total || data?.remaining_premium_total || data?.total_remaining_premium, multiplier) || sum(groups.map((group) => group.remaining_premium_total || 0)),
     contractCount: customer.contract_count || data?.contract_count || groups.length,
     companies,
     groups,
@@ -922,20 +953,21 @@ function normalizeAnalysis(data: any, fallbackName = '') {
 
 function normalizePolicyGroups(data: any): PolicyGroup[] {
   const groups: PolicyGroup[] = []
+  const multiplier = moneyMultiplierForSource(data)
   const policies = firstArray(data?.policies, data?.contracts)
   policies.forEach((policy: any, index: number) => {
     groups.push({
       key: `policy-${index}`,
       company: policy.company || policy.insurer || '보험사 미확인',
       product_name: policy.product_name || policy.product || policy.name || '상품명 미확인',
-      premium: numberOrUndefined(policy.premium || policy.monthly_premium),
+      premium: premiumMoneyValue(policy.premium || policy.monthly_premium, multiplier),
       start_date: policy.start_date,
       payment_period: policy.payment_period,
       maturity: policy.maturity || policy.end_date,
       maturity_age: policy.maturity_age || policy.maturity_age_text,
-      paid_premium_total: numberOrUndefined(policy.paid_premium_total || policy.total_paid_premium || policy.paid_total),
-      remaining_premium_total: numberOrUndefined(policy.remaining_premium_total || policy.total_remaining_premium || policy.remaining_total),
-      coverages: normalizeCoverages(policy.coverages || policy.coverage || [], policy.company, policy.product_name || policy.product),
+      paid_premium_total: moneyValue(policy.paid_premium_total || policy.total_paid_premium || policy.paid_total, multiplier),
+      remaining_premium_total: moneyValue(policy.remaining_premium_total || policy.total_remaining_premium || policy.remaining_total, multiplier),
+      coverages: normalizeCoverages(policy.coverages || policy.coverage || [], policy.company, policy.product_name || policy.product, multiplier),
     })
   })
 
@@ -945,18 +977,18 @@ function normalizePolicyGroups(data: any): PolicyGroup[] {
       key: `product-${index}`,
       company: product.company || data?.extracted?.company || '보험사 미확인',
       product_name: product.product_name || product.name || '상품명 미확인',
-      premium: numberOrUndefined(product.premium || product.monthly_premium),
+      premium: premiumMoneyValue(product.premium || product.monthly_premium, multiplier),
       start_date: product.start_date,
       payment_period: product.payment_period,
       maturity: product.maturity || product.end_date,
       maturity_age: product.maturity_age || product.maturity_age_text,
-      paid_premium_total: numberOrUndefined(product.paid_premium_total || product.total_paid_premium || product.paid_total),
-      remaining_premium_total: numberOrUndefined(product.remaining_premium_total || product.total_remaining_premium || product.remaining_total),
-      coverages: normalizeCoverages(product.coverages || [], product.company || data?.extracted?.company, product.product_name || product.name),
+      paid_premium_total: moneyValue(product.paid_premium_total || product.total_paid_premium || product.paid_total, multiplier),
+      remaining_premium_total: moneyValue(product.remaining_premium_total || product.total_remaining_premium || product.remaining_total, multiplier),
+      coverages: normalizeCoverages(product.coverages || [], product.company || data?.extracted?.company, product.product_name || product.name, multiplier),
     })
   })
 
-  const extractedCoverages = normalizeCoverages(data?.extracted?.coverages || [], data?.extracted?.company, data?.extracted?.product_names?.[0])
+  const extractedCoverages = normalizeCoverages(data?.extracted?.coverages || [], data?.extracted?.company, data?.extracted?.product_names?.[0], multiplier)
   if (extractedCoverages.length > 0) {
     groups.push({
       key: 'extracted',
@@ -966,16 +998,17 @@ function normalizePolicyGroups(data: any): PolicyGroup[] {
     })
   }
 
+  const hasDetailedCoverages = groups.some((group) => group.coverages.length > 0)
   const summaryCoverages = Object.entries(data?.coverage_summary || {})
     .filter(([, value]) => typeof value === 'number' || typeof value === 'string')
     .map(([key, value]) => ({
       category: normalizeCategory(key, key),
       coverage_name: translateCategory(key),
-      amount: numberOrUndefined(value) || 0,
+      amount: moneyValue(value, multiplier) || 0,
       unit: '원',
       note: 'GPTs 요약 보장금액',
     }))
-  if (summaryCoverages.length > 0) {
+  if (!hasDetailedCoverages && summaryCoverages.length > 0) {
     groups.push({
       key: 'summary',
       company: '전체 요약',
@@ -987,7 +1020,7 @@ function normalizePolicyGroups(data: any): PolicyGroup[] {
   return groups.filter((group) => group.company || group.product_name || group.coverages.length > 0)
 }
 
-function normalizeCoverages(value: any, company?: string, productName?: string): CoverageRow[] {
+function normalizeCoverages(value: any, company?: string, productName?: string, multiplier = 1): CoverageRow[] {
   return firstArray(value).map((coverage: any) => {
     const rawCategory = coverage.category || coverage.type || ''
     const rawName = coverage.coverage_name || coverage.name || coverage.title || rawCategory || '담보명 미확인'
@@ -996,7 +1029,7 @@ function normalizeCoverages(value: any, company?: string, productName?: string):
       category,
       sub_category: coverage.coverage_sub_category || coverage.sub_category || getCoverageSubCategory({ category, coverage_name: rawName, note: coverage.note || coverage.description || coverage.condition || '' }),
       coverage_name: translateCoverageName(rawName, category),
-      amount: numberOrUndefined(coverage.amount || coverage.coverage_amount || coverage.value),
+      amount: moneyValue(coverage.amount || coverage.coverage_amount || coverage.value, multiplier),
       unit: coverage.unit || '원',
       note: coverage.note || coverage.description || coverage.condition || '',
       company,
@@ -1253,6 +1286,218 @@ function matchesTarget(coverage: CoverageRow, target: typeof targetItems[number]
   return target.aliases.some((alias) => text.includes(alias.toLowerCase()))
 }
 
+const excelCoverageStructure = [
+  { asset: '가족보장자산', section: '사망', label: '일반' },
+  { asset: '', section: '', label: '질병' },
+  { asset: '', section: '', label: '재해(상해)' },
+  { asset: '생활보장자산', section: '암치료비', label: '일반암' },
+  { asset: '', section: '', label: '유사암/소액암' },
+  { asset: '', section: '', label: '암수술비' },
+  { asset: '', section: '', label: '항암 (방사선/약물)' },
+  { asset: '', section: '', label: '표적항암치료' },
+  { asset: '', section: '', label: '중입자치료' },
+  { asset: '', section: '', label: '암주요치료비' },
+  { asset: '', section: '2대질병치료비', label: '뇌혈관질환' },
+  { asset: '', section: '', label: '뇌졸중' },
+  { asset: '', section: '', label: '뇌출혈' },
+  { asset: '', section: '', label: '급성심근경색' },
+  { asset: '', section: '', label: '허혈성심장질환' },
+  { asset: '', section: '', label: '심혈관질환' },
+  { asset: '', section: '', label: '뇌혈관수술비' },
+  { asset: '', section: '', label: '심혈관수술비' },
+  { asset: '', section: '', label: '2대주요치료비' },
+  { asset: '', section: '후유장해', label: '질병 후유장해(3%~)' },
+  { asset: '', section: '', label: '상해 후유장해(3%~)' },
+  { asset: '', section: '골절', label: '골절 진단비' },
+  { asset: '', section: '', label: '골절 수술비' },
+  { asset: '', section: '', label: '5대골절 진단비' },
+  { asset: '', section: '', label: '5대골절 수술비' },
+  { asset: '', section: '', label: '깁스 치료비' },
+  { asset: '', section: '화상', label: '화상 진단비' },
+  { asset: '', section: '', label: '화상 수술비' },
+  { asset: '의료보장자산', section: '실손의료비', label: '상해입원의료비' },
+  { asset: '', section: '', label: '상해통원의료비' },
+  { asset: '', section: '', label: '질병입원의료비' },
+  { asset: '', section: '', label: '질병통원의료비' },
+  { asset: '', section: '수술비', label: '질병 수술비' },
+  { asset: '', section: '', label: '질병 1~5종수술비' },
+  { asset: '', section: '', label: '상해 수술비' },
+  { asset: '', section: '', label: '상해 1~5종수술비' },
+  { asset: '', section: '', label: 'N대 수술비' },
+  { asset: '', section: '', label: '창상봉합술' },
+  { asset: '', section: '입원', label: '질병 입원일당' },
+  { asset: '', section: '', label: '상해 입원일당' },
+  { asset: '', section: '', label: '교통상해입원일당' },
+  { asset: '', section: '', label: '상해간병지원금' },
+  { asset: '', section: '', label: '질병간병지원금' },
+  { asset: '운전자', section: '', label: '교통사고처리지원금' },
+  { asset: '', section: '', label: '교통사고벌금' },
+  { asset: '', section: '', label: '변호사선임비용' },
+  { asset: '', section: '', label: '자동차부상치료비' },
+  { asset: '치아', section: '', label: '임플란트' },
+  { asset: '', section: '', label: '크라운' },
+  { asset: '기타', section: '', label: '가족일상배상책임' },
+  { asset: '', section: '', label: '화재벌금' },
+]
+
+function findExcelCoverageRowIndex(coverage: CoverageRow): number {
+  const name = normalizeCoverageKeyword(`${coverage.coverage_name} ${coverage.sub_category || ''} ${coverage.category || ''}`)
+  const map: { idx: number; keywords: string[] }[] = [
+    { idx: 0, keywords: ['일반사망'] },
+    { idx: 1, keywords: ['질병사망'] },
+    { idx: 2, keywords: ['재해사망', '상해사망'] },
+    { idx: 4, keywords: ['유사암', '소액암'] },
+    { idx: 5, keywords: ['암수술'] },
+    { idx: 7, keywords: ['표적항암'] },
+    { idx: 8, keywords: ['중입자'] },
+    { idx: 6, keywords: ['항암', '방사선항암', '약물항암'] },
+    { idx: 9, keywords: ['암주요치료'] },
+    { idx: 3, keywords: ['일반암', '암진단'] },
+    { idx: 11, keywords: ['뇌졸중'] },
+    { idx: 12, keywords: ['뇌출혈'] },
+    { idx: 10, keywords: ['뇌혈관질환', '뇌혈관'] },
+    { idx: 13, keywords: ['급성심근경색', '심근경색'] },
+    { idx: 14, keywords: ['허혈성심장질환', '허혈성'] },
+    { idx: 15, keywords: ['심혈관질환', '기타심장'] },
+    { idx: 16, keywords: ['뇌혈관수술'] },
+    { idx: 17, keywords: ['심혈관수술'] },
+    { idx: 18, keywords: ['2대주요치료', '주요치료비'] },
+    { idx: 19, keywords: ['질병후유장해', '질병후유'] },
+    { idx: 20, keywords: ['상해후유장해', '상해후유'] },
+    { idx: 21, keywords: ['골절진단'] },
+    { idx: 22, keywords: ['골절수술'] },
+    { idx: 23, keywords: ['5대골절진단'] },
+    { idx: 24, keywords: ['5대골절수술'] },
+    { idx: 25, keywords: ['깁스'] },
+    { idx: 26, keywords: ['화상진단'] },
+    { idx: 27, keywords: ['화상수술'] },
+    { idx: 28, keywords: ['상해입원의료비'] },
+    { idx: 29, keywords: ['상해통원의료비'] },
+    { idx: 30, keywords: ['질병입원의료비'] },
+    { idx: 31, keywords: ['질병통원의료비'] },
+    { idx: 33, keywords: ['질병1~5종수술', '질병1종수술', '1~5종수술'] },
+    { idx: 35, keywords: ['상해1~5종수술', '상해1종수술'] },
+    { idx: 36, keywords: ['n대수술', '대수술'] },
+    { idx: 37, keywords: ['창상봉합'] },
+    { idx: 32, keywords: ['질병수술비'] },
+    { idx: 34, keywords: ['상해수술비'] },
+    { idx: 38, keywords: ['질병입원일당'] },
+    { idx: 39, keywords: ['상해입원일당'] },
+    { idx: 40, keywords: ['교통상해입원'] },
+    { idx: 41, keywords: ['상해간병'] },
+    { idx: 42, keywords: ['질병간병'] },
+    { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리', '형사합의'] },
+    { idx: 44, keywords: ['교통사고벌금', '벌금'] },
+    { idx: 45, keywords: ['변호사선임'] },
+    { idx: 46, keywords: ['자동차부상', '자부상', '부상치료'] },
+    { idx: 47, keywords: ['임플란트'] },
+    { idx: 48, keywords: ['크라운'] },
+    { idx: 49, keywords: ['가족일상배상', '일상배상', '배상책임'] },
+    { idx: 50, keywords: ['화재벌금'] },
+  ]
+  return map.find((entry) => entry.keywords.some((keyword) => name.includes(normalizeCoverageKeyword(keyword))))?.idx ?? -1
+}
+
+function buildCoverageWorkbook(
+  XLSX: typeof import('xlsx'),
+  {
+    customerName,
+    advisorName,
+    groups,
+  }: {
+    customerName: string
+    advisorName: string
+    groups: PolicyGroup[]
+  },
+) {
+  const policyCount = Math.max(groups.length, 1)
+  const numRows = 9 + excelCoverageStructure.length
+  const numCols = Math.max(6 + policyCount, 16)
+  const matrix: (string | number | null)[][] = Array.from({ length: numRows }, () => Array(numCols).fill(null))
+  const startCol = 5
+
+  matrix[1][1] = customerName
+  matrix[1][4] = '님'
+  matrix[1][5] = '내 보험 바로 알기 보장분석표'
+  if (advisorName) matrix[1][Math.min(numCols - 1, startCol + policyCount + 1)] = `담당자 ${advisorName}`
+  matrix[3][1] = 'NO.'
+  matrix[3][4] = '(단위 : 만원)'
+  groups.forEach((_, index) => { matrix[3][startCol + index] = index + 1 })
+
+  const labels = ['보  험  회  사', '상   품   명', '계   약   일', '납 입 기 간 & 보 장 기 간', '납 입 보 험 료']
+  labels.forEach((label, index) => { matrix[4 + index][1] = label })
+  excelCoverageStructure.forEach((row, index) => {
+    const targetRow = 9 + index
+    matrix[targetRow][1] = row.asset || null
+    matrix[targetRow][2] = row.section || null
+    matrix[targetRow][3] = row.label
+  })
+
+  const amountGrid: number[][] = Array.from({ length: excelCoverageStructure.length }, () => Array(policyCount).fill(0))
+  groups.forEach((group, groupIndex) => {
+    matrix[4][startCol + groupIndex] = group.company || ''
+    matrix[5][startCol + groupIndex] = group.product_name || ''
+    matrix[6][startCol + groupIndex] = group.start_date || ''
+    matrix[7][startCol + groupIndex] = [group.payment_period, formatMaturity(group)].filter((value) => value && value !== '-').join(' / ')
+    matrix[8][startCol + groupIndex] = group.premium ? Math.round(group.premium) : null
+
+    group.coverages.forEach((coverage) => {
+      const rowIndex = findExcelCoverageRowIndex(coverage)
+      if (rowIndex < 0) return
+      amountGrid[rowIndex][groupIndex] += toExcelCoverageAmount(coverage.amount)
+    })
+  })
+
+  amountGrid.forEach((row, rowIndex) => {
+    const total = row.reduce((acc, value) => acc + value, 0)
+    matrix[9 + rowIndex][4] = total || null
+    row.forEach((value, groupIndex) => {
+      matrix[9 + rowIndex][startCol + groupIndex] = value || null
+    })
+  })
+  matrix[8][4] = groups.reduce((total, group) => total + Math.round(group.premium || 0), 0) || null
+
+  const workbook = XLSX.utils.book_new()
+  const summarySheet = XLSX.utils.aoa_to_sheet(matrix)
+  summarySheet['!cols'] = Array.from({ length: numCols }, (_, index) => ({ wch: index < 4 ? 14 : 18 }))
+  XLSX.utils.book_append_sheet(workbook, summarySheet, '보장분석표')
+
+  const detailRows = [
+    ['보험사', '상품명', '가입일', '납입/만기', '월보험료(원)', '분류', '세부분류', '담보명', '보장금액(원)', '보장금액(만원)', '보장방식', '갱신구분', '상태/메모'],
+    ...groups.flatMap((group) => group.coverages.map((coverage) => [
+      group.company,
+      group.product_name,
+      group.start_date || '',
+      [group.payment_period, formatMaturity(group)].filter((value) => value && value !== '-').join(' / '),
+      Math.round(group.premium || 0),
+      translateCategory(coverage.category),
+      coverage.sub_category || getCoverageSubCategory(coverage),
+      coverage.coverage_name,
+      coverage.amount || 0,
+      toExcelCoverageAmount(coverage.amount),
+      coverage.payment_method_type || getCoveragePaymentType(coverage),
+      coverage.renewal_type || coverage.coverage_type || '',
+      coverage.note || '',
+    ])),
+  ]
+  const detailSheet = XLSX.utils.aoa_to_sheet(detailRows)
+  detailSheet['!cols'] = [
+    { wch: 14 }, { wch: 28 }, { wch: 13 }, { wch: 22 }, { wch: 14 }, { wch: 12 },
+    { wch: 18 }, { wch: 34 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 28 },
+  ]
+  XLSX.utils.book_append_sheet(workbook, detailSheet, '담보상세')
+  return workbook
+}
+
+function normalizeCoverageKeyword(value: string) {
+  return value.toLowerCase().replace(/[\s\-_·()./]/g, '')
+}
+
+function toExcelCoverageAmount(value?: number) {
+  if (!value) return 0
+  return value >= MANWON_TO_WON ? Math.round(value / MANWON_TO_WON) : Math.round(value)
+}
+
 const coverageSectionOrder = [
   '암진단비',
   '뇌혈관진단비',
@@ -1436,6 +1681,25 @@ function toList(value: any): string[] {
 function numberOrUndefined(value: any) {
   const number = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
   return Number.isFinite(number) && number > 0 ? number : undefined
+}
+
+function moneyMultiplierForSource(data: any) {
+  const explicitUnit = String(data?.amount_unit || data?.money_unit || data?.unit || '').trim()
+  if (explicitUnit === '원') return 1
+  if (explicitUnit === '만원') return MANWON_TO_WON
+  return data?.version === 'insurance_analysis_v3' ? MANWON_TO_WON : 1
+}
+
+function moneyValue(value: any, multiplier = 1) {
+  const amount = numberOrUndefined(value)
+  return amount ? Math.round(amount * multiplier) : undefined
+}
+
+function premiumMoneyValue(value: any, multiplier = 1) {
+  const amount = numberOrUndefined(value)
+  if (!amount) return undefined
+  if (multiplier === MANWON_TO_WON && amount >= 1000) return Math.round(amount)
+  return Math.round(amount * multiplier)
 }
 
 function sum(values: number[]) {
