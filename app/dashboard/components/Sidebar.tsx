@@ -508,9 +508,11 @@ export default function Sidebar({
           <MobileNavButton label="업무" active={mode === 'office'} onClick={openOffice} disabled={!canUseOffice}>
             <Home className="h-5 w-5" />
           </MobileNavButton>
-          <MobileNavButton label="CRM" onClick={openCrm} disabled={!canUseCrm}>
-            <Users className="h-5 w-5" />
-          </MobileNavButton>
+          {canUseCrm && (
+            <MobileNavButton label="CRM" onClick={openCrm}>
+              <Users className="h-5 w-5" />
+            </MobileNavButton>
+          )}
           <MobileNavButton label="DM" onClick={openContentStudio} disabled={!isApproved}>
             <ClipboardCheck className="h-5 w-5" />
           </MobileNavButton>

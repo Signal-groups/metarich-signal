@@ -342,16 +342,42 @@ export default function AnalysisPage() {
       const pages = Array.from(reportRef.current.querySelectorAll<HTMLElement>('.report-pdf-page'))
       if (pages.length === 0) throw new Error('PDF page not found')
 
+      await document.fonts?.ready
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }) as JsPDFType
       for (const [index, page] of pages.entries()) {
+        const width = page.offsetWidth || 1600
+        const height = page.offsetHeight || 1131
         const canvas = await html2canvas(page, {
           backgroundColor: '#eef3f8',
           scale: 2,
           useCORS: true,
           logging: false,
+          width,
+          height,
+          windowWidth: Math.max(document.documentElement.clientWidth, width),
+          windowHeight: Math.max(document.documentElement.clientHeight, height),
+          scrollX: 0,
+          scrollY: 0,
+          onclone: (clonedDocument) => {
+            clonedDocument
+              .querySelectorAll<HTMLElement>('.pdf-render-only, .landscape-report-wrap')
+              .forEach((element) => {
+                element.style.position = 'static'
+                element.style.left = '0'
+                element.style.top = '0'
+                element.style.width = '1648px'
+                element.style.height = 'auto'
+                element.style.overflow = 'visible'
+                element.style.pointerEvents = 'auto'
+                element.style.zIndex = '0'
+              })
+          },
         })
+        if (!canvas.width || !canvas.height) throw new Error(`PDF page ${index + 1} capture failed`)
         if (index > 0) pdf.addPage('a4', 'landscape')
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 297, 210, undefined, 'FAST')
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 297, 210)
       }
       const customerName = normalizeFileName(selectedCustomer.name || '고객')
       const today = new Date().toISOString().slice(0, 10)
@@ -761,14 +787,7 @@ function LandscapeReportPreview({
   if (rows.length === 0 && groups.length === 0) return null
 
   return (
-    <div className="landscape-report-wrap">
-      <div className="landscape-report-toolbar">
-        <div>
-          <div className="fw-700 text-blue">가로 저장 미리보기</div>
-          <div className="text-muted" style={{ fontSize: 12 }}>표지, 고객 안내용, 설계사 점검용을 가로 A4 PDF로 저장합니다.</div>
-        </div>
-      </div>
-
+    <div className="landscape-report-wrap" aria-hidden="true">
       <div ref={reportRef} className="landscape-report-preview">
         <section className="report-sheet report-cover report-pdf-page">
           <div className="report-cover-brand">보험의 기준</div>

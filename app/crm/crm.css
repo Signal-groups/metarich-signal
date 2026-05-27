@@ -593,24 +593,22 @@
 
 /* ── ANALYSIS LANDSCAPE REPORT ── */
 .landscape-report-wrap {
-  margin-bottom: 16px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-}
-.landscape-report-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 1648px;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+  z-index: -1;
 }
 .landscape-report-preview {
-  width: 1600px;
+  width: 1648px;
   display: grid;
   gap: 24px;
   background: #eef3f8;
   padding: 24px;
-  border-radius: 24px;
+  border-radius: 0;
 }
 .report-sheet {
   width: 1600px;

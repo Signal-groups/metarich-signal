@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 type HubCard = {
   href: string
@@ -26,17 +26,6 @@ const HUB_CARDS: HubCard[] = [
     title: 'DM 메시지',
     desc: '고객별 맞춤 메시지 템플릿을 선택해 바로 복사합니다.',
     badge: '템플릿 선택',
-  },
-  {
-    href: '/crm/content-studio',
-    icon: '🖼️',
-    iconBg: '#ede9fe',
-    format: 'PNG',
-    formatBg: '#f5f3ff',
-    formatColor: '#6d28d9',
-    title: 'DM 정보 작성',
-    desc: '관리자 업로드 이미지와 직접 올린 이미지를 활용해 상담용 DM 이미지를 만듭니다.',
-    badge: '업로드 이미지 활용',
   },
   {
     href: '/crm/dm-cards?tab=fortune',
@@ -86,15 +75,6 @@ const HUB_CARDS: HubCard[] = [
 
 export default function DmHubPage() {
   const router = useRouter()
-  const pathname = usePathname()
-  const isStandaloneDm = pathname.startsWith('/dm')
-  const hubCards = HUB_CARDS.map((card) => ({
-    ...card,
-    href: isStandaloneDm
-      ? card.href.replace('/crm/dm/message', '/dm/message').replace('/crm/dm-cards', '/dm/cards')
-          .replace('/crm/content-studio', '/content-studio')
-      : card.href,
-  }))
 
   const handleCardClick = (href: string) => {
     router.push(href)
@@ -114,7 +94,7 @@ export default function DmHubPage() {
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
         gap: 20,
       }}>
-        {hubCards.map((card) => (
+        {HUB_CARDS.map((card) => (
           <HubCard key={card.href} card={card} onClick={() => handleCardClick(card.href)} />
         ))}
       </div>
