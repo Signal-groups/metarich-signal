@@ -226,11 +226,11 @@ export default function Sidebar({
 
   const openContentStudio = () => {
     const popup = window.open(
-      `${window.location.origin}/content-studio`,
-      "metarich-content-studio",
+      `${window.location.origin}/crm/dm-cards`,
+      "metarich-dm-cards",
       "width=1280,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes"
     );
-    if (!popup) window.open(`${window.location.origin}/content-studio`, "_blank", "noopener,noreferrer");
+    if (!popup) window.open(`${window.location.origin}/crm/dm-cards`, "_blank", "noopener,noreferrer");
     setIsOpen(false);
   };
 
