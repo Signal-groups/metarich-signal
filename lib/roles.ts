@@ -101,13 +101,9 @@ export function isApprovedUser(user: any): boolean {
 
 export function canAccessCrm(user: any): boolean {
   const role = normalizeRole(user);
+  // CRM은 마스터 역할 또는 마스터가 명시적으로 crm_access=true를 부여한 사용자만 접근 가능
   return (
     role === "master" ||
-    role === "headquarters" ||
-    role === "leader" ||
-    role === "manager" ||
-    user?.is_approved === true ||
-    user?.is_approved === "true" ||
     user?.crm_access === true ||
     user?.crm_access === "true"
   );

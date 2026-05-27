@@ -28,6 +28,17 @@ const HUB_CARDS: HubCard[] = [
     badge: '템플릿 선택',
   },
   {
+    href: '/crm/content-studio',
+    icon: '🖼️',
+    iconBg: '#ede9fe',
+    format: 'PNG',
+    formatBg: '#f5f3ff',
+    formatColor: '#6d28d9',
+    title: 'DM 정보 작성',
+    desc: '관리자 업로드 이미지와 직접 올린 이미지를 활용해 상담용 DM 이미지를 만듭니다.',
+    badge: '업로드 이미지 활용',
+  },
+  {
     href: '/crm/dm-cards?tab=fortune',
     icon: '✨',
     iconBg: '#fef9c3',
@@ -81,6 +92,7 @@ export default function DmHubPage() {
     ...card,
     href: isStandaloneDm
       ? card.href.replace('/crm/dm/message', '/dm/message').replace('/crm/dm-cards', '/dm/cards')
+          .replace('/crm/content-studio', '/content-studio')
       : card.href,
   }))
 
