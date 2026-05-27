@@ -69,18 +69,24 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const redirectTo = encodeURIComponent(pathname || '/crm')
       if (!session) { router.replace(`/login?redirectTo=${redirectTo}`); return }
+      const { data: authUser, error: authError } = await supabase.auth.getUser()
+      if (authError || !authUser.user) {
+        await supabase.auth.signOut().catch(() => {})
+        router.replace(`/login?redirectTo=${redirectTo}`)
+        return
+      }
       let { data: userData } = await supabase
-        .from('users').select('*').eq('id', session.user.id).maybeSingle()
+        .from('users').select('*').eq('id', authUser.user.id).maybeSingle()
       if (!userData) {
         try {
-          userData = await ensureUserProfile(supabase, session.user)
+          userData = await ensureUserProfile(supabase, authUser.user)
         } catch {
           userData = null
         }
       }
       if (!userData) { router.replace(`/login?redirectTo=${redirectTo}`); return }
 
-      const mergedUser = { ...session.user, ...userData, email: session.user.email }
+      const mergedUser = { ...authUser.user, ...userData, email: authUser.user.email }
       const effectiveRole = normalizeRole(mergedUser)
       const canUseCrm = canAccessCrm(mergedUser)
       if (!canUseCrm) { router.replace('/dashboard'); return }

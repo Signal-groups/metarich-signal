@@ -129,10 +129,16 @@ export default function DashboardPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return router.replace("/login");
 
-    let { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
+    const { data: authUser, error: authError } = await supabase.auth.getUser();
+    if (authError || !authUser.user) {
+      await supabase.auth.signOut().catch(() => {});
+      return router.replace("/login");
+    }
+
+    let { data: userInfo } = await supabase.from("users").select("*").eq("id", authUser.user.id).maybeSingle();
     if (!userInfo) {
       try {
-        userInfo = await ensureUserProfile(supabase, session.user);
+        userInfo = await ensureUserProfile(supabase, authUser.user);
       } catch {
         userInfo = null;
       }

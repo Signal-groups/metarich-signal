@@ -31,8 +31,16 @@ export default function LoginPage() {
     if (savedRemember && savedEmail) setEmail(savedEmail)
 
     supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        if (session) router.replace(nextRedirect)
+      .then(async ({ data: { session } }) => {
+        if (!session) return
+
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+        if (userError || !userData.user) {
+          await supabase.auth.signOut()
+          return
+        }
+
+        router.replace(nextRedirect)
       })
       .catch(async () => {
         await supabase.auth.signOut()
@@ -49,6 +57,7 @@ export default function LoginPage() {
       if (rememberId) localStorage.setItem(rememberedEmailKey, loginEmail)
       else localStorage.removeItem(rememberedEmailKey)
 
+      await supabase.auth.signOut().catch(() => {})
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
       if (error) alert("로그인에 실패했습니다: " + error.message)
       else router.push(redirectPath)
