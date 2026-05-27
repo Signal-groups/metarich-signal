@@ -153,6 +153,7 @@ export default function CustomerDetailPage() {
       indemnity_generation: editForm.indemnity_generation ? Number(editForm.indemnity_generation) : null,
       family_count: editForm.family_count ? Number(editForm.family_count) : null,
       consulting_summary: editForm.consulting_summary || null,
+      insurance_reason: editForm.insurance_reason || null,
       tags: editForm.tags || [],
       updated_at: new Date().toISOString(),
     }).eq('id', id).eq('advisor_id', customer.advisor_id)
@@ -269,6 +270,12 @@ export default function CustomerDetailPage() {
                 <div className="bg-gray rounded p-16 mt-12">
                   <div className="form-label">상담 요약</div>
                   <div style={{ fontSize: 13, lineHeight: 1.7 }}>{customer.consulting_summary}</div>
+                </div>
+              )}
+              {customer.insurance_reason && (
+                <div className="bg-gray rounded p-16 mt-12">
+                  <div className="form-label">보험 가입 이유</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.7 }}>{customer.insurance_reason}</div>
                 </div>
               )}
               {customer.tags?.length > 0 && (
@@ -457,6 +464,7 @@ function EditBasicForm({ editForm, setEditForm }: { editForm: any; setEditForm: 
       </Field>
       <Field label="주소"><input className="form-input" value={editForm.address || ''} onChange={(e) => update('address', e.target.value)} /></Field>
       <Field label="상담 요약"><textarea rows={4} className="form-input" value={editForm.consulting_summary || ''} onChange={(e) => update('consulting_summary', e.target.value)} /></Field>
+      <Field label="보험 가입 이유"><textarea rows={3} className="form-input" value={editForm.insurance_reason || ''} onChange={(e) => update('insurance_reason', e.target.value)} placeholder="고객이 보험을 준비하게 된 이유, 걱정되는 부분, 보장 목표 등" /></Field>
     </>
   )
 }

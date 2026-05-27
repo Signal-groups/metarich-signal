@@ -578,6 +578,11 @@ export default function UploadPage() {
                 <button className="btn btn-primary btn-xs" onClick={() => analyzeItem(item)} disabled={item.analysisStatus === 'running'} style={{ opacity: item.analysisStatus === 'running' ? 0.5 : 1 }}>
                   {item.analysisStatus === 'running' ? '분석 중' : 'AI 분석'}
                 </button>
+                {item.structuredAnalysis && (
+                  <button className="btn btn-xs" onClick={() => downloadAnalysisExcel(item)} style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', fontWeight: 700 }}>
+                    📊 분석표
+                  </button>
+                )}
                 <button className="btn btn-secondary btn-xs" onClick={() => removeItem(item.id)}>삭제</button>
               </div>
             </div>
@@ -862,6 +867,208 @@ function listSection(title: string, value: any) {
 function isExcelFile(name: string) {
   const lower = name.toLowerCase()
   return lower.endsWith('.xlsx') || lower.endsWith('.xls')
+}
+
+// ─── 보장분석표 Excel 다운로드 ────────────────────────────────────────────────
+
+const COVERAGE_STRUCTURE = [
+  { b: '가족보장자산', c: '사망', d: '일반' },
+  { b: null, c: null, d: '질병' },
+  { b: null, c: null, d: '재해(상해)' },
+  { b: '생활보장자산', c: '암치료비', d: '일반암' },
+  { b: null, c: null, d: '유사암/소액암' },
+  { b: null, c: null, d: '암수술비' },
+  { b: null, c: null, d: '항암 (방사선/약물)' },
+  { b: null, c: null, d: '표적항암치료' },
+  { b: null, c: null, d: '중입자치료' },
+  { b: null, c: null, d: '암주요치료비' },
+  { b: null, c: '2대질병치료비', d: '뇌혈관질환' },
+  { b: null, c: null, d: '뇌졸중' },
+  { b: null, c: null, d: '뇌출혈' },
+  { b: null, c: null, d: '급성심근경색' },
+  { b: null, c: null, d: '허혈성심장질환' },
+  { b: null, c: null, d: '심혈관질환' },
+  { b: null, c: null, d: '뇌혈관수술비' },
+  { b: null, c: null, d: '심혈관수술비' },
+  { b: null, c: null, d: '2대주요치료비' },
+  { b: null, c: '후유장해', d: '질병 후유장해(3%~)' },
+  { b: null, c: null, d: '상해 후유장해(3%~)' },
+  { b: null, c: '골절', d: '골절 진단비' },
+  { b: null, c: null, d: '골절 수술비' },
+  { b: null, c: null, d: '5대골절 진단비' },
+  { b: null, c: null, d: '5대골절 수술비' },
+  { b: null, c: null, d: '깁스 치료비' },
+  { b: null, c: '화상', d: '화상 진단비' },
+  { b: null, c: null, d: '화상 수술비' },
+  { b: '의료보장자산', c: '실손의료비', d: '상해입원의료비' },
+  { b: null, c: null, d: '상해통원의료비' },
+  { b: null, c: null, d: '질병입원의료비' },
+  { b: null, c: null, d: '질병통원의료비' },
+  { b: null, c: '수술비', d: '질병 수술비' },
+  { b: null, c: null, d: '질병 1~5종수술비' },
+  { b: null, c: null, d: '상해 수술비' },
+  { b: null, c: null, d: '상해 1~5종수술비' },
+  { b: null, c: null, d: 'N대 수술비' },
+  { b: null, c: null, d: '창상봉합술' },
+  { b: null, c: '입원', d: '질병 입원일당' },
+  { b: null, c: null, d: '상해 입원일당' },
+  { b: null, c: null, d: '교통상해입원일당' },
+  { b: null, c: null, d: '상해간병지원금' },
+  { b: null, c: null, d: '질병간병지원금' },
+  { b: '운전자', c: null, d: '교통사고처리지원금' },
+  { b: null, c: null, d: '교통사고벌금' },
+  { b: null, c: null, d: '변호사선임비용' },
+  { b: null, c: null, d: '자동차부상치료비' },
+  { b: '치아', c: null, d: '임플란트' },
+  { b: null, c: null, d: '크라운' },
+  { b: '기타', c: null, d: '가족일상배상책임' },
+  { b: null, c: null, d: '화재벌금' },
+]
+
+function findCoverageRowIndex(normalizedName: string): number {
+  const map: { keywords: string[]; idx: number }[] = [
+    { idx: 0, keywords: ['일반사망'] },
+    { idx: 1, keywords: ['질병사망'] },
+    { idx: 2, keywords: ['재해사망', '상해사망'] },
+    { idx: 3, keywords: ['일반암', '암진단'] },
+    { idx: 4, keywords: ['유사암', '소액암'] },
+    { idx: 5, keywords: ['암수술'] },
+    { idx: 6, keywords: ['표적항암'] },
+    { idx: 7, keywords: ['항암', '방사선항암', '약물항암'] },
+    { idx: 8, keywords: ['중입자'] },
+    { idx: 9, keywords: ['암주요치료'] },
+    { idx: 10, keywords: ['뇌혈관질환'] },
+    { idx: 11, keywords: ['뇌졸중'] },
+    { idx: 12, keywords: ['뇌출혈'] },
+    { idx: 13, keywords: ['급성심근경색', '심근경색'] },
+    { idx: 14, keywords: ['허혈성심장질환', '허혈성'] },
+    { idx: 15, keywords: ['심혈관질환'] },
+    { idx: 16, keywords: ['뇌혈관수술'] },
+    { idx: 17, keywords: ['심혈관수술'] },
+    { idx: 18, keywords: ['2대주요치료', '주요치료비'] },
+    { idx: 19, keywords: ['질병후유장해', '질병후유'] },
+    { idx: 20, keywords: ['상해후유장해', '상해후유'] },
+    { idx: 21, keywords: ['골절진단'] },
+    { idx: 22, keywords: ['골절수술'] },
+    { idx: 23, keywords: ['5대골절진단'] },
+    { idx: 24, keywords: ['5대골절수술'] },
+    { idx: 25, keywords: ['깁스'] },
+    { idx: 26, keywords: ['화상진단'] },
+    { idx: 27, keywords: ['화상수술'] },
+    { idx: 28, keywords: ['상해입원의료비'] },
+    { idx: 29, keywords: ['상해통원의료비'] },
+    { idx: 30, keywords: ['질병입원의료비'] },
+    { idx: 31, keywords: ['질병통원의료비'] },
+    { idx: 32, keywords: ['질병수술비'] },
+    { idx: 33, keywords: ['1~5종수술', '질병1종수술'] },
+    { idx: 34, keywords: ['상해수술비'] },
+    { idx: 35, keywords: ['상해1~5종수술', '상해1종수술'] },
+    { idx: 36, keywords: ['n대수술'] },
+    { idx: 37, keywords: ['창상봉합'] },
+    { idx: 38, keywords: ['질병입원일당'] },
+    { idx: 39, keywords: ['상해입원일당'] },
+    { idx: 40, keywords: ['교통상해입원'] },
+    { idx: 41, keywords: ['상해간병'] },
+    { idx: 42, keywords: ['질병간병'] },
+    { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리'] },
+    { idx: 44, keywords: ['교통사고벌금', '벌금'] },
+    { idx: 45, keywords: ['변호사선임'] },
+    { idx: 46, keywords: ['자동차부상', '부상치료'] },
+    { idx: 47, keywords: ['임플란트'] },
+    { idx: 48, keywords: ['크라운'] },
+    { idx: 49, keywords: ['가족일상배상', '일상배상'] },
+    { idx: 50, keywords: ['화재벌금'] },
+  ]
+  for (const entry of map) {
+    if (entry.keywords.some((kw) => normalizedName.includes(kw))) return entry.idx
+  }
+  return -1
+}
+
+function toManwon(amount: number): number {
+  // If amount is in 원 (>= 10000 threshold), convert to 만원
+  return amount >= 100000 ? Math.round(amount / 10000) : amount
+}
+
+function downloadAnalysisExcel(item: UploadItem) {
+  const data = item.structuredAnalysis
+  if (!data) return
+
+  const customerName = data.customer?.name || item.customerName || '고객'
+  const policies: any[] = Array.isArray(data.policies) ? data.policies
+    : Array.isArray(data.contracts) ? data.contracts : []
+
+  const numRows = 60
+  const numCols = 16
+  const matrix: (string | number | null)[][] = Array.from({ length: numRows }, () => Array(numCols).fill(null))
+
+  // Row 2: 고객명 헤더
+  matrix[1][1] = customerName
+  matrix[1][4] = '님'
+  matrix[1][5] = '내 보험 바로 알기 보장분석표'
+
+  // Row 4: 컬럼 헤더
+  matrix[3][1] = 'NO.'
+  matrix[3][4] = '(단위 : 만원)'
+  for (let i = 0; i < 11; i++) matrix[3][5 + i] = i + 1
+
+  // Row 5~9: 보험 정보 라벨
+  const POLICY_LABELS = [
+    '보  험  회  사',
+    '상   품   명',
+    '계   약   일',
+    '납 입 기 간 & 보 장 기 간',
+    '납 입 보 험 료',
+  ]
+  POLICY_LABELS.forEach((label, i) => { matrix[4 + i][1] = label })
+
+  // Row 10~60: 담보 라벨 구조
+  COVERAGE_STRUCTURE.forEach((row, i) => {
+    const idx = 9 + i
+    if (row.b) matrix[idx][1] = row.b
+    if (row.c) matrix[idx][2] = row.c
+    matrix[idx][3] = row.d
+  })
+
+  // 담보 금액 그리드 (51행 × 11열)
+  const amountGrid: number[][] = Array.from({ length: 51 }, () => Array(11).fill(0))
+
+  policies.slice(0, 11).forEach((policy: any, pi: number) => {
+    matrix[4][5 + pi] = policy.company || ''
+    matrix[5][5 + pi] = policy.product_name || policy.product || ''
+    matrix[6][5 + pi] = policy.start_date || ''
+    matrix[7][5 + pi] = policy.payment_period || ''
+    const prem = Number(policy.monthly_premium || policy.premium || 0)
+    matrix[8][5 + pi] = prem ? toManwon(prem) : null
+
+    const coverages: any[] = Array.isArray(policy.coverages) ? policy.coverages : []
+    coverages.forEach((cov: any) => {
+      const name = String(cov.coverage_name || cov.name || '').toLowerCase().replace(/[\s\-_·]/g, '')
+      const amount = Number(cov.amount || cov.coverage_amount || 0)
+      if (!amount) return
+      const ri = findCoverageRowIndex(name)
+      if (ri >= 0 && ri < 51) amountGrid[ri][pi] += toManwon(amount)
+    })
+  })
+
+  // 합계보장(E열) + 각 보험별 금액(F~P열) 채우기
+  amountGrid.forEach((row, ri) => {
+    const total = row.reduce((s, v) => s + v, 0)
+    matrix[9 + ri][4] = total || null
+    row.forEach((v, pi) => { matrix[9 + ri][5 + pi] = v || null })
+  })
+
+  // 납입보험료 합계 (E9)
+  const totalPrem = policies.slice(0, 11).reduce((s: number, p: any) => {
+    const prem = Number(p.monthly_premium || p.premium || 0)
+    return s + (prem ? toManwon(prem) : 0)
+  }, 0)
+  matrix[8][4] = totalPrem || null
+
+  const ws = XLSX.utils.aoa_to_sheet(matrix)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, customerName.slice(0, 31))
+  XLSX.writeFile(wb, `${customerName}_보장분석표.xlsx`)
 }
 
 function MiniStat({ label, value }: { label: string; value: number }) {

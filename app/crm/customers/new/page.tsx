@@ -34,6 +34,7 @@ export default function NewCustomerPage() {
     indemnity_generation: '',
     family_count: '',
     consulting_summary: '',
+    insurance_reason: '',
     tags: [] as string[],
   })
 
@@ -73,6 +74,7 @@ export default function NewCustomerPage() {
       indemnity_generation: form.indemnity_generation ? Number(form.indemnity_generation) : null,
       family_count: form.family_count ? Number(form.family_count) : null,
       consulting_summary: form.consulting_summary || null,
+      insurance_reason: form.insurance_reason || null,
       tags: form.tags,
       deleted_at: null,
       updated_at: new Date().toISOString(),
@@ -172,6 +174,10 @@ export default function NewCustomerPage() {
 
         <Field label="상담 요약">
           <textarea rows={3} className="form-input" value={form.consulting_summary} onChange={(event) => set('consulting_summary', event.target.value)} placeholder="상담 내용 요약" />
+        </Field>
+
+        <Field label="보험 가입 이유">
+          <textarea rows={3} className="form-input" value={form.insurance_reason} onChange={(event) => set('insurance_reason', event.target.value)} placeholder="고객이 보험을 준비하게 된 이유, 걱정되는 부분, 보장 목표 등을 입력하세요." />
         </Field>
 
         <div className="form-group">
