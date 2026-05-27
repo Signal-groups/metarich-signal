@@ -1,181 +1,185 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase } from '../../../lib/supabase'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
-export default function DmPage() {
-  const [loading, setLoading] = useState(true)
-  const [templates, setTemplates] = useState<any[]>([])
-  const [customers, setCustomers] = useState<any[]>([])
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
-  const [advisorName, setAdvisorName] = useState('담당자')
-  const [advisorPhone, setAdvisorPhone] = useState('')
-  const [copied, setCopied] = useState(false)
-  const [search, setSearch] = useState('')
-  const [dmLogs, setDmLogs] = useState<{ name: string; title: string; date: string }[]>([])
+type HubCard = {
+  href: string
+  icon: string
+  iconBg: string
+  format: string
+  formatBg: string
+  formatColor: string
+  title: string
+  desc: string
+  badge: string
+}
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      setLoading(false)
-      return
-    }
+const HUB_CARDS: HubCard[] = [
+  {
+    href: '/crm/dm/message',
+    icon: '💬',
+    iconBg: '#e0f2fe',
+    format: '복사',
+    formatBg: '#f0fdf4',
+    formatColor: '#15803d',
+    title: 'DM 메시지',
+    desc: '고객별 맞춤 메시지 템플릿을 선택해 바로 복사합니다.',
+    badge: '템플릿 선택',
+  },
+  {
+    href: '/crm/dm-cards?tab=fortune',
+    icon: '✨',
+    iconBg: '#fef9c3',
+    format: 'PNG',
+    formatBg: '#eff6ff',
+    formatColor: '#1d4ed8',
+    title: '운세 & 별자리',
+    desc: '오늘의 띠 운세와 별자리 운세 카드를 자동 생성합니다.',
+    badge: 'AI 생성',
+  },
+  {
+    href: '/crm/dm-cards?tab=anniversary',
+    icon: '🎁',
+    iconBg: '#fce7f3',
+    format: 'PNG',
+    formatBg: '#eff6ff',
+    formatColor: '#1d4ed8',
+    title: '고객 기념일',
+    desc: '생일, 명절, 계약기념일 등 축하 카드를 생성합니다.',
+    badge: '6종 템플릿',
+  },
+  {
+    href: '/crm/dm-cards?tab=quote',
+    icon: '💡',
+    iconBg: '#fef3c7',
+    format: 'PNG',
+    formatBg: '#eff6ff',
+    formatColor: '#1d4ed8',
+    title: '오늘의 명언',
+    desc: '매일 새로운 동기부여 명언 카드를 생성합니다.',
+    badge: '매일 교체',
+  },
+  {
+    href: '/crm/dm-cards?tab=health',
+    icon: '🏥',
+    iconBg: '#dcfce7',
+    format: 'PNG',
+    formatBg: '#eff6ff',
+    formatColor: '#1d4ed8',
+    title: '오늘의 건강',
+    desc: '매일 다른 건강 정보와 팁을 이미지 카드로 전달합니다.',
+    badge: 'AI 생성',
+  },
+]
 
-    const [{ data: userData }, { data: templateData }, { data: customerData }, { data: logData }] = await Promise.all([
-      supabase.from('users').select('name, phone').eq('id', session.user.id).single(),
-      supabase.from('dm_templates').select('*').order('created_at', { ascending: true }),
-      supabase.from('customers').select('id, name, phone, monthly_premium, policy_count').eq('advisor_id', session.user.id).is('deleted_at', null).order('name', { ascending: true }),
-      supabase.from('dm_logs').select('content, sent_at, dm_templates(title), customers(name)').order('sent_at', { ascending: false }).limit(5),
-    ])
+export default function DmHubPage() {
+  const router = useRouter()
 
-    const templateList = templateData || []
-    const customerList = customerData || []
-    setAdvisorName(userData?.name || session.user.email?.split('@')[0] || '담당자')
-    setAdvisorPhone(userData?.phone || '')
-    setTemplates(templateList)
-    setCustomers(customerList)
-    setSelectedTemplate(templateList[0] || null)
-    setSelectedCustomer(customerList[0] || null)
-    setDmLogs((logData || []).map((log: any) => ({
-      name: log.customers?.name || '',
-      title: log.dm_templates?.title || '',
-      date: log.sent_at?.slice(5, 10) || '',
-    })))
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  const preview = useMemo(() => {
-    if (!selectedTemplate || !selectedCustomer) return ''
-    return String(selectedTemplate.content || '')
-      .replace(/\{\{customer_name\}\}/g, selectedCustomer.name)
-      .replace(/\{\{advisor_name\}\}/g, advisorName)
-      .replace(/\{\{advisor_phone\}\}/g, advisorPhone)
-  }, [advisorName, advisorPhone, selectedCustomer, selectedTemplate])
-
-  const filteredCustomers = useMemo(() => {
-    const keyword = search.trim()
-    return customers.filter((customer) =>
-      !keyword || String(customer.name || '').includes(keyword) || String(customer.phone || '').includes(keyword)
-    )
-  }, [customers, search])
-
-  const handleCopy = async () => {
-    if (!preview || !selectedCustomer || !selectedTemplate) return
-    await navigator.clipboard.writeText(preview)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-    await supabase.from('dm_logs').insert({
-      customer_id: selectedCustomer.id,
-      template_id: selectedTemplate.id,
-      content: preview,
-      sent_by: advisorName,
-    })
-    setDmLogs((prev) => [
-      { name: selectedCustomer.name, title: selectedTemplate.title, date: new Date().toISOString().slice(5, 10) },
-      ...prev.slice(0, 4),
-    ])
+  const handleCardClick = (href: string) => {
+    router.push(href)
   }
 
   return (
     <>
       <div className="page-header">
         <div>
-          <div className="page-title">DM 메시지</div>
-          <div className="page-subtitle">고객별 맞춤 메시지를 작성하고 복사합니다.</div>
+          <div className="page-title">고객 DM 발송</div>
+          <div className="page-subtitle">고객에게 바로 전송할 수 있는 다양한 맞춤형 DM 콘텐츠</div>
         </div>
       </div>
 
-      {loading ? (
-        <div className="card card-p" style={{ padding: 80, textAlign: 'center', color: '#94a3b8' }}>불러오는 중...</div>
-      ) : (
-        <div className="grid-3">
-          <div className="card card-p">
-            <div className="card-title">메시지 템플릿</div>
-            {templates.length === 0 ? (
-              <div style={{ padding: 34, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>등록된 템플릿이 없습니다.</div>
-            ) : (
-              <div className="flex-col gap-8">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template)}
-                    className={`dm-card${selectedTemplate?.id === template.id ? ' active' : ''}`}
-                    style={{ textAlign: 'left', background: selectedTemplate?.id === template.id ? '#eff6ff' : '#fff' }}
-                  >
-                    <div className="fw-700" style={{ fontSize: 13 }}>{template.title}</div>
-                    <div className="text-muted" style={{ fontSize: 12, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {template.content?.slice(0, 45)}...
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="card card-p">
-            <div className="card-title">고객 선택</div>
-            <div className="search-wrap" style={{ marginBottom: 12 }}>
-              <span className="search-icon">⌕</span>
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="고객 검색" style={{ width: '100%' }} />
-            </div>
-            <div className="flex-col gap-8" style={{ maxHeight: 320, overflowY: 'auto' }}>
-              {filteredCustomers.map((customer) => (
-                <button
-                  key={customer.id}
-                  onClick={() => setSelectedCustomer(customer)}
-                  className={`dm-card${selectedCustomer?.id === customer.id ? ' active' : ''}`}
-                  style={{ textAlign: 'left', padding: 12, background: selectedCustomer?.id === customer.id ? '#eff6ff' : '#fff' }}
-                >
-                  <div className="flex items-center gap-8">
-                    <div className="profile-avatar">{customer.name?.slice(0, 1)}</div>
-                    <div>
-                      <div className="fw-700" style={{ fontSize: 13 }}>{customer.name}</div>
-                      <div className="text-muted" style={{ fontSize: 11 }}>{customer.phone}</div>
-                    </div>
-                  </div>
-                </button>
-              ))}
-              {filteredCustomers.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>고객이 없습니다.</div>}
-            </div>
-          </div>
-
-          <div className="card card-p">
-            <div className="flex justify-between items-center mb-16">
-              <div className="card-title" style={{ marginBottom: 0 }}>미리보기</div>
-              <button onClick={handleCopy} disabled={!preview} className={`copy-btn${copied ? ' copied' : ''}`} style={{ opacity: preview ? 1 : 0.4 }}>
-                {copied ? '복사됨' : '복사'}
-              </button>
-            </div>
-
-            {selectedCustomer && (
-              <div className="bg-gray rounded p-12 mb-16">
-                <span className="text-muted" style={{ fontSize: 12 }}>수신자 </span>
-                <span className="fw-700" style={{ fontSize: 12 }}>{selectedCustomer.name} ({selectedCustomer.phone})</span>
-              </div>
-            )}
-
-            <pre className="dm-preview">{preview || '템플릿과 고객을 선택하세요.'}</pre>
-
-            <div className="divider" />
-            <div className="card-title">최근 발송 이력</div>
-            {dmLogs.length === 0 ? (
-              <div className="text-muted" style={{ fontSize: 12 }}>발송 이력이 없습니다.</div>
-            ) : (
-              <div className="flex-col gap-8">
-                {dmLogs.map((log, index) => (
-                  <div key={`${log.name}-${log.title}-${index}`} className="text-muted" style={{ fontSize: 12 }}>
-                    {log.date} {log.name} · {log.title}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: 20,
+      }}>
+        {HUB_CARDS.map((card) => (
+          <HubCard key={card.href} card={card} onClick={() => handleCardClick(card.href)} />
+        ))}
+      </div>
     </>
+  )
+}
+
+function HubCard({ card, onClick }: { card: HubCard; onClick: () => void }) {
+  return (
+    <div
+      style={{
+        background: '#fff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 20,
+        padding: 24,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        boxShadow: '0 1px 6px rgba(15,23,42,0.06)',
+        transition: 'box-shadow 0.15s, transform 0.15s',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 28px rgba(15,23,42,0.12)'
+        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        ;(e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 6px rgba(15,23,42,0.06)'
+        ;(e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'
+      }}
+      onClick={onClick}
+    >
+      {/* 아이콘 + 포맷 배지 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: 14,
+          background: card.iconBg,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 22,
+        }}>
+          {card.icon}
+        </div>
+        <span style={{
+          fontSize: 11, fontWeight: 800,
+          background: card.formatBg,
+          color: card.formatColor,
+          borderRadius: 8, padding: '3px 10px',
+          letterSpacing: '0.02em',
+        }}>
+          {card.format}
+        </span>
+      </div>
+
+      {/* 제목 + 설명 */}
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 17, fontWeight: 900, color: '#0f172a', marginBottom: 6 }}>
+          {card.title}
+        </div>
+        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
+          {card.desc}
+        </div>
+      </div>
+
+      {/* 하단: 배지 + 바로가기 버튼 */}
+      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>{card.badge}</span>
+        <button
+          style={{
+            width: '100%',
+            background: '#1a2744',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 12,
+            padding: '12px 0',
+            fontSize: 14,
+            fontWeight: 800,
+            cursor: 'pointer',
+            letterSpacing: '0.02em',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#2d4a8a' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#1a2744' }}
+        >
+          바로가기
+        </button>
+      </div>
+    </div>
   )
 }

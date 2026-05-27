@@ -97,6 +97,18 @@ type PolicyGroup = {
 }
 
 type CoverageTargets = Record<string, number>
+type ReportOutputMode = 'major' | 'detail'
+
+type MajorCoverageRow = {
+  key: string
+  label: string
+  description: string
+  current: number
+  target: number
+  percent: number
+  status: string
+  companies: Array<{ company: string; amount: number }>
+}
 
 export default function AnalysisPage() {
   const [loading, setLoading] = useState(true)
@@ -113,6 +125,7 @@ export default function AnalysisPage() {
   const [targets, setTargets] = useState<CoverageTargets>(() => defaultTargets())
   const [savingReport, setSavingReport] = useState(false)
   const [savingExcel, setSavingExcel] = useState(false)
+  const [outputMode, setOutputMode] = useState<ReportOutputMode>('major')
   const reportRef = useRef<HTMLDivElement | null>(null)
 
   const load = useCallback(async () => {
@@ -270,7 +283,7 @@ export default function AnalysisPage() {
       const payload = policyGroupToContract(group)
       if (targetIndex >= contracts.length) contracts.push(payload)
       else contracts[targetIndex] = { ...contracts[targetIndex], ...payload }
-      return { ...item, structuredAnalysis: { ...source, version: 'insurance_manager_internal_v1', amount_unit: '원', contracts, policies: undefined } }
+      return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
     })
     saveUploadItems(next)
     setEditingContract(null)
@@ -283,7 +296,7 @@ export default function AnalysisPage() {
       if (item.id !== itemId) return item
       const source = item.structuredAnalysis || {}
       const contracts = firstArray(source.contracts, source.policies).filter((_: any, contractIndex: number) => contractIndex !== index)
-      return { ...item, structuredAnalysis: { ...source, version: 'insurance_manager_internal_v1', amount_unit: '원', contracts, policies: undefined } }
+      return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
     })
     saveUploadItems(next)
     setSelectedGroup(null)
@@ -302,9 +315,12 @@ export default function AnalysisPage() {
         customerName: selectedCustomer.name || primaryAnalysis?.customerName || '고객',
         advisorName: advisor.name,
         groups: reportGroups,
+        targets,
+        outputMode,
       })
       const today = new Date().toISOString().slice(0, 10)
-      XLSX.writeFile(workbook, `${normalizeFileName(selectedCustomer.name || '고객')}_보장분석표_${today}.xlsx`)
+      const modeLabel = outputMode === 'major' ? '주요담보' : '상세담보'
+      XLSX.writeFile(workbook, `${normalizeFileName(selectedCustomer.name || '고객')}_보장분석_${modeLabel}_${today}.xlsx`)
     } catch (error) {
       console.error(error)
       alert('엑셀 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -339,7 +355,8 @@ export default function AnalysisPage() {
       }
       const customerName = normalizeFileName(selectedCustomer.name || '고객')
       const today = new Date().toISOString().slice(0, 10)
-      pdf.save(`보장분석_가로A4_${customerName}_${today}.pdf`)
+      const modeLabel = outputMode === 'major' ? '주요담보' : '상세담보'
+      pdf.save(`보장분석_${modeLabel}_가로A4_${customerName}_${today}.pdf`)
     } catch (error) {
       console.error(error)
       alert('가로 A4 PDF 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -356,6 +373,22 @@ export default function AnalysisPage() {
           <div className="page-subtitle">고객을 선택하면 GPTs 분석 결과와 회사별 담보를 한글 기준으로 확인합니다.</div>
         </div>
         <div className="header-right">
+          <div className="output-mode-toggle" role="group" aria-label="출력 방식 선택">
+            <button
+              type="button"
+              className={outputMode === 'major' ? 'active' : ''}
+              onClick={() => setOutputMode('major')}
+            >
+              주요담보
+            </button>
+            <button
+              type="button"
+              className={outputMode === 'detail' ? 'active' : ''}
+              onClick={() => setOutputMode('detail')}
+            >
+              상세담보 포함
+            </button>
+          </div>
           <button className="btn btn-secondary btn-sm" onClick={downloadExcelReport} disabled={!hasAnyData || savingExcel}>
             {savingExcel ? '저장 중...' : '엑셀 저장'}
           </button>
@@ -407,6 +440,7 @@ export default function AnalysisPage() {
                 targets={targets}
                 strengths={reportStrengths}
                 advisor={advisor}
+                outputMode={outputMode}
               />
             </div>
           )}
@@ -700,6 +734,7 @@ function LandscapeReportPreview({
   targets,
   strengths,
   advisor,
+  outputMode,
 }: {
   reportRef: { current: HTMLDivElement | null }
   customer: any
@@ -708,8 +743,10 @@ function LandscapeReportPreview({
   targets: CoverageTargets
   strengths: string[]
   advisor: { name: string; phone: string }
+  outputMode: ReportOutputMode
 }) {
-  const rows = buildCoverageRows(groups, targets)
+  const rows = outputMode === 'major' ? buildMajorCoverageRows(groups, targets) : buildCoverageRows(groups, targets)
+  const majorRows = buildMajorCoverageRows(groups, targets)
   const premiumTotal = analysis?.monthlyPremium || sum(groups.map((group) => group.premium || 0))
   const paidTotal = analysis?.paidPremiumTotal || sum(groups.map((group) => group.paid_premium_total || 0))
   const remainingTotal = analysis?.remainingPremiumTotal || sum(groups.map((group) => group.remaining_premium_total || 0))
@@ -720,6 +757,11 @@ function LandscapeReportPreview({
     product_name: coverage.product_name || group.product_name,
   }))).filter((coverage) => coverage.amount).sort((a, b) => (b.amount || 0) - (a.amount || 0)).slice(0, 8)
   const weakRows = rows.filter((row) => row.percent < 100).slice(0, 4)
+  const detailedCoverages = groups.flatMap((group) => group.coverages.map((coverage) => ({
+    ...coverage,
+    company: coverage.company || group.company,
+    product_name: coverage.product_name || group.product_name,
+  }))).sort((a, b) => (b.amount || 0) - (a.amount || 0)).slice(0, 20)
 
   if (rows.length === 0 && groups.length === 0) return null
 
@@ -738,7 +780,11 @@ function LandscapeReportPreview({
           <div className="report-cover-content">
             <div className="report-cover-kicker">COVERAGE ANALYSIS REPORT</div>
             <h1>{customer.name || analysis?.customerName || '고객'}님<br />보장 분석</h1>
-            <p>현재 가입 보험의 보험료, 납입 현황, 주요 담보를 상담용으로 깔끔하게 정리했습니다.</p>
+            <p>
+              {outputMode === 'major'
+                ? '현재 가입 보험의 주요 보장과 준비가 필요한 항목을 상담용으로 깔끔하게 정리했습니다.'
+                : '현재 가입 보험의 회사별 담보명과 가입금액을 증권을 보듯 상세하게 정리했습니다.'}
+            </p>
           </div>
           <div className="report-cover-meta">
             <div>
@@ -761,7 +807,7 @@ function LandscapeReportPreview({
             <div>
               <div className="report-kicker">고객 안내용</div>
               <h2>{customer.name || analysis?.customerName || '고객'}님 보장분석 요약</h2>
-              <p>현재 준비된 보장을 권장금액과 비교해 보기 쉽게 정리했습니다.</p>
+              <p>{outputMode === 'major' ? '회사별 주요 보장금액과 총 보장금액을 한눈에 확인합니다.' : '권장금액 대비 준비 현황과 주요 담보를 함께 확인합니다.'}</p>
             </div>
             <div className="report-customer-box">
               <b>{formatCustomerAge(customer.birth_date).replace(/[()]/g, '') || '나이 미확인'}</b>
@@ -772,10 +818,14 @@ function LandscapeReportPreview({
 
           <div className="report-grid client-grid">
             <div className="report-panel report-wide">
-              <div className="report-panel-title">권장금액 대비 준비 현황</div>
-              <div className="report-bar-list">
-                {rows.map((row) => <ReportBar key={row.key} row={row} />)}
-              </div>
+              <div className="report-panel-title">{outputMode === 'major' ? '회사별 주요보장 합계' : '권장금액 대비 준비 현황'}</div>
+              {outputMode === 'major' ? (
+                <MajorCoverageMatrix rows={majorRows} />
+              ) : (
+                <div className="report-bar-list">
+                  {rows.map((row) => <ReportBar key={row.key} row={row} />)}
+                </div>
+              )}
             </div>
             <div className="report-panel">
               <div className="report-panel-title">준비된 장점</div>
@@ -788,12 +838,12 @@ function LandscapeReportPreview({
           </div>
 
           <div className="report-panel report-explain">
-            <div className="report-panel-title">보장 항목은 이렇게 봅니다</div>
-            <div className="coverage-explain-grid">
-              {rows.slice(0, 6).map((row) => (
+              <div className="report-panel-title">보장 항목은 이렇게 봅니다</div>
+              <div className="coverage-explain-grid">
+              {(outputMode === 'major' ? majorRows : rows).slice(0, 6).map((row) => (
                 <div key={`explain-${row.key}`} className="coverage-explain-card">
                   <b>{row.label}</b>
-                  <span>{coverageDescriptions[row.key] || '상담 시 보장 범위와 지급 조건을 함께 확인해야 하는 항목입니다.'}</span>
+                  <span>{getReportRowDescription(row)}</span>
                 </div>
               ))}
             </div>
@@ -804,8 +854,8 @@ function LandscapeReportPreview({
           <div className="report-topline">
             <div>
               <div className="report-kicker">설계사 점검용</div>
-              <h2>회사별 보험료와 담보 상세</h2>
-              <p>상담 전 확인해야 할 보험료, 납입 현황, 부족 보장을 한 화면에 모았습니다.</p>
+              <h2>{outputMode === 'major' ? '주요 보장 준비 필요 항목' : '회사별 보험료와 담보 상세'}</h2>
+              <p>{outputMode === 'major' ? '없거나 권장금액 대비 낮은 보장을 별도로 표시했습니다.' : '상담 전 확인해야 할 보험료, 납입 현황, 상세 담보를 한 화면에 모았습니다.'}</p>
             </div>
             <div className="report-customer-box">
               <b>계약 {analysis?.contractCount || groups.length || 0}건</b>
@@ -832,7 +882,7 @@ function LandscapeReportPreview({
             </div>
 
             <div className="report-panel">
-              <div className="report-panel-title">우선 보완 후보</div>
+              <div className="report-panel-title">준비 필요 항목</div>
               <div className="report-gap-list">
                 {(weakRows.length ? weakRows : rows.slice(0, 4)).map((row) => (
                   <div key={`gap-${row.key}`} className="report-gap-item">
@@ -845,20 +895,20 @@ function LandscapeReportPreview({
             </div>
 
             <div className="report-panel report-wide">
-              <div className="report-panel-title">주요 담보 상세</div>
+              <div className="report-panel-title">{outputMode === 'major' ? '주요 담보 총액' : '상세 담보 목록'}</div>
               <div className="report-table">
                 <div className="report-table-head">
-                  <span>보험사</span><span>분류</span><span>담보명</span><span>가입금액</span>
+                  <span>보험사</span><span>분류</span><span>{outputMode === 'major' ? '구성' : '담보명'}</span><span>가입금액</span>
                 </div>
-                {topCoverages.map((coverage, index) => (
-                  <div key={`${coverage.coverage_name}-${index}`} className="report-table-row">
-                    <span>{coverage.company || '-'}</span>
-                    <span>{translateCategory(coverage.category)}</span>
-                    <span>{coverage.coverage_name}</span>
-                    <span>{formatWon(coverage.amount)}</span>
+                {(outputMode === 'major' ? majorRows : detailedCoverages).map((item: any, index) => (
+                  <div key={`${item.key || item.coverage_name}-${index}`} className="report-table-row">
+                    <span>{outputMode === 'major' ? item.companies.map((company: any) => company.company).join(', ') || '-' : item.company || '-'}</span>
+                    <span>{outputMode === 'major' ? item.label : translateCategory(item.category)}</span>
+                    <span>{outputMode === 'major' ? item.description : item.coverage_name}</span>
+                    <span>{formatWon(outputMode === 'major' ? item.current : item.amount)}</span>
                   </div>
                 ))}
-                {topCoverages.length === 0 && <div className="report-table-empty">담보 상세가 없습니다.</div>}
+                {(outputMode === 'major' ? majorRows.length === 0 : detailedCoverages.length === 0) && <div className="report-table-empty">담보 상세가 없습니다.</div>}
               </div>
             </div>
           </div>
@@ -886,6 +936,39 @@ function ReportBar({ row }: { row: ReturnType<typeof buildCoverageRows>[number] 
       </div>
     </div>
   )
+}
+
+function MajorCoverageMatrix({ rows }: { rows: MajorCoverageRow[] }) {
+  return (
+    <div className="major-matrix">
+      <div className="major-matrix-head">
+        <span>주요보장</span>
+        <span>회사별 보장금액</span>
+        <span>총 금액</span>
+        <span>상태</span>
+      </div>
+      {rows.map((row) => (
+        <div key={`major-${row.key}`} className="major-matrix-row">
+          <div>
+            <b>{row.label}</b>
+            <small>{row.description}</small>
+          </div>
+          <div className="major-company-list">
+            {row.companies.length > 0 ? row.companies.map((company) => (
+              <span key={`${row.key}-${company.company}`}>{company.company} {formatCompactWon(company.amount)}</span>
+            )) : <span>가입 확인 필요</span>}
+          </div>
+          <strong>{formatWon(row.current)}</strong>
+          <em className={row.status === '충분' ? 'ok' : 'need'}>{row.status} · {row.percent}%</em>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function getReportRowDescription(row: { key: string; description?: unknown }) {
+  if (typeof row.description === 'string' && row.description.trim()) return row.description
+  return coverageDescriptions[row.key] || '상담 시 보장 범위와 지급 조건을 함께 확인해야 하는 항목입니다.'
 }
 
 function emptyPolicyGroup(): PolicyGroup {
@@ -998,7 +1081,6 @@ function normalizePolicyGroups(data: any): PolicyGroup[] {
     })
   }
 
-  const hasDetailedCoverages = groups.some((group) => group.coverages.length > 0)
   const summaryCoverages = Object.entries(data?.coverage_summary || {})
     .filter(([, value]) => typeof value === 'number' || typeof value === 'string')
     .map(([key, value]) => ({
@@ -1008,6 +1090,7 @@ function normalizePolicyGroups(data: any): PolicyGroup[] {
       unit: '원',
       note: 'GPTs 요약 보장금액',
     }))
+  const hasDetailedCoverages = groups.some((group) => group.coverages.length > 0)
   if (!hasDetailedCoverages && summaryCoverages.length > 0) {
     groups.push({
       key: 'summary',
@@ -1286,216 +1369,85 @@ function matchesTarget(coverage: CoverageRow, target: typeof targetItems[number]
   return target.aliases.some((alias) => text.includes(alias.toLowerCase()))
 }
 
-const excelCoverageStructure = [
-  { asset: '가족보장자산', section: '사망', label: '일반' },
-  { asset: '', section: '', label: '질병' },
-  { asset: '', section: '', label: '재해(상해)' },
-  { asset: '생활보장자산', section: '암치료비', label: '일반암' },
-  { asset: '', section: '', label: '유사암/소액암' },
-  { asset: '', section: '', label: '암수술비' },
-  { asset: '', section: '', label: '항암 (방사선/약물)' },
-  { asset: '', section: '', label: '표적항암치료' },
-  { asset: '', section: '', label: '중입자치료' },
-  { asset: '', section: '', label: '암주요치료비' },
-  { asset: '', section: '2대질병치료비', label: '뇌혈관질환' },
-  { asset: '', section: '', label: '뇌졸중' },
-  { asset: '', section: '', label: '뇌출혈' },
-  { asset: '', section: '', label: '급성심근경색' },
-  { asset: '', section: '', label: '허혈성심장질환' },
-  { asset: '', section: '', label: '심혈관질환' },
-  { asset: '', section: '', label: '뇌혈관수술비' },
-  { asset: '', section: '', label: '심혈관수술비' },
-  { asset: '', section: '', label: '2대주요치료비' },
-  { asset: '', section: '후유장해', label: '질병 후유장해(3%~)' },
-  { asset: '', section: '', label: '상해 후유장해(3%~)' },
-  { asset: '', section: '골절', label: '골절 진단비' },
-  { asset: '', section: '', label: '골절 수술비' },
-  { asset: '', section: '', label: '5대골절 진단비' },
-  { asset: '', section: '', label: '5대골절 수술비' },
-  { asset: '', section: '', label: '깁스 치료비' },
-  { asset: '', section: '화상', label: '화상 진단비' },
-  { asset: '', section: '', label: '화상 수술비' },
-  { asset: '의료보장자산', section: '실손의료비', label: '상해입원의료비' },
-  { asset: '', section: '', label: '상해통원의료비' },
-  { asset: '', section: '', label: '질병입원의료비' },
-  { asset: '', section: '', label: '질병통원의료비' },
-  { asset: '', section: '수술비', label: '질병 수술비' },
-  { asset: '', section: '', label: '질병 1~5종수술비' },
-  { asset: '', section: '', label: '상해 수술비' },
-  { asset: '', section: '', label: '상해 1~5종수술비' },
-  { asset: '', section: '', label: 'N대 수술비' },
-  { asset: '', section: '', label: '창상봉합술' },
-  { asset: '', section: '입원', label: '질병 입원일당' },
-  { asset: '', section: '', label: '상해 입원일당' },
-  { asset: '', section: '', label: '교통상해입원일당' },
-  { asset: '', section: '', label: '상해간병지원금' },
-  { asset: '', section: '', label: '질병간병지원금' },
-  { asset: '운전자', section: '', label: '교통사고처리지원금' },
-  { asset: '', section: '', label: '교통사고벌금' },
-  { asset: '', section: '', label: '변호사선임비용' },
-  { asset: '', section: '', label: '자동차부상치료비' },
-  { asset: '치아', section: '', label: '임플란트' },
-  { asset: '', section: '', label: '크라운' },
-  { asset: '기타', section: '', label: '가족일상배상책임' },
-  { asset: '', section: '', label: '화재벌금' },
+const majorCoverageDefinitions = [
+  {
+    key: 'cancer',
+    label: '암',
+    description: '일반암·특정암·유사암·항암',
+    target: (targets: CoverageTargets) => (targets.cancer || 0) + (targets.similar_cancer || 0),
+  },
+  {
+    key: 'brain',
+    label: '뇌',
+    description: '뇌혈관·뇌졸중·뇌출혈',
+    target: (targets: CoverageTargets) => targets.brain_vascular || 0,
+  },
+  {
+    key: 'heart',
+    label: '심장',
+    description: '허혈성·급성심근경색·기타심장질환',
+    target: (targets: CoverageTargets) => targets.ischemic_heart || 0,
+  },
+  {
+    key: 'actual',
+    label: '실손/생활',
+    description: '실비·운전자·화재·일배책',
+    target: (targets: CoverageTargets) => targets.driver || 0,
+  },
+  {
+    key: 'surgery',
+    label: '수술',
+    description: '종수술·N대수술·일반수술',
+    target: (targets: CoverageTargets) => (targets.disease_surgery || 0) + (targets.injury_surgery || 0),
+  },
+  {
+    key: 'hospitalization',
+    label: '입원',
+    description: '질병입원·상해입원',
+    target: (targets: CoverageTargets) => targets.hospitalization || 0,
+  },
+  {
+    key: 'nursing',
+    label: '간병/재가',
+    description: '간병인·간호간병·재가',
+    target: (targets: CoverageTargets) => targets.hospitalization || 0,
+  },
 ]
 
-function findExcelCoverageRowIndex(coverage: CoverageRow): number {
-  const name = normalizeCoverageKeyword(`${coverage.coverage_name} ${coverage.sub_category || ''} ${coverage.category || ''}`)
-  const map: { idx: number; keywords: string[] }[] = [
-    { idx: 0, keywords: ['일반사망'] },
-    { idx: 1, keywords: ['질병사망'] },
-    { idx: 2, keywords: ['재해사망', '상해사망'] },
-    { idx: 4, keywords: ['유사암', '소액암'] },
-    { idx: 5, keywords: ['암수술'] },
-    { idx: 7, keywords: ['표적항암'] },
-    { idx: 8, keywords: ['중입자'] },
-    { idx: 6, keywords: ['항암', '방사선항암', '약물항암'] },
-    { idx: 9, keywords: ['암주요치료'] },
-    { idx: 3, keywords: ['일반암', '암진단'] },
-    { idx: 11, keywords: ['뇌졸중'] },
-    { idx: 12, keywords: ['뇌출혈'] },
-    { idx: 10, keywords: ['뇌혈관질환', '뇌혈관'] },
-    { idx: 13, keywords: ['급성심근경색', '심근경색'] },
-    { idx: 14, keywords: ['허혈성심장질환', '허혈성'] },
-    { idx: 15, keywords: ['심혈관질환', '기타심장'] },
-    { idx: 16, keywords: ['뇌혈관수술'] },
-    { idx: 17, keywords: ['심혈관수술'] },
-    { idx: 18, keywords: ['2대주요치료', '주요치료비'] },
-    { idx: 19, keywords: ['질병후유장해', '질병후유'] },
-    { idx: 20, keywords: ['상해후유장해', '상해후유'] },
-    { idx: 21, keywords: ['골절진단'] },
-    { idx: 22, keywords: ['골절수술'] },
-    { idx: 23, keywords: ['5대골절진단'] },
-    { idx: 24, keywords: ['5대골절수술'] },
-    { idx: 25, keywords: ['깁스'] },
-    { idx: 26, keywords: ['화상진단'] },
-    { idx: 27, keywords: ['화상수술'] },
-    { idx: 28, keywords: ['상해입원의료비'] },
-    { idx: 29, keywords: ['상해통원의료비'] },
-    { idx: 30, keywords: ['질병입원의료비'] },
-    { idx: 31, keywords: ['질병통원의료비'] },
-    { idx: 33, keywords: ['질병1~5종수술', '질병1종수술', '1~5종수술'] },
-    { idx: 35, keywords: ['상해1~5종수술', '상해1종수술'] },
-    { idx: 36, keywords: ['n대수술', '대수술'] },
-    { idx: 37, keywords: ['창상봉합'] },
-    { idx: 32, keywords: ['질병수술비'] },
-    { idx: 34, keywords: ['상해수술비'] },
-    { idx: 38, keywords: ['질병입원일당'] },
-    { idx: 39, keywords: ['상해입원일당'] },
-    { idx: 40, keywords: ['교통상해입원'] },
-    { idx: 41, keywords: ['상해간병'] },
-    { idx: 42, keywords: ['질병간병'] },
-    { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리', '형사합의'] },
-    { idx: 44, keywords: ['교통사고벌금', '벌금'] },
-    { idx: 45, keywords: ['변호사선임'] },
-    { idx: 46, keywords: ['자동차부상', '자부상', '부상치료'] },
-    { idx: 47, keywords: ['임플란트'] },
-    { idx: 48, keywords: ['크라운'] },
-    { idx: 49, keywords: ['가족일상배상', '일상배상', '배상책임'] },
-    { idx: 50, keywords: ['화재벌금'] },
-  ]
-  return map.find((entry) => entry.keywords.some((keyword) => name.includes(normalizeCoverageKeyword(keyword))))?.idx ?? -1
-}
-
-function buildCoverageWorkbook(
-  XLSX: typeof import('xlsx'),
-  {
-    customerName,
-    advisorName,
-    groups,
-  }: {
-    customerName: string
-    advisorName: string
-    groups: PolicyGroup[]
-  },
-) {
-  const policyCount = Math.max(groups.length, 1)
-  const numRows = 9 + excelCoverageStructure.length
-  const numCols = Math.max(6 + policyCount, 16)
-  const matrix: (string | number | null)[][] = Array.from({ length: numRows }, () => Array(numCols).fill(null))
-  const startCol = 5
-
-  matrix[1][1] = customerName
-  matrix[1][4] = '님'
-  matrix[1][5] = '내 보험 바로 알기 보장분석표'
-  if (advisorName) matrix[1][Math.min(numCols - 1, startCol + policyCount + 1)] = `담당자 ${advisorName}`
-  matrix[3][1] = 'NO.'
-  matrix[3][4] = '(단위 : 만원)'
-  groups.forEach((_, index) => { matrix[3][startCol + index] = index + 1 })
-
-  const labels = ['보  험  회  사', '상   품   명', '계   약   일', '납 입 기 간 & 보 장 기 간', '납 입 보 험 료']
-  labels.forEach((label, index) => { matrix[4 + index][1] = label })
-  excelCoverageStructure.forEach((row, index) => {
-    const targetRow = 9 + index
-    matrix[targetRow][1] = row.asset || null
-    matrix[targetRow][2] = row.section || null
-    matrix[targetRow][3] = row.label
-  })
-
-  const amountGrid: number[][] = Array.from({ length: excelCoverageStructure.length }, () => Array(policyCount).fill(0))
-  groups.forEach((group, groupIndex) => {
-    matrix[4][startCol + groupIndex] = group.company || ''
-    matrix[5][startCol + groupIndex] = group.product_name || ''
-    matrix[6][startCol + groupIndex] = group.start_date || ''
-    matrix[7][startCol + groupIndex] = [group.payment_period, formatMaturity(group)].filter((value) => value && value !== '-').join(' / ')
-    matrix[8][startCol + groupIndex] = group.premium ? Math.round(group.premium) : null
-
-    group.coverages.forEach((coverage) => {
-      const rowIndex = findExcelCoverageRowIndex(coverage)
-      if (rowIndex < 0) return
-      amountGrid[rowIndex][groupIndex] += toExcelCoverageAmount(coverage.amount)
+function buildMajorCoverageRows(groups: PolicyGroup[], targets: CoverageTargets): MajorCoverageRow[] {
+  return majorCoverageDefinitions.map((definition) => {
+    const companyMap = new Map<string, number>()
+    groups.forEach((group) => {
+      const amount = group.coverages
+        .filter((coverage) => getMajorCoverageKey(coverage) === definition.key)
+        .reduce((total, coverage) => total + (coverage.amount || 0), 0)
+      if (amount > 0) companyMap.set(group.company || '보험사 미확인', (companyMap.get(group.company || '보험사 미확인') || 0) + amount)
     })
+    const current = Array.from(companyMap.values()).reduce((total, amount) => total + amount, 0)
+    const target = definition.target(targets)
+    const percent = target > 0 ? Math.round((current / target) * 100) : current > 0 ? 100 : 0
+    const status = current <= 0 ? '준비 필요' : percent >= 100 ? '충분' : '보완 필요'
+    return {
+      ...definition,
+      current,
+      target,
+      percent,
+      status,
+      companies: Array.from(companyMap.entries()).map(([company, amount]) => ({ company, amount })),
+    }
   })
-
-  amountGrid.forEach((row, rowIndex) => {
-    const total = row.reduce((acc, value) => acc + value, 0)
-    matrix[9 + rowIndex][4] = total || null
-    row.forEach((value, groupIndex) => {
-      matrix[9 + rowIndex][startCol + groupIndex] = value || null
-    })
-  })
-  matrix[8][4] = groups.reduce((total, group) => total + Math.round(group.premium || 0), 0) || null
-
-  const workbook = XLSX.utils.book_new()
-  const summarySheet = XLSX.utils.aoa_to_sheet(matrix)
-  summarySheet['!cols'] = Array.from({ length: numCols }, (_, index) => ({ wch: index < 4 ? 14 : 18 }))
-  XLSX.utils.book_append_sheet(workbook, summarySheet, '보장분석표')
-
-  const detailRows = [
-    ['보험사', '상품명', '가입일', '납입/만기', '월보험료(원)', '분류', '세부분류', '담보명', '보장금액(원)', '보장금액(만원)', '보장방식', '갱신구분', '상태/메모'],
-    ...groups.flatMap((group) => group.coverages.map((coverage) => [
-      group.company,
-      group.product_name,
-      group.start_date || '',
-      [group.payment_period, formatMaturity(group)].filter((value) => value && value !== '-').join(' / '),
-      Math.round(group.premium || 0),
-      translateCategory(coverage.category),
-      coverage.sub_category || getCoverageSubCategory(coverage),
-      coverage.coverage_name,
-      coverage.amount || 0,
-      toExcelCoverageAmount(coverage.amount),
-      coverage.payment_method_type || getCoveragePaymentType(coverage),
-      coverage.renewal_type || coverage.coverage_type || '',
-      coverage.note || '',
-    ])),
-  ]
-  const detailSheet = XLSX.utils.aoa_to_sheet(detailRows)
-  detailSheet['!cols'] = [
-    { wch: 14 }, { wch: 28 }, { wch: 13 }, { wch: 22 }, { wch: 14 }, { wch: 12 },
-    { wch: 18 }, { wch: 34 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 28 },
-  ]
-  XLSX.utils.book_append_sheet(workbook, detailSheet, '담보상세')
-  return workbook
 }
 
-function normalizeCoverageKeyword(value: string) {
-  return value.toLowerCase().replace(/[\s\-_·()./]/g, '')
-}
-
-function toExcelCoverageAmount(value?: number) {
-  if (!value) return 0
-  return value >= MANWON_TO_WON ? Math.round(value / MANWON_TO_WON) : Math.round(value)
+function getMajorCoverageKey(coverage: CoverageRow) {
+  const text = `${coverage.category} ${coverage.sub_category || ''} ${coverage.coverage_name} ${coverage.note || ''}`.toLowerCase()
+  if (text.includes('간병') || text.includes('간호간병') || text.includes('재가')) return 'nursing'
+  if (text.includes('입원') || text.includes('일당')) return 'hospitalization'
+  if (text.includes('수술') || text.includes('종수술') || /[0-9]+대/.test(text) || text.includes('n대')) return 'surgery'
+  if (text.includes('실손') || text.includes('실비') || text.includes('운전자') || text.includes('교통') || text.includes('자부상') || text.includes('화재') || text.includes('배상') || text.includes('일배책') || text.includes('벌금') || text.includes('변호사')) return 'actual'
+  if (text.includes('암') || text.includes('항암') || text.includes('중입자')) return 'cancer'
+  if (text.includes('뇌')) return 'brain'
+  if (text.includes('심장') || text.includes('허혈') || text.includes('심근') || text.includes('부정맥')) return 'heart'
+  return 'other'
 }
 
 const coverageSectionOrder = [
@@ -1667,6 +1619,102 @@ function defaultTargets(): CoverageTargets {
   }, {})
 }
 
+function buildCoverageWorkbook(XLSX: any, {
+  customerName,
+  advisorName,
+  groups,
+  targets,
+  outputMode,
+}: {
+  customerName: string
+  advisorName: string
+  groups: PolicyGroup[]
+  targets: CoverageTargets
+  outputMode: ReportOutputMode
+}) {
+  const workbook = XLSX.utils.book_new()
+  const today = new Date().toISOString().slice(0, 10)
+  const companies = Array.from(new Set(groups.map((group) => group.company || '보험사 미확인')))
+  const majorRows = buildMajorCoverageRows(groups, targets)
+
+  const majorSheetRows = [
+    ['고객명', customerName, '담당자', advisorName, '작성일', today],
+    [],
+    ['주요보장', '구성', '총 보장금액(만원)', '권장금액(만원)', '상태', ...companies],
+    ...majorRows.map((row) => [
+      row.label,
+      row.description,
+      wonToManwon(row.current),
+      wonToManwon(row.target),
+      `${row.status} (${row.percent}%)`,
+      ...companies.map((company) => wonToManwon(row.companies.find((item) => item.company === company)?.amount || 0)),
+    ]),
+    [],
+    ['준비 필요 항목'],
+    ...majorRows
+      .filter((row) => row.status !== '충분')
+      .map((row) => [row.label, `현재 ${formatCompactWon(row.current)} / 권장 ${formatCompactWon(row.target)}`, row.status]),
+  ]
+  const majorSheet = XLSX.utils.aoa_to_sheet(majorSheetRows)
+  majorSheet['!cols'] = [
+    { wch: 16 },
+    { wch: 28 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 18 },
+    ...companies.map(() => ({ wch: 18 })),
+  ]
+  XLSX.utils.book_append_sheet(workbook, majorSheet, '주요담보')
+
+  if (outputMode === 'detail') {
+    const detailRows = [
+      ['고객명', customerName, '담당자', advisorName, '작성일', today],
+      [],
+      ['보험사', '상품명', '가입일', '납부기간', '만기', '월보험료(만원)', '분류', '세부분류', '담보명', '보장금액(만원)', '갱신구분', '보상방식', '내용'],
+      ...groups.flatMap((group) => group.coverages.length > 0
+        ? group.coverages.map((coverage) => [
+          group.company,
+          group.product_name,
+          group.start_date || '',
+          group.payment_period || '',
+          formatMaturity(group),
+          wonToManwon(group.premium || 0),
+          translateCategory(coverage.category),
+          coverage.sub_category || getCoverageSubCategory(coverage),
+          coverage.coverage_name,
+          wonToManwon(coverage.amount || 0),
+          coverage.renewal_type || formatRenewalTypeFromCoverage(coverage),
+          coverage.payment_method_type || getCoveragePaymentType(coverage),
+          coverage.note || '',
+        ])
+        : [[group.company, group.product_name, group.start_date || '', group.payment_period || '', formatMaturity(group), wonToManwon(group.premium || 0), '', '', '담보 상세 없음', '', '', '', '']]),
+    ]
+    const detailSheet = XLSX.utils.aoa_to_sheet(detailRows)
+    detailSheet['!cols'] = [
+      { wch: 14 },
+      { wch: 34 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 42 },
+      { wch: 16 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 36 },
+    ]
+    XLSX.utils.book_append_sheet(workbook, detailSheet, '상세담보')
+  }
+
+  return workbook
+}
+
+function wonToManwon(value?: number) {
+  return value ? Math.round(value / MANWON_TO_WON) : 0
+}
+
 function firstArray(...values: any[]) {
   const found = values.find((value) => Array.isArray(value))
   return found || []
@@ -1684,22 +1732,18 @@ function numberOrUndefined(value: any) {
 }
 
 function moneyMultiplierForSource(data: any) {
-  const explicitUnit = String(data?.amount_unit || data?.money_unit || data?.unit || '').trim()
-  if (explicitUnit === '원') return 1
-  if (explicitUnit === '만원') return MANWON_TO_WON
-  return data?.version === 'insurance_analysis_v3' ? MANWON_TO_WON : 1
+  const unitText = `${data?.version || ''} ${data?.amount_unit || ''} ${data?.money_unit || ''}`.toLowerCase()
+  if (unitText.includes('insurance_analysis_v3') || unitText.includes('만원') || unitText.includes('manwon')) return MANWON_TO_WON
+  return 1
 }
 
 function moneyValue(value: any, multiplier = 1) {
-  const amount = numberOrUndefined(value)
-  return amount ? Math.round(amount * multiplier) : undefined
+  const number = numberOrUndefined(value)
+  return number ? number * multiplier : undefined
 }
 
 function premiumMoneyValue(value: any, multiplier = 1) {
-  const amount = numberOrUndefined(value)
-  if (!amount) return undefined
-  if (multiplier === MANWON_TO_WON && amount >= 1000) return Math.round(amount)
-  return Math.round(amount * multiplier)
+  return moneyValue(value, multiplier)
 }
 
 function sum(values: number[]) {
