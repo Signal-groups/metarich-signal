@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 
 // ──────────────────────────────────────────────
@@ -133,6 +134,7 @@ function getPersonality(perception: string, criteria: string[]) {
 // ──────────────────────────────────────────────
 
 export default function CardConsultPage() {
+  const router = useRouter()
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [advisor, setAdvisor] = useState({ name: '', phone: '' })
 
@@ -197,6 +199,14 @@ export default function CardConsultPage() {
 
   const stepLabels = ['기본 정보', '카드 선택', '보험 기준', '결과 확인']
 
+  const closePage = () => {
+    if (window.opener) {
+      window.close()
+      return
+    }
+    router.replace('/dashboard')
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
       {/* ── 헤더 ── */}
@@ -205,17 +215,36 @@ export default function CardConsultPage() {
           <div style={{ color: '#C9A96E', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', marginBottom: 3 }}>METARICH SIGNAL</div>
           <div style={{ color: '#fff', fontSize: 18, fontWeight: 900 }}>보장 카드 상담</div>
         </div>
-        {/* 스텝 인디케이터 */}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {[1, 2, 3, 4].map(s => (
-            <div key={s} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <div style={{
-                width: s === step ? 36 : 10, height: 10, borderRadius: 5,
-                background: s === step ? '#C9A96E' : s < step ? 'rgba(201,169,110,0.55)' : 'rgba(255,255,255,0.18)',
-                transition: 'all 0.35s',
-              }} />
-            </div>
-          ))}
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          {/* 스텝 인디케이터 */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {[1, 2, 3, 4].map(s => (
+              <div key={s} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div style={{
+                  width: s === step ? 36 : 10, height: 10, borderRadius: 5,
+                  background: s === step ? '#C9A96E' : s < step ? 'rgba(201,169,110,0.55)' : 'rgba(255,255,255,0.18)',
+                  transition: 'all 0.35s',
+                }} />
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={closePage}
+            style={{
+              border: '1px solid rgba(255,255,255,0.24)',
+              background: 'rgba(255,255,255,0.1)',
+              color: '#fff',
+              borderRadius: 12,
+              padding: '10px 14px',
+              fontSize: 13,
+              fontWeight: 900,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            창 닫기
+          </button>
         </div>
       </div>
 

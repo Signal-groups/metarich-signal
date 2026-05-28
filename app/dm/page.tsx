@@ -27,6 +27,17 @@ const HUB_CARDS: HubCard[] = [
     badge: '템플릿 선택',
   },
   {
+    href: '/content-studio',
+    icon: '🖼️',
+    iconBg: '#ede9fe',
+    format: 'PNG',
+    formatBg: '#f5f3ff',
+    formatColor: '#6d28d9',
+    title: 'DM 정보 작성',
+    desc: '관리자 이미지 2장을 선택해 상단·하단 문구와 디자인을 바꿔 저장합니다.',
+    badge: '이미지 업로드',
+  },
+  {
     href: '/dm/cards?tab=fortune',
     icon: '✨',
     iconBg: '#fef9c3',
