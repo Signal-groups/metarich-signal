@@ -43,6 +43,10 @@ const categoryNames: Record<string, string> = {
   nursing: '간병',
   driver: '운전자',
   fire: '화재',
+  death: '사망',
+  disability: '장해',
+  dental: '치아',
+  etc: '기타',
 }
 
 const tabs = [
@@ -66,6 +70,7 @@ export default function CustomerDetailPage() {
   const [families, setFamilies] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
   const [radarData, setRadarData] = useState<any[]>([])
+  const [coverageBars, setCoverageBars] = useState<any[]>([])
   const [advisorName, setAdvisorName] = useState('담당자')
   const [advisorPhone, setAdvisorPhone] = useState('')
   const [copiedDm, setCopiedDm] = useState<string | null>(null)
@@ -124,14 +129,22 @@ export default function CustomerDetailPage() {
 
     const totals: Record<string, number> = {}
     ;(coverageData || []).forEach((coverage: any) => {
-      totals[coverage.category] = (totals[coverage.category] || 0) + (coverage.amount || 0)
+      const key = normalizeCoverageGraphCategory(coverage.category, coverage.coverage_name, coverage.note)
+      totals[key] = (totals[key] || 0) + (Number(coverage.amount) || 0)
     })
     const maxAmount = Math.max(...Object.values(totals), 1)
-    setRadarData(Object.entries(categoryNames).map(([key, label]) => ({
-      category: label,
+    const summaryRows = Object.entries(categoryNames).map(([key, label]) => ({
+      key,
+      label,
+      amount: totals[key] || 0,
       value: Math.round(((totals[key] || 0) / maxAmount) * 100),
+    }))
+    setRadarData(summaryRows.map((row) => ({
+      category: row.label,
+      value: row.value,
       recommended: 100,
     })))
+    setCoverageBars(summaryRows.filter((row) => row.amount > 0))
 
     setLoading(false)
   }, [id, router])
@@ -371,14 +384,14 @@ export default function CustomerDetailPage() {
             </div>
             <div>
               <div className="card-title">보장 항목</div>
-              {coverages.map((coverage) => (
-                <div key={coverage.id} className="cov-bar-row">
-                  <div className="cov-bar-label">{categoryNames[coverage.category] || coverage.category}</div>
-                  <div className="cov-bar-track"><div className="cov-bar-fill" style={{ width: `${Math.min((coverage.amount || 0) / 1000, 100)}%`, background: '#3b82f6' }} /></div>
-                  <div className="cov-bar-val">{(coverage.amount || 0).toLocaleString()}</div>
+              {coverageBars.map((coverage) => (
+                <div key={coverage.key} className="cov-bar-row">
+                  <div className="cov-bar-label">{coverage.label}</div>
+                  <div className="cov-bar-track"><div className="cov-bar-fill" style={{ width: `${Math.max(6, Math.min(coverage.value, 100))}%`, background: '#3b82f6' }} /></div>
+                  <div className="cov-bar-val">{formatCoverageAmount(coverage.amount)}</div>
                 </div>
               ))}
-              {coverages.length === 0 && <Empty text="보장 항목이 없습니다." />}
+              {coverageBars.length === 0 && <Empty text="보장 항목이 없습니다." />}
             </div>
           </div>
         )}
@@ -417,6 +430,31 @@ export default function CustomerDetailPage() {
       </div>
     </>
   )
+}
+
+function normalizeCoverageGraphCategory(category?: string, coverageName?: string, note?: string) {
+  const text = `${category || ''} ${coverageName || ''} ${note || ''}`.toLowerCase()
+
+  if (text.includes('암') || text.includes('항암') || text.includes('표적') || text.includes('중입자') || text.includes('cancer')) return 'cancer'
+  if (text.includes('뇌') || text.includes('brain') || text.includes('stroke')) return 'brain'
+  if (text.includes('심장') || text.includes('심근') || text.includes('허혈') || text.includes('순환계') || text.includes('heart')) return 'heart'
+  if (text.includes('간병') || text.includes('요양') || text.includes('재가') || text.includes('nursing')) return 'nursing'
+  if (text.includes('입원') || text.includes('실손') || text.includes('의료비') || text.includes('통원') || text.includes('hospital')) return 'hospitalization'
+  if (text.includes('수술') || text.includes('surgery')) return 'surgery'
+  if (text.includes('운전자') || text.includes('교통') || text.includes('벌금') || text.includes('변호사') || text.includes('자동차부상') || text.includes('driver')) return 'driver'
+  if (text.includes('화재') || text.includes('배상') || text.includes('일상') || text.includes('fire')) return 'fire'
+  if (text.includes('사망') || text.includes('death')) return 'death'
+  if (text.includes('장해') || text.includes('후유') || text.includes('disability')) return 'disability'
+  if (text.includes('치아') || text.includes('임플란트') || text.includes('크라운') || text.includes('dental')) return 'dental'
+
+  return 'etc'
+}
+
+function formatCoverageAmount(amount?: number) {
+  const value = Number(amount) || 0
+  if (value >= 100000000) return `${Math.round(value / 100000000).toLocaleString()}억`
+  if (value >= 10000) return `${Math.round(value / 10000).toLocaleString()}만`
+  return value.toLocaleString()
 }
 
 function Info({ label, value, sub }: { label: string; value: string; sub?: string }) {

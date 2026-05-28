@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
-import { ArrowLeft, BookOpenCheck, ClipboardCheck, Search, ShieldCheck } from "lucide-react"
+import { ArrowLeft, ClipboardCheck, Search, ShieldCheck } from "lucide-react"
 
-type CategoryId = "life" | "nonLife" | "underwriting" | "talk"
+type CategoryId = "life" | "nonLife" | "pet" | "underwriting" | "talk"
 
 type ProductTopic = {
   id: string
@@ -27,6 +27,7 @@ type ProductTopic = {
 const categories: { id: CategoryId; label: string; caption: string }[] = [
   { id: "life", label: "생명보험", caption: "종신, 정기, 연금처럼 기간과 목적을 먼저 나누는 영역" },
   { id: "nonLife", label: "손해보험", caption: "실손, 건강, 운전자, 재물처럼 실제 손해와 비용을 보완하는 영역" },
+  { id: "pet", label: "펫보험", caption: "DB손보 펫블리 기준 의료비, 확장담보, 할인과 청구를 정리하는 영역" },
   { id: "underwriting", label: "고지와 심사", caption: "일반심사, 간편심사, 부담보를 상담 전에 정리하는 영역" },
   { id: "talk", label: "상담 흐름", caption: "상품 설명을 고객 상황과 질문으로 바꾸는 영역" },
 ]
@@ -80,6 +81,54 @@ const topics: ProductTopic[] = [
     keyQuestions: ["연말정산 세액공제가 우선인가요, 비과세 노후자금이 우선인가요?", "원금 안정성과 투자 수익 중 어느 쪽이 더 편하신가요?", "은퇴 후 매달 필요한 생활비는 어느 정도인가요?"],
     talkPoint: "연금은 상품명보다 세제적격, 비적격, 공시이율, 변액을 먼저 나누면 고객이 선택 기준을 잡기 쉽습니다.",
     caution: ["중도해지, 연금수령 조건, 과세 기준을 반드시 확인합니다.", "변액은 투자성과에 따라 적립금이 변동될 수 있음을 설명합니다."],
+  },
+  {
+    id: "pension-savings-account",
+    category: "life",
+    group: "연금저축 · 세액공제",
+    title: "연금저축계좌",
+    purpose: "연말정산 세액공제와 장기 노후자금 운용을 함께 보는 계좌형 상품입니다. 연금저축 600만원, IRP 포함 900만원 한도와 연 1,800만원 납입한도를 구분해 설명합니다.",
+    productTypes: [
+      { name: "연금저축", feature: "소득과 나이에 관계없이 가입 가능하고, 전 금융기관 합산 연 1,800만원까지 납입할 수 있으며 세액공제는 연 600만원 한도로 봅니다.", recommend: "유동성과 세액공제를 함께 원하는 고객", limits: ["세액공제 받은 금액과 운용수익은 연금 외 수령 시 기타소득세가 발생할 수 있습니다.", "세법과 한도는 상담 시점 기준으로 확인합니다."] },
+      { name: "개인형 IRP", feature: "소득이 있는 고객이 활용하는 퇴직연금 계좌로, 연금저축과 합산해 세액공제 한도를 최대 900만원까지 볼 수 있습니다.", recommend: "연금저축 600만원을 채운 뒤 추가 세액공제를 원하는 고객", limits: ["위험자산 투자한도 70%와 중도인출 제한을 확인합니다.", "1인 1계좌 원칙과 가입 자격을 확인합니다."] },
+      { name: "연금저축 + IRP 조합", feature: "연금저축 600만원과 IRP 300만원을 조합해 총 900만원 세액공제 한도를 활용하는 방식입니다.", recommend: "연말정산 환급 효과를 크게 보고 싶은 근로자와 사업자", limits: ["환급만 보고 무리하게 납입하지 않습니다.", "55세 이후 연금수령 목적과 유지 가능성을 먼저 확인합니다."] },
+    ],
+    fit: ["연말정산 환급이 중요한 직장인", "노후자금과 세액공제를 함께 준비하려는 사업자", "IRP까지 활용할지 고민하는 고객"],
+    keyQuestions: ["연금저축 600만원 한도와 IRP 포함 900만원 한도를 구분하고 계신가요?", "매년 12월 31일 전 납입해야 해당 연도 세액공제에 반영된다는 점을 알고 계신가요?", "중간에 돈을 꺼낼 가능성이 있다면 IRP보다 연금저축이 더 맞을 수 있다는 점을 확인해보셨나요?"],
+    talkPoint: "연금저축은 세액공제 계좌의 기본, IRP는 추가 한도와 퇴직연금 성격으로 나눠 설명하면 고객이 납입 순서를 잡기 쉽습니다.",
+    caution: ["납입한도와 세액공제한도는 전 금융기관 합산 기준입니다.", "세액공제율과 한도는 세법 변경 가능성이 있습니다.", "연금 외 수령 시 기타소득세 16.5%가 적용될 수 있습니다."],
+  },
+  {
+    id: "pension-savings-fund-transfer",
+    category: "life",
+    group: "연금저축 · 이전과 운용",
+    title: "연금저축펀드·이전·ETF/리츠",
+    purpose: "구 연금저축펀드와 신 연금저축의 차이, 계좌 이전, ETF·리츠 매매 가능 여부를 확인해 연금자산 운용 폭을 넓히는 영역입니다.",
+    productTypes: [
+      { name: "구 연금저축펀드", feature: "펀드 1종목 중심으로 운용되고 매도 시 해지로 인식될 수 있는 기존 구조입니다.", recommend: "오래된 연금저축펀드를 보유한 고객", limits: ["이전 전 기존 가입일과 수령연차 영향을 확인합니다.", "기존 상품의 해지 불이익과 수수료를 확인합니다."] },
+      { name: "신 연금저축", feature: "한 계좌에서 여러 펀드, 국내상장 ETF, 리츠를 운용할 수 있고 중도인출 유연성이 있는 구조입니다.", recommend: "운용상품을 다양화하고 싶은 고객", limits: ["레버리지·인버스 ETF 등 일부 상품은 제한될 수 있습니다.", "투자상품은 원금 손실 가능성이 있습니다."] },
+      { name: "ETF·리츠 운용", feature: "연금저축 안에서 ETF와 리츠를 매매할 수 있으며, 매체별 매매수수료와 리츠 매도 시 증권거래세를 확인해야 합니다.", recommend: "해외주식형, 국내외채권형 상품의 과세이연 효과를 활용하려는 고객", limits: ["ETF와 리츠는 예금자보호 대상이 아닙니다.", "매매수수료와 세금은 금융기관 기준으로 확인합니다."] },
+    ],
+    fit: ["기존 연금저축을 방치 중인 고객", "ETF·리츠로 연금자산을 직접 운용하고 싶은 고객", "계좌 이전으로 상품 선택지를 넓히려는 고객"],
+    keyQuestions: ["현재 연금저축이 구 계좌인지 신 계좌인지 확인해보셨나요?", "이전 신청 시 기존가입일을 살릴 수 있는지 확인하셨나요?", "ETF나 리츠를 연금계좌 안에서 운용할 때 수수료와 투자위험을 이해하고 계신가요?"],
+    talkPoint: "연금저축 이전은 해지가 아니라 계좌를 옮겨 운용 선택지를 넓히는 절차로 설명하되, 기존가입일과 수령연차를 반드시 확인해야 합니다.",
+    caution: ["이전 전후 세제상 불이익 여부를 확인합니다.", "투자상품의 손실은 고객에게 귀속됩니다.", "운용수익은 인출 시점에 과세되는 과세이연 구조입니다."],
+  },
+  {
+    id: "pension-savings-receipt-tax",
+    category: "life",
+    group: "연금저축 · 수령과 과세",
+    title: "연금수령·중도인출·과세",
+    purpose: "만 55세 이후와 가입 후 5년 경과, 연금수령한도, 연금소득세와 기타소득세, 건강보험료 오해까지 정리하는 실무 Q&A형 항목입니다.",
+    productTypes: [
+      { name: "연금수령 요건", feature: "만 55세 이후와 최초 납입일로부터 5년 경과를 동시에 충족해야 연금수령이 가능합니다.", recommend: "연금 개시 시점을 계산해야 하는 고객", limits: ["이연퇴직소득이 있는 경우 5년 경과 적용이 달라질 수 있습니다.", "최초 납입일을 반드시 확인합니다."] },
+      { name: "수령한도와 세율", feature: "연금수령한도 내 수령은 연금소득세, 한도 초과나 연금 외 수령은 기타소득세가 적용될 수 있습니다.", recommend: "한 번에 많이 인출하려는 고객", limits: ["연금 외 수령 기타소득세 16.5% 가능성을 설명합니다.", "연 1,200만원 초과 시 분리과세와 종합과세 선택 기준을 확인합니다."] },
+      { name: "중도인출과 건보료", feature: "당해연도 납입금 등 과세 제외 재원과 세액공제 받은 금액·운용수익을 구분하고, 사적연금은 건강보험료 부과 대상 공적연금소득과 다릅니다.", recommend: "중도인출이나 피부양자 자격을 걱정하는 고객", limits: ["공제확인서 발급이 필요한 경우가 있습니다.", "건강보험료 기준은 제도 변경 가능성이 있어 최신 기준 확인이 필요합니다."] },
+    ],
+    fit: ["연금 개시 시점이 궁금한 고객", "중도인출 세금이 걱정되는 고객", "연금 수령 후 건강보험료 상승을 걱정하는 고객"],
+    keyQuestions: ["최초 납입일과 만 55세 도달 시점을 함께 계산해보셨나요?", "한도 안에서 연금으로 받을지, 한 번에 인출할지 정해보셨나요?", "세액공제를 받지 않은 납입금이 있다면 공제확인서를 준비할 수 있으신가요?"],
+    talkPoint: "연금저축은 받을 때가 더 중요합니다. 55세, 5년, 수령한도, 세액공제 여부를 순서대로 확인하면 세금 실수를 줄일 수 있습니다.",
+    caution: ["과세기준과 과세방법은 향후 세법 개정에 따라 달라질 수 있습니다.", "세액공제 받은 납입원금과 운용수익은 연금 외 수령 시 기타소득세 대상이 될 수 있습니다.", "본 내용은 상담용 정리이며 실제 처리는 금융기관과 세무 기준을 확인합니다."],
   },
   {
     id: "medical",
@@ -207,19 +256,51 @@ const topics: ProductTopic[] = [
   },
   {
     id: "pet",
-    category: "nonLife",
-    group: "건강보험 · 반려동물",
-    title: "반려동물보험",
-    purpose: "반려견·반려묘의 질병이나 상해로 발생한 동물병원 치료비를 보장비율과 자기부담금 구조로 보완하는 상품입니다.",
+    category: "pet",
+    group: "DB손보 펫블리 · 기본 구조",
+    title: "펫블리 반려견보험",
+    purpose: "반려견의 질병·상해 치료비를 자기부담금과 보장비율 구조로 보완하고, 확장 담보와 할인제도, 모바일 청구 흐름까지 함께 확인하는 상품입니다.",
     productTypes: [
-      { name: "입원·통원 의료비", feature: "동물병원 입원과 통원 치료비를 자기부담금 차감 후 보장비율만큼 보완합니다.", recommend: "병원 이용이 잦거나 의료비 부담을 줄이고 싶은 반려가구", limits: ["일일 한도와 연간 한도를 확인해야 합니다.", "기존 질병과 면책기간 제한이 있을 수 있습니다."] },
-      { name: "수술비 확대형", feature: "고액 수술비를 별도 한도 또는 확대 한도로 보완하는 구조입니다.", recommend: "슬개골, 종양, 치과 수술 등 고액 수술이 걱정되는 고객", limits: ["수술 횟수 제한과 질환별 보장 여부를 확인합니다.", "선천성·유전성 질환은 제한될 수 있습니다."] },
-      { name: "배상책임 특약", feature: "반려동물이 타인에게 상해나 재물 손해를 입힌 경우 배상책임을 보완합니다.", recommend: "산책, 외출, 다견가정 등 사고 가능성이 있는 고객", limits: ["자기부담금과 보상 한도를 확인합니다.", "맹견, 관리 소홀 등 제한 조건을 확인합니다."] },
+      { name: "반려동물 의료비", feature: "동물병원 입원·통원·수술 치료비를 자기부담금 차감 후 선택한 보장비율 안에서 보완합니다.", recommend: "반려견 병원비 부담과 갱신형 의료비 보장을 함께 보고 싶은 보호자", limits: ["1일·연간 한도와 보장비율을 확인해야 합니다.", "기존 질병, 면책기간, 감액 조건이 적용될 수 있습니다."] },
+      { name: "확장 의료 담보", feature: "슬관절·고관절 탈구, 특정피부약물치료, 치과·구강질환, MRI/CT/내시경처럼 별도 확인이 필요한 항목을 보완합니다.", recommend: "슬개골, 피부, 구강, 정밀검사 비용이 걱정되는 반려견 보호자", limits: ["특약별 가입 가능 나이와 품종, 보장 개시일을 확인합니다.", "선천성·유전성 질환이나 예방 목적 처치는 제한될 수 있습니다."] },
+      { name: "생활 보완 담보", feature: "장례지원비, 위탁비용, 개물림 사고 관련 보장처럼 치료 이후의 비용과 배상·관리 비용을 보완합니다.", recommend: "산책, 외출, 다견 가정, 돌봄 공백까지 함께 대비하려는 고객", limits: ["배상책임과 비용 담보의 지급 원인이 다릅니다.", "맹견, 관리 소홀, 고의 사고 등 제한 조건을 확인합니다."] },
     ],
-    fit: ["반려동물 병원비 부담이 걱정되는 고객", "노령 반려동물을 키우는 고객", "수술비와 배상책임까지 함께 보고 싶은 고객"],
-    keyQuestions: ["보장비율과 자기부담금에 따라 실제 받는 보험금이 달라진다는 점을 알고 계신가요?", "입원, 통원, 수술 한도와 갱신 주기를 확인해보셨나요?", "슬개골, 피부, 구강질환처럼 자주 문제되는 항목이 보장되는지 보셨나요?"],
-    talkPoint: "펫보험은 병원비 전액을 대신 내주는 구조가 아니라, 자기부담금을 뺀 뒤 선택한 보장비율만큼 보완하는 구조라고 설명합니다.",
-    caution: ["나이, 품종, 기존 질병, 면책기간, 갱신 보험료를 확인합니다.", "미용, 예방, 중성화, 선천성 질환 등 보장 제외 가능 항목을 구분합니다."],
+    fit: ["반려견 병원비 부담이 걱정되는 고객", "슬개골·피부·구강질환처럼 자주 언급되는 질환이 걱정되는 고객", "할인제도와 청구 편의까지 함께 보고 싶은 고객"],
+    keyQuestions: ["보장비율과 자기부담금에 따라 실제 받는 보험금이 달라진다는 점을 알고 계신가요?", "입원, 통원, 수술 한도와 갱신 주기를 확인해보셨나요?", "슬개골, 피부, 구강질환, MRI/CT 검사처럼 자주 문제되는 항목이 보장되는지 보셨나요?"],
+    talkPoint: "펫블리는 병원비 전액을 대신 내주는 구조가 아니라, 자기부담금을 뺀 뒤 선택한 보장비율만큼 의료비 부담을 낮추고 필요한 특약을 더하는 구조라고 설명합니다.",
+    caution: ["나이, 품종, 기존 질병, 면책기간, 갱신 보험료를 확인합니다.", "미용, 예방, 중성화, 선천성 질환 등 보장 제외 가능 항목을 구분합니다.", "자료는 교육용 길라잡이 기준이므로 실제 가입 전 상품설명서와 약관을 확인합니다."],
+  },
+  {
+    id: "petblie-special",
+    category: "pet",
+    group: "DB손보 펫블리 · 확장 담보",
+    title: "펫블리 확장 보장",
+    purpose: "기본 의료비 외에 슬관절·고관절, 특정피부약물치료, 치과·구강질환, MRI/CT/내시경 등 실제 상담에서 질문이 많은 담보를 분리해 확인합니다.",
+    productTypes: [
+      { name: "슬관절·고관절 탈구", feature: "소형견에서 상담 빈도가 높은 슬개골과 고관절 관련 치료비를 별도 관점으로 점검합니다.", recommend: "토이푸들, 포메라니안 등 관절 질환 걱정이 큰 보호자", limits: ["가입 전 증상이나 진단 이력은 제한될 수 있습니다.", "수술·검사·재활 비용의 인정 범위를 확인합니다."] },
+      { name: "피부·구강질환", feature: "반복 피부약물치료와 치과·구강질환 치료처럼 자주 발생하는 비용을 확인합니다.", recommend: "피부, 귀, 치아 문제로 동물병원을 자주 이용하는 보호자", limits: ["예방 목적 치석관리와 치료 목적 처치를 구분합니다.", "동일 질환 반복 치료 한도를 확인합니다."] },
+      { name: "MRI/CT/내시경", feature: "정밀검사와 내시경처럼 한 번에 비용 부담이 커질 수 있는 검사 영역을 점검합니다.", recommend: "원인 확인을 위한 고액 검사 가능성을 걱정하는 보호자", limits: ["검사 목적과 의학적 필요성이 중요합니다.", "검사비 단독 보장 여부와 치료 연계 조건을 확인합니다."] },
+    ],
+    fit: ["기본 의료비만으로 부족하다고 느끼는 고객", "품종별 취약 질환을 알고 있는 보호자", "실제 청구 사례 중심 설명이 필요한 고객"],
+    keyQuestions: ["품종 특성상 슬개골이나 고관절 이야기를 들어보신 적 있으신가요?", "피부약, 귀 치료, 치아 치료처럼 반복되는 진료가 있었나요?", "정밀검사가 필요할 때 한 번에 큰 비용이 나올 수 있다는 점을 생각해보셨나요?"],
+    talkPoint: "확장 담보는 많이 아픈 부위와 고액 검사를 따로 챙기는 영역입니다. 기본 의료비와 별도로 약관상 포함 여부를 확인해야 합니다.",
+    caution: ["특약별 면책기간, 감액기간, 가입 가능 나이를 확인합니다.", "기존 질환과 선천성·유전성 질환 제한 가능성을 먼저 설명합니다."],
+  },
+  {
+    id: "petblie-discount-claim",
+    category: "pet",
+    group: "DB손보 펫블리 · 할인과 청구",
+    title: "할인제도와 펫보험 청구 서비스",
+    purpose: "예방접종, 유기동물 입양, 반려동물 등록, 다둥이 할인 같은 보험료 절감 포인트와 모바일 청구 흐름을 함께 안내합니다.",
+    productTypes: [
+      { name: "예방접종 할인", feature: "예방접종 기록을 통해 할인 가능 여부를 확인하는 구조입니다.", recommend: "예방접종 기록을 잘 보관한 보호자", limits: ["인정 서류와 할인 조건은 가입 시점 기준으로 확인합니다.", "할인 중복 가능 여부를 확인합니다."] },
+      { name: "입양·등록·다둥이 할인", feature: "유기동물 입양, 반려동물 등록, 다견·다묘 가정 여부에 따라 할인 가능성을 점검합니다.", recommend: "등록번호가 있거나 여러 반려동물을 키우는 고객", limits: ["증빙서류와 적용 대상 반려동물을 확인합니다.", "할인율은 회사 기준 변경 가능성이 있습니다."] },
+      { name: "펫보험 청구 서비스", feature: "진료 후 영수증과 진료내역 등 필요서류를 준비해 모바일로 청구하는 흐름을 안내합니다.", recommend: "청구 절차가 번거로워 보험 가입을 망설이는 보호자", limits: ["병원, 서류, 보상 심사 기준에 따라 추가 확인이 필요할 수 있습니다.", "청구 가능 항목과 보장 제외 항목을 구분합니다."] },
+    ],
+    fit: ["보험료 부담을 낮추고 싶은 고객", "반려동물 등록과 예방접종 기록이 있는 고객", "간편한 청구 경험을 중요하게 보는 고객"],
+    keyQuestions: ["반려동물 등록은 이미 해두셨나요?", "예방접종 기록이나 입양 관련 서류를 가지고 계신가요?", "보험금 청구를 앱이나 모바일로 처리하는 방식이 편하신가요?"],
+    talkPoint: "펫보험 상담은 가입 조건에서 끝내지 말고 할인 가능 항목과 실제 청구 방법까지 이어주면 고객이 사용 장면을 떠올리기 쉽습니다.",
+    caution: ["할인 조건, 필요서류, 청구 가능 병원과 서류 기준은 실제 가입·청구 시점에 다시 확인합니다.", "할인만 강조하지 말고 보장 한도와 자기부담금 구조를 함께 설명합니다."],
   },
   {
     id: "accident",
@@ -444,7 +525,7 @@ export default function ProductAllPage() {
                         isOpen ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      <span className={`h-8 w-8 rounded-lg ${category.id === "life" ? "bg-blue-600/35" : category.id === "nonLife" ? "bg-rose-600/35" : category.id === "underwriting" ? "bg-amber-500/30" : "bg-emerald-500/30"}`} />
+                      <span className={`h-8 w-8 rounded-lg ${category.id === "life" ? "bg-blue-600/35" : category.id === "nonLife" ? "bg-rose-600/35" : category.id === "pet" ? "bg-emerald-500/35" : category.id === "underwriting" ? "bg-amber-500/30" : "bg-sky-500/30"}`} />
                       <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-black">{category.label}의 모든 것</span>
                         <span className="mt-1 block text-[11px] font-bold leading-4 text-slate-500">{category.caption}</span>
@@ -539,42 +620,6 @@ export default function ProductAllPage() {
         </section>
       </div>
     </main>
-  )
-}
-
-function ProductTypeGrid({ productTypes }: { productTypes: NonNullable<ProductTopic["productTypes"]> }) {
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5">
-      <div className="mb-4 flex items-center gap-2 text-[15px] font-black text-[#14386f]">
-        <BookOpenCheck size={19} />
-        상품 유형별 특장점
-      </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {productTypes.map((product) => (
-          <div key={product.name} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="text-[17px] font-black text-slate-900">{product.name}</h3>
-              <span className="shrink-0 rounded-full bg-[#14386f] px-3 py-1 text-[11px] font-black text-white">상품구조</span>
-            </div>
-            <p className="mt-3 text-[14px] font-bold leading-6 text-slate-700">{product.feature}</p>
-            <div className="mt-4 rounded-lg bg-white p-3">
-              <p className="text-[12px] font-black text-[#2563eb]">권유 포인트</p>
-              <p className="mt-1 text-[13px] font-bold leading-6 text-slate-700">{product.recommend}</p>
-            </div>
-            <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 p-3">
-              <p className="text-[12px] font-black text-amber-700">면책 · 감액 · 확인사항</p>
-              <ul className="mt-2 space-y-1">
-                {product.limits.map((limit) => (
-                  <li key={limit} className="text-[13px] font-bold leading-6 text-slate-700">
-                    {limit}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
   )
 }
 

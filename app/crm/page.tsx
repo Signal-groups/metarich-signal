@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
-import { fetchUploadAnalyses, mergeAnalysisItems } from '../../lib/crmAnalysisPersistence'
 
 const UPLOAD_STORAGE_KEY = 'signal-crm-upload-files'
 
@@ -99,19 +98,19 @@ export default function CrmDashboard() {
 
       setNotifications(notifs || [])
 
-      const remoteItems = await fetchUploadAnalyses(supabase, session.user.id)
-      try {
-        const saved = window.localStorage.getItem(UPLOAD_STORAGE_KEY)
-        const localItems = saved ? JSON.parse(saved) : []
-        setUploadItems(mergeAnalysisItems(remoteItems, Array.isArray(localItems) ? localItems : []))
-      } catch {
-        setUploadItems(remoteItems)
-      }
-
       setLoading(false)
     }
 
     load()
+  }, [])
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(UPLOAD_STORAGE_KEY)
+      setUploadItems(saved ? JSON.parse(saved) : [])
+    } catch {
+      setUploadItems([])
+    }
   }, [])
 
   const stats = useMemo(() => {

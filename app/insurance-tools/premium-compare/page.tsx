@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { RotateCcw, TrendingDown, Info, Zap } from "lucide-react"
 
 // ─── 타입 정의 ─────────────────────────────────────────────
@@ -55,15 +55,15 @@ type Coverage = {
 
 // ─── 담보 × 회사 경쟁력 계수 (1.0 = 시장평균, 0.87 = 13% 저렴) ───
 const coverageCompanyFactors: Record<string, Record<string, number>> = {
-  cancer:          { sl: 1.06, hl: 1.03, kyobo: 1.08, shinhan: 1.04, kbLife: 1.07, sf: 0.99, hyundai: 0.91, db: 0.95, kb: 0.93, meritz: 0.90, hanwhaFire: 1.02, heungkukFire: 1.04 },
-  similar:         { sl: 1.06, hl: 1.04, kyobo: 1.07, shinhan: 1.02, kbLife: 1.05, sf: 0.95, hyundai: 0.93, db: 0.90, kb: 0.89, meritz: 0.96, hanwhaFire: 1.00, heungkukFire: 0.92 },
-  brain:           { sl: 1.06, hl: 1.04, kyobo: 1.08, shinhan: 1.06, kbLife: 1.07, sf: 0.95, hyundai: 0.91, db: 0.86, kb: 0.93, meritz: 0.94, hanwhaFire: 0.99, heungkukFire: 1.01 },
-  heart:           { sl: 1.05, hl: 1.06, kyobo: 1.09, shinhan: 1.07, kbLife: 1.08, sf: 0.96, hyundai: 0.92, db: 0.84, kb: 0.93, meritz: 0.95, hanwhaFire: 1.01, heungkukFire: 0.99 },
-  surgery:         { sl: 1.05, hl: 1.05, kyobo: 1.06, shinhan: 1.05, kbLife: 1.06, sf: 0.92, hyundai: 0.88, db: 0.95, kb: 0.90, meritz: 0.98, hanwhaFire: 0.96, heungkukFire: 1.00 },
-  nSurgery:        { sl: 1.04, hl: 1.04, kyobo: 1.06, shinhan: 1.04, kbLife: 1.05, sf: 0.86, hyundai: 0.90, db: 0.94, kb: 0.92, meritz: 0.97, hanwhaFire: 1.00, heungkukFire: 0.91 },
-  cancerTreatment: { sl: 1.05, hl: 1.05, kyobo: 1.08, shinhan: 1.06, kbLife: 1.07, sf: 0.97, hyundai: 0.91, db: 0.92, kb: 0.90, meritz: 0.88, hanwhaFire: 1.01, heungkukFire: 0.98 },
-  circulatory:     { sl: 1.05, hl: 1.06, kyobo: 1.08, shinhan: 1.05, kbLife: 1.07, sf: 0.94, hyundai: 0.91, db: 0.86, kb: 0.92, meritz: 0.90, hanwhaFire: 1.00, heungkukFire: 0.98 },
-  care:            { sl: 0.94, hl: 0.95, kyobo: 0.93, shinhan: 0.87, kbLife: 0.89, sf: 1.03, hyundai: 1.05, db: 1.07, kb: 1.02, meritz: 1.08, hanwhaFire: 1.09, heungkukFire: 1.10 },
+  cancer:          { sl: 1.08, hl: 1.04, kyobo: 1.12, shinhan: 1.06, kbLife: 1.10, sf: 0.98, hyundai: 0.90, db: 0.92, kb: 0.94, meritz: 0.87, hanwhaFire: 1.02, heungkukFire: 1.05 },
+  similar:         { sl: 1.07, hl: 1.05, kyobo: 1.11, shinhan: 1.04, kbLife: 1.09, sf: 0.96, hyundai: 0.91, db: 0.89, kb: 0.93, meritz: 0.86, hanwhaFire: 1.01, heungkukFire: 1.00 },
+  brain:           { sl: 1.07, hl: 1.05, kyobo: 1.12, shinhan: 1.08, kbLife: 1.10, sf: 0.96, hyundai: 0.91, db: 0.88, kb: 0.93, meritz: 0.90, hanwhaFire: 1.00, heungkukFire: 1.03 },
+  heart:           { sl: 1.06, hl: 1.07, kyobo: 1.13, shinhan: 1.09, kbLife: 1.11, sf: 0.97, hyundai: 0.92, db: 0.86, kb: 0.94, meritz: 0.89, hanwhaFire: 1.03, heungkukFire: 1.01 },
+  surgery:         { sl: 1.05, hl: 1.06, kyobo: 1.09, shinhan: 1.07, kbLife: 1.08, sf: 0.93, hyundai: 0.89, db: 0.95, kb: 0.91, meritz: 0.97, hanwhaFire: 0.99, heungkukFire: 1.02 },
+  nSurgery:        { sl: 1.04, hl: 1.05, kyobo: 1.08, shinhan: 1.06, kbLife: 1.07, sf: 0.88, hyundai: 0.90, db: 0.94, kb: 0.92, meritz: 0.96, hanwhaFire: 1.01, heungkukFire: 0.99 },
+  cancerTreatment: { sl: 1.05, hl: 1.06, kyobo: 1.10, shinhan: 1.07, kbLife: 1.08, sf: 0.96, hyundai: 0.90, db: 0.91, kb: 0.93, meritz: 0.88, hanwhaFire: 1.02, heungkukFire: 1.00 },
+  circulatory:     { sl: 1.05, hl: 1.07, kyobo: 1.10, shinhan: 1.06, kbLife: 1.08, sf: 0.95, hyundai: 0.91, db: 0.87, kb: 0.93, meritz: 0.89, hanwhaFire: 1.01, heungkukFire: 0.99 },
+  care:            { sl: 0.92, hl: 0.94, kyobo: 0.96, shinhan: 0.88, kbLife: 0.90, sf: 1.03, hyundai: 1.05, db: 1.07, kb: 1.02, meritz: 1.08, hanwhaFire: 1.09, heungkukFire: 1.11 },
   whole:           { sl: 0.88, hl: 0.92, kyobo: 0.90, shinhan: 0.94, kbLife: 0.95, sf: 1.10, hyundai: 1.12, db: 1.14, kb: 1.11, meritz: 1.15, hanwhaFire: 1.13, heungkukFire: 1.09 },
   term:            { sl: 0.91, hl: 0.92, kyobo: 0.93, shinhan: 0.88, kbLife: 0.90, sf: 1.08, hyundai: 1.10, db: 1.13, kb: 1.11, meritz: 1.14, hanwhaFire: 1.12, heungkukFire: 1.09 },
   diseaseDeath:    { sl: 0.89, hl: 0.91, kyobo: 0.92, shinhan: 0.93, kbLife: 0.94, sf: 1.07, hyundai: 1.09, db: 1.12, kb: 1.10, meritz: 1.13, hanwhaFire: 1.11, heungkukFire: 1.08 },
@@ -103,55 +103,18 @@ const coverageGenderFactors: Record<string, Record<string, number>> = {
 
 // ─── 회사별 간편고지 할증 계수 ────────────────────────────
 const companyDisclosureFactors: Record<string, Record<Disclosure, number>> = {
-  meritz:       { standard: 1.0, "325": 1.18, "335": 1.33, "355": 1.48 },
+  meritz:       { standard: 1.0, "325": 1.12, "335": 1.20, "355": 1.30 },
   kb:           { standard: 1.0, "325": 1.13, "335": 1.22, "355": 1.32 },
-  hyundai:      { standard: 1.0, "325": 1.13, "335": 1.21, "355": 1.31 },
+  hyundai:      { standard: 1.0, "325": 1.15, "335": 1.24, "355": 1.34 },
   db:           { standard: 1.0, "325": 1.16, "335": 1.25, "355": 1.35 },
-  sf:           { standard: 1.0, "325": 1.12, "335": 1.20, "355": 1.30 },
-  hanwhaFire:   { standard: 1.0, "325": 1.14, "335": 1.23, "355": 1.34 },
-  heungkukFire: { standard: 1.0, "325": 1.11, "335": 1.19, "355": 1.29 },
-  sl:           { standard: 1.0, "325": 1.19, "335": 1.30, "355": 1.42 },
-  kyobo:        { standard: 1.0, "325": 1.16, "335": 1.25, "355": 1.35 },
-  hl:           { standard: 1.0, "325": 1.18, "335": 1.28, "355": 1.39 },
-  shinhan:      { standard: 1.0, "325": 1.10, "335": 1.18, "355": 1.27 },
-  kbLife:       { standard: 1.0, "325": 1.12, "335": 1.20, "355": 1.29 },
-}
-
-// ─── 간편고지별 담보·회사 보정: 고지 유형에 따라 유리한 회사가 달라지도록 반영 ───
-const disclosureCoverageCompanyFactors: Partial<Record<Disclosure, Record<string, Partial<Record<string, number>>>>> = {
-  "325": {
-    cancer: { hyundai: 0.97, kb: 0.98, meritz: 1.04 },
-    similar: { kb: 0.96, heungkukFire: 0.97, meritz: 1.05 },
-    brain: { db: 0.97, kb: 0.99, meritz: 1.03 },
-    heart: { db: 0.96, heungkukFire: 0.98, meritz: 1.03 },
-    surgery: { hyundai: 0.97, sf: 0.98, meritz: 1.02 },
-    nSurgery: { sf: 0.96, heungkukFire: 0.97, meritz: 1.03 },
-    cancerTreatment: { kb: 0.97, heungkukFire: 0.98, meritz: 1.03 },
-    circulatory: { db: 0.96, heungkukFire: 0.98, meritz: 1.02 },
-    care: { shinhan: 0.96, kbLife: 0.98, kyobo: 0.99 },
-  },
-  "335": {
-    cancer: { hyundai: 0.98, kb: 0.90, meritz: 1.08 },
-    similar: { kb: 0.94, heungkukFire: 0.95, meritz: 1.10 },
-    brain: { db: 0.95, hanwhaFire: 0.98, meritz: 1.07 },
-    heart: { db: 0.94, heungkukFire: 0.96, meritz: 1.08 },
-    surgery: { hyundai: 0.99, sf: 0.88, hanwhaFire: 0.97, meritz: 1.05 },
-    nSurgery: { sf: 0.94, heungkukFire: 0.95, meritz: 1.07 },
-    cancerTreatment: { kb: 0.97, heungkukFire: 0.88, meritz: 1.06 },
-    circulatory: { db: 0.94, kb: 0.98, meritz: 1.06 },
-    care: { shinhan: 0.94, kbLife: 0.96, kyobo: 0.98 },
-  },
-  "355": {
-    cancer: { hyundai: 0.98, kb: 0.88, meritz: 1.12 },
-    similar: { kb: 0.96, heungkukFire: 0.89, meritz: 1.14 },
-    brain: { db: 0.93, hanwhaFire: 0.96, meritz: 1.11 },
-    heart: { db: 0.92, heungkukFire: 0.94, meritz: 1.12 },
-    surgery: { hyundai: 1.02, sf: 0.96, hanwhaFire: 0.70, meritz: 1.08 },
-    nSurgery: { sf: 0.96, heungkukFire: 0.83, meritz: 1.10 },
-    cancerTreatment: { hyundai: 0.86, kb: 0.98, heungkukFire: 0.94, meritz: 1.10 },
-    circulatory: { db: 0.92, kb: 0.96, meritz: 1.09 },
-    care: { shinhan: 0.92, kbLife: 0.94, kyobo: 0.96 },
-  },
+  sf:           { standard: 1.0, "325": 1.18, "335": 1.27, "355": 1.37 },
+  hanwhaFire:   { standard: 1.0, "325": 1.17, "335": 1.26, "355": 1.36 },
+  heungkukFire: { standard: 1.0, "325": 1.19, "335": 1.28, "355": 1.38 },
+  sl:           { standard: 1.0, "325": 1.21, "335": 1.32, "355": 1.44 },
+  kyobo:        { standard: 1.0, "325": 1.23, "335": 1.34, "355": 1.46 },
+  hl:           { standard: 1.0, "325": 1.20, "335": 1.30, "355": 1.42 },
+  shinhan:      { standard: 1.0, "325": 1.16, "335": 1.26, "355": 1.37 },
+  kbLife:       { standard: 1.0, "325": 1.17, "335": 1.27, "355": 1.38 },
 }
 
 // ─── 회사 데이터 ──────────────────────────────────────────
@@ -324,10 +287,9 @@ function premiumFor(company: Company, coverage: Coverage, plan: PlanId, age: num
   const genderFactor = coverageGenderFactors[coverage.id]?.[gender] ?? 1.0
   const disclosureFactor = companyDisclosureFactors[company.id]?.[disclosure] ?? 1.0
   const covCompFactor = coverageCompanyFactors[coverage.id]?.[company.id] ?? 1.0
-  const disclosureCoverageFactor = disclosureCoverageCompanyFactors[disclosure]?.[coverage.id]?.[company.id] ?? 1.0
   const productFactor = productScenarioFactors[productScenario]?.[coverage.id] ?? 1.0
 
-  return Math.round(amount * coverage.baseRate * ageFactor * genderFactor * disclosureFactor * covCompFactor * disclosureCoverageFactor * productFactor)
+  return Math.round(amount * coverage.baseRate * ageFactor * genderFactor * disclosureFactor * covCompFactor * productFactor)
 }
 
 function refundRateFor(company: Company, year: number, payYears: number) {
@@ -397,18 +359,18 @@ export default function PremiumComparePage() {
   }), [age, gender, disclosure, productScenario, companyFilter, plan, payYears, delayYears, monthlySaving])
 
   const handleReset = () => {
-    setAge(DEFAULT_CONDITIONS.age); setGender(DEFAULT_CONDITIONS.gender); setDisclosure(DEFAULT_CONDITIONS.disclosure)
-    setProductScenario(DEFAULT_CONDITIONS.productScenario)
-    setPlan(DEFAULT_CONDITIONS.plan); setDelayYears(DEFAULT_CONDITIONS.delayYears); setPayYears(DEFAULT_CONDITIONS.payYears)
-    setCompanyFilter(DEFAULT_CONDITIONS.companyFilter); setMonthlySaving(DEFAULT_CONDITIONS.monthlySaving)
+    setAge(41); setGender("남성"); setDisclosure("standard")
+    setProductScenario("general")
+    setPlan("standard"); setDelayYears(1); setPayYears(20)
+    setCompanyFilter("전체"); setMonthlySaving(300000)
     setCoverageAmounts({})
   }
 
   const coverages = mainTab === "death" ? deathCoverages : healthCoverages
-  const amountFor = useCallback((coverage: Coverage) => coverageAmounts[coverage.id] ?? coverage.amount[applied.plan], [applied.plan, coverageAmounts])
+  const amountFor = (coverage: Coverage) => coverageAmounts[coverage.id] ?? coverage.amount[applied.plan]
   const visibleCompanies = useMemo(
     () => companies.filter((c) => applied.companyFilter === "전체" || c.type === applied.companyFilter),
-    [applied.companyFilter]
+    [applied]
   )
 
   const rows = useMemo(() => {
@@ -422,7 +384,7 @@ export default function PremiumComparePage() {
       const sorted = [...premiums].sort((a, b) => a.premium - b.premium)
       return { coverage, amount, premiums, best: sorted[0], worst: sorted[sorted.length - 1], sorted }
     })
-  }, [amountFor, applied, coverages, visibleCompanies])
+  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
 
   const companyResults = useMemo(() => {
     return visibleCompanies.map((company) => {
@@ -430,7 +392,7 @@ export default function PremiumComparePage() {
       const later = coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, applied.age, applied.gender, applied.disclosure, applied.delayYears, amountFor(cov), applied.productScenario), 0)
       return { company, total, later }
     }).sort((a, b) => a.total - b.total)
-  }, [amountFor, applied, coverages, visibleCompanies])
+  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
 
   const crossTotal = rows.reduce((sum, row) => sum + row.best.premium, 0)
   const crossLater = rows.reduce((sum, row) => sum + row.best.later, 0)
@@ -449,7 +411,7 @@ export default function PremiumComparePage() {
       })
       return { age: targetAge, values }
     })
-  }, [amountFor, applied, coverages, visibleCompanies])
+  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
 
   const savingResults = useMemo(() => {
     return companies.map((company) => {
@@ -566,7 +528,7 @@ export default function PremiumComparePage() {
 
         {/* 안내 문구 */}
         <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] font-bold leading-6 text-amber-900">
-          이 화면의 보험료는 회사별 요율 경향과 실무 경험을 바탕으로 한 <strong>방향성 안내용 예시</strong>입니다. 실제 보험료는 보험사 산출일·직업·심사 결과·약관 개정에 따라 달라집니다. &quot;어느 회사가 무조건 좋다&quot;가 아니라 &quot;조건에 따라 유리한 회사와 설계 방향이 달라진다&quot;는 점을 설명하기 위한 상담 보조 도구입니다.
+          이 화면의 보험료는 회사별 요율 경향과 실무 경험을 바탕으로 한 <strong>방향성 안내용 예시</strong>입니다. 실제 보험료는 보험사 산출일·직업·심사 결과·약관 개정에 따라 달라집니다. "어느 회사가 무조건 좋다"가 아니라 "조건에 따라 유리한 회사와 설계 방향이 달라진다"는 점을 설명하기 위한 상담 보조 도구입니다.
         </section>
       </div>
     </main>
