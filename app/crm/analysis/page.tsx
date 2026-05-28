@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../../lib/supabase'
 import type { jsPDF as JsPDFType } from 'jspdf'
+import { fetchUploadAnalyses, mergeAnalysisItems } from '../../../lib/crmAnalysisPersistence'
 
 const UPLOAD_STORAGE_KEY = 'signal-crm-upload-files'
 const TARGET_STORAGE_KEY = 'signal-crm-coverage-targets'
@@ -66,6 +67,7 @@ type UploadItem = {
   customerName?: string
   analysisResult?: string
   structuredAnalysis?: any
+  remoteAnalysisId?: string
 }
 
 type CoverageRow = {
@@ -116,6 +118,7 @@ export default function AnalysisPage() {
   const [currentUserId, setCurrentUserId] = useState('')
   const [selectedCustomerId, setSelectedCustomerId] = useState('')
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
+  const [remoteAnalysisItems, setRemoteAnalysisItems] = useState<UploadItem[]>([])
   const [dbPolicies, setDbPolicies] = useState<any[]>([])
   const [dbCoverages, setDbCoverages] = useState<any[]>([])
   const [openAnalysis, setOpenAnalysis] = useState<Record<string, boolean>>({})
@@ -182,30 +185,35 @@ export default function AnalysisPage() {
   useEffect(() => {
     const loadCustomerDetails = async () => {
       if (!selectedCustomerId) {
+        setRemoteAnalysisItems([])
         setDbPolicies([])
         setDbCoverages([])
         return
       }
       if (!customers.some((customer) => customer.id === selectedCustomerId)) {
+        setRemoteAnalysisItems([])
         setDbPolicies([])
         setDbCoverages([])
         return
       }
-      const [policyRes, coverageRes] = await Promise.all([
+      const [policyRes, coverageRes, remoteItems] = await Promise.all([
         supabase.from('policies').select('*').eq('customer_id', selectedCustomerId).order('start_date', { ascending: false }),
         supabase.from('coverages').select('*').eq('customer_id', selectedCustomerId),
+        fetchUploadAnalyses(supabase, currentUserId, selectedCustomerId) as Promise<UploadItem[]>,
       ])
+      setRemoteAnalysisItems(remoteItems || [])
       setDbPolicies(policyRes.data || [])
       setDbCoverages(coverageRes.data || [])
     }
     loadCustomerDetails()
-  }, [customers, selectedCustomerId])
+  }, [currentUserId, customers, selectedCustomerId])
 
   const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId)
+  const analysisItems = useMemo(() => mergeAnalysisItems(remoteAnalysisItems, uploadItems), [remoteAnalysisItems, uploadItems])
 
   const customerAnalyses = useMemo(() => {
     if (!selectedCustomer) return []
-    return uploadItems
+    return analysisItems
       .filter((item) => item.ownerId === currentUserId || (!item.ownerId && item.customerId && customers.some((customer) => customer.id === item.customerId)))
       .filter((item) => item.category === '보장분석' || item.structuredAnalysis)
       .filter((item) => {
@@ -214,7 +222,7 @@ export default function AnalysisPage() {
         return false
       })
       .map((item) => ({ ...item, normalized: normalizeAnalysis(item.structuredAnalysis, item.name) }))
-  }, [currentUserId, customers, selectedCustomer, uploadItems])
+  }, [analysisItems, currentUserId, customers, selectedCustomer])
 
   const dbPolicyGroups = useMemo<PolicyGroup[]>(() => {
     const byPolicy: Record<string, PolicyGroup> = {}
@@ -275,7 +283,7 @@ export default function AnalysisPage() {
 
   const updateAnalysisContract = (itemId: string | undefined, index: number | undefined, group: PolicyGroup) => {
     if (!itemId && typeof index !== 'number') return
-    const next = uploadItems.map((item) => {
+    const next = analysisItems.map((item) => {
       if (item.id !== itemId) return item
       const source = item.structuredAnalysis || {}
       const contracts = firstArray(source.contracts, source.policies).slice()
@@ -285,20 +293,22 @@ export default function AnalysisPage() {
       else contracts[targetIndex] = { ...contracts[targetIndex], ...payload }
       return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
     })
-    saveUploadItems(next)
+    setRemoteAnalysisItems(next.filter((item) => item.remoteAnalysisId))
+    saveUploadItems(next.filter((item) => !item.remoteAnalysisId))
     setEditingContract(null)
   }
 
   const deleteAnalysisContract = (itemId?: string, index?: number) => {
     if (!itemId || typeof index !== 'number') return
     if (!confirm('해당 계약을 삭제할까요?')) return
-    const next = uploadItems.map((item) => {
+    const next = analysisItems.map((item) => {
       if (item.id !== itemId) return item
       const source = item.structuredAnalysis || {}
       const contracts = firstArray(source.contracts, source.policies).filter((_: any, contractIndex: number) => contractIndex !== index)
       return { ...item, structuredAnalysis: { ...source, contracts, policies: undefined } }
     })
-    saveUploadItems(next)
+    setRemoteAnalysisItems(next.filter((item) => item.remoteAnalysisId))
+    saveUploadItems(next.filter((item) => !item.remoteAnalysisId))
     setSelectedGroup(null)
   }
 

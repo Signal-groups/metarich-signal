@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../../../lib/supabase'
 import { blobToDataUrl, deleteLocalFile, getLocalFile, saveLocalFile } from '../../../lib/crmLocalFiles'
+import { fetchUploadAnalyses, mergeAnalysisItems, saveGptsAnalysisToSupabase } from '../../../lib/crmAnalysisPersistence'
 
 const CATEGORIES = ['전체', '보장분석', '암', '뇌', '심장', '수술', '간병', '재가', '치매']
 const STORAGE_KEY = 'signal-crm-upload-files'
@@ -28,6 +29,7 @@ type UploadItem = {
   analysisResult?: string
   analysisStatus?: 'idle' | 'running' | 'done' | 'error'
   structuredAnalysis?: any
+  remoteAnalysisId?: string
 }
 
 const statusConf = {
@@ -99,15 +101,17 @@ export default function UploadPage() {
       const list = data || []
       setCustomers(list)
       setSelectedCustomerId(list[0]?.id || '')
+      const remoteItems = await fetchUploadAnalyses(supabase, session.user.id) as UploadItem[]
       try {
         const saved = window.localStorage.getItem(STORAGE_KEY)
         const savedItems = saved ? JSON.parse(saved) : []
         const ownCustomerIds = new Set(list.map((customer: any) => customer.id))
-        setItems(Array.isArray(savedItems)
+        const localItems = Array.isArray(savedItems)
           ? savedItems.filter((item: UploadItem) => item.ownerId === session.user.id || (!item.ownerId && item.customerId && ownCustomerIds.has(item.customerId)))
-          : [])
+          : []
+        setItems(mergeAnalysisItems(remoteItems, localItems))
       } catch {
-        setItems([])
+        setItems(remoteItems)
       }
     }
     loadCustomers()
@@ -319,26 +323,30 @@ export default function UploadPage() {
     alert(`엑셀 반영 완료\n신규 ${created}명 / 업데이트 ${updated}명`)
   }
 
-  const applyGptsCode = () => {
+  const applyGptsCode = async () => {
     setGptsError('')
     try {
       const parsed = parseGptsJsonCode(gptsCode)
       const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId)
+      if (!selectedCustomer?.id) {
+        setGptsError('분석을 연결할 고객을 먼저 선택해 주세요.')
+        return
+      }
       const customerName = parsed?.customer?.name || parsed?.customer_name || selectedCustomer?.name || 'GPT 보장분석'
       const id = `gpts-analysis-${Date.now()}-${Math.random().toString(16).slice(2)}`
       const summary = formatGptsAnalysis(parsed)
-
-      setItems((prev) => [{
+      const fileName = `${customerName}-GPTs-보장분석.json`
+      const tempItem: UploadItem = {
         id,
         ownerId: currentUserId,
-        name: `${customerName}-GPTs-보장분석.json`,
+        name: fileName,
         size: new Blob([JSON.stringify(parsed)]).size,
         type: 'application/json',
         category: '보장분석',
         date: new Date().toISOString().slice(0, 10),
         status: 'done',
         memo: firstLine(summary),
-        customerId: selectedCustomer?.id || '',
+        customerId: selectedCustomer.id,
         customerName,
         driveUrl: '',
         includeInReport: true,
@@ -347,10 +355,27 @@ export default function UploadPage() {
         analysisStatus: 'done',
         analysisResult: summary,
         structuredAnalysis: parsed,
-      }, ...prev])
+      }
+
+      setItems((prev) => [tempItem, ...prev])
       setGptsCode('')
       setCategory('보장분석')
       setSelectedCategory('보장분석')
+
+      const saved = await saveGptsAnalysisToSupabase(supabase, {
+        advisorId: currentUserId,
+        customerId: selectedCustomer.id,
+        customerName,
+        fileName,
+        summary,
+        structuredAnalysis: parsed,
+      })
+
+      if (saved.ok && saved.data) {
+        setItems((prev) => mergeAnalysisItems([saved.data as UploadItem], prev.filter((item) => item.id !== id)))
+      } else {
+        setGptsError('화면에는 임시 반영했습니다. Supabase SQL 적용 전이면 다른 기기에서는 아직 보이지 않을 수 있습니다.')
+      }
     } catch (error: any) {
       setGptsError(error?.message || 'JSON 코드를 확인해 주세요.')
     }
@@ -408,7 +433,7 @@ export default function UploadPage() {
             <input ref={inputRef} type="file" multiple hidden accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png,.webp,.doc,.docx" onChange={(event) => handleFiles(event.target.files)} />
             <div className="upload-icon">📁</div>
             <div className="upload-text">파일을 드래그하거나 클릭하여 업로드</div>
-            <div className="upload-sub">PDF, Excel, Word, JPG, PNG 지원 · 이 PC 브라우저에 보관하고 리포트에 연결</div>
+            <div className="upload-sub">PDF, Excel, Word, JPG, PNG 지원 · GPTs 보장분석은 고객별 DB에 연결</div>
           </div>
         </div>
 

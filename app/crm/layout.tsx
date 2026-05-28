@@ -111,7 +111,7 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
       window.close()
       return
     }
-    router.replace('/dashboard?mode=office')
+    router.replace('/dashboard')
   }
 
   return (
