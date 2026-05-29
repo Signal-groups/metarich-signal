@@ -547,36 +547,184 @@ export default function CustomerDetailPage() {
           </>
         )}
 
-        {tab === 'coverage' && (
-          <div className="grid-2">
+        {tab === 'coverage' && (() => {
+          if (coverages.length === 0) {
+            return (
+              <div>
+                <div className="card-title">보장분석표</div>
+                <Empty text="보장 데이터가 없습니다. 보장분석 파일을 업로드해 주세요." />
+                {radarData.length === 0 ? null : (
+                  <div style={{ marginTop: 24 }}>
+                    <div className="card-title">보장 그래프</div>
+                    <div className="radar-wrap" style={{ height: 280 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={radarData}>
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="category" tick={{ fontSize: 10 }} />
+                          <Radar name="현재" dataKey="value" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.25} />
+                          <Radar name="권장" dataKey="recommended" stroke="#E2E8F0" fill="none" strokeDasharray="4 2" />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          }
+
+          const { amountGrid, numPolicies } = buildCoverageDisplayMatrix(policies, coverages)
+
+          // 보장분석표 헤더 행: 보험사명
+          const displayPolicies = policies.slice(0, numPolicies)
+
+          // 섹션별 그룹 행 추적
+          let lastGroup = ''
+          let lastSub = ''
+
+          return (
             <div>
-              <div className="card-title">보장 그래프</div>
-              {radarData.length > 0 ? (
-                <div className="radar-wrap" style={{ height: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData}>
-                      <PolarGrid />
-                      <PolarAngleAxis dataKey="category" tick={{ fontSize: 10 }} />
-                      <Radar name="현재" dataKey="value" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.25} />
-                      <Radar name="권장" dataKey="recommended" stroke="#E2E8F0" fill="none" strokeDasharray="4 2" />
-                    </RadarChart>
-                  </ResponsiveContainer>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div className="card-title" style={{ marginBottom: 0 }}>내 보험 바로 알기 보장분석표</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 12, color: '#94a3b8' }}>단위: 만원</span>
+                  <button
+                    onClick={() => window.open(`/crm/customers/${id}/report`, '_blank')}
+                    style={{ background: '#1a2744', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    🖨️ PDF 고객 제안서
+                  </button>
                 </div>
-              ) : <Empty text="보장 데이터가 없습니다." />}
-            </div>
-            <div>
-              <div className="card-title">보장 항목</div>
-              {coverageBars.map((coverage) => (
-                <div key={coverage.key} className="cov-bar-row">
-                  <div className="cov-bar-label">{coverage.label}</div>
-                  <div className="cov-bar-track"><div className="cov-bar-fill" style={{ width: `${Math.max(6, Math.min(coverage.value, 100))}%`, background: '#3b82f6' }} /></div>
-                  <div className="cov-bar-val">{formatCoverageAmount(coverage.amount)}</div>
+              </div>
+
+              <div style={{ overflowX: 'auto', borderRadius: 14, border: '1px solid #e2e8f0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 560 }}>
+                  <thead>
+                    {/* 보험사 헤더 */}
+                    <tr style={{ background: '#1a2744', color: '#fff' }}>
+                      <th style={{ padding: '10px 10px', textAlign: 'left', fontWeight: 700, minWidth: 80, whiteSpace: 'nowrap' }}>분류</th>
+                      <th style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, minWidth: 90 }}>항목</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, minWidth: 56, color: '#fbbf24' }}>합계</th>
+                      {displayPolicies.map((p, i) => (
+                        <th key={i} style={{ padding: '10px 6px', textAlign: 'right', fontWeight: 600, minWidth: 60, fontSize: 11 }}>
+                          {p.company || `보험사${i + 1}`}
+                        </th>
+                      ))}
+                    </tr>
+                    {/* 상품명 행 */}
+                    <tr style={{ background: '#273469', color: '#cbd5e1' }}>
+                      <td colSpan={3} style={{ padding: '6px 10px', fontSize: 11, color: '#94a3b8' }}>상품명</td>
+                      {displayPolicies.map((p, i) => (
+                        <td key={i} style={{ padding: '6px 6px', fontSize: 10, textAlign: 'right', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: 80, textOverflow: 'ellipsis' }}>
+                          {p.product_name || '-'}
+                        </td>
+                      ))}
+                    </tr>
+                    {/* 월 보험료 행 */}
+                    <tr style={{ background: '#2d3a5e', color: '#e2e8f0', borderBottom: '2px solid #1a2744' }}>
+                      <td colSpan={3} style={{ padding: '6px 10px', fontSize: 11 }}>납입보험료(원)</td>
+                      {displayPolicies.map((p, i) => (
+                        <td key={i} style={{ padding: '6px 6px', textAlign: 'right', fontSize: 11 }}>
+                          {p.monthly_premium ? Number(p.monthly_premium).toLocaleString() : '-'}
+                        </td>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {COVERAGE_STRUCTURE_DISPLAY.map((row, ri) => {
+                      const total = amountGrid[ri].reduce((s, v) => s + v, 0)
+                      const isGroupHeader = row.group !== null && row.group !== lastGroup
+                      const isSubHeader = row.sub !== null && row.sub !== lastSub
+                      if (row.group !== null) lastGroup = row.group
+                      if (row.sub !== null) lastSub = row.sub
+                      const rowBg = total > 0 ? row.groupBg : '#fff'
+                      return (
+                        <tr
+                          key={ri}
+                          style={{
+                            background: rowBg,
+                            borderBottom: '1px solid #f1f5f9',
+                          }}
+                        >
+                          {/* 분류 (대분류) */}
+                          <td style={{
+                            padding: '6px 10px',
+                            fontWeight: isGroupHeader ? 800 : 400,
+                            color: isGroupHeader ? row.groupColor : '#94a3b8',
+                            fontSize: isGroupHeader ? 11 : 10,
+                            borderRight: '1px solid #e2e8f0',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {isGroupHeader ? row.group : (isSubHeader ? row.sub : '')}
+                          </td>
+                          {/* 항목 */}
+                          <td style={{
+                            padding: '6px 8px',
+                            color: total > 0 ? '#111' : '#94a3b8',
+                            fontWeight: total > 0 ? 600 : 400,
+                            borderRight: '1px solid #e2e8f0',
+                          }}>
+                            {row.label}
+                          </td>
+                          {/* 합계 */}
+                          <td style={{
+                            padding: '6px 8px',
+                            textAlign: 'right',
+                            fontWeight: 700,
+                            color: total > 0 ? '#dc2626' : '#d1d5db',
+                            borderRight: '1px solid #e2e8f0',
+                          }}>
+                            {total > 0 ? total.toLocaleString() : ''}
+                          </td>
+                          {/* 보험사별 금액 */}
+                          {amountGrid[ri].map((v, pi) => (
+                            <td key={pi} style={{
+                              padding: '6px 8px',
+                              textAlign: 'right',
+                              color: v > 0 ? '#1a2744' : '#d1d5db',
+                              fontWeight: v > 0 ? 600 : 400,
+                              fontSize: 11,
+                              borderRight: pi < numPolicies - 1 ? '1px solid #f1f5f9' : undefined,
+                            }}>
+                              {v > 0 ? v.toLocaleString() : ''}
+                            </td>
+                          ))}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 레이더 차트 */}
+              {radarData.length > 0 && (
+                <div style={{ marginTop: 28 }}>
+                  <div className="card-title">보장 영역별 현황</div>
+                  <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 240px', minWidth: 240, height: 260 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={radarData}>
+                          <PolarGrid />
+                          <PolarAngleAxis dataKey="category" tick={{ fontSize: 10 }} />
+                          <Radar name="현재" dataKey="value" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.25} />
+                          <Radar name="권장" dataKey="recommended" stroke="#E2E8F0" fill="none" strokeDasharray="4 2" />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
+                      {coverageBars.map((coverage) => (
+                        <div key={coverage.key} className="cov-bar-row">
+                          <div className="cov-bar-label">{coverage.label}</div>
+                          <div className="cov-bar-track"><div className="cov-bar-fill" style={{ width: `${Math.max(6, Math.min(coverage.value, 100))}%`, background: '#3b82f6' }} /></div>
+                          <div className="cov-bar-val">{formatCoverageAmount(coverage.amount)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              ))}
-              {coverageBars.length === 0 && <Empty text="보장 항목이 없습니다." />}
+              )}
             </div>
-          </div>
-        )}
+          )
+        })()}
 
         {tab === 'simulator' && (
           <>
@@ -720,6 +868,145 @@ export default function CustomerDetailPage() {
       </div>
     </>
   )
+}
+
+// ─── 보장분석표 구조 (Excel 템플릿 동일) ─────────────────────────────────────
+const COVERAGE_STRUCTURE_DISPLAY = [
+  { group: '가족보장자산', sub: '사망', label: '일반', groupColor: '#3B5BA5', groupBg: '#EEF2FF' },
+  { group: null, sub: null, label: '질병', groupColor: '#3B5BA5', groupBg: '#EEF2FF' },
+  { group: null, sub: null, label: '재해(상해)', groupColor: '#3B5BA5', groupBg: '#EEF2FF' },
+  { group: '생활보장자산', sub: '암치료비', label: '일반암', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '유사암/소액암', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '암수술비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '항암 (방사선/약물)', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '표적항암치료', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '중입자치료', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '암주요치료비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: '2대질병치료비', label: '뇌혈관질환', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '뇌졸중', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '뇌출혈', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '급성심근경색', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '허혈성심장질환', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '심혈관질환', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '뇌혈관수술비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '심혈관수술비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '2대주요치료비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: '후유장해', label: '질병 후유장해(3%~)', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '상해 후유장해(3%~)', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: '골절', label: '골절 진단비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '골절 수술비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '5대골절 진단비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '5대골절 수술비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '깁스 치료비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: '화상', label: '화상 진단비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: null, sub: null, label: '화상 수술비', groupColor: '#B45309', groupBg: '#FFF7ED' },
+  { group: '의료보장자산', sub: '실손의료비', label: '상해입원의료비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '상해통원의료비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '질병입원의료비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '질병통원의료비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: '수술비', label: '질병 수술비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '질병 1~5종수술비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '상해 수술비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '상해 1~5종수술비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: 'N대 수술비', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '창상봉합술', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: '입원', label: '질병 입원일당', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '상해 입원일당', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '교통상해입원일당', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '상해간병지원금', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: null, sub: null, label: '질병간병지원금', groupColor: '#166534', groupBg: '#F0FDF4' },
+  { group: '운전자', sub: null, label: '교통사고처리지원금', groupColor: '#374151', groupBg: '#F9FAFB' },
+  { group: null, sub: null, label: '교통사고벌금', groupColor: '#374151', groupBg: '#F9FAFB' },
+  { group: null, sub: null, label: '변호사선임비용', groupColor: '#374151', groupBg: '#F9FAFB' },
+  { group: null, sub: null, label: '자동차부상치료비', groupColor: '#374151', groupBg: '#F9FAFB' },
+  { group: '치아', sub: null, label: '임플란트', groupColor: '#92400E', groupBg: '#FFFBEB' },
+  { group: null, sub: null, label: '크라운', groupColor: '#92400E', groupBg: '#FFFBEB' },
+  { group: '기타', sub: null, label: '가족일상배상책임', groupColor: '#6B7280', groupBg: '#F3F4F6' },
+  { group: null, sub: null, label: '화재벌금', groupColor: '#6B7280', groupBg: '#F3F4F6' },
+]
+
+function findCoverageRowIndexForDisplay(name: string): number {
+  const n = name.toLowerCase().replace(/[\s\-_·()/]/g, '')
+  const map: { keywords: string[]; idx: number }[] = [
+    { idx: 0, keywords: ['일반사망', '사망보험금'] },
+    { idx: 1, keywords: ['질병사망'] },
+    { idx: 2, keywords: ['재해사망', '상해사망'] },
+    { idx: 4, keywords: ['유사암', '소액암', '경계성암', '갑상선암', '피부암'] },
+    { idx: 5, keywords: ['암수술비', '암수술'] },
+    { idx: 6, keywords: ['항암방사선', '방사선치료', '약물항암', '항암약물', '항암치료비', '항암(방사선', '항암(약물'] },
+    { idx: 7, keywords: ['표적항암', '표적치료', '면역항암'] },
+    { idx: 8, keywords: ['중입자', '양성자'] },
+    { idx: 9, keywords: ['암주요치료', '암집중치료'] },
+    { idx: 3, keywords: ['일반암', '암진단비', '암진단', '통합암'] },
+    { idx: 11, keywords: ['뇌졸중'] },
+    { idx: 12, keywords: ['뇌출혈'] },
+    { idx: 10, keywords: ['뇌혈관질환', '뇌혈관진단'] },
+    { idx: 13, keywords: ['급성심근경색', '심근경색'] },
+    { idx: 14, keywords: ['허혈성심장', '허혈성'] },
+    { idx: 15, keywords: ['심혈관질환', '심장질환진단'] },
+    { idx: 16, keywords: ['뇌혈관수술비', '뇌수술비'] },
+    { idx: 17, keywords: ['심혈관수술비', '심장수술비'] },
+    { idx: 18, keywords: ['2대주요치료', '주요치료비', '뇌심장집중'] },
+    { idx: 19, keywords: ['질병후유장해', '질병후유'] },
+    { idx: 20, keywords: ['상해후유장해', '상해후유', '재해후유'] },
+    { idx: 23, keywords: ['5대골절진단', '5대골절'] },
+    { idx: 24, keywords: ['5대골절수술'] },
+    { idx: 21, keywords: ['골절진단비', '골절진단'] },
+    { idx: 22, keywords: ['골절수술비', '골절수술'] },
+    { idx: 25, keywords: ['깁스', '부목'] },
+    { idx: 26, keywords: ['화상진단비', '화상진단'] },
+    { idx: 27, keywords: ['화상수술비', '화상수술'] },
+    { idx: 28, keywords: ['상해입원의료비', '상해입원실비'] },
+    { idx: 29, keywords: ['상해통원의료비', '상해외래'] },
+    { idx: 30, keywords: ['질병입원의료비', '질병입원실비'] },
+    { idx: 31, keywords: ['질병통원의료비', '질병통원실비', '질병외래', '실손의료비', '실손'] },
+    { idx: 33, keywords: ['질병1~5종', '질병종수술', '질병5종', '질병3종', '질병1종', '1~5종수술'] },
+    { idx: 32, keywords: ['질병수술비'] },
+    { idx: 35, keywords: ['상해1~5종', '상해종수술', '상해5종', '상해3종', '상해1종'] },
+    { idx: 34, keywords: ['상해수술비'] },
+    { idx: 36, keywords: ['n대수술', '64대수술', '7대수술', '32대수술', '100대수술'] },
+    { idx: 37, keywords: ['창상봉합', '봉합술'] },
+    { idx: 38, keywords: ['질병입원일당', '질병입원비'] },
+    { idx: 39, keywords: ['상해입원일당', '상해입원비'] },
+    { idx: 40, keywords: ['교통상해입원', '교통입원'] },
+    { idx: 41, keywords: ['상해간병', '재해간병'] },
+    { idx: 42, keywords: ['질병간병'] },
+    { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리', '대인배상'] },
+    { idx: 44, keywords: ['교통사고벌금', '벌금'] },
+    { idx: 45, keywords: ['변호사선임', '법률비용'] },
+    { idx: 46, keywords: ['자동차부상', '부상치료비'] },
+    { idx: 47, keywords: ['임플란트'] },
+    { idx: 48, keywords: ['크라운', '보철'] },
+    { idx: 49, keywords: ['가족일상배상', '일상배상', '일상생활배상'] },
+    { idx: 50, keywords: ['화재벌금', '화재'] },
+  ]
+  for (const entry of map) {
+    if (entry.keywords.some((kw) => n.includes(kw))) return entry.idx
+  }
+  return -1
+}
+
+function toManwonDisplay(amount: number): number {
+  return amount >= 100000 ? Math.round(amount / 10000) : amount
+}
+
+function buildCoverageDisplayMatrix(policiesData: any[], coveragesData: any[]) {
+  // 51행 × policies수 열 금액 그리드
+  const numPolicies = Math.min(policiesData.length, 8)
+  const amountGrid: number[][] = Array.from({ length: 51 }, () => Array(numPolicies).fill(0))
+
+  coveragesData.forEach((cov: any) => {
+    const policyIdx = policiesData.findIndex((p) => p.id === cov.policy_id)
+    if (policyIdx < 0 || policyIdx >= numPolicies) return
+    const name = String(cov.name || '').toLowerCase().replace(/[\s\-_·()/]/g, '')
+    const ri = findCoverageRowIndexForDisplay(name)
+    const amount = Number(cov.amount || 0)
+    if (ri >= 0 && ri < 51 && amount > 0) {
+      amountGrid[ri][policyIdx] += toManwonDisplay(amount)
+    }
+  })
+
+  return { amountGrid, numPolicies }
 }
 
 function normalizeCoverageGraphCategory(category?: string, coverageName?: string, note?: string) {
