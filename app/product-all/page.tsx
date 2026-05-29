@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { ArrowLeft, ClipboardCheck, Search, ShieldCheck } from "lucide-react"
 
-type CategoryId = "life" | "nonLife" | "pet" | "underwriting" | "talk"
+type CategoryId = "life" | "nonLife" | "prenatal" | "pet" | "underwriting" | "talk"
 
 type ProductTopic = {
   id: string
@@ -27,6 +27,7 @@ type ProductTopic = {
 const categories: { id: CategoryId; label: string; caption: string }[] = [
   { id: "life", label: "생명보험", caption: "종신, 정기, 연금처럼 기간과 목적을 먼저 나누는 영역" },
   { id: "nonLife", label: "손해보험", caption: "실손, 건강, 운전자, 재물처럼 실제 손해와 비용을 보완하는 영역" },
+  { id: "prenatal", label: "태아보험", caption: "태아특약, 산모특약, 고지사항, 다태아 심사를 함께 정리하는 영역" },
   { id: "pet", label: "펫보험", caption: "DB손보 펫블리 기준 의료비, 확장담보, 할인과 청구를 정리하는 영역" },
   { id: "underwriting", label: "고지와 심사", caption: "일반심사, 간편심사, 부담보를 상담 전에 정리하는 영역" },
   { id: "talk", label: "상담 흐름", caption: "상품 설명을 고객 상황과 질문으로 바꾸는 영역" },
@@ -145,6 +146,54 @@ const topics: ProductTopic[] = [
     keyQuestions: ["현재 실손이 몇 세대인지 알고 계신가요?", "비급여 치료와 자기부담금 구조를 설명 들어보신 적 있나요?", "보장하지 않는 항목까지 확인해보셨나요?"],
     talkPoint: "실손은 병원비를 전부 해결하는 보험이 아니라, 실제 부담한 의료비 중 약관상 보장되는 부분을 돌려받는 구조라고 설명합니다.",
     caution: ["세대별 보장비율, 갱신, 재가입 주기를 확인합니다.", "미용, 예방, 일부 비급여 등 보장 제외 항목을 구분합니다."],
+  },
+  {
+    id: "prenatal-insurance",
+    category: "prenatal",
+    group: "태아보험 · 기본 구조",
+    title: "태아보험",
+    purpose: "어린이보험에 태아특약과 산모특약을 붙여 임신·출산 전후 위험과 출생 후 성장기 보장을 함께 준비하는 상품군입니다.",
+    productTypes: [
+      { name: "태아특약", feature: "선천이상, 저체중아, 인큐베이터, 신생아 질환, 출생 전후 수술·입원 위험을 준비하는 임신 중 가입 특약입니다.", recommend: "임신 확인 후 산전검사 일정 전에 출생 전후 위험을 준비하려는 예비 부모", limits: ["보험사별 가입 가능 주수와 마감 시기가 다릅니다.", "산전검사 이상소견이 있으면 심사와 가입 가능 담보가 달라질 수 있습니다."] },
+      { name: "어린이 보장", feature: "출생 후 주요질병, 입원·수술, 상해, 골절, 화상, 환경성 질환, 일상생활 배상책임 등을 이어서 보장합니다.", recommend: "태아 시기 이후 성장기 보장까지 한 번에 설계하려는 고객", limits: ["태아특약과 어린이 담보의 보장기간이 다를 수 있습니다.", "30세 만기와 100세 만기의 보험료와 리모델링 가능성을 비교합니다."] },
+      { name: "가입시기 관리", feature: "임신 주수, 기형아 검사, 정밀 초음파, 산모 건강상태에 따라 가입 가능 범위가 달라질 수 있습니다.", recommend: "임신 초기 상담 고객과 검사 일정을 앞둔 고객", limits: ["늦게 가입하면 일부 태아 담보 가입이 어려울 수 있습니다.", "검사 결과와 재검 소견은 고지 대상이 될 수 있습니다."] },
+    ],
+    fit: ["임신 중 태아특약을 준비하려는 예비 부모", "선천이상·저체중아·인큐베이터 보장을 걱정하는 고객", "출생 후 어린이보험까지 함께 설계하려는 고객"],
+    keyQuestions: ["현재 임신 몇 주차이신가요?", "기형아 검사나 정밀 초음파 일정은 언제인가요?", "출생 전후 보장과 성장기 어린이 보장을 함께 보시겠어요?"],
+    talkPoint: "태아보험은 어린이보험에 임신 중에만 넣을 수 있는 태아특약을 더한 구조입니다. 가입시기와 고지사항을 먼저 확인해야 담보 누락을 줄일 수 있습니다.",
+    caution: ["보험사별 태아특약 가입 가능 주수와 인수 기준을 확인합니다.", "산전검사 이상소견, 유산·조산 이력, 산모 질환은 고지합니다.", "태아특약은 출생 후 종료되거나 역할이 달라질 수 있습니다."],
+  },
+  {
+    id: "mother-rider",
+    category: "prenatal",
+    group: "태아보험 · 산모특약",
+    title: "산모특약",
+    purpose: "태아 보장과 별도로 임신·출산 과정에서 산모에게 발생할 수 있는 질환, 입원, 수술, 출산 관련 위험을 보완하는 선택 특약입니다.",
+    productTypes: [
+      { name: "임신질환 담보", feature: "임신중독증, 임신성 당뇨, 임신성 고혈압, 조기진통, 자궁경부무력증 등 임신 중 위험을 점검합니다.", recommend: "고령 산모, 고위험 산모, 검사 재검 이력이 있는 고객", limits: ["기존 진단·투약·입원 이력은 인수 제한이나 부담보로 이어질 수 있습니다.", "회사별 담보명과 보장 범위가 다릅니다."] },
+      { name: "출산·수술 담보", feature: "제왕절개, 유산·조산, 출산 관련 수술과 입원 위험을 별도로 확인합니다.", recommend: "제왕절개 가능성이나 과거 출산 이력이 있는 산모", limits: ["과거 제왕절개, 유산, 조산, 사산 이력은 고지합니다.", "정상분만과 선택적 수술은 보장 여부가 다를 수 있습니다."] },
+      { name: "산모 입원·응급 담보", feature: "임신·출산 관련 입원일당, 응급실, 특정 합병증 관련 비용을 확인합니다.", recommend: "입원 가능성과 산모 치료비 공백을 걱정하는 고객", limits: ["입원 사유와 임신 관련성 인정 범위를 확인합니다.", "면책기간과 감액기간을 약관으로 확인합니다."] },
+    ],
+    fit: ["산모 건강 이력이 있는 고객", "제왕절개나 조기진통 가능성을 걱정하는 고객", "태아뿐 아니라 산모 위험까지 함께 준비하려는 고객"],
+    keyQuestions: ["이번 임신 중 재검이나 추가 검사를 받은 적이 있나요?", "임신성 당뇨, 고혈압, 조기진통, 자궁경부 길이 문제를 들으신 적이 있나요?", "과거 유산, 조산, 제왕절개 이력이 있으신가요?"],
+    talkPoint: "산모특약은 아이 보장이 아니라 임신과 출산 과정에서 산모에게 생길 수 있는 위험을 따로 보완하는 담보입니다.",
+    caution: ["산모의 검사 결과, 투약, 입원, 과거 임신 이력은 정확히 고지합니다.", "난임시술, 고령산모, 고위험 임신은 회사별 심사 기준이 다릅니다.", "산모특약은 필수·선택 여부를 보험료와 실제 위험 기준으로 나눠 설명합니다."],
+  },
+  {
+    id: "multiple-prenatal",
+    category: "prenatal",
+    group: "태아보험 · 다태아",
+    title: "다태아 태아보험",
+    purpose: "쌍둥이·삼둥이 등 다태아는 조산, 저체중, 신생아 집중치료 가능성이 높아 태아별 피보험자 등록과 보험사별 인수 기준을 별도로 확인해야 합니다.",
+    productTypes: [
+      { name: "쌍둥이 가입", feature: "쌍둥이 모두 피보험자로 가입 가능한지, 태아별 보험료와 담보 한도를 각각 확인합니다.", recommend: "쌍둥이 임신 고객", limits: ["다태아 사실을 단태아로 청약하면 고지의무 위반 문제가 생길 수 있습니다.", "태아별 이상소견에 따라 한 아이만 조건이 달라질 수 있습니다."] },
+      { name: "삼둥이 이상 가입", feature: "최근 인수 기준 개선 흐름이 있으나 실제 가입은 보험사별 주수, 서류, 이상소견 기준을 확인해야 합니다.", recommend: "삼둥이 이상 다태아 임신 고객", limits: ["보험사고 위험이 이미 발생한 경우 인수 제한이 생길 수 있습니다.", "특약별 가입금액 제한이나 부담보 가능성을 설명합니다."] },
+      { name: "다태아 핵심 담보", feature: "저체중아, 인큐베이터, 신생아 입원, 선천이상, 조산 관련 담보를 우선 확인합니다.", recommend: "조산·저체중·NICU 이용 가능성을 걱정하는 고객", limits: ["성장 차이, 융모막·양막 유형, 선택적 감수술 여부는 고지와 심사에 영향을 줄 수 있습니다.", "산전검사 결과에 따라 필요서류가 늘어날 수 있습니다."] },
+    ],
+    fit: ["쌍둥이·삼둥이 이상 임신 고객", "난임시술 후 다태아 임신 고객", "조산과 저체중아 담보를 우선 챙겨야 하는 고객"],
+    keyQuestions: ["태아 수와 임신 방식, 태아별 성장 차이를 확인해보셨나요?", "정밀 초음파에서 한 아이에게만 추가 소견이 있다는 설명을 들으셨나요?", "보험사별 다태아 가입 기준을 비교해서 보고 싶으신가요?"],
+    talkPoint: "다태아는 가입 가능 여부를 단정하지 말고 보험사별 인수 기준, 태아별 건강 소견, 저체중·인큐베이터 담보 한도를 각각 확인해야 합니다.",
+    caution: ["다태아, 난임시술, 이상소견, 선택적 감수술, 입원·투약 이력은 고지합니다.", "다태아는 일부 담보 한도나 가입금액이 제한될 수 있습니다.", "삼둥이 이상은 최신 인수 기준과 회사별 심사 결과를 반드시 확인합니다."],
   },
   {
     id: "cancer",
@@ -525,7 +574,7 @@ export default function ProductAllPage() {
                         isOpen ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      <span className={`h-8 w-8 rounded-lg ${category.id === "life" ? "bg-blue-600/35" : category.id === "nonLife" ? "bg-rose-600/35" : category.id === "pet" ? "bg-emerald-500/35" : category.id === "underwriting" ? "bg-amber-500/30" : "bg-sky-500/30"}`} />
+                      <span className={`h-8 w-8 rounded-lg ${category.id === "life" ? "bg-blue-600/35" : category.id === "nonLife" ? "bg-rose-600/35" : category.id === "prenatal" ? "bg-orange-500/35" : category.id === "pet" ? "bg-emerald-500/35" : category.id === "underwriting" ? "bg-amber-500/30" : "bg-sky-500/30"}`} />
                       <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-black">{category.label}의 모든 것</span>
                         <span className="mt-1 block text-[11px] font-bold leading-4 text-slate-500">{category.caption}</span>

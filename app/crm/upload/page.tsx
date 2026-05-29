@@ -951,58 +951,71 @@ const COVERAGE_STRUCTURE = [
 ]
 
 function findCoverageRowIndex(normalizedName: string): number {
+  // 순서 중요: 더 구체적인 키워드를 먼저 체크해야 오분류 방지
   const map: { keywords: string[]; idx: number }[] = [
-    { idx: 0, keywords: ['일반사망'] },
+    // 가족보장 - 사망
+    { idx: 0, keywords: ['일반사망', '사망보험금'] },
     { idx: 1, keywords: ['질병사망'] },
-    { idx: 2, keywords: ['재해사망', '상해사망'] },
-    { idx: 3, keywords: ['일반암', '암진단'] },
-    { idx: 4, keywords: ['유사암', '소액암'] },
-    { idx: 5, keywords: ['암수술'] },
-    { idx: 6, keywords: ['표적항암'] },
-    { idx: 7, keywords: ['항암', '방사선항암', '약물항암'] },
-    { idx: 8, keywords: ['중입자'] },
-    { idx: 9, keywords: ['암주요치료'] },
-    { idx: 10, keywords: ['뇌혈관질환'] },
+    { idx: 2, keywords: ['재해사망', '상해사망', '재해사고사망'] },
+    // 암 진단비/치료비 (구체적인 것 먼저)
+    { idx: 4, keywords: ['유사암', '소액암', '경계성암', '갑상선암', '피부암'] },
+    { idx: 5, keywords: ['암수술비', '암수술'] },
+    { idx: 6, keywords: ['항암방사선', '방사선치료', '약물항암', '항암약물', '항암치료비', '항암(방사선', '항암(약물'] },
+    { idx: 7, keywords: ['표적항암', '표적치료', '면역항암'] },
+    { idx: 8, keywords: ['중입자', '양성자'] },
+    { idx: 9, keywords: ['암주요치료', '암집중치료', '암치료비집중'] },
+    { idx: 3, keywords: ['일반암', '암진단비', '암진단', '통합암'] }, // 일반암은 유사암 뒤에 체크
+    // 2대 질병 치료비 (구체적인 것 먼저)
     { idx: 11, keywords: ['뇌졸중'] },
     { idx: 12, keywords: ['뇌출혈'] },
+    { idx: 10, keywords: ['뇌혈관질환', '뇌혈관진단'] },
     { idx: 13, keywords: ['급성심근경색', '심근경색'] },
-    { idx: 14, keywords: ['허혈성심장질환', '허혈성'] },
-    { idx: 15, keywords: ['심혈관질환'] },
-    { idx: 16, keywords: ['뇌혈관수술'] },
-    { idx: 17, keywords: ['심혈관수술'] },
-    { idx: 18, keywords: ['2대주요치료', '주요치료비'] },
+    { idx: 14, keywords: ['허혈성심장', '허혈성'] },
+    { idx: 15, keywords: ['심혈관질환', '심장질환진단'] },
+    { idx: 16, keywords: ['뇌혈관수술비', '뇌수술비'] },
+    { idx: 17, keywords: ['심혈관수술비', '심장수술비'] },
+    { idx: 18, keywords: ['2대주요치료', '주요치료비', '뇌심장집중', '3대집중치료', '2대집중치료'] },
+    // 후유장해
     { idx: 19, keywords: ['질병후유장해', '질병후유'] },
-    { idx: 20, keywords: ['상해후유장해', '상해후유'] },
-    { idx: 21, keywords: ['골절진단'] },
-    { idx: 22, keywords: ['골절수술'] },
-    { idx: 23, keywords: ['5대골절진단'] },
+    { idx: 20, keywords: ['상해후유장해', '상해후유', '재해후유'] },
+    // 골절
+    { idx: 23, keywords: ['5대골절진단', '5대골절'] },
     { idx: 24, keywords: ['5대골절수술'] },
-    { idx: 25, keywords: ['깁스'] },
-    { idx: 26, keywords: ['화상진단'] },
-    { idx: 27, keywords: ['화상수술'] },
-    { idx: 28, keywords: ['상해입원의료비'] },
-    { idx: 29, keywords: ['상해통원의료비'] },
-    { idx: 30, keywords: ['질병입원의료비'] },
-    { idx: 31, keywords: ['질병통원의료비'] },
+    { idx: 21, keywords: ['골절진단비', '골절진단'] },
+    { idx: 22, keywords: ['골절수술비', '골절수술'] },
+    { idx: 25, keywords: ['깁스', '부목'] },
+    // 화상
+    { idx: 26, keywords: ['화상진단비', '화상진단'] },
+    { idx: 27, keywords: ['화상수술비', '화상수술'] },
+    // 실손의료비
+    { idx: 28, keywords: ['상해입원의료비', '상해입원실비'] },
+    { idx: 29, keywords: ['상해통원의료비', '상해통원실비', '상해외래'] },
+    { idx: 30, keywords: ['질병입원의료비', '질병입원실비'] },
+    { idx: 31, keywords: ['질병통원의료비', '질병통원실비', '질병외래', '실손의료비', '실손'] },
+    // 수술비 (구체적인 것 먼저)
+    { idx: 33, keywords: ['질병1~5종', '질병종수술', '질병5종수술', '질병3종수술', '질병1종수술', '1~5종수술'] },
     { idx: 32, keywords: ['질병수술비'] },
-    { idx: 33, keywords: ['1~5종수술', '질병1종수술'] },
+    { idx: 35, keywords: ['상해1~5종', '상해종수술', '상해5종수술', '상해3종수술', '상해1종수술'] },
     { idx: 34, keywords: ['상해수술비'] },
-    { idx: 35, keywords: ['상해1~5종수술', '상해1종수술'] },
-    { idx: 36, keywords: ['n대수술'] },
-    { idx: 37, keywords: ['창상봉합'] },
-    { idx: 38, keywords: ['질병입원일당'] },
-    { idx: 39, keywords: ['상해입원일당'] },
-    { idx: 40, keywords: ['교통상해입원'] },
-    { idx: 41, keywords: ['상해간병'] },
+    { idx: 36, keywords: ['n대수술', '64대수술', '7대수술', '32대수술', '100대수술'] },
+    { idx: 37, keywords: ['창상봉합', '봉합술'] },
+    // 입원일당
+    { idx: 38, keywords: ['질병입원일당', '질병입원비'] },
+    { idx: 39, keywords: ['상해입원일당', '상해입원비'] },
+    { idx: 40, keywords: ['교통상해입원', '교통입원'] },
+    { idx: 41, keywords: ['상해간병', '재해간병'] },
     { idx: 42, keywords: ['질병간병'] },
-    { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리'] },
+    // 운전자
+    { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리', '대인배상'] },
     { idx: 44, keywords: ['교통사고벌금', '벌금'] },
-    { idx: 45, keywords: ['변호사선임'] },
-    { idx: 46, keywords: ['자동차부상', '부상치료'] },
+    { idx: 45, keywords: ['변호사선임', '법률비용'] },
+    { idx: 46, keywords: ['자동차부상', '부상치료비', '비탑승'] },
+    // 치아
     { idx: 47, keywords: ['임플란트'] },
-    { idx: 48, keywords: ['크라운'] },
-    { idx: 49, keywords: ['가족일상배상', '일상배상'] },
-    { idx: 50, keywords: ['화재벌금'] },
+    { idx: 48, keywords: ['크라운', '보철'] },
+    // 기타
+    { idx: 49, keywords: ['가족일상배상', '일상배상', '일상생활배상'] },
+    { idx: 50, keywords: ['화재벌금', '화재'] },
   ]
   for (const entry of map) {
     if (entry.keywords.some((kw) => normalizedName.includes(kw))) return entry.idx
@@ -1011,24 +1024,20 @@ function findCoverageRowIndex(normalizedName: string): number {
 }
 
 function toManwon(amount: number): number {
-  // If amount is in 원 (>= 10000 threshold), convert to 만원
   return amount >= 100000 ? Math.round(amount / 10000) : amount
 }
 
-function downloadAnalysisExcel(item: UploadItem) {
-  const data = item.structuredAnalysis
-  if (!data) return
-
-  const customerName = data.customer?.name || item.customerName || '고객'
+/** 한 명의 structuredAnalysis → Excel 시트 matrix 생성 */
+function buildCoverageMatrix(data: any, sheetName: string): (string | number | null)[][] {
   const policies: any[] = Array.isArray(data.policies) ? data.policies
     : Array.isArray(data.contracts) ? data.contracts : []
 
-  const numRows = 60
+  const numRows = 62
   const numCols = 16
   const matrix: (string | number | null)[][] = Array.from({ length: numRows }, () => Array(numCols).fill(null))
 
   // Row 2: 고객명 헤더
-  matrix[1][1] = customerName
+  matrix[1][1] = sheetName
   matrix[1][4] = '님'
   matrix[1][5] = '내 보험 바로 알기 보장분석표'
 
@@ -1062,13 +1071,13 @@ function downloadAnalysisExcel(item: UploadItem) {
     matrix[4][5 + pi] = policy.company || ''
     matrix[5][5 + pi] = policy.product_name || policy.product || ''
     matrix[6][5 + pi] = policy.start_date || ''
-    matrix[7][5 + pi] = policy.payment_period || ''
+    matrix[7][5 + pi] = policy.payment_period || policy.maturity_age ? `${policy.payment_period || ''}` : ''
     const prem = Number(policy.monthly_premium || policy.premium || 0)
     matrix[8][5 + pi] = prem ? toManwon(prem) : null
 
     const coverages: any[] = Array.isArray(policy.coverages) ? policy.coverages : []
     coverages.forEach((cov: any) => {
-      const name = String(cov.coverage_name || cov.name || '').toLowerCase().replace(/[\s\-_·]/g, '')
+      const name = String(cov.coverage_name || cov.name || '').toLowerCase().replace(/[\s\-_·\(\)\/]/g, '')
       const amount = Number(cov.amount || cov.coverage_amount || 0)
       if (!amount) return
       const ri = findCoverageRowIndex(name)
@@ -1088,12 +1097,15 @@ function downloadAnalysisExcel(item: UploadItem) {
   if (!hasAnyCoverage && data.coverage_summary) {
     const cs = data.coverage_summary
     const summaryMap: { idx: number; value: number }[] = [
-      { idx: 3, value: Number(cs.cancer) || 0 },         // 일반암
-      { idx: 4, value: Number(cs.similar_cancer) || 0 }, // 유사암/소액암
-      { idx: 10, value: Number(cs.brain_vascular) || 0 }, // 뇌혈관질환 (대표)
-      { idx: 13, value: Number(cs.ischemic_heart) || 0 }, // 급성심근경색 (대표)
-      { idx: 32, value: Number(cs.disease_surgery) || 0 }, // 질병수술비
-      { idx: 34, value: Number(cs.injury_surgery) || 0 }, // 상해수술비
+      { idx: 3, value: Number(cs.cancer) || 0 },
+      { idx: 4, value: Number(cs.similar_cancer) || 0 },
+      { idx: 6, value: Number(cs.cancer_chemo) || 0 },
+      { idx: 9, value: Number(cs.cancer_major_treatment) || 0 },
+      { idx: 10, value: Number(cs.brain_vascular) || 0 },
+      { idx: 13, value: Number(cs.ischemic_heart) || 0 },
+      { idx: 18, value: Number(cs.major_treatment) || 0 },
+      { idx: 32, value: Number(cs.disease_surgery) || 0 },
+      { idx: 34, value: Number(cs.injury_surgery) || 0 },
     ]
     summaryMap.forEach(({ idx, value }) => {
       if (value > 0) matrix[9 + idx][4] = value
@@ -1107,9 +1119,60 @@ function downloadAnalysisExcel(item: UploadItem) {
   }, 0)
   matrix[8][4] = totalPrem || null
 
-  const ws = XLSX.utils.aoa_to_sheet(matrix)
+  return matrix
+}
+
+async function downloadAnalysisExcel(item: UploadItem) {
+  const data = item.structuredAnalysis
+  if (!data) return
+
+  const customerName = data.customer?.name || item.customerName || '고객'
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, customerName.slice(0, 31))
+
+  // 메인 고객 시트
+  const mainMatrix = buildCoverageMatrix(data, customerName)
+  const mainWs = XLSX.utils.aoa_to_sheet(mainMatrix)
+  XLSX.utils.book_append_sheet(wb, mainWs, customerName.slice(0, 31))
+
+  // 가족 구성원 시트 — 같은 customer_id로 연결된 가족의 분석 데이터 조회
+  if (item.customerId) {
+    try {
+      // families 테이블에서 가족 구성원 조회
+      const { data: familyRows } = await supabase
+        .from('families')
+        .select('member_id, name, relation')
+        .eq('customer_id', item.customerId)
+
+      if (familyRows && familyRows.length > 0) {
+        const memberIds = familyRows.map((f: any) => f.member_id).filter(Boolean)
+        if (memberIds.length > 0) {
+          // 가족 구성원의 최신 분석 데이터 조회
+          const { data: familyAnalyses } = await supabase
+            .from('upload_analyses')
+            .select('*')
+            .in('customer_id', memberIds)
+            .order('created_at', { ascending: false })
+
+          // 가족별 최신 분석 1건씩 추출
+          const seenMembers = new Set<string>()
+          for (const analysis of (familyAnalyses || [])) {
+            if (seenMembers.has(analysis.customer_id)) continue
+            seenMembers.add(analysis.customer_id)
+
+            const familyInfo = familyRows.find((f: any) => f.member_id === analysis.customer_id)
+            const memberName = familyInfo?.name || analysis.customer_name || '가족'
+            const structuredData = analysis.structured_json || {}
+            const memberMatrix = buildCoverageMatrix(structuredData, memberName)
+            const memberWs = XLSX.utils.aoa_to_sheet(memberMatrix)
+            XLSX.utils.book_append_sheet(wb, memberWs, memberName.slice(0, 31))
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('가족 분석 데이터 조회 실패', e)
+    }
+  }
+
   XLSX.writeFile(wb, `${customerName}_보장분석표.xlsx`)
 }
 

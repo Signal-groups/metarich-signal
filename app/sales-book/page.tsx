@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 
-type TabId = "protection" | "saving" | "life" | "liability" | "pet" | "municipal" | "coach"
+type TabId = "protection" | "saving" | "life" | "liability" | "prenatal" | "pet" | "municipal" | "coach"
 
 type Topic = {
   id: string
@@ -21,6 +21,7 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "saving", label: "저축성/연금" },
   { id: "life", label: "종신/정기" },
   { id: "liability", label: "배상책임" },
+  { id: "prenatal", label: "태아/어린이" },
   { id: "pet", label: "펫보험" },
   { id: "municipal", label: "지자체보험" },
   { id: "coach", label: "화법 코치" },
@@ -412,6 +413,53 @@ const liabilityTopics: Topic[] = [
   },
 ]
 
+const prenatalTopics: Topic[] = [
+  {
+    id: "prenatal-insurance",
+    title: "태아보험 상담 구조",
+    tag: "가입시기 / 태아특약 / 어린이보장 / 출생 후 전환",
+    summary: "태아보험은 별도 보험이라기보다 어린이보험에 태아특약과 산모특약을 붙여 임신·출산 전후 위험을 준비하는 구조입니다.",
+    why: "태아 시기에만 넣을 수 있는 선천이상, 저체중아, 인큐베이터, 신생아 질환 관련 담보는 가입 가능 시기와 심사 기준이 좁습니다. 상담에서는 임신 주수, 산전검사 결과, 산모 건강상태, 출생 후 어린이 보장까지 한 번에 정리해야 합니다.",
+    consultFlow: ["현재 임신 주수와 분만 예정일 확인", "기형아 검사, 정밀 초음파, 양수검사, 니프티 검사 등 산전검사 일정 확인", "태아특약 가입 가능 시기와 회사별 차이 안내", "선천이상·저체중아·인큐베이터·신생아 입원·수술 담보 확인", "출생 후 어린이보험으로 이어지는 보장 범위 설명", "30세 만기와 100세 만기, 갱신형·비갱신형, 보험료 유지 가능성 비교"],
+    keyQuestions: ["현재 임신 몇 주차이신가요?", "기형아 검사나 정밀 초음파에서 추가 소견을 들으신 적이 있으신가요?", "태아 시기에만 준비 가능한 담보를 우선 챙기고 싶으신가요?", "출생 후 어린이보험까지 길게 가져갈지, 30세 전후로 실속 있게 가져갈지 생각해보셨나요?"],
+    talk: ["태아보험은 아이가 태어나기 전에는 태아특약을 붙이고, 출생 후에는 어린이보험처럼 이어지는 구조입니다.", "가입시기는 늦어질수록 산전검사 결과가 늘어나 심사가 까다로워질 수 있어 주수 확인이 가장 먼저입니다.", "태아 담보는 출생 전후 위험을, 어린이 보장은 성장 과정의 질병·상해·배상책임을 담당한다고 나눠 설명하면 쉽습니다."],
+    caution: ["보험사별 가입 가능 주수와 태아특약 마감 시기가 다릅니다.", "산전검사 이상소견, 계류유산·유산 이력, 임신성 당뇨·고혈압 등은 심사에 영향을 줄 수 있습니다.", "태아특약은 출생 후 자동 종료되거나 어린이 담보와 역할이 달라질 수 있으므로 담보별 기간을 확인합니다."],
+  },
+  {
+    id: "mother-rider-disclosure",
+    title: "산모특약과 고지사항",
+    tag: "임신질환 / 제왕절개 / 입원일당 / 고지의무",
+    summary: "산모특약은 아이 보장과 별도로 임신·출산 과정에서 산모에게 생길 수 있는 위험을 보완하는 선택 담보입니다.",
+    why: "산모특약은 태아보험 상담에서 빠지기 쉽지만 실제로는 임신중독증, 임신성 당뇨, 조기진통, 제왕절개, 유산·조산, 산모 입원 같은 위험을 따로 확인해야 합니다. 고지 누락은 인수 제한이나 보험금 분쟁으로 이어질 수 있어 질문 순서가 중요합니다.",
+    consultFlow: ["산모 나이, 임신 주수, 자연임신·난임시술 여부 확인", "임신성 당뇨, 고혈압, 갑상선, 자궁근종, 자궁경부무력증 등 진단·치료 이력 확인", "유산, 조산, 계류유산, 사산, 제왕절개 이력 확인", "현재 복용약, 입원·통원·검사 재검 여부 확인", "산모특약 종류별 필요성 설명", "고지 후 부담보·할증·특약 제한 가능성 안내"],
+    keyQuestions: ["이번 임신 중 재검이나 추가 검사를 권유받으신 적이 있으신가요?", "임신성 당뇨나 고혈압, 조기진통, 자궁경부 길이 문제를 들으신 적이 있나요?", "과거 유산이나 조산, 제왕절개 이력이 있으신가요?", "산모 입원이나 제왕절개 관련 담보까지 함께 보고 싶으신가요?"],
+    talk: ["태아보험이라고 해서 아이만 보는 것이 아니라, 임신과 출산 과정에서 산모에게 생길 수 있는 위험도 같이 봐야 합니다.", "산모특약은 임신중독증, 임신성 당뇨, 조기진통, 제왕절개, 입원 같은 항목을 회사별로 나눠 확인합니다.", "고지는 가입을 어렵게 하려는 절차가 아니라 나중에 보상받을 때 분쟁을 줄이는 안전장치입니다."],
+    caution: ["임신 관련 검사 결과, 재검 소견, 투약·입원 이력은 숨기지 않고 고지합니다.", "산모특약은 회사별 담보명과 보장 범위가 다르므로 약관 기준으로 확인합니다.", "고위험 산모, 고령 산모, 난임시술 임신은 보험사별 인수 기준이 달라질 수 있습니다."],
+  },
+  {
+    id: "multiple-pregnancy",
+    title: "다태아 태아보험",
+    tag: "쌍둥이 / 삼둥이 / 조산 / 저체중 / 별도심사",
+    summary: "다태아는 단태아보다 조산, 저체중, NICU 이용 가능성이 높아 가입 가능 여부와 보장 한도, 심사서류를 별도로 확인해야 합니다.",
+    why: "금융당국은 다태아도 태아보험 가입 대상이 되도록 인수 관행을 개선해 왔지만, 현장에서는 보험사별 주수 기준과 특약 제한, 서류심사가 다를 수 있습니다. 쌍둥이·삼둥이라는 사실 자체보다 산모와 태아의 실제 위험 소견을 기준으로 안내해야 합니다.",
+    consultFlow: ["다태아 수, 자연임신·시험관·인공수정 여부 확인", "융모막·양막 유형, 태아별 성장 차이, 선택적 태아감소술 여부 확인", "정밀 초음파와 기형아 검사 결과 확인", "태아별 피보험자 등록 방식과 보험료 산정 방식 확인", "저체중아·인큐베이터·신생아 입원 담보 한도 제한 가능성 설명", "보험사별 가입 가능 주수와 필요서류를 별도 비교"],
+    keyQuestions: ["쌍둥이인지, 삼둥이 이상인지 확인해도 괜찮을까요?", "태아별 성장 차이나 한 아이에게만 이상소견이 있다는 설명을 들으신 적이 있나요?", "보험사별로 다태아 인수 기준과 담보 한도가 달라질 수 있다는 점을 알고 계셨나요?", "다태아는 출생 후 저체중·인큐베이터·신생아 입원 가능성을 더 먼저 봐야 하는데 이 부분이 가장 걱정되시나요?"],
+    talk: ["다태아는 가입이 안 된다고 단정하지 말고, 보험사별 인수 기준과 태아별 건강 소견을 확인해야 합니다.", "다태아는 조산과 저체중 위험 때문에 저체중아, 인큐베이터, 신생아 입원 담보를 더 꼼꼼히 봐야 합니다.", "한 아이만 보는 것이 아니라 태아별 보장 등록과 보험료, 제한 담보를 각각 확인하는 방식으로 접근하겠습니다."],
+    caution: ["다태아 사실을 단태아로 청약하면 고지의무 위반 문제가 생길 수 있습니다.", "태아 수, 난임시술, 이상소견, 선택적 감수술, 입원·투약 이력은 반드시 고지합니다.", "삼둥이 이상은 최근 인수 기준이 개선되는 흐름이 있으나 보험사별 실제 심사 기준을 확인해야 합니다."],
+  },
+  {
+    id: "prenatal-vs-child",
+    title: "태아보험 vs 어린이보험",
+    tag: "태아특약 / 어린이담보 / 가입시점 / 성장보장",
+    summary: "태아보험은 어린이보험에 출생 전후 특약을 붙인 구조이고, 어린이보험은 출생 후 성장 과정의 질병·상해를 중심으로 설계합니다.",
+    why: "고객은 태아보험과 어린이보험을 완전히 다른 상품으로 오해하기 쉽습니다. 핵심은 가입 시점과 태아특약 유무입니다. 태아 시기에는 선천이상·저체중아·인큐베이터 같은 출생 전후 위험을 준비하고, 출생 후에는 암·뇌·심장·입원·수술·골절·배상책임 같은 어린이 보장을 이어갑니다.",
+    consultFlow: ["태아 시기에만 가능한 담보와 출생 후 가능한 담보 구분", "태아특약 종료 시점과 어린이 담보 지속 기간 확인", "30세 만기와 100세 만기 설계 목적 비교", "출생 후 실손, 입원일당, 수술비, 진단비 보완 계획 확인", "아토피, 천식, 비염, 성조숙증, 학교폭력, 배상책임 등 성장기 담보 확인", "보험료 부담과 리모델링 가능성을 함께 안내"],
+    keyQuestions: ["출생 전후 위험이 걱정되시는 건가요, 아이가 자라면서 생길 질병·상해가 걱정되시는 건가요?", "태아특약은 임신 중에만 가입할 수 있고 출생 후에는 일부 담보를 넣기 어려울 수 있다는 점을 알고 계신가요?", "30세 만기로 실속 있게 가져갈지, 100세 만기로 길게 가져갈지 어느 쪽이 더 맞으실까요?"],
+    talk: ["태아보험은 어린이보험의 임신 중 가입 버전이라고 보시면 쉽습니다. 태아특약이 붙어 출생 전후 위험을 먼저 챙기는 구조입니다.", "어린이보험은 아이가 태어난 뒤 성장하면서 필요한 질병·상해·배상책임 보장을 중심으로 봅니다.", "태아보험은 빨리 가입하는 것이 목적이 아니라 검사 일정과 고지사항을 확인한 뒤 필요한 담보를 놓치지 않는 것이 목적입니다."],
+    caution: ["태아특약과 어린이 담보의 보장기간이 다를 수 있습니다.", "100세 만기 설계는 보험료 부담과 향후 의료환경 변화를 함께 고려합니다.", "출생 후 아이의 진단 이력이 생기면 추가 가입이나 보완이 제한될 수 있습니다."],
+  },
+]
+
 const petTopics: Topic[] = [
   {
     id: "petblie-guide",
@@ -495,7 +543,7 @@ const municipalTopics: Topic[] = [
   },
 ]
 
-const allTopics = [...protectionTopics, ...savingTopics, ...lifeTopics, ...liabilityTopics, ...petTopics, ...municipalTopics]
+const allTopics = [...protectionTopics, ...savingTopics, ...lifeTopics, ...liabilityTopics, ...prenatalTopics, ...petTopics, ...municipalTopics]
 
 export default function SalesBookPage() {
   const [activeTab, setActiveTab] = useState<TabId>("protection")
@@ -540,7 +588,7 @@ export default function SalesBookPage() {
           </div>
         </section>
 
-        <nav className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-white p-2 shadow-sm md:grid-cols-4 xl:grid-cols-7">
+        <nav className="mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-white p-2 shadow-sm md:grid-cols-4 xl:grid-cols-8">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => { setActiveTab(tab.id); const next = getTopics(tab.id)[0]; if (next) setSelectedTopic(next) }} className={`rounded-xl px-3 py-3 text-[13px] font-black transition ${activeTab === tab.id ? "bg-[#12325f] text-white" : "text-slate-500 hover:bg-slate-100"}`}>
               {tab.label}
@@ -624,6 +672,7 @@ function getTopics(tab: TabId): Topic[] {
   if (tab === "saving") return savingTopics
   if (tab === "life") return lifeTopics
   if (tab === "liability") return liabilityTopics
+  if (tab === "prenatal") return prenatalTopics
   if (tab === "pet") return petTopics
   if (tab === "municipal") return municipalTopics
   return protectionTopics
@@ -633,6 +682,7 @@ function findTabByTopic(id: string): TabId {
   if (savingTopics.some((topic) => topic.id === id)) return "saving"
   if (lifeTopics.some((topic) => topic.id === id)) return "life"
   if (liabilityTopics.some((topic) => topic.id === id)) return "liability"
+  if (prenatalTopics.some((topic) => topic.id === id)) return "prenatal"
   if (petTopics.some((topic) => topic.id === id)) return "pet"
   if (municipalTopics.some((topic) => topic.id === id)) return "municipal"
   return "protection"
