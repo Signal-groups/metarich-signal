@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>보장분석 추출 지침 — GPTs 참조 문서</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+    font-size: 12px; color: #1a1a1a; background: #fff;
+    word-break: keep-all;
+  }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none; }
+    .page-break { page-break-before: always; }
+    @page { margin: 15mm 12mm; size: A4; }
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 28px; }
+
+  /* 헤더 */
+  .doc-header { background: #1a2744; color: #fff; border-radius: 14px; padding: 24px 28px; margin-bottom: 24px; }
+  .doc-title { font-size: 20px; font-weight: 900; margin-bottom: 6px; }
+  .doc-sub { font-size: 12px; color: #94a3b8; }
+
+  /* 섹션 */
+  h2 { font-size: 14px; font-weight: 800; color: #1a2744; padding: 10px 14px;
+       background: #f0f4ff; border-left: 4px solid #1a2744; border-radius: 0 8px 8px 0;
+       margin: 20px 0 12px; }
+  h3 { font-size: 12px; font-weight: 800; color: #374151; margin: 14px 0 8px; }
+
+  /* 테이블 */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; }
+  th { background: #1a2744; color: #fff; padding: 7px 8px; text-align: left; font-weight: 700; }
+  td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  td.key { font-weight: 700; color: #1a2744; white-space: nowrap; }
+  td.wrong { color: #dc2626; }
+  td.right { color: #16a34a; font-weight: 700; }
+  td.kw { color: #6366f1; font-size: 10px; }
+
+  /* 섹션 배지 */
+  .section-icon { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800;
+                  padding: 6px 14px; border-radius: 99px; margin-bottom: 8px; }
+  .cancer    { background: #fef3c7; color: #92400e; }
+  .brain     { background: #fee2e2; color: #991b1b; }
+  .heart     { background: #fce7f3; color: #9d174d; }
+  .indemnity { background: #dcfce7; color: #14532d; }
+  .surgery   { background: #d1fae5; color: #065f46; }
+  .hosp      { background: #dbeafe; color: #1e3a8a; }
+  .nursing   { background: #ede9fe; color: #5b21b6; }
+
+  /* 규칙 박스 */
+  .rule-box { background: #fff7ed; border: 1px solid #fcd34d; border-radius: 10px;
+              padding: 12px 16px; margin-bottom: 12px; }
+  .rule-box .rule-title { font-weight: 800; color: #92400e; margin-bottom: 6px; font-size: 12px; }
+  .rule-box li { margin-left: 16px; margin-bottom: 4px; }
+
+  .warn-box { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px;
+              padding: 12px 16px; margin-bottom: 12px; }
+  .warn-box .warn-title { font-weight: 800; color: #dc2626; margin-bottom: 6px; }
+
+  /* 코드 */
+  code { font-family: 'Courier New', monospace; background: #f1f5f9; padding: 1px 5px;
+         border-radius: 4px; font-size: 10px; color: #0f172a; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mini-card { background: #f8fafc; border-radius: 10px; padding: 12px 14px; }
+  .mini-card h4 { font-size: 11px; font-weight: 800; color: #1a2744; margin-bottom: 8px; }
+  .mini-card li { margin-left: 14px; margin-bottom: 3px; font-size: 11px; color: #374151; }
+
+  .print-btn { position: fixed; bottom: 20px; right: 20px; background: #1a2744; color: #fff;
+               border: none; border-radius: 12px; padding: 12px 24px; font-size: 14px;
+               font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+
+  .amount-eg { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .amount-chip { background: #f0f4ff; border: 1px solid #c7d2fe; border-radius: 6px;
+                 padding: 3px 10px; font-size: 11px; font-weight: 700; color: #3730a3; }
+  .arrow { color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ PDF로 저장</button>
+
+<div class="wrap">
+
+  <!-- 헤더 -->
+  <div class="doc-header">
+    <div class="doc-title">보장분석 AI 추출 지침 — 상세 참조 문서</div>
+    <div class="doc-sub">GPTs 지식 파일 · insurance_analysis_v4 · 메타리치 시그널그룹</div>
+  </div>
+
+  <!-- ① 금액 단위 -->
+  <h2>① 금액 단위 규칙 — 만원 단위 순수 숫자</h2>
+  <div class="amount-eg">
+    <span class="amount-chip">5,000만원 → <strong>5000</strong></span>
+    <span class="amount-chip">1억원 → <strong>10000</strong></span>
+    <span class="amount-chip">3,000만원 → <strong>3000</strong></span>
+    <span class="amount-chip">500만원 → <strong>500</strong></span>
+    <span class="amount-chip">100만원 → <strong>100</strong></span>
+    <span class="amount-chip">30만원 → <strong>30</strong></span>
+    <span class="amount-chip">5만원/일 → <strong>5</strong></span>
+    <span class="amount-chip">20만원/일 → <strong>20</strong></span>
+    <span class="amount-chip">금액 불명 → <strong>null</strong></span>
+  </div>
+  <p style="margin-top:10px; color:#64748b; font-size:11px;">※ 일당 항목(입원일당·간병지원금)도 동일: 5만원/일 → <code>5</code></p>
+
+  <!-- ② 자주 틀리는 변환 -->
+  <h2>② 보험증권 원문 → 표준 담보명 변환 (필수)</h2>
+  <div class="warn-box">
+    <div class="warn-title">⚠️ 핵심 원칙</div>
+    보험증권에 "암진단금"이라 표기되어도 → <code>coverage_name</code>은 <strong>"일반암진단비"</strong>로 변환 입력.<br>
+    시스템은 coverage_name의 키워드로 보장분석표 행을 자동 매핑하므로 표준명 사용이 필수입니다.
+  </div>
+  <table>
+    <thead><tr><th>보험증권 원문 (이렇게 표기됨)</th><th class="wrong">❌ 틀린 입력</th><th class="right">✅ 올바른 입력</th></tr></thead>
+    <tbody>
+      <tr><td>암진단금, 암진단비, 암 진단보험금</td><td class="wrong">암진단금</td><td class="right">일반암진단비</td></tr>
+      <tr><td>갑상선암진단금, 경계성종양진단금, 유사암진단금</td><td class="wrong">갑상선암진단금</td><td class="right">유사암진단비</td></tr>
+      <tr><td>방사선항암치료비, 약물항암치료비, 항암방사선치료비</td><td class="wrong">방사선항암치료비</td><td class="right">항암치료비</td></tr>
+      <tr><td>뇌혈관질환진단금, 뇌혈관진단금</td><td class="wrong">뇌혈관질환진단금</td><td class="right">뇌혈관질환진단비</td></tr>
+      <tr><td>뇌졸중진단금, 뇌졸중진단보험금</td><td class="wrong">뇌졸중진단금</td><td class="right">뇌졸중진단비</td></tr>
+      <tr><td>뇌출혈진단금</td><td class="wrong">뇌출혈진단금</td><td class="right">뇌출혈진단비</td></tr>
+      <tr><td>심근경색진단금, 급성심근경색진단금</td><td class="wrong">심근경색진단금</td><td class="right">급성심근경색진단비</td></tr>
+      <tr><td>허혈성심장질환진단금, 허혈성심장진단금</td><td class="wrong">허혈성심장질환진단금</td><td class="right">허혈성심장질환진단비</td></tr>
+      <tr><td>입원급여금, 입원비, 질병입원비</td><td class="wrong">입원급여금</td><td class="right">질병입원일당</td></tr>
+      <tr><td>재해입원급여금, 상해입원비</td><td class="wrong">재해입원급여금</td><td class="right">상해입원일당</td></tr>
+      <tr><td>간병인지원금, 요양병원입원금, 장기간병지원금</td><td class="wrong">간병인지원금</td><td class="right">질병간병지원금</td></tr>
+      <tr><td>재해간병인지원금</td><td class="wrong">재해간병인지원금</td><td class="right">상해간병지원금</td></tr>
+      <tr><td>실손의료보험금, 의료비보장</td><td class="wrong">실손의료보험금</td><td class="right">질병입원의료비</td></tr>
+      <tr><td>1~5종수술비, 종합수술비</td><td class="wrong">종수술비</td><td class="right">질병1~5종수술비</td></tr>
+      <tr><td>2대주요치료비, 집중치료비, 뇌심장집중치료비</td><td class="wrong">집중치료비</td><td class="right">2대주요치료비</td></tr>
+      <tr><td>후유장해급여금 (질병)</td><td class="wrong">후유장해급여금</td><td class="right">질병후유장해진단비</td></tr>
+      <tr><td>재해후유장해급여금, 상해후유장해</td><td class="wrong">재해후유장해급여금</td><td class="right">상해후유장해진단비</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ③ 7대 필수 추출 영역 -->
+  <h2 class="page-break">③ 7대 필수 추출 영역 — 보장분석 리포트 기준</h2>
+  <p style="margin-bottom:14px; color:#475569;">아래 7개 영역은 고객 제안서 리포트에 직접 사용됩니다. 해당 담보가 있으면 반드시 추출하세요.</p>
+
+  <div class="grid2">
+    <div class="mini-card">
+      <h4><span class="section-icon cancer">🎗️ 암 보장</span></h4>
+      <ul>
+        <li><strong>일반암진단비</strong> ★ 최우선</li>
+        <li>유사암진단비 / 소액암진단비</li>
+        <li>암수술비</li>
+        <li>항암치료비 (방사선·약물)</li>
+        <li>표적항암치료비 / 면역항암치료비</li>
+        <li>중입자치료비 / 양성자치료비</li>
+        <li>암주요치료비 / 암집중치료비</li>
+      </ul>
+    </div>
+    <div class="mini-card">
+      <h4><span class="section-icon brain">🧠 뇌혈관 보장</span></h4>
+      <ul>
+        <li><strong>뇌혈관질환진단비</strong> ★ (가장 넓은 범위)</li>
+        <li>뇌졸중진단비 (허혈성+출혈성)</li>
+        <li>뇌출혈진단비 (출혈성만)</li>
+        <li>뇌혈관수술비</li>
+        <li>2대주요치료비 / 뇌심장집중치료비</li>
+      </ul>
+    </div>
+    <div class="mini-card">
+      <h4><span class="section-icon heart">❤️ 심장 보장</span></h4>
+      <ul>
+        <li><strong>급성심근경색진단비</strong> ★</li>
+        <li>허혈성심장질환진단비 (협심증 포함)</li>
+        <li>심혈관질환진단비</li>
+        <li>심혈관수술비</li>
+      </ul>
+    </div>
+    <div class="mini-card">
+      <h4><span class="section-icon indemnity">🏥 실손의료비</span></h4>
+      <ul>
+        <li>질병입원의료비 ★ (실손, 가입여부 중요)</li>
+        <li>질병통원의료비 / 질병외래의료비</li>
+        <li>상해입원의료비</li>
+        <li>상해통원의료비</li>
+        <li>※ amount는 보장한도 또는 null 입력</li>
+        <li>※ has_indemnity: true/false 반드시 설정</li>
+      </ul>
+    </div>
+    <div class="mini-card">
+      <h4><span class="section-icon surgery">🔪 수술비 보장</span></h4>
+      <ul>
+        <li><strong>질병수술비</strong> ★</li>
+        <li>질병1~5종수술비</li>
+        <li>상해수술비</li>
+        <li>상해1~5종수술비</li>
+        <li>N대수술비 (숫자 포함: 64대수술비)</li>
+        <li>창상봉합술</li>
+      </ul>
+    </div>
+    <div class="mini-card">
+      <h4><span class="section-icon hosp">🛏️ 입원일당 보장</span></h4>
+      <ul>
+        <li><strong>질병입원일당</strong> ★ (1일당 만원)</li>
+        <li>상해입원일당</li>
+        <li>교통상해입원일당</li>
+        <li>※ 5만원/일 → amount: 5</li>
+      </ul>
+    </div>
+  </div>
+  <div class="mini-card" style="margin-top:12px; border: 2px solid #8b5cf6;">
+    <h4><span class="section-icon nursing">👴 간병·재가 보장 (미가입 빈도 최고)</span></h4>
+    <ul style="display:flex; gap: 20px; flex-wrap:wrap;">
+      <li><strong>질병간병지원금</strong> ★ (1일당 만원, 20만원/일 → 20)</li>
+      <li>상해간병지원금 / 재해간병지원금</li>
+      <li>요양병원입원일당 → <code>질병간병지원금</code>으로 입력</li>
+    </ul>
+  </div>
+
+  <!-- ④ 전체 매핑표 -->
+  <h2 class="page-break">④ 전체 담보명 표준 매핑표</h2>
+  <table>
+    <thead><tr><th>보장분석표 항목</th><th>coverage_name 표준 입력값</th><th>매핑 키워드 (이 중 하나 포함 필수)</th></tr></thead>
+    <tbody>
+      <tr><td class="key">일반사망</td><td>일반사망보험금, 사망보험금</td><td class="kw">일반사망, 사망보험금</td></tr>
+      <tr><td class="key">질병사망</td><td>질병사망보험금</td><td class="kw">질병사망</td></tr>
+      <tr><td class="key">재해(상해)사망</td><td>재해사망보험금, 상해사망보험금</td><td class="kw">재해사망, 상해사망</td></tr>
+      <tr><td class="key" style="color:#92400e">★ 일반암진단비</td><td>일반암진단비, 암진단비, 통합암진단비</td><td class="kw">일반암, 암진단비, 통합암</td></tr>
+      <tr><td class="key">유사암/소액암</td><td>유사암진단비, 소액암진단비</td><td class="kw">유사암, 소액암</td></tr>
+      <tr><td class="key">암수술비</td><td>암수술비</td><td class="kw">암수술비</td></tr>
+      <tr><td class="key">항암(방사선/약물)</td><td>항암치료비, 방사선항암치료비</td><td class="kw">항암치료비, 방사선치료, 약물항암</td></tr>
+      <tr><td class="key">표적항암치료</td><td>표적항암치료비, 면역항암치료비</td><td class="kw">표적항암, 면역항암</td></tr>
+      <tr><td class="key">중입자치료</td><td>중입자치료비, 양성자치료비</td><td class="kw">중입자, 양성자</td></tr>
+      <tr><td class="key">암주요치료비</td><td>암주요치료비, 암집중치료비</td><td class="kw">암주요치료, 암집중치료</td></tr>
+      <tr><td class="key" style="color:#991b1b">★ 뇌혈관질환</td><td>뇌혈관질환진단비</td><td class="kw">뇌혈관질환, 뇌혈관진단</td></tr>
+      <tr><td class="key">뇌졸중</td><td>뇌졸중진단비</td><td class="kw">뇌졸중</td></tr>
+      <tr><td class="key">뇌출혈</td><td>뇌출혈진단비</td><td class="kw">뇌출혈</td></tr>
+      <tr><td class="key" style="color:#9d174d">★ 급성심근경색</td><td>급성심근경색진단비, 심근경색진단비</td><td class="kw">급성심근경색, 심근경색</td></tr>
+      <tr><td class="key">허혈성심장질환</td><td>허혈성심장질환진단비</td><td class="kw">허혈성심장, 허혈성</td></tr>
+      <tr><td class="key">심혈관질환</td><td>심혈관질환진단비</td><td class="kw">심혈관질환</td></tr>
+      <tr><td class="key">뇌혈관수술비</td><td>뇌혈관수술비, 뇌수술비</td><td class="kw">뇌혈관수술비, 뇌수술비</td></tr>
+      <tr><td class="key">심혈관수술비</td><td>심혈관수술비, 심장수술비</td><td class="kw">심혈관수술비, 심장수술비</td></tr>
+      <tr><td class="key">2대주요치료비</td><td>2대주요치료비, 주요치료비</td><td class="kw">2대주요치료, 주요치료비</td></tr>
+      <tr><td class="key">질병후유장해</td><td>질병후유장해진단비</td><td class="kw">질병후유장해, 질병후유</td></tr>
+      <tr><td class="key">상해후유장해</td><td>상해후유장해진단비, 재해후유장해진단비</td><td class="kw">상해후유장해, 재해후유</td></tr>
+      <tr><td class="key">골절진단비</td><td>골절진단비</td><td class="kw">골절진단비, 골절진단</td></tr>
+      <tr><td class="key">골절수술비</td><td>골절수술비</td><td class="kw">골절수술비, 골절수술</td></tr>
+      <tr><td class="key">5대골절진단비</td><td>5대골절진단비</td><td class="kw">5대골절진단, 5대골절</td></tr>
+      <tr><td class="key">깁스치료비</td><td>깁스치료비, 부목치료비</td><td class="kw">깁스, 부목</td></tr>
+      <tr><td class="key">화상진단비</td><td>화상진단비</td><td class="kw">화상진단비, 화상진단</td></tr>
+      <tr><td class="key">화상수술비</td><td>화상수술비</td><td class="kw">화상수술비, 화상수술</td></tr>
+      <tr><td class="key" style="color:#14532d">★ 질병입원의료비(실손)</td><td>질병입원의료비, 질병입원실손의료비</td><td class="kw">질병입원의료비, 질병입원실비</td></tr>
+      <tr><td class="key">질병통원의료비(실손)</td><td>질병통원의료비, 실손의료비</td><td class="kw">질병통원의료비, 실손의료비, 실손</td></tr>
+      <tr><td class="key">상해입원의료비(실손)</td><td>상해입원의료비</td><td class="kw">상해입원의료비, 상해입원실비</td></tr>
+      <tr><td class="key">상해통원의료비(실손)</td><td>상해통원의료비</td><td class="kw">상해통원의료비, 상해외래</td></tr>
+      <tr><td class="key" style="color:#065f46">★ 질병수술비</td><td>질병수술비</td><td class="kw">질병수술비</td></tr>
+      <tr><td class="key">질병1~5종수술비</td><td>질병1~5종수술비, 질병종수술비</td><td class="kw">질병1~5종, 1~5종수술</td></tr>
+      <tr><td class="key">상해수술비</td><td>상해수술비</td><td class="kw">상해수술비</td></tr>
+      <tr><td class="key">상해1~5종수술비</td><td>상해1~5종수술비</td><td class="kw">상해1~5종</td></tr>
+      <tr><td class="key">N대수술비</td><td>N대수술비, 64대수술비, 7대수술비</td><td class="kw">n대수술, 64대수술, 7대수술</td></tr>
+      <tr><td class="key">창상봉합술</td><td>창상봉합술, 봉합술치료비</td><td class="kw">창상봉합, 봉합술</td></tr>
+      <tr><td class="key" style="color:#1e3a8a">★ 질병입원일당</td><td>질병입원일당, 질병입원비</td><td class="kw">질병입원일당, 질병입원비</td></tr>
+      <tr><td class="key">상해입원일당</td><td>상해입원일당, 상해입원비</td><td class="kw">상해입원일당, 상해입원비</td></tr>
+      <tr><td class="key">교통상해입원일당</td><td>교통상해입원일당</td><td class="kw">교통상해입원, 교통입원</td></tr>
+      <tr><td class="key" style="color:#5b21b6">★ 질병간병지원금</td><td>질병간병지원금</td><td class="kw">질병간병</td></tr>
+      <tr><td class="key">상해간병지원금</td><td>상해간병지원금, 재해간병지원금</td><td class="kw">상해간병, 재해간병</td></tr>
+      <tr><td class="key">교통사고처리지원금</td><td>교통사고처리지원금</td><td class="kw">교통사고처리지원금</td></tr>
+      <tr><td class="key">교통사고벌금</td><td>교통사고벌금</td><td class="kw">교통사고벌금, 벌금</td></tr>
+      <tr><td class="key">변호사선임비용</td><td>변호사선임비용</td><td class="kw">변호사선임, 법률비용</td></tr>
+      <tr><td class="key">자동차부상치료비</td><td>자동차부상치료비</td><td class="kw">자동차부상, 부상치료비</td></tr>
+      <tr><td class="key">임플란트</td><td>임플란트</td><td class="kw">임플란트</td></tr>
+      <tr><td class="key">크라운</td><td>크라운, 보철치료비</td><td class="kw">크라운, 보철</td></tr>
+      <tr><td class="key">가족일상배상책임</td><td>가족일상배상책임</td><td class="kw">가족일상배상, 일상배상</td></tr>
+      <tr><td class="key">화재벌금</td><td>화재벌금</td><td class="kw">화재벌금, 화재</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ⑤ 오류 대응 -->
+  <h2>⑤ 분량 초과 오류 발생 시 분할 출력 방법</h2>
+  <div class="rule-box">
+    <div class="rule-title">PDF가 많거나 "Something went wrong" 오류 발생 시</div>
+    <ul>
+      <li><strong>1단계</strong>: "policies 배열만 먼저 출력해줘 (coverages 포함)"</li>
+      <li><strong>2단계</strong>: "coverage_summary와 analysis를 출력해줘"</li>
+      <li>보험사 1건씩 따로 업로드하여 분석 후 JSON 합치기</li>
+      <li>한 계약의 담보가 30개 이상이면 "담보만 먼저" 요청</li>
+    </ul>
+  </div>
+
+  <!-- ⑥ 출력 예시 -->
+  <h2>⑥ 올바른 출력 예시</h2>
+  <div style="background:#f8fafc; border-radius:10px; padding:14px 16px; font-family:'Courier New',monospace; font-size:10px; line-height:1.7; border:1px solid #e2e8f0; overflow-x:auto;">
+<pre>{
+  "version": "insurance_analysis_v4",
+  "customer": { "name": "홍길동", "age": 45, "gender": "남성", "monthly_premium": 35, "contract_count": 2 },
+  "policies": [
+    {
+      "company": "삼성화재",
+      "product_name": "무배당건강보험",
+      "start_date": "2020.03.15",
+      "end_date": null,
+      "payment_period": "20년납100세만기",
+      "monthly_premium": 20,
+      "coverages": [
+        { "coverage_name": "일반암진단비",       "amount": 3000, "category": "암",   "coverage_type": "비갱신형" },
+        { "coverage_name": "유사암진단비",        "amount": 300,  "category": "암",   "coverage_type": "비갱신형" },
+        { "coverage_name": "항암치료비",          "amount": 100,  "category": "암",   "coverage_type": "갱신형"   },
+        { "coverage_name": "뇌졸중진단비",        "amount": 2000, "category": "뇌",   "coverage_type": "비갱신형" },
+        { "coverage_name": "급성심근경색진단비",  "amount": 2000, "category": "심장", "coverage_type": "비갱신형" },
+        { "coverage_name": "질병수술비",          "amount": 300,  "category": "수술", "coverage_type": "비갱신형" },
+        { "coverage_name": "질병입원일당",        "amount": 5,    "category": "입원", "coverage_type": "갱신형"   },
+        { "coverage_name": "질병입원의료비",      "amount": null, "category": "실손", "coverage_type": "비갱신형" }
+      ]
+    }
+  ],
+  "coverage_summary": {
+    "cancer": 3000, "similar_cancer": 300, "cancer_chemo": 100,
+    "brain_vascular": 0, "brain_stroke": 2000,
+    "heart_mi": 2000, "ischemic_heart": 0,
+    "has_indemnity": true,
+    "disease_surgery": 300, "injury_surgery": 0,
+    "disease_hosp_daily": 5, "injury_hosp_daily": 0,
+    "nursing_daily": 0
+  },
+  "analysis": {
+    "summary": "실손·뇌졸중·심근경색 기본 보장 있으나 간병·상해수술 미비",
+    "strengths": ["뇌졸중·심근경색 진단비 2000만원 확보"],
+    "weaknesses": ["간병지원금 미가입 — 노후 공백", "상해수술비 미가입"],
+    "recommendation": ["간병보험 20만원/일 이상 추가", "상해수술비 500만원 이상 확보"]
+  }
+}</pre>
+  </div>
+
+  <!-- 푸터 -->
+  <div style="margin-top:24px; padding:16px; background:#f8fafc; border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-size:11px; color:#64748b;">
+      <div style="font-weight:700; color:#1a2744;">메타리치 시그널그룹 · 보장분석 AI 참조 문서</div>
+      <div>insurance_analysis_v4 · 2026.05.29</div>
+    </div>
+    <div style="font-size:10px; color:#94a3b8; text-align:right;">
+      ★ 항목은 리포트 핵심 지표 — 반드시 추출<br>
+      매핑 키워드가 coverage_name에 포함되어야 자동 인식
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+</body>
+</html>

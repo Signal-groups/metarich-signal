@@ -332,6 +332,11 @@ export default function UploadPage() {
         setGptsError('분석을 연결할 고객을 먼저 선택해 주세요.')
         return
       }
+      const completenessError = getGptsCompletenessError(parsed)
+      if (completenessError) {
+        setGptsError(completenessError)
+        return
+      }
       const customerName = parsed?.customer?.name || parsed?.customer_name || selectedCustomer?.name || 'GPT 보장분석'
       const id = `gpts-analysis-${Date.now()}-${Math.random().toString(16).slice(2)}`
       const summary = formatGptsAnalysis(parsed)
@@ -476,6 +481,7 @@ export default function UploadPage() {
         <div className="flex justify-between items-center" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
           <div className="text-muted" style={{ fontSize: 12 }}>
             코드블록 표시가 함께 복사되어도 자동으로 JSON 부분만 읽습니다.
+            1차/2차로 나뉜 JSON도 이어 붙이면 자동으로 합쳐 적용합니다.
           </div>
           <button className="btn btn-secondary btn-sm" onClick={applyGptsCode} disabled={!gptsCode.trim()} style={{ opacity: gptsCode.trim() ? 1 : 0.45 }}>
             분석 적용하기
@@ -699,8 +705,8 @@ function parseGptsJsonCode(value: string) {
   const raw = String(value || '').trim()
   if (!raw) throw new Error('붙여넣은 코드가 없습니다.')
   const withoutFence = raw
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
+    .replace(/```(?:json)?/gi, '')
+    .replace(/```/g, '')
     .trim()
   if (withoutFence.includes('[CONTRACT]') || withoutFence.includes('[COVERAGE]')) {
     return parseGptsBlockCode(withoutFence)
@@ -708,10 +714,101 @@ function parseGptsJsonCode(value: string) {
   const start = withoutFence.indexOf('{')
   const end = withoutFence.lastIndexOf('}')
   if (start < 0 || end < start) throw new Error('JSON 형식의 중괄호를 찾지 못했습니다.')
-  const jsonText = withoutFence.slice(start, end + 1)
-  const parsed = JSON.parse(jsonText)
+  const parsedObjects = extractJsonObjects(withoutFence).map((jsonText) => JSON.parse(jsonText))
+  const parsed = parsedObjects.length === 1 ? parsedObjects[0] : mergeGptsJsonObjects(parsedObjects)
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('JSON 객체 형식으로 생성해 주세요.')
   return parsed
+}
+
+function extractJsonObjects(value: string) {
+  const objects: string[] = []
+  let start = -1
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index]
+
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (char === '\\') {
+        escaped = true
+      } else if (char === '"') {
+        inString = false
+      }
+      continue
+    }
+
+    if (char === '"') {
+      inString = true
+      continue
+    }
+
+    if (char === '{') {
+      if (depth === 0) start = index
+      depth += 1
+      continue
+    }
+
+    if (char === '}') {
+      depth -= 1
+      if (depth === 0 && start >= 0) {
+        objects.push(value.slice(start, index + 1))
+        start = -1
+      }
+      if (depth < 0) depth = 0
+    }
+  }
+
+  if (objects.length === 0) throw new Error('JSON 객체를 찾지 못했습니다.')
+  return objects
+}
+
+function mergeGptsJsonObjects(objects: unknown[]) {
+  return objects.reduce((merged, current) => mergeGptsValue(merged, current), {})
+}
+
+function mergeGptsValue(base: unknown, incoming: unknown): unknown {
+  if (Array.isArray(base) || Array.isArray(incoming)) {
+    const baseArray = Array.isArray(base) ? base : []
+    const incomingArray = Array.isArray(incoming) ? incoming : []
+    return [...baseArray, ...incomingArray]
+  }
+
+  if (isPlainObject(base) && isPlainObject(incoming)) {
+    const result: Record<string, unknown> = { ...base }
+    Object.entries(incoming).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return
+      result[key] = key in result ? mergeGptsValue(result[key], value) : value
+    })
+    return result
+  }
+
+  return incoming ?? base
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function getGptsCompletenessError(data: unknown) {
+  if (!isPlainObject(data)) return ''
+  const customer = isPlainObject(data.customer) ? data.customer : {}
+  const declaredCount = numericValue(customer.contract_count ?? data.contract_count)
+  const policies = Array.isArray(data.policies) ? data.policies : Array.isArray(data.contracts) ? data.contracts : []
+
+  if (declaredCount > 0 && policies.length < declaredCount) {
+    return `계약 수는 ${declaredCount}건으로 표시됐지만 실제 JSON에는 ${policies.length}건만 들어 있습니다. GPTs에서 남은 계약을 계속 출력하게 한 뒤, 1차/2차/마지막 JSON을 모두 이어 붙여 적용해 주세요.`
+  }
+
+  return ''
+}
+
+function numericValue(value: unknown) {
+  const parsed = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
 function parseGptsBlockCode(value: string) {
