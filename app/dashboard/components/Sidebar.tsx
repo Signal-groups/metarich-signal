@@ -259,6 +259,11 @@ export default function Sidebar({
     setIsOpen(false);
   };
 
+  const openBrandingAi = () => {
+    window.open(`${window.location.origin}/dashboard?tab=branding`, "_blank", "noopener,noreferrer");
+    setIsOpen(false);
+  };
+
   const openInsuranceLibrary = () => {
     window.open(`${window.location.origin}/insurance-tools/coverage-stats`, "_blank", "noopener,noreferrer");
     setIsOpen(false);
@@ -375,7 +380,7 @@ export default function Sidebar({
                   icon="🎨"
                   label="설계사 브랜딩 AI"
                   active={activeTab === 'branding'}
-                  onClick={() => onTabChange && onTabChange('tab:branding')}
+                  onClick={openBrandingAi}
                   badge="베타"
                 />
               )}
