@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import { ArrowLeft, ClipboardCheck, Search, ShieldCheck } from "lucide-react"
 
-type CategoryId = "life" | "nonLife" | "prenatal" | "pet" | "underwriting" | "talk"
+type CategoryId = "life" | "nonLife" | "prenatal" | "pet" | "joint" | "dental" | "underwriting" | "talk"
 
 type ProductTopic = {
   id: string
@@ -28,7 +28,9 @@ const categories: { id: CategoryId; label: string; caption: string }[] = [
   { id: "life", label: "생명보험", caption: "종신, 정기, 연금처럼 기간과 목적을 먼저 나누는 영역" },
   { id: "nonLife", label: "손해보험", caption: "실손, 건강, 운전자, 재물처럼 실제 손해와 비용을 보완하는 영역" },
   { id: "prenatal", label: "태아보험", caption: "태아특약, 산모특약, 고지사항, 다태아 심사를 함께 정리하는 영역" },
-  { id: "pet", label: "펫보험", caption: "DB손보 펫블리 기준 의료비, 확장담보, 할인과 청구를 정리하는 영역" },
+  { id: "pet", label: "펫보험", caption: "반려동물 의료비, 확장담보, 할인과 청구를 정리하는 영역" },
+  { id: "joint", label: "관절", caption: "무릎 관절염, 연골 손상, 주사·내시경·재생·치환 치료 흐름을 정리하는 영역" },
+  { id: "dental", label: "치아", caption: "충치, 잇몸질환, 보존·보철치료, 가입심사와 청구 기준을 정리하는 영역" },
   { id: "underwriting", label: "고지와 심사", caption: "일반심사, 간편심사, 부담보를 상담 전에 정리하는 영역" },
   { id: "talk", label: "상담 흐름", caption: "상품 설명을 고객 상황과 질문으로 바꾸는 영역" },
 ]
@@ -306,8 +308,8 @@ const topics: ProductTopic[] = [
   {
     id: "pet",
     category: "pet",
-    group: "DB손보 펫블리 · 기본 구조",
-    title: "펫블리 반려견보험",
+    group: "펫보험 · 기본 구조",
+    title: "반려동물 의료비보험",
     purpose: "반려견의 질병·상해 치료비를 자기부담금과 보장비율 구조로 보완하고, 확장 담보와 할인제도, 모바일 청구 흐름까지 함께 확인하는 상품입니다.",
     productTypes: [
       { name: "반려동물 의료비", feature: "동물병원 입원·통원·수술 치료비를 자기부담금 차감 후 선택한 보장비율 안에서 보완합니다.", recommend: "반려견 병원비 부담과 갱신형 의료비 보장을 함께 보고 싶은 보호자", limits: ["1일·연간 한도와 보장비율을 확인해야 합니다.", "기존 질병, 면책기간, 감액 조건이 적용될 수 있습니다."] },
@@ -316,14 +318,14 @@ const topics: ProductTopic[] = [
     ],
     fit: ["반려견 병원비 부담이 걱정되는 고객", "슬개골·피부·구강질환처럼 자주 언급되는 질환이 걱정되는 고객", "할인제도와 청구 편의까지 함께 보고 싶은 고객"],
     keyQuestions: ["보장비율과 자기부담금에 따라 실제 받는 보험금이 달라진다는 점을 알고 계신가요?", "입원, 통원, 수술 한도와 갱신 주기를 확인해보셨나요?", "슬개골, 피부, 구강질환, MRI/CT 검사처럼 자주 문제되는 항목이 보장되는지 보셨나요?"],
-    talkPoint: "펫블리는 병원비 전액을 대신 내주는 구조가 아니라, 자기부담금을 뺀 뒤 선택한 보장비율만큼 의료비 부담을 낮추고 필요한 특약을 더하는 구조라고 설명합니다.",
+    talkPoint: "펫보험은 병원비 전액을 대신 내주는 구조가 아니라, 자기부담금을 뺀 뒤 선택한 보장비율만큼 의료비 부담을 낮추고 필요한 특약을 더하는 구조라고 설명합니다.",
     caution: ["나이, 품종, 기존 질병, 면책기간, 갱신 보험료를 확인합니다.", "미용, 예방, 중성화, 선천성 질환 등 보장 제외 가능 항목을 구분합니다.", "자료는 교육용 길라잡이 기준이므로 실제 가입 전 상품설명서와 약관을 확인합니다."],
   },
   {
     id: "petblie-special",
     category: "pet",
-    group: "DB손보 펫블리 · 확장 담보",
-    title: "펫블리 확장 보장",
+    group: "펫보험 · 확장 담보",
+    title: "반려동물 확장 보장",
     purpose: "기본 의료비 외에 슬관절·고관절, 특정피부약물치료, 치과·구강질환, MRI/CT/내시경 등 실제 상담에서 질문이 많은 담보를 분리해 확인합니다.",
     productTypes: [
       { name: "슬관절·고관절 탈구", feature: "소형견에서 상담 빈도가 높은 슬개골과 고관절 관련 치료비를 별도 관점으로 점검합니다.", recommend: "토이푸들, 포메라니안 등 관절 질환 걱정이 큰 보호자", limits: ["가입 전 증상이나 진단 이력은 제한될 수 있습니다.", "수술·검사·재활 비용의 인정 범위를 확인합니다."] },
@@ -338,7 +340,7 @@ const topics: ProductTopic[] = [
   {
     id: "petblie-discount-claim",
     category: "pet",
-    group: "DB손보 펫블리 · 할인과 청구",
+    group: "펫보험 · 할인과 청구",
     title: "할인제도와 펫보험 청구 서비스",
     purpose: "예방접종, 유기동물 입양, 반려동물 등록, 다둥이 할인 같은 보험료 절감 포인트와 모바일 청구 흐름을 함께 안내합니다.",
     productTypes: [
@@ -482,6 +484,38 @@ const topics: ProductTopic[] = [
     talkPoint: "상품명보다 사용 상황을 먼저 말하면 고객은 보험을 비용이 아니라 해결 도구로 이해합니다.",
     caution: ["특정 회사명이나 상품명 중심의 설명은 피합니다.", "장점만 말하지 말고 제한 조건과 유지 부담을 같이 설명합니다."],
   },
+  {
+    id: "joint-care",
+    category: "joint",
+    group: "관절 · 무릎질환",
+    title: "관절보험",
+    purpose: "무릎 관절염은 단순 통증에서 시작해 주사치료, 관절내시경, 연골재생치료, 인공관절치환술까지 단계적으로 비용이 커질 수 있습니다. 관절 보장은 질병코드, 치료 단계, 직업 위험, 고지 기준을 함께 확인해야 하는 상품군입니다.",
+    productTypes: [
+      { name: "관절염 진단·치료비", feature: "류마티스관절염, 퇴행성관절염, 무릎관절증 등 관절 질환의 진단과 치료 흐름을 기준으로 보장 필요성을 설명합니다.", recommend: "무릎 통증이 잦거나 가족력, 반복 사용 직업, 50대 이후 퇴행성 변화가 걱정되는 고객", limits: ["질병코드와 약관상 보장 범위가 일치하는지 확인합니다.", "이미 진단·수술·재검사 소견이 있으면 심사 제한이 생길 수 있습니다."] },
+      { name: "관절 주사·내시경 치료", feature: "스테로이드주사, 연골주사, 관절내시경처럼 초기·중기 치료에서 반복될 수 있는 비용을 점검합니다.", recommend: "통원 주사치료를 반복하거나 관절내시경 가능성을 안내받은 고객", limits: ["단순 통원치료와 수술·입원 소견은 고지와 심사에서 다르게 봅니다.", "치료 횟수, 치료명, 수술 인정 여부를 진료기록으로 확인합니다."] },
+      { name: "연골재생·인공관절 보장", feature: "줄기세포치료, 연골재생치료, 부분 또는 전체 인공관절치환술처럼 고액 치료 구간을 별도로 점검합니다.", recommend: "연골 손상 진단을 받았거나 말기 관절염, 치환술 가능성이 있는 고객", limits: ["재생치료는 치료명과 적응증에 따라 보장 여부가 달라질 수 있습니다.", "인공관절은 수술 부위, 부분·전체 여부, 동일 관절 반복 여부를 확인합니다."] },
+    ],
+    fit: ["운수업, 군인, 운동선수, 트레이너, 식당·백화점 종사자, 요양보호사, 택배기사처럼 무릎 사용량이 많은 고객", "무릎 통증, 연골 손상, 관절염 가족력이 있는 고객", "실손 외에 반복 치료비와 수술비 보완이 필요한 고객"],
+    keyQuestions: ["최근 3개월 안에 입원·수술·재검사 소견을 들은 적이 있나요?", "2년 안에 관절 관련 입원이나 수술 이력이 있나요?", "무릎 주사치료나 통원치료를 반복하고 있나요?", "직업상 오래 서 있거나 무릎을 반복적으로 쓰는 시간이 많나요?"],
+    talkPoint: "관절 보장은 '무릎이 아픈가'보다 '어느 단계의 치료까지 갈 수 있는가'를 보는 상담입니다. 초기 주사치료부터 말기 인공관절까지 치료 단계별 비용 차이를 보여주면 고객이 필요성을 빠르게 이해합니다.",
+    caution: ["회사명과 상품명보다 질병코드, 치료명, 수술 인정 조건을 먼저 확인합니다.", "단순 통증만으로 보장을 단정하지 말고 진단명과 검사 결과를 기준으로 안내합니다.", "유병자 가입 가능 여부는 3개월·2년·5년 고지 기준을 분리해 확인합니다."],
+  },
+  {
+    id: "dental-care",
+    category: "dental",
+    group: "치아 · 보존·보철",
+    title: "치아보험",
+    purpose: "치아보험은 충치와 잇몸질환을 중심으로 보존치료와 보철치료를 나누어 설명해야 합니다. 유치·영구치의 정의, 충치 단계, 잇몸치료, 평균 치료비, 가입심사와 청구서류까지 연결해야 상담 완성도가 높아집니다.",
+    productTypes: [
+      { name: "충전·크라운 보존치료", feature: "아말감, 레진, 글래스아이오노머, 인레이·온레이, 크라운처럼 치아를 발치하지 않고 치료하는 구간을 설명합니다.", recommend: "충치 치료가 잦거나 레진·인레이·크라운 비용 부담을 걱정하는 고객", limits: ["치료 완료 후 청구 가능한 항목과 감액기간을 확인합니다.", "기존에 진단받은 치아는 보장개시일 이전 진단 여부를 확인해야 합니다."] },
+      { name: "임플란트·브릿지·틀니", feature: "영구치 발치 이후 임플란트, 브릿지, 틀니 같은 보철치료를 준비하는 영역입니다.", recommend: "치아 상실 위험이 있거나 부모님 보철치료 비용을 걱정하는 고객", limits: ["임플란트는 보통 발치일을 기준으로 지급 여부를 봅니다.", "정상치아가 아닌 이미 없는 치아, 유치, 사랑니, 기형치아는 제한될 수 있습니다."] },
+      { name: "잇몸치료와 가입심사", feature: "스케일링, 치근활택술, 치주소파술, 잇몸절개·이식처럼 치주질환 진행 단계와 가입 가능 여부를 함께 봅니다.", recommend: "스케일링 외 잇몸치료 이력이 있거나 최근 치과 방문 이력이 있는 고객", limits: ["현재 틀니·브릿지를 끼고 있으면 가입 제한이 생길 수 있습니다.", "최근 5년 치주질환 수술·발치·잇몸 수술 이력, 1년 내 충치 치료 여부를 확인합니다."] },
+    ],
+    fit: ["치과 치료비를 한 번에 크게 부담한 경험이 있는 고객", "자녀의 유치·영구치 관리와 충치 예방 상담이 필요한 고객", "부모님 임플란트·틀니·브릿지 비용을 걱정하는 고객"],
+    keyQuestions: ["현재 틀니나 브릿지를 끼고 있나요?", "마지막 치과 방문일이 5년이 지났나요?", "최근 5년 안에 치주질환으로 수술·발치·잇몸수술 소견을 받은 적이 있나요?", "최근 1년 안에 충치 치료를 받았거나 치료 필요 소견을 들은 적이 있나요?"],
+    talkPoint: "치아보험은 '치과비가 비싸다'에서 끝내지 말고 충전, 크라운, 보철, 잇몸치료가 각각 언제 청구되는지 구분해줘야 합니다. 고객이 받은 치료명이 무엇인지 확인하면 보장 공백과 가입 가능 여부를 바로 정리할 수 있습니다.",
+    caution: ["보장개시일 이전에 진단받은 치아는 이후 치료해도 보장 제한이 있을 수 있습니다.", "치료 중인 치아는 치료 완료 후 가입 가능 여부를 다시 확인합니다.", "진단서·소견서 대신 치과치료확인서가 필요한 경우가 많아 병원에 양식 작성을 요청하도록 안내합니다."],
+  },
 ]
 
 function getTopics(category: CategoryId, query: string) {
@@ -574,7 +608,7 @@ export default function ProductAllPage() {
                         isOpen ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      <span className={`h-8 w-8 rounded-lg ${category.id === "life" ? "bg-blue-600/35" : category.id === "nonLife" ? "bg-rose-600/35" : category.id === "prenatal" ? "bg-orange-500/35" : category.id === "pet" ? "bg-emerald-500/35" : category.id === "underwriting" ? "bg-amber-500/30" : "bg-sky-500/30"}`} />
+                      <span className={`h-8 w-8 rounded-lg ${category.id === "life" ? "bg-blue-600/35" : category.id === "nonLife" ? "bg-rose-600/35" : category.id === "prenatal" ? "bg-orange-500/35" : category.id === "pet" ? "bg-emerald-500/35" : category.id === "joint" ? "bg-lime-500/30" : category.id === "dental" ? "bg-cyan-500/30" : category.id === "underwriting" ? "bg-amber-500/30" : "bg-sky-500/30"}`} />
                       <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-black">{category.label}의 모든 것</span>
                         <span className="mt-1 block text-[11px] font-bold leading-4 text-slate-500">{category.caption}</span>

@@ -310,5 +310,9 @@ function formatAge(birthDate?: string) {
 }
 
 function formatWon(value?: number) {
-  return value ? `${Number(value).toLocaleString()}원` : '-'
+  const v = Number(value) || 0
+  if (v === 0) return '-'
+  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억원`
+  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
+  return `${v.toLocaleString()}원`
 }

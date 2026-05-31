@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../../lib/supabase'
 import type { jsPDF as JsPDFType } from 'jspdf'
+import { buildStyledSheet } from '../../../lib/coverageExcel'
 
 const UPLOAD_STORAGE_KEY = 'signal-crm-upload-files'
 const TARGET_STORAGE_KEY = 'signal-crm-coverage-targets'
@@ -34,26 +35,165 @@ const categoryLabels: Record<string, string> = {
   dental: '치아',
 }
 
+// ── 정액 보장 항목 (금액 기준) ────────────────────────────────────────────
 const targetItems = [
-  { key: 'cancer', label: '암 진단비', aliases: ['암', '일반암', '고액암', '통합암', 'cancer'], defaultAmount: 50_000_000 },
-  { key: 'similar_cancer', label: '유사암', aliases: ['유사암', '소액암', '갑상선', '기타피부암', 'similar'], defaultAmount: 10_000_000 },
-  { key: 'brain_vascular', label: '뇌혈관', aliases: ['뇌혈관', '뇌졸중', '뇌출혈', 'brain', 'stroke'], defaultAmount: 30_000_000 },
-  { key: 'ischemic_heart', label: '심장', aliases: ['허혈성', '심장', '급성심근경색', 'heart'], defaultAmount: 30_000_000 },
-  { key: 'disease_surgery', label: '질병수술', aliases: ['질병수술', '수술비', 'surgery'], defaultAmount: 1_000_000 },
-  { key: 'injury_surgery', label: '상해수술', aliases: ['상해수술', '상해', 'injury'], defaultAmount: 1_000_000 },
-  { key: 'hospitalization', label: '입원/간병', aliases: ['입원', '간병', '일당', 'hospital'], defaultAmount: 100_000 },
-  { key: 'driver', label: '운전자', aliases: ['운전자', '교통사고', '벌금', '변호사', '합의금', 'driver'], defaultAmount: 200_000_000 },
+  // 사망
+  { key: 'death_general',   label: '일반사망',   aliases: ['일반사망', '사망보험금', '사망급여금', '사망보장'], defaultAmount: 100_000_000 },
+  // 암
+  { key: 'cancer',          label: '암 진단비',   aliases: ['일반암', '통합암', '고액암', '암진단', '암 진단', 'cancer'], defaultAmount: 70_000_000 },
+  { key: 'similar_cancer',  label: '유사암',      aliases: ['유사암', '소액암', '경계성암', '갑상선암', '기타피부암'], defaultAmount: 10_000_000 },
+  { key: 'cancer_chemo',    label: '항암치료비',  aliases: ['항암', '방사선치료', '약물치료', '표적항암', '중입자', '면역항암'], defaultAmount: 30_000_000 },
+  { key: 'cancer_major',    label: '암 주요치료비', aliases: ['암주요치료', '암집중치료', '암치료비집중'], defaultAmount: 10_000_000 },
+  // 뇌
+  { key: 'brain_vascular',  label: '뇌혈관 진단', aliases: ['뇌혈관', '뇌졸중', '뇌출혈', '뇌혈관질환', 'brain', 'stroke'], defaultAmount: 40_000_000 },
+  { key: 'brain_major',     label: '뇌 주요치료비', aliases: ['뇌주요치료', '뇌집중치료', '2대주요치료', '2대집중'], defaultAmount: 10_000_000 },
+  // 심장
+  { key: 'ischemic_heart',  label: '심장 진단',   aliases: ['허혈성심장', '허혈성', '급성심근경색', '심근경색', '심혈관질환', '심장질환', 'heart'], defaultAmount: 40_000_000 },
+  { key: 'heart_major',     label: '심장 주요치료비', aliases: ['심장주요치료', '심혈관주요', '심집중치료'], defaultAmount: 10_000_000 },
+  // 연금
+  { key: 'pension',         label: '연금',        aliases: ['연금', '노후', '종신', 'pension', '변액연금', '즉시연금'], defaultAmount: 0 },
 ]
 
+// ── 수술비 체크 항목 (유/무 방식, 프리셋별 표시 범위 다름) ──────────────────
+const surgeryCheckItems = [
+  {
+    key: 'surgery_basic',
+    label: '질병/상해 수술비',
+    desc: '질병 수술비 + 상해 수술비 (1~5종 포함)',
+    aliases: ['질병수술비', '질병수술', '상해수술비', '상해수술', '1~5종수술'],
+    presets: ['min', 'standard', 'comfort'],
+  },
+  {
+    key: 'surgery_type',
+    label: '종수술비',
+    desc: '질병/상해 1~5종수술비 (수술 분류별)',
+    aliases: ['질병1~5종', '상해1~5종', '종수술', '5종수술', '3종수술'],
+    presets: ['standard', 'comfort'],
+  },
+  {
+    key: 'surgery_advanced',
+    label: 'N대 수술비',
+    desc: '64대·100대 등 중증 수술 집중 보장',
+    aliases: ['n대수술', '64대수술', '100대수술', '32대수술', '7대수술'],
+    presets: ['comfort'],
+  },
+]
+
+// ── 기본준비 항목 (유/무 체크, 정해진 한도 내 가입) ─────────────────────────
+const basicCoverageItems = [
+  {
+    key: 'indemnity',
+    label: '실손의료비',
+    desc: '중복 보상 불가 · 1개 가입 권장',
+    aliases: ['실손', '실비', '상해입원의료비', '질병입원의료비', '상해통원', '질병통원'],
+  },
+  {
+    key: 'nursing',
+    label: '간병 / 재가',
+    desc: '장기요양·간병인 비용 대비',
+    aliases: ['간병', '재가', '간호간병', '장기요양'],
+  },
+  {
+    key: 'legal',
+    label: '법률 · 일배책',
+    desc: '일상배상책임 · 화재벌금 · 법률비용',
+    aliases: ['일상배상', '일배책', '화재', '변호사', '법률'],
+  },
+  {
+    key: 'driver',
+    label: '운전자보험',
+    desc: '교통사고 처리지원금 · 법률비용 (한도 내)',
+    aliases: ['운전자', '교통사고처리', '교통사고벌금', '자동차부상'],
+  },
+]
+
+// ── 권장금액 3단계 프리셋 ─────────────────────────────────────────────────────
+type TargetPreset = 'min' | 'standard' | 'comfort' | 'custom'
+
+const TARGET_PRESETS: Record<Exclude<TargetPreset, 'custom'>, {
+  label: string
+  badge: string
+  color: string
+  desc: string
+  detail: string[]
+  values: Record<string, number>
+}> = {
+  min: {
+    label: '최소',
+    badge: '최소 진단비 기준',
+    color: '#64748b',
+    desc: '치명적 위험만 대비하는 최소 수준',
+    detail: ['일반사망 5천만', '암 3천만', '뇌혈관 1천만', '심장 1천만', '수술비 기본', '실손·간병·법률 기본준비'],
+    values: {
+      death_general:    50_000_000,  // 5천만
+      cancer:           30_000_000,  // 3천만
+      similar_cancer:    5_000_000,  // 5백만
+      cancer_chemo:              0,
+      cancer_major:              0,
+      brain_vascular:   10_000_000,
+      brain_major:               0,
+      ischemic_heart:   10_000_000,
+      heart_major:               0,
+      pension:                   0,
+    },
+  },
+  standard: {
+    label: '표준',
+    badge: '업계 권장 표준',
+    color: '#2563eb',
+    desc: '암·뇌·심장 주요치료비까지 준비한 표준 수준',
+    detail: ['일반사망 1억', '암 7천만 + 유사암 1천만', '뇌혈관 4천만', '심장 4천만', '수술비 200만', '암·뇌·심 주요치료비 1천만', '실손·간병·법률 기본준비'],
+    values: {
+      death_general:   100_000_000,  // 1억
+      cancer:           70_000_000,  // 7천만
+      similar_cancer:   10_000_000,  // 1천만
+      cancer_chemo:              0,
+      cancer_major:     10_000_000,
+      brain_vascular:   40_000_000,
+      brain_major:      10_000_000,
+      ischemic_heart:   40_000_000,
+      heart_major:      10_000_000,
+      pension:                   0,
+    },
+  },
+  comfort: {
+    label: '여유',
+    badge: '충분한 보장 기준',
+    color: '#059669',
+    desc: '항암·N대수술·주요치료비까지 여유롭게 준비한 수준',
+    detail: ['일반사망 3억', '암 1억5천 + 유사암 2천만', '항암(약물·방사선) 각 3천만', '뇌혈관 6천만', '심장 6천만', '암·뇌·심 주요치료비 각 2천만', 'N대 수술비 포함', '실손·간병·법률 기본준비'],
+    values: {
+      death_general:   300_000_000,  // 3억
+      cancer:          150_000_000,  // 1억5천만
+      similar_cancer:   20_000_000,  // 2천만
+      cancer_chemo:     30_000_000,  // 3천만
+      cancer_major:     20_000_000,
+      brain_vascular:   60_000_000,
+      brain_major:      20_000_000,
+      ischemic_heart:   60_000_000,
+      heart_major:      20_000_000,
+      pension:                   0,
+    },
+  },
+}
+
 const coverageDescriptions: Record<string, string> = {
-  cancer: '암 진단 시 치료비와 회복 기간의 생활비 부담을 줄이기 위한 핵심 진단자금입니다.',
-  similar_cancer: '갑상선암, 기타피부암 등 비교적 소액으로 분류되는 암 보장을 따로 확인하는 항목입니다.',
-  brain_vascular: '뇌출혈·뇌졸중보다 넓은 범위의 뇌혈관 질환까지 준비했는지 보는 항목입니다.',
-  ischemic_heart: '협심증, 급성심근경색 등 심장질환 진단 시 필요한 치료자금을 확인합니다.',
-  disease_surgery: '질병으로 수술할 때 반복적으로 발생할 수 있는 수술비 보장입니다.',
-  injury_surgery: '상해 사고로 수술할 때 치료비 부담을 줄여주는 보장입니다.',
-  hospitalization: '입원일당과 간병비처럼 치료 기간 중 매일 발생하는 비용을 대비하는 항목입니다.',
-  driver: '교통사고 처리지원금, 변호사 선임비, 벌금 등 운전자 법률 비용을 확인합니다.',
+  death_general:   '가족의 생활 안정을 위한 사망 시 지급되는 사망보험금입니다.',
+  cancer:          '암 진단 시 치료비와 회복기 생활비 부담을 줄이기 위한 핵심 진단자금입니다.',
+  similar_cancer:  '갑상선암·기타피부암 등 소액암 보장을 별도로 확인하는 항목입니다.',
+  cancer_chemo:    '항암약물·방사선·표적·중입자치료 등 고가 암 치료비 대비 항목입니다.',
+  cancer_major:    '암 진단 후 집중 치료 단계에서 발생하는 주요 치료비입니다.',
+  brain_vascular:  '뇌출혈·뇌졸중보다 넓은 뇌혈관 질환까지 진단 시 수령하는 자금입니다.',
+  brain_major:     '뇌혈관 질환 치료 중 집중 치료비를 보충하는 항목입니다.',
+  ischemic_heart:  '협심증·급성심근경색 등 심장질환 진단 시 필요한 치료자금입니다.',
+  heart_major:     '심장질환 치료 중 집중 치료비를 보충하는 항목입니다.',
+  disease_surgery: '질병 수술 시 반복적으로 발생하는 수술비 부담을 줄이는 보장입니다.',
+  surgery_advanced:'64대·100대 등 중증 수술에 집중 지원하는 N대 수술비입니다.',
+  pension:         '노후 생활 안정을 위한 연금 수령액 또는 적립 현황입니다.',
+  indemnity:       '실제 발생한 의료비를 돌려받는 실손보험 (중복 보상 불가, 1개 가입 원칙).',
+  nursing:         '장기 입원·간병 시 발생하는 간병인 비용과 재가 서비스 비용을 지원합니다.',
+  legal:           '일상생활 중 타인에게 발생한 손해를 보상하는 일배책·화재벌금 보장입니다.',
+  driver:          '교통사고 처리지원금·변호사 선임비·벌금 등 운전자 법률 비용 (한도 내 가입).',
 }
 
 type UploadItem = {
@@ -123,6 +263,7 @@ export default function AnalysisPage() {
   const [editingContract, setEditingContract] = useState<{ itemId?: string; index?: number; group: PolicyGroup } | null>(null)
   const [advisor, setAdvisor] = useState({ name: '담당자', phone: '' })
   const [targets, setTargets] = useState<CoverageTargets>(() => defaultTargets())
+  const [targetPreset, setTargetPreset] = useState<TargetPreset>('standard')
   const [savingReport, setSavingReport] = useState(false)
   const [savingExcel, setSavingExcel] = useState(false)
   const [outputMode, setOutputMode] = useState<ReportOutputMode>('major')
@@ -310,17 +451,31 @@ export default function AnalysisPage() {
 
     setSavingExcel(true)
     try {
-      const XLSX = await import('xlsx')
-      const workbook = buildCoverageWorkbook(XLSX, {
-        customerName: selectedCustomer.name || primaryAnalysis?.customerName || '고객',
-        advisorName: advisor.name,
-        groups: reportGroups,
-        targets,
-        outputMode,
-      })
+      const XLSXStyle = (await import('xlsx-js-style')).default
+      const customerName = selectedCustomer.name || primaryAnalysis?.customerName || '고객'
+
+      // groups(PolicyGroup[]) → structuredAnalysis.policies 포맷으로 변환
+      const data = {
+        customer: { name: customerName },
+        policies: reportGroups.map((group) => ({
+          company: group.company,
+          product_name: group.product_name,
+          start_date: group.start_date || '',
+          payment_period: group.payment_period || '',
+          monthly_premium: group.premium || 0,
+          coverages: group.coverages.map((cov) => ({
+            coverage_name: cov.coverage_name,
+            amount: cov.amount || 0,
+          })),
+        })),
+      }
+
+      const wb = XLSXStyle.utils.book_new()
+      const ws = buildStyledSheet(data, customerName)
+      XLSXStyle.utils.book_append_sheet(wb, ws, customerName.slice(0, 31))
+
       const today = new Date().toISOString().slice(0, 10)
-      const modeLabel = outputMode === 'major' ? '주요담보' : '상세담보'
-      XLSX.writeFile(workbook, `${normalizeFileName(selectedCustomer.name || '고객')}_보장분석_${modeLabel}_${today}.xlsx`)
+      XLSXStyle.writeFile(wb, `${normalizeFileName(customerName)}_보장분석표_${today}.xlsx`)
     } catch (error) {
       console.error(error)
       alert('엑셀 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -454,7 +609,26 @@ export default function AnalysisPage() {
             </div>
           </div>
 
-          <CoverageTargetEditor targets={targets} onChange={setTargets} />
+          <CoverageTargetEditor
+            targets={targets}
+            onChange={(next) => {
+              // 유사암 = 암 진단비의 20% 자동 동기화 (custom 모드에서 암 금액 변경 시)
+              const cancer = next.cancer || 0
+              const autoSimilar = Math.round(cancer * 0.2 / 10000) * 10000
+              setTargets({ ...next, similar_cancer: autoSimilar || next.similar_cancer })
+            }}
+            preset={targetPreset}
+            onPresetChange={(p) => {
+              setTargetPreset(p)
+              if (p !== 'custom') {
+                const presetVals = TARGET_PRESETS[p].values
+                // 유사암 = 암 진단비 × 20% 자동 계산
+                const cancer = presetVals.cancer || 0
+                const similar = Math.round(cancer * 0.2 / 10000) * 10000
+                setTargets({ ...defaultTargets(), ...presetVals, similar_cancer: similar })
+              }
+            }}
+          />
 
           {hasAnyData && selectedCustomer && (
             <div className="pdf-render-only" aria-hidden="true">
@@ -548,36 +722,163 @@ export default function AnalysisPage() {
   )
 }
 
-function CoverageTargetEditor({ targets, onChange }: { targets: CoverageTargets; onChange: (targets: CoverageTargets) => void }) {
+function CoverageTargetEditor({
+  targets,
+  onChange,
+  preset,
+  onPresetChange,
+}: {
+  targets: CoverageTargets
+  onChange: (targets: CoverageTargets) => void
+  preset: TargetPreset
+  onPresetChange: (preset: TargetPreset) => void
+}) {
   const setAmountByManwon = (key: string, value: string) => {
     const amount = Number(value.replace(/[^\d]/g, '')) * 10_000
     onChange({ ...targets, [key]: amount })
+    onPresetChange('custom')
   }
 
-  const reset = () => onChange(defaultTargets())
+  const TABS: { key: TargetPreset; label: string; badge: string; color: string }[] = [
+    { key: 'min',      label: '최소',        badge: '최소 진단비',  color: '#64748b' },
+    { key: 'standard', label: '표준',        badge: '업계 권장',    color: '#2563eb' },
+    { key: 'comfort',  label: '여유',        badge: '충분한 보장',  color: '#059669' },
+    { key: 'custom',   label: '사용자 설정', badge: '직접 설정',    color: '#7c3aed' },
+  ]
+
+  const currentPreset = preset !== 'custom' ? TARGET_PRESETS[preset] : null
 
   return (
     <div className="card card-p coverage-target-editor">
-      <div className="flex justify-between items-center" style={{ gap: 12, marginBottom: 12 }}>
-        <div>
-          <div className="card-title">권장 금액 설정</div>
-          <div className="text-muted" style={{ fontSize: 12 }}>설정한 금액을 기준으로 현재 보장률을 세로막대와 퍼센트로 표시합니다.</div>
+      {/* 탭 헤더 */}
+      <div style={{ marginBottom: 16 }}>
+        <div className="card-title" style={{ marginBottom: 10 }}>권장금액 기준 선택</div>
+        <div style={{ display: 'flex', gap: 6, borderBottom: '2px solid #e2e8f0', paddingBottom: 0 }}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => onPresetChange(tab.key)}
+              style={{
+                padding: '8px 18px',
+                border: 'none',
+                borderBottom: preset === tab.key ? `3px solid ${tab.color}` : '3px solid transparent',
+                background: 'transparent',
+                color: preset === tab.key ? tab.color : '#64748b',
+                fontWeight: 900,
+                fontSize: 14,
+                cursor: 'pointer',
+                marginBottom: -2,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <button className="btn btn-secondary btn-xs" onClick={reset}>기본값</button>
       </div>
-      <div className="target-input-grid">
-        {targetItems.map((item) => (
-          <label key={item.key} className="target-input">
-            <span>{item.label}</span>
-            <div>
-              <input
-                value={Math.round((targets[item.key] || 0) / 10_000)}
-                onChange={(event) => setAmountByManwon(item.key, event.target.value)}
-                inputMode="numeric"
-              />
-              <b>만원</b>
+
+      {/* 프리셋 설명 카드 */}
+      {currentPreset && (
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '14px 18px', marginBottom: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, color: '#1A2744', marginBottom: 6 }}>
+            📌 {currentPreset.label} 기준 — {currentPreset.desc}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {currentPreset.detail.map((d) => (
+              <span key={d} style={{ background: '#e0e7ff', color: '#3730a3', borderRadius: 999, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>
+                {d}
+              </span>
+            ))}
+          </div>
+          <div style={{ marginTop: 10, padding: '8px 12px', background: '#fffbeb', borderRadius: 10, fontSize: 12, color: '#92400e', fontWeight: 700 }}>
+            ℹ️ 실손·간병·법률(일배책/화재)·운전자보험은 <b>기본 준비 필수</b>로 설정됩니다.
+            실손/운전자는 정해진 한도 내 가입 (중복 보상 불가).
+          </div>
+        </div>
+      )}
+      {preset === 'custom' && (
+        <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 14, padding: '12px 16px', marginBottom: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, color: '#7c3aed' }}>✏️ 사용자 직접 설정</div>
+          <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>아래 금액을 직접 입력해 나만의 기준을 설정하세요.</div>
+        </div>
+      )}
+
+      {/* 정액 보장 금액 입력 */}
+      <div style={{ fontWeight: 800, fontSize: 13, color: '#475569', marginBottom: 8 }}>
+        ▶ 정액 보장 (진단비·수술비·치료비)
+      </div>
+      <div className="target-input-grid" style={{ marginBottom: 16 }}>
+        {targetItems.map((item) => {
+          const presetVal = currentPreset?.values[item.key]
+          return (
+            <label key={item.key} className="target-input">
+              <span>
+                {item.label}
+                {presetVal !== undefined && presetVal > 0 && (
+                  <em style={{ fontStyle: 'normal', marginLeft: 4, fontSize: 10, color: '#94a3b8' }}>
+                    ({Math.round(presetVal / 10000).toLocaleString()}만)
+                  </em>
+                )}
+              </span>
+              <div>
+                <input
+                  value={Math.round((targets[item.key] || 0) / 10_000)}
+                  onChange={(event) => setAmountByManwon(item.key, event.target.value)}
+                  inputMode="numeric"
+                />
+                <b>만원</b>
+              </div>
+            </label>
+          )
+        })}
+      </div>
+
+      {/* 수술비 체크 항목 */}
+      <div style={{ fontWeight: 800, fontSize: 13, color: '#475569', marginBottom: 8, marginTop: 4 }}>
+        ▶ 수술비 준비 기준 (유/무 체크)
+      </div>
+      <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        {surgeryCheckItems.map((item) => {
+          const isIncluded = item.presets.includes(preset)
+          return (
+            <div key={item.key} style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+              borderRadius: 12,
+              background: isIncluded ? '#f0fdf4' : '#f8fafc',
+              border: `1px solid ${isIncluded ? '#bbf7d0' : '#e2e8f0'}`,
+              opacity: isIncluded ? 1 : 0.5,
+            }}>
+              <span style={{ fontSize: 18 }}>{isIncluded ? '✅' : '—'}</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 13, color: isIncluded ? '#166534' : '#94a3b8' }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{item.desc}</div>
+              </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                {item.presets.map((p) => (
+                  <span key={p} style={{
+                    fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
+                    background: p === 'min' ? '#f1f5f9' : p === 'standard' ? '#eff6ff' : '#f0fdf4',
+                    color: p === 'min' ? '#64748b' : p === 'standard' ? '#2563eb' : '#059669',
+                  }}>
+                    {p === 'min' ? '최소' : p === 'standard' ? '표준' : '여유'}
+                  </span>
+                ))}
+              </div>
             </div>
-          </label>
+          )
+        })}
+      </div>
+
+      {/* 기본준비 안내 */}
+      <div style={{ fontWeight: 800, fontSize: 13, color: '#475569', marginBottom: 8 }}>
+        ▶ 기본 준비 필수 항목 (유/무 체크 · 정해진 한도 내 가입)
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+        {basicCoverageItems.map((item) => (
+          <div key={item.key} style={{ padding: '10px 14px', borderRadius: 12, background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+            <div style={{ fontWeight: 800, fontSize: 13, color: '#0369a1' }}>{item.label}</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{item.desc}</div>
+          </div>
         ))}
       </div>
     </div>
@@ -608,6 +909,92 @@ function CoverageGoalChart({ groups, targets }: { groups: PolicyGroup[]; targets
             <div className="coverage-target">권장 {formatCompactWon(row.target)}</div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ── 방사형(레이더) 그래프 ────────────────────────────────────────────────────
+const RADAR_AXES = [
+  { key: 'death',     label: '사망' },
+  { key: 'cancer',    label: '암' },
+  { key: 'brain',     label: '뇌혈관' },
+  { key: 'heart',     label: '심장' },
+  { key: 'surgery',   label: '수술' },
+  { key: 'indemnity', label: '실손' },
+  { key: 'nursing',   label: '간병' },
+  { key: 'driver',    label: '운전자' },
+]
+
+function RadarChart({ rows }: { rows: MajorCoverageRow[] }) {
+  const N = RADAR_AXES.length
+  const cx = 160, cy = 150, r = 110
+  const levels = [25, 50, 75, 100]
+
+  function polarPoint(i: number, pct: number) {
+    const angle = (Math.PI * 2 * i) / N - Math.PI / 2
+    const d = (r * Math.min(pct, 120)) / 100
+    return { x: cx + d * Math.cos(angle), y: cy + d * Math.sin(angle) }
+  }
+
+  const dataPoints = RADAR_AXES.map((axis, i) => {
+    const row = rows.find((r2) => r2.key === axis.key)
+    return polarPoint(i, row?.percent ?? 0)
+  })
+
+  const pathData = dataPoints.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ') + ' Z'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: '#1A2744' }}>보장 레이더</div>
+      <svg width={320} height={300} viewBox="0 0 320 300" style={{ overflow: 'visible' }}>
+        {/* 레벨 육각형 */}
+        {levels.map((level) => {
+          const pts = RADAR_AXES.map((_, i) => {
+            const { x, y } = polarPoint(i, level)
+            return `${x.toFixed(1)},${y.toFixed(1)}`
+          }).join(' ')
+          return <polygon key={level} points={pts} fill="none" stroke="#e2e8f0" strokeWidth={1} />
+        })}
+        {/* 축 선 */}
+        {RADAR_AXES.map((_, i) => {
+          const { x, y } = polarPoint(i, 100)
+          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth={1} />
+        })}
+        {/* 데이터 영역 */}
+        <path d={pathData} fill="rgba(37,99,235,0.18)" stroke="#2563eb" strokeWidth={2.5} strokeLinejoin="round" />
+        {/* 데이터 포인트 */}
+        {dataPoints.map((pt, i) => {
+          const row = rows.find((r2) => r2.key === RADAR_AXES[i].key)
+          const color = (row?.percent ?? 0) >= 100 ? '#059669' : (row?.percent ?? 0) >= 70 ? '#2563eb' : '#dc2626'
+          return <circle key={i} cx={pt.x} cy={pt.y} r={5} fill={color} stroke="#fff" strokeWidth={2} />
+        })}
+        {/* 축 레이블 */}
+        {RADAR_AXES.map((axis, i) => {
+          const labelPt = polarPoint(i, 125)
+          return (
+            <text key={axis.key} x={labelPt.x} y={labelPt.y} textAnchor="middle" dominantBaseline="middle" fontSize={12} fontWeight={800} fill="#1A2744">
+              {axis.label}
+            </text>
+          )
+        })}
+        {/* 퍼센트 레이블 */}
+        {[25, 50, 75, 100].map((lv) => (
+          <text key={lv} x={cx + 4} y={cy - (r * lv) / 100 + 4} fontSize={9} fill="#94a3b8">{lv}%</text>
+        ))}
+      </svg>
+      {/* 범례 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '4px 12px', width: '100%' }}>
+        {RADAR_AXES.map((axis) => {
+          const row = rows.find((r2) => r2.key === axis.key)
+          const pct = row?.percent ?? 0
+          const color = pct >= 100 ? '#059669' : pct >= 70 ? '#2563eb' : '#dc2626'
+          return (
+            <div key={axis.key} style={{ fontSize: 11, fontWeight: 700, color, textAlign: 'center' }}>
+              {axis.label} {pct}%
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -826,13 +1213,17 @@ function LandscapeReportPreview({
             <div className="report-customer-box">
               <b>{formatCustomerAge(customer.birth_date).replace(/[()]/g, '') || '나이 미확인'}</b>
               <span>{companyNames.join(' · ') || '보험사 미확인'}</span>
-              <strong>월 납입 {formatWon(premiumTotal)}</strong>
+              <strong>월 납입 {formatCompactWon(premiumTotal)}</strong>
             </div>
           </div>
 
-          <div className="report-grid client-grid">
-            <div className="report-panel report-wide">
-              <div className="report-panel-title">{outputMode === 'major' ? '회사별 주요보장 합계' : '권장금액 대비 준비 현황'}</div>
+          {/* 레이더 + 주요보장 매트릭스 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 24, marginBottom: 20 }}>
+            <div className="report-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <RadarChart rows={majorRows} />
+            </div>
+            <div className="report-panel">
+              <div className="report-panel-title">{outputMode === 'major' ? '주요보장 준비 현황' : '권장금액 대비 보장률'}</div>
               {outputMode === 'major' ? (
                 <MajorCoverageMatrix rows={majorRows} />
               ) : (
@@ -840,6 +1231,28 @@ function LandscapeReportPreview({
                   {rows.map((row) => <ReportBar key={row.key} row={row} />)}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* 기본준비 체크 + 강점 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+            <div className="report-panel">
+              <div className="report-panel-title">기본준비 체크 (실손·간병·법률·운전자)</div>
+              <div style={{ display: 'grid', gap: 10, marginTop: 4 }}>
+                {basicCoverageItems.map((item) => {
+                  const ok = majorRows.find((r) => r.key === item.key)
+                  const hasIt = (ok?.current ?? 0) > 0
+                  return (
+                    <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14, background: hasIt ? '#f0fdf4' : '#fff7ed', border: `1px solid ${hasIt ? '#bbf7d0' : '#fed7aa'}` }}>
+                      <span style={{ fontSize: 22 }}>{hasIt ? '✅' : '⭕'}</span>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 15, color: hasIt ? '#166534' : '#9a3412' }}>{item.label}</div>
+                        <div style={{ fontSize: 12, color: '#64748b' }}>{item.desc}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
             <div className="report-panel">
               <div className="report-panel-title">준비된 장점</div>
@@ -854,7 +1267,7 @@ function LandscapeReportPreview({
           <div className="report-panel report-explain">
               <div className="report-panel-title">보장 항목은 이렇게 봅니다</div>
               <div className="coverage-explain-grid">
-              {(outputMode === 'major' ? majorRows : rows).slice(0, 6).map((row) => (
+              {majorRows.slice(0, 6).map((row) => (
                 <div key={`explain-${row.key}`} className="coverage-explain-card">
                   <b>{row.label}</b>
                   <span>{getReportRowDescription(row)}</span>
@@ -864,17 +1277,18 @@ function LandscapeReportPreview({
           </div>
         </section>
 
+        {/* ── 3페이지: 회사별 계약 + 준비 필요 항목 ── */}
         <section className="report-sheet report-advisor report-pdf-page">
           <div className="report-topline">
             <div>
-              <div className="report-kicker">설계사 점검용</div>
-              <h2>{outputMode === 'major' ? '주요 보장 준비 필요 항목' : '회사별 보험료와 담보 상세'}</h2>
-              <p>{outputMode === 'major' ? '없거나 권장금액 대비 낮은 보장을 별도로 표시했습니다.' : '상담 전 확인해야 할 보험료, 납입 현황, 상세 담보를 한 화면에 모았습니다.'}</p>
+              <div className="report-kicker">설계사 점검용 · 3/4</div>
+              <h2>회사별 계약 현황</h2>
+              <p>가입 보험사별 계약 정보와 보험료 현황을 확인합니다.</p>
             </div>
             <div className="report-customer-box">
               <b>계약 {analysis?.contractCount || groups.length || 0}건</b>
-              <span>현재까지 납부 {formatWon(paidTotal)}</span>
-              <strong>남은 보험료 {formatWon(remainingTotal)}</strong>
+              <span>현재까지 납부 {formatCompactWon(paidTotal)}</span>
+              <strong>남은 보험료 {formatCompactWon(remainingTotal)}</strong>
             </div>
           </div>
 
@@ -882,13 +1296,13 @@ function LandscapeReportPreview({
             <div className="report-panel">
               <div className="report-panel-title">회사별 계약</div>
               <div className="report-company-list">
-                {groups.slice(0, 6).map((group) => (
+                {groups.slice(0, 8).map((group) => (
                   <div key={`report-${group.key}`} className="report-company-item">
                     <div>
                       <b>{group.company}</b>
                       <span>{group.product_name}</span>
                     </div>
-                    <strong>{formatWon(group.premium)}</strong>
+                    <strong>{group.premium ? `${formatCompactWon(group.premium)}/월` : '-'}</strong>
                     <small>가입 {group.start_date || '-'} · 납부 {group.payment_period || '-'} · 만기 {formatMaturity(group)}</small>
                   </div>
                 ))}
@@ -898,7 +1312,7 @@ function LandscapeReportPreview({
             <div className="report-panel">
               <div className="report-panel-title">준비 필요 항목</div>
               <div className="report-gap-list">
-                {(weakRows.length ? weakRows : rows.slice(0, 4)).map((row) => (
+                {(weakRows.length ? weakRows : rows.slice(0, 6)).map((row) => (
                   <div key={`gap-${row.key}`} className="report-gap-item">
                     <b>{row.label}</b>
                     <span>{row.percent}%</span>
@@ -907,23 +1321,39 @@ function LandscapeReportPreview({
                 ))}
               </div>
             </div>
+          </div>
+        </section>
 
-            <div className="report-panel report-wide">
-              <div className="report-panel-title">{outputMode === 'major' ? '주요 담보 총액' : '상세 담보 목록'}</div>
-              <div className="report-table">
-                <div className="report-table-head">
-                  <span>보험사</span><span>분류</span><span>{outputMode === 'major' ? '구성' : '담보명'}</span><span>가입금액</span>
-                </div>
-                {(outputMode === 'major' ? majorRows : detailedCoverages).map((item: any, index) => (
-                  <div key={`${item.key || item.coverage_name}-${index}`} className="report-table-row">
-                    <span>{outputMode === 'major' ? item.companies.map((company: any) => company.company).join(', ') || '-' : item.company || '-'}</span>
-                    <span>{outputMode === 'major' ? item.label : translateCategory(item.category)}</span>
-                    <span>{outputMode === 'major' ? item.description : item.coverage_name}</span>
-                    <span>{formatWon(outputMode === 'major' ? item.current : item.amount)}</span>
-                  </div>
-                ))}
-                {(outputMode === 'major' ? majorRows.length === 0 : detailedCoverages.length === 0) && <div className="report-table-empty">담보 상세가 없습니다.</div>}
+        {/* ── 4페이지: 담보 상세 목록 ── */}
+        <section className="report-sheet report-advisor report-pdf-page">
+          <div className="report-topline">
+            <div>
+              <div className="report-kicker">설계사 점검용 · 4/4</div>
+              <h2>{outputMode === 'major' ? '주요 보장 상세 현황' : '담보별 상세 목록'}</h2>
+              <p>{outputMode === 'major' ? '주요 보장 항목별 총 보장금액과 가입 현황입니다.' : '증권 기준으로 회사별 담보명과 가입금액을 정리했습니다.'}</p>
+            </div>
+            <div className="report-customer-box">
+              <b>{customer.name || '고객'}님</b>
+              <span>담보 항목 {outputMode === 'major' ? majorRows.length : detailedCoverages.length}건</span>
+              <strong>월 납입 {formatCompactWon(premiumTotal)}</strong>
+            </div>
+          </div>
+
+          <div className="report-panel report-wide" style={{ flex: 1 }}>
+            <div className="report-panel-title">{outputMode === 'major' ? '주요 담보 합계' : '상세 담보 목록'}</div>
+            <div className="report-table">
+              <div className="report-table-head">
+                <span>보험사</span><span>분류</span><span>{outputMode === 'major' ? '보장 항목' : '담보명'}</span><span>가입금액</span>
               </div>
+              {(outputMode === 'major' ? majorRows : detailedCoverages).map((item: any, index) => (
+                <div key={`${item.key || item.coverage_name}-${index}`} className="report-table-row">
+                  <span>{outputMode === 'major' ? item.companies.map((c: any) => c.company).join(', ') || '-' : item.company || '-'}</span>
+                  <span>{outputMode === 'major' ? item.label : translateCategory(item.category)}</span>
+                  <span>{outputMode === 'major' ? item.description : item.coverage_name}</span>
+                  <span>{formatCompactWon(outputMode === 'major' ? item.current : item.amount)}</span>
+                </div>
+              ))}
+              {(outputMode === 'major' ? majorRows.length === 0 : detailedCoverages.length === 0) && <div className="report-table-empty">담보 상세가 없습니다.</div>}
             </div>
           </div>
         </section>
@@ -953,29 +1383,43 @@ function ReportBar({ row }: { row: ReturnType<typeof buildCoverageRows>[number] 
 }
 
 function MajorCoverageMatrix({ rows }: { rows: MajorCoverageRow[] }) {
+  const STATUS_EMOJI: Record<string, string> = { '충분': '✅', '점검': '🔵', '부족': '🔴', '없음': '⚫' }
   return (
     <div className="major-matrix">
       <div className="major-matrix-head">
         <span>주요보장</span>
-        <span>회사별 보장금액</span>
-        <span>총 금액</span>
-        <span>상태</span>
+        <span>준비 현황</span>
+        <span>회사별 보장</span>
+        <span>총액 / 상태</span>
       </div>
-      {rows.map((row) => (
-        <div key={`major-${row.key}`} className="major-matrix-row">
-          <div>
-            <b>{row.label}</b>
-            <small>{row.description}</small>
+      {rows.map((row) => {
+        const pct = Math.min(row.percent, 100)
+        const color = pct >= 100 ? '#059669' : pct >= 70 ? '#2563eb' : '#dc2626'
+        return (
+          <div key={`major-${row.key}`} className="major-matrix-row">
+            <div>
+              <b>{row.label}</b>
+              <small style={{ color: '#64748b', fontSize: 13 }}>{typeof row.description === 'string' ? row.description.slice(0, 28) : ''}</small>
+            </div>
+            {/* 인포그래픽 진행 바 */}
+            <div style={{ display: 'grid', gap: 6 }}>
+              <div style={{ height: 14, borderRadius: 999, background: '#e2e8f0', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pct}%`, borderRadius: 999, background: color, transition: 'width .4s' }} />
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 800, color }}>{pct}% {row.current === 0 ? '(미가입)' : `/ 권장 ${formatCompactWon(row.target)}`}</span>
+            </div>
+            <div className="major-company-list">
+              {row.companies.length > 0 ? row.companies.map((company) => (
+                <span key={`${row.key}-${company.company}`}>{company.company} {formatCompactWon(company.amount)}</span>
+              )) : <span style={{ color: '#94a3b8' }}>미가입</span>}
+            </div>
+            <div style={{ display: 'grid', gap: 4, justifyItems: 'end' }}>
+              <strong style={{ fontSize: 20, color }}>{formatCompactWon(row.current)}</strong>
+              <em style={{ fontStyle: 'normal', fontSize: 13, fontWeight: 900, color }}>{STATUS_EMOJI[row.status] || ''} {row.status}</em>
+            </div>
           </div>
-          <div className="major-company-list">
-            {row.companies.length > 0 ? row.companies.map((company) => (
-              <span key={`${row.key}-${company.company}`}>{company.company} {formatCompactWon(company.amount)}</span>
-            )) : <span>가입 확인 필요</span>}
-          </div>
-          <strong>{formatWon(row.current)}</strong>
-          <em className={row.status === '충분' ? 'ok' : 'need'}>{row.status} · {row.percent}%</em>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -1385,62 +1829,95 @@ function matchesTarget(coverage: CoverageRow, target: typeof targetItems[number]
 
 const majorCoverageDefinitions = [
   {
+    key: 'death',
+    label: '사망',
+    description: '일반사망 보험금',
+    target: (targets: CoverageTargets) => targets.death_general || 0,
+  },
+  {
     key: 'cancer',
     label: '암',
-    description: '일반암·특정암·유사암·항암',
-    target: (targets: CoverageTargets) => (targets.cancer || 0) + (targets.similar_cancer || 0),
+    description: '일반암·유사암·항암·주요치료비',
+    target: (targets: CoverageTargets) =>
+      (targets.cancer || 0) + (targets.similar_cancer || 0) +
+      (targets.cancer_chemo || 0) + (targets.cancer_major || 0),
   },
   {
     key: 'brain',
-    label: '뇌',
-    description: '뇌혈관·뇌졸중·뇌출혈',
-    target: (targets: CoverageTargets) => targets.brain_vascular || 0,
+    label: '뇌혈관',
+    description: '뇌혈관 진단·주요치료비',
+    target: (targets: CoverageTargets) => (targets.brain_vascular || 0) + (targets.brain_major || 0),
   },
   {
     key: 'heart',
     label: '심장',
-    description: '허혈성·급성심근경색·기타심장질환',
-    target: (targets: CoverageTargets) => targets.ischemic_heart || 0,
-  },
-  {
-    key: 'actual',
-    label: '실손/생활',
-    description: '실비·운전자·화재·일배책',
-    target: (targets: CoverageTargets) => targets.driver || 0,
+    description: '심장 진단·주요치료비',
+    target: (targets: CoverageTargets) => (targets.ischemic_heart || 0) + (targets.heart_major || 0),
   },
   {
     key: 'surgery',
     label: '수술',
-    description: '종수술·N대수술·일반수술',
-    target: (targets: CoverageTargets) => (targets.disease_surgery || 0) + (targets.injury_surgery || 0),
+    description: '질병수술비·N대수술',
+    target: (targets: CoverageTargets) => (targets.disease_surgery || 0) + (targets.surgery_advanced || 0),
   },
   {
-    key: 'hospitalization',
-    label: '입원',
-    description: '질병입원·상해입원',
-    target: (targets: CoverageTargets) => targets.hospitalization || 0,
+    key: 'indemnity',
+    label: '실손의료비',
+    description: '실손보험 (유/무)',
+    target: (_: CoverageTargets) => 0,  // 유/무 체크 방식
   },
   {
     key: 'nursing',
     label: '간병/재가',
-    description: '간병인·간호간병·재가',
-    target: (targets: CoverageTargets) => targets.hospitalization || 0,
+    description: '간병인·재가서비스',
+    target: (_: CoverageTargets) => 0,
+  },
+  {
+    key: 'legal',
+    label: '법률·일배책',
+    description: '일상배상책임·화재벌금',
+    target: (_: CoverageTargets) => 0,
+  },
+  {
+    key: 'driver',
+    label: '운전자',
+    description: '교통사고처리지원금·법률비용',
+    target: (_: CoverageTargets) => 0,
+  },
+  {
+    key: 'pension',
+    label: '연금',
+    description: '노후 연금 준비',
+    target: (targets: CoverageTargets) => targets.pension || 0,
   },
 ]
 
 function buildMajorCoverageRows(groups: PolicyGroup[], targets: CoverageTargets): MajorCoverageRow[] {
   return majorCoverageDefinitions.map((definition) => {
     const companyMap = new Map<string, number>()
+    const isBasic = ['indemnity', 'nursing', 'legal', 'driver'].includes(definition.key)
+
     groups.forEach((group) => {
       const amount = group.coverages
         .filter((coverage) => getMajorCoverageKey(coverage) === definition.key)
         .reduce((total, coverage) => total + (coverage.amount || 0), 0)
       if (amount > 0) companyMap.set(group.company || '보험사 미확인', (companyMap.get(group.company || '보험사 미확인') || 0) + amount)
     })
+
     const current = Array.from(companyMap.values()).reduce((total, amount) => total + amount, 0)
     const target = definition.target(targets)
-    const percent = target > 0 ? Math.round((current / target) * 100) : current > 0 ? 100 : 0
-    const status = current <= 0 ? '준비 필요' : percent >= 100 ? '충분' : '보완 필요'
+
+    let percent: number
+    let status: string
+    if (isBasic) {
+      // 기본준비 항목: 유/무 체크 (amount > 0이면 100%)
+      percent = current > 0 ? 100 : 0
+      status = current > 0 ? '준비 완료' : '준비 필요'
+    } else {
+      percent = target > 0 ? Math.round((current / target) * 100) : current > 0 ? 100 : 0
+      status = current <= 0 ? '준비 필요' : percent >= 100 ? '충분' : percent >= 70 ? '점검' : '보완 필요'
+    }
+
     return {
       ...definition,
       current,
@@ -1454,14 +1931,41 @@ function buildMajorCoverageRows(groups: PolicyGroup[], targets: CoverageTargets)
 
 function getMajorCoverageKey(coverage: CoverageRow) {
   const text = `${coverage.category} ${coverage.sub_category || ''} ${coverage.coverage_name} ${coverage.note || ''}`.toLowerCase()
-  if (text.includes('간병') || text.includes('간호간병') || text.includes('재가')) return 'nursing'
-  if (text.includes('입원') || text.includes('일당')) return 'hospitalization'
-  if (text.includes('수술') || text.includes('종수술') || /[0-9]+대/.test(text) || text.includes('n대')) return 'surgery'
-  if (text.includes('실손') || text.includes('실비') || text.includes('운전자') || text.includes('교통') || text.includes('자부상') || text.includes('화재') || text.includes('배상') || text.includes('일배책') || text.includes('벌금') || text.includes('변호사')) return 'actual'
-  if (text.includes('암') || text.includes('항암') || text.includes('중입자')) return 'cancer'
+  // 사망
+  if (text.includes('일반사망') || text.includes('사망보험금') || text.includes('사망급여')) return 'death'
+  // 간병/재가
+  if (text.includes('간병') || text.includes('간호간병') || text.includes('재가') || text.includes('장기요양')) return 'nursing'
+  // 실손
+  if (text.includes('실손') || text.includes('실비') || (text.includes('입원의료비') || text.includes('통원의료비'))) return 'indemnity'
+  // 운전자
+  if (text.includes('운전자') || text.includes('교통사고처리') || text.includes('교통사고벌금') || text.includes('변호사선임') || text.includes('자동차부상')) return 'driver'
+  // 법률·일배책
+  if (text.includes('일상배상') || text.includes('일배책') || text.includes('화재벌금') || text.includes('가족일상')) return 'legal'
+  // 수술
+  if (/[0-9]+대/.test(text) || text.includes('n대수술') || text.includes('64대') || text.includes('100대')) return 'surgery'
+  if (text.includes('수술') || text.includes('종수술') || text.includes('창상봉합')) return 'surgery'
+  // 연금
+  if (text.includes('연금') || text.includes('노후') || text.includes('pension')) return 'pension'
+  // 암
+  if (text.includes('암') || text.includes('항암') || text.includes('중입자') || text.includes('표적항암') || text.includes('방사선치료')) return 'cancer'
+  // 뇌
   if (text.includes('뇌')) return 'brain'
-  if (text.includes('심장') || text.includes('허혈') || text.includes('심근') || text.includes('부정맥')) return 'heart'
+  // 심장
+  if (text.includes('심장') || text.includes('허혈') || text.includes('심근') || text.includes('심혈관') || text.includes('부정맥')) return 'heart'
+  // 입원일당
+  if (text.includes('입원일당') || text.includes('입원비')) return 'indemnity'
   return 'other'
+}
+
+// 기본준비 항목 가입 여부 체크
+function hasBasicCoverage(key: string, groups: PolicyGroup[]): boolean {
+  const allCoverages = groups.flatMap((g) => g.coverages)
+  const item = basicCoverageItems.find((b) => b.key === key)
+  if (!item) return false
+  return allCoverages.some((cov) => {
+    const text = `${cov.category} ${cov.coverage_name} ${cov.note || ''}`.toLowerCase()
+    return item.aliases.some((alias) => text.includes(alias.toLowerCase()))
+  })
 }
 
 const coverageSectionOrder = [
@@ -1627,10 +2131,12 @@ function translateCoverageName(value: any, category: string) {
 }
 
 function defaultTargets(): CoverageTargets {
-  return targetItems.reduce<CoverageTargets>((acc, item) => {
+  // 표준 프리셋을 기본값으로 사용
+  const base = targetItems.reduce<CoverageTargets>((acc, item) => {
     acc[item.key] = item.defaultAmount
     return acc
   }, {})
+  return { ...base, ...TARGET_PRESETS.standard.values }
 }
 
 function buildCoverageWorkbook(XLSX: any, {
@@ -1747,7 +2253,12 @@ function numberOrUndefined(value: any) {
 
 function moneyMultiplierForSource(data: any) {
   const unitText = `${data?.version || ''} ${data?.amount_unit || ''} ${data?.money_unit || ''}`.toLowerCase()
-  if (unitText.includes('insurance_analysis_v3') || unitText.includes('만원') || unitText.includes('manwon')) return MANWON_TO_WON
+  // insurance_analysis_v3/v4 등 모든 GPTs 버전은 만원 단위로 저장됨
+  if (
+    unitText.includes('insurance_analysis_v') ||
+    unitText.includes('만원') ||
+    unitText.includes('manwon')
+  ) return MANWON_TO_WON
   return 1
 }
 

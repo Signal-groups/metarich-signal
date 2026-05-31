@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
+import XLSXStyle from 'xlsx-js-style'
 import { supabase } from '../../../lib/supabase'
 import { blobToDataUrl, deleteLocalFile, getLocalFile, saveLocalFile } from '../../../lib/crmLocalFiles'
 import { fetchUploadAnalyses, mergeAnalysisItems, saveGptsAnalysisToSupabase } from '../../../lib/crmAnalysisPersistence'
+import { buildStyledSheet, parseBojangtableSheet } from '../../../lib/coverageExcel'
 
 const CATEGORIES = ['전체', '보장분석', '암', '뇌', '심장', '수술', '간병', '재가', '치매']
 const STORAGE_KEY = 'signal-crm-upload-files'
@@ -192,6 +194,88 @@ export default function UploadPage() {
   const parseExcelFile = async (file: File) => {
     const buffer = await file.arrayBuffer()
     const workbook = XLSX.read(buffer, { type: 'array' })
+
+    // ── 보장분석표 형식 감지 ──────────────────────────────────────
+    // F2셀에 "보장분석표" 포함 여부 확인
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+    const f2Cell = firstSheet['F2']
+    const isBojangtable = f2Cell && String(f2Cell.v || '').includes('보장분석표')
+
+    if (isBojangtable) {
+      // 보장분석표 형식: 각 시트를 고객 분석으로 파싱
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { alert('로그인이 필요합니다.'); return }
+
+      let savedCount = 0
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName]
+        const parsed = parseBojangtableSheet(sheet)
+        if (!parsed) continue
+
+        const { customerName, structuredAnalysis } = parsed
+
+        // 고객 찾기 (이름으로)
+        let customerId = ''
+        const { data: found } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('advisor_id', session.user.id)
+          .ilike('name', customerName)
+          .is('deleted_at', null)
+          .limit(1)
+          .maybeSingle()
+
+        if (found?.id) {
+          customerId = found.id
+        } else {
+          // 고객 없으면 자동 생성
+          const { data: newCustomer } = await supabase
+            .from('customers')
+            .insert({
+              advisor_id: session.user.id,
+              name: customerName,
+              status: 'analysis',
+              join_date: new Date().toISOString().slice(0, 10),
+            })
+            .select('id')
+            .single()
+          customerId = newCustomer?.id || ''
+        }
+
+        if (!customerId) continue
+
+        const result = await saveGptsAnalysisToSupabase(supabase, {
+          advisorId: session.user.id,
+          customerId,
+          customerName,
+          fileName: `${customerName}_보장분석표.xlsx`,
+          summary: `${customerName}님 보장분석 (계약 ${structuredAnalysis.contract_count}건, 월 보험료 ${Math.round((structuredAnalysis.monthly_premium || 0) / 10000).toLocaleString()}만원)`,
+          structuredAnalysis,
+        })
+
+        if (result.ok && result.data) {
+          savedCount++
+          setItems((prev) => [result.data!, ...prev])
+        }
+      }
+
+      if (savedCount > 0) {
+        alert(`보장분석표 ${savedCount}명 분석이 저장됐습니다. 보장분석 탭에서 확인하세요.`)
+        // 고객 목록 새로고침
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('advisor_id', session.user.id)
+          .is('deleted_at', null)
+          .order('name', { ascending: true })
+        setCustomers(customerData || [])
+      } else {
+        alert('보장분석표를 읽었지만 저장할 데이터가 없습니다. 시트 형식을 확인해주세요.')
+      }
+      return
+    }
+
+    // ── 일반 고객 목록 Excel 파싱 (기존 로직) ──────────────────────
     const sheet = workbook.Sheets[workbook.SheetNames[0]]
     const rows = XLSX.utils.sheet_to_json<ExcelRow>(sheet, { defval: '' })
     const headers = rows[0] ? Object.keys(rows[0]) : []
@@ -992,249 +1076,20 @@ function isExcelFile(name: string) {
 }
 
 // ─── 보장분석표 Excel 다운로드 ────────────────────────────────────────────────
-
-const COVERAGE_STRUCTURE = [
-  { b: '가족보장자산', c: '사망', d: '일반' },
-  { b: null, c: null, d: '질병' },
-  { b: null, c: null, d: '재해(상해)' },
-  { b: '생활보장자산', c: '암치료비', d: '일반암' },
-  { b: null, c: null, d: '유사암/소액암' },
-  { b: null, c: null, d: '암수술비' },
-  { b: null, c: null, d: '항암 (방사선/약물)' },
-  { b: null, c: null, d: '표적항암치료' },
-  { b: null, c: null, d: '중입자치료' },
-  { b: null, c: null, d: '암주요치료비' },
-  { b: null, c: '2대질병치료비', d: '뇌혈관질환' },
-  { b: null, c: null, d: '뇌졸중' },
-  { b: null, c: null, d: '뇌출혈' },
-  { b: null, c: null, d: '급성심근경색' },
-  { b: null, c: null, d: '허혈성심장질환' },
-  { b: null, c: null, d: '심혈관질환' },
-  { b: null, c: null, d: '뇌혈관수술비' },
-  { b: null, c: null, d: '심혈관수술비' },
-  { b: null, c: null, d: '2대주요치료비' },
-  { b: null, c: '후유장해', d: '질병 후유장해(3%~)' },
-  { b: null, c: null, d: '상해 후유장해(3%~)' },
-  { b: null, c: '골절', d: '골절 진단비' },
-  { b: null, c: null, d: '골절 수술비' },
-  { b: null, c: null, d: '5대골절 진단비' },
-  { b: null, c: null, d: '5대골절 수술비' },
-  { b: null, c: null, d: '깁스 치료비' },
-  { b: null, c: '화상', d: '화상 진단비' },
-  { b: null, c: null, d: '화상 수술비' },
-  { b: '의료보장자산', c: '실손의료비', d: '상해입원의료비' },
-  { b: null, c: null, d: '상해통원의료비' },
-  { b: null, c: null, d: '질병입원의료비' },
-  { b: null, c: null, d: '질병통원의료비' },
-  { b: null, c: '수술비', d: '질병 수술비' },
-  { b: null, c: null, d: '질병 1~5종수술비' },
-  { b: null, c: null, d: '상해 수술비' },
-  { b: null, c: null, d: '상해 1~5종수술비' },
-  { b: null, c: null, d: 'N대 수술비' },
-  { b: null, c: null, d: '창상봉합술' },
-  { b: null, c: '입원', d: '질병 입원일당' },
-  { b: null, c: null, d: '상해 입원일당' },
-  { b: null, c: null, d: '교통상해입원일당' },
-  { b: null, c: null, d: '상해간병지원금' },
-  { b: null, c: null, d: '질병간병지원금' },
-  { b: '운전자', c: null, d: '교통사고처리지원금' },
-  { b: null, c: null, d: '교통사고벌금' },
-  { b: null, c: null, d: '변호사선임비용' },
-  { b: null, c: null, d: '자동차부상치료비' },
-  { b: '치아', c: null, d: '임플란트' },
-  { b: null, c: null, d: '크라운' },
-  { b: '기타', c: null, d: '가족일상배상책임' },
-  { b: null, c: null, d: '화재벌금' },
-]
-
-function findCoverageRowIndex(normalizedName: string): number {
-  // 순서 중요: 더 구체적인 키워드를 먼저 체크해야 오분류 방지
-  const map: { keywords: string[]; idx: number }[] = [
-    // 가족보장 - 사망
-    { idx: 0, keywords: ['일반사망', '사망보험금'] },
-    { idx: 1, keywords: ['질병사망'] },
-    { idx: 2, keywords: ['재해사망', '상해사망', '재해사고사망'] },
-    // 암 진단비/치료비 (구체적인 것 먼저)
-    { idx: 4, keywords: ['유사암', '소액암', '경계성암', '갑상선암', '피부암'] },
-    { idx: 5, keywords: ['암수술비', '암수술'] },
-    { idx: 6, keywords: ['항암방사선', '방사선치료', '약물항암', '항암약물', '항암치료비', '항암(방사선', '항암(약물'] },
-    { idx: 7, keywords: ['표적항암', '표적치료', '면역항암'] },
-    { idx: 8, keywords: ['중입자', '양성자'] },
-    { idx: 9, keywords: ['암주요치료', '암집중치료', '암치료비집중'] },
-    { idx: 3, keywords: ['일반암', '암진단비', '암진단', '통합암'] }, // 일반암은 유사암 뒤에 체크
-    // 2대 질병 치료비 (구체적인 것 먼저)
-    { idx: 11, keywords: ['뇌졸중'] },
-    { idx: 12, keywords: ['뇌출혈'] },
-    { idx: 10, keywords: ['뇌혈관질환', '뇌혈관진단'] },
-    { idx: 13, keywords: ['급성심근경색', '심근경색'] },
-    { idx: 14, keywords: ['허혈성심장', '허혈성'] },
-    { idx: 15, keywords: ['심혈관질환', '심장질환진단'] },
-    { idx: 16, keywords: ['뇌혈관수술비', '뇌수술비'] },
-    { idx: 17, keywords: ['심혈관수술비', '심장수술비'] },
-    { idx: 18, keywords: ['2대주요치료', '주요치료비', '뇌심장집중', '3대집중치료', '2대집중치료'] },
-    // 후유장해
-    { idx: 19, keywords: ['질병후유장해', '질병후유'] },
-    { idx: 20, keywords: ['상해후유장해', '상해후유', '재해후유'] },
-    // 골절
-    { idx: 23, keywords: ['5대골절진단', '5대골절'] },
-    { idx: 24, keywords: ['5대골절수술'] },
-    { idx: 21, keywords: ['골절진단비', '골절진단'] },
-    { idx: 22, keywords: ['골절수술비', '골절수술'] },
-    { idx: 25, keywords: ['깁스', '부목'] },
-    // 화상
-    { idx: 26, keywords: ['화상진단비', '화상진단'] },
-    { idx: 27, keywords: ['화상수술비', '화상수술'] },
-    // 실손의료비
-    { idx: 28, keywords: ['상해입원의료비', '상해입원실비'] },
-    { idx: 29, keywords: ['상해통원의료비', '상해통원실비', '상해외래'] },
-    { idx: 30, keywords: ['질병입원의료비', '질병입원실비'] },
-    { idx: 31, keywords: ['질병통원의료비', '질병통원실비', '질병외래', '실손의료비', '실손'] },
-    // 수술비 (구체적인 것 먼저)
-    { idx: 33, keywords: ['질병1~5종', '질병종수술', '질병5종수술', '질병3종수술', '질병1종수술', '1~5종수술'] },
-    { idx: 32, keywords: ['질병수술비'] },
-    { idx: 35, keywords: ['상해1~5종', '상해종수술', '상해5종수술', '상해3종수술', '상해1종수술'] },
-    { idx: 34, keywords: ['상해수술비'] },
-    { idx: 36, keywords: ['n대수술', '64대수술', '7대수술', '32대수술', '100대수술'] },
-    { idx: 37, keywords: ['창상봉합', '봉합술'] },
-    // 입원일당
-    { idx: 38, keywords: ['질병입원일당', '질병입원비'] },
-    { idx: 39, keywords: ['상해입원일당', '상해입원비'] },
-    { idx: 40, keywords: ['교통상해입원', '교통입원'] },
-    { idx: 41, keywords: ['상해간병', '재해간병'] },
-    { idx: 42, keywords: ['질병간병'] },
-    // 운전자
-    { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리', '대인배상'] },
-    { idx: 44, keywords: ['교통사고벌금', '벌금'] },
-    { idx: 45, keywords: ['변호사선임', '법률비용'] },
-    { idx: 46, keywords: ['자동차부상', '부상치료비', '비탑승'] },
-    // 치아
-    { idx: 47, keywords: ['임플란트'] },
-    { idx: 48, keywords: ['크라운', '보철'] },
-    // 기타
-    { idx: 49, keywords: ['가족일상배상', '일상배상', '일상생활배상'] },
-    { idx: 50, keywords: ['화재벌금', '화재'] },
-  ]
-  for (const entry of map) {
-    if (entry.keywords.some((kw) => normalizedName.includes(kw))) return entry.idx
-  }
-  return -1
-}
-
-function toManwon(amount: number): number {
-  return amount >= 100000 ? Math.round(amount / 10000) : amount
-}
-
-/** 한 명의 structuredAnalysis → Excel 시트 matrix 생성 */
-function buildCoverageMatrix(data: any, sheetName: string): (string | number | null)[][] {
-  const policies: any[] = Array.isArray(data.policies) ? data.policies
-    : Array.isArray(data.contracts) ? data.contracts : []
-
-  const numRows = 62
-  const numCols = 16
-  const matrix: (string | number | null)[][] = Array.from({ length: numRows }, () => Array(numCols).fill(null))
-
-  // Row 2: 고객명 헤더
-  matrix[1][1] = sheetName
-  matrix[1][4] = '님'
-  matrix[1][5] = '내 보험 바로 알기 보장분석표'
-
-  // Row 4: 컬럼 헤더
-  matrix[3][1] = 'NO.'
-  matrix[3][4] = '(단위 : 만원)'
-  for (let i = 0; i < 11; i++) matrix[3][5 + i] = i + 1
-
-  // Row 5~9: 보험 정보 라벨
-  const POLICY_LABELS = [
-    '보  험  회  사',
-    '상   품   명',
-    '계   약   일',
-    '납 입 기 간 & 보 장 기 간',
-    '납 입 보 험 료',
-  ]
-  POLICY_LABELS.forEach((label, i) => { matrix[4 + i][1] = label })
-
-  // Row 10~60: 담보 라벨 구조
-  COVERAGE_STRUCTURE.forEach((row, i) => {
-    const idx = 9 + i
-    if (row.b) matrix[idx][1] = row.b
-    if (row.c) matrix[idx][2] = row.c
-    matrix[idx][3] = row.d
-  })
-
-  // 담보 금액 그리드 (51행 × 11열)
-  const amountGrid: number[][] = Array.from({ length: 51 }, () => Array(11).fill(0))
-
-  policies.slice(0, 11).forEach((policy: any, pi: number) => {
-    matrix[4][5 + pi] = policy.company || ''
-    matrix[5][5 + pi] = policy.product_name || policy.product || ''
-    matrix[6][5 + pi] = policy.start_date || ''
-    matrix[7][5 + pi] = policy.payment_period || policy.maturity_age ? `${policy.payment_period || ''}` : ''
-    const prem = Number(policy.monthly_premium || policy.premium || 0)
-    matrix[8][5 + pi] = prem ? toManwon(prem) : null
-
-    const coverages: any[] = Array.isArray(policy.coverages) ? policy.coverages : []
-    coverages.forEach((cov: any) => {
-      const name = String(cov.coverage_name || cov.name || '').toLowerCase().replace(/[\s\-_·\(\)\/]/g, '')
-      const amount = Number(cov.amount || cov.coverage_amount || 0)
-      if (!amount) return
-      const ri = findCoverageRowIndex(name)
-      if (ri >= 0 && ri < 51) amountGrid[ri][pi] += toManwon(amount)
-    })
-  })
-
-  // 합계보장(E열) + 각 보험별 금액(F~P열) 채우기
-  const hasAnyCoverage = amountGrid.some((row) => row.some((v) => v > 0))
-  amountGrid.forEach((row, ri) => {
-    const total = row.reduce((s, v) => s + v, 0)
-    matrix[9 + ri][4] = total || null
-    row.forEach((v, pi) => { matrix[9 + ri][5 + pi] = v || null })
-  })
-
-  // 폴백: coverages가 모두 비어 있으면 coverage_summary로 E열 합계만 채움
-  if (!hasAnyCoverage && data.coverage_summary) {
-    const cs = data.coverage_summary
-    const summaryMap: { idx: number; value: number }[] = [
-      { idx: 3, value: Number(cs.cancer) || 0 },
-      { idx: 4, value: Number(cs.similar_cancer) || 0 },
-      { idx: 6, value: Number(cs.cancer_chemo) || 0 },
-      { idx: 9, value: Number(cs.cancer_major_treatment) || 0 },
-      { idx: 10, value: Number(cs.brain_vascular) || 0 },
-      { idx: 13, value: Number(cs.ischemic_heart) || 0 },
-      { idx: 18, value: Number(cs.major_treatment) || 0 },
-      { idx: 32, value: Number(cs.disease_surgery) || 0 },
-      { idx: 34, value: Number(cs.injury_surgery) || 0 },
-    ]
-    summaryMap.forEach(({ idx, value }) => {
-      if (value > 0) matrix[9 + idx][4] = value
-    })
-  }
-
-  // 납입보험료 합계 (E9)
-  const totalPrem = policies.slice(0, 11).reduce((s: number, p: any) => {
-    const prem = Number(p.monthly_premium || p.premium || 0)
-    return s + (prem ? toManwon(prem) : 0)
-  }, 0)
-  matrix[8][4] = totalPrem || null
-
-  return matrix
-}
-
 async function downloadAnalysisExcel(item: UploadItem) {
   const data = item.structuredAnalysis
   if (!data) return
 
   const customerName = data.customer?.name || item.customerName || '고객'
-  const wb = XLSX.utils.book_new()
+  const wb = XLSXStyle.utils.book_new()
 
   // 메인 고객 시트
-  const mainMatrix = buildCoverageMatrix(data, customerName)
-  const mainWs = XLSX.utils.aoa_to_sheet(mainMatrix)
-  XLSX.utils.book_append_sheet(wb, mainWs, customerName.slice(0, 31))
+  const mainWs = buildStyledSheet(data, customerName)
+  XLSXStyle.utils.book_append_sheet(wb, mainWs, customerName.slice(0, 31))
 
-  // 가족 구성원 시트 — 같은 customer_id로 연결된 가족의 분석 데이터 조회
+  // 가족 구성원 시트
   if (item.customerId) {
     try {
-      // families 테이블에서 가족 구성원 조회
       const { data: familyRows } = await supabase
         .from('families')
         .select('member_id, name, relation')
@@ -1243,25 +1098,20 @@ async function downloadAnalysisExcel(item: UploadItem) {
       if (familyRows && familyRows.length > 0) {
         const memberIds = familyRows.map((f: any) => f.member_id).filter(Boolean)
         if (memberIds.length > 0) {
-          // 가족 구성원의 최신 분석 데이터 조회
           const { data: familyAnalyses } = await supabase
             .from('upload_analyses')
             .select('*')
             .in('customer_id', memberIds)
             .order('created_at', { ascending: false })
 
-          // 가족별 최신 분석 1건씩 추출
           const seenMembers = new Set<string>()
           for (const analysis of (familyAnalyses || [])) {
             if (seenMembers.has(analysis.customer_id)) continue
             seenMembers.add(analysis.customer_id)
-
             const familyInfo = familyRows.find((f: any) => f.member_id === analysis.customer_id)
             const memberName = familyInfo?.name || analysis.customer_name || '가족'
-            const structuredData = analysis.structured_json || {}
-            const memberMatrix = buildCoverageMatrix(structuredData, memberName)
-            const memberWs = XLSX.utils.aoa_to_sheet(memberMatrix)
-            XLSX.utils.book_append_sheet(wb, memberWs, memberName.slice(0, 31))
+            const memberWs = buildStyledSheet(analysis.structured_json || {}, memberName)
+            XLSXStyle.utils.book_append_sheet(wb, memberWs, memberName.slice(0, 31))
           }
         }
       }
@@ -1270,7 +1120,7 @@ async function downloadAnalysisExcel(item: UploadItem) {
     }
   }
 
-  XLSX.writeFile(wb, `${customerName}_보장분석표.xlsx`)
+  XLSXStyle.writeFile(wb, `${customerName}_보장분석표.xlsx`)
 }
 
 function MiniStat({ label, value }: { label: string; value: number }) {

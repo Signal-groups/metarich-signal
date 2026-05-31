@@ -14,6 +14,7 @@ import {
 import { supabase } from "../../lib/supabase"
 
 type GuideMode = "claim" | "notice" | "monitoring"
+type CoverageFilter = "all" | "care" | "diagnosis" | "special"
 
 const GUIDE_MODES: { id: GuideMode; label: string; desc: string }[] = [
   { id: "claim", label: "보험금 청구", desc: "청구 유형과 담보를 선택해 고객 안내 문구를 완성합니다." },
@@ -35,6 +36,21 @@ const INSURER_FILTERS: { id: "all" | InsurerType; label: string }[] = [
 const MONITORING_PRODUCT_TYPES = ["보장성", "저축성", "종신·사망", "건강보험", "운전자·상해"]
 const MONITORING_RENEWAL_TYPES = ["갱신", "비갱신", "일부특약갱신"]
 const MONITORING_DELIVERY_TYPES = ["서류", "모바일"]
+
+const COVERAGE_FILTERS: { id: CoverageFilter; label: string }[] = [
+  { id: "all", label: "전체" },
+  { id: "care", label: "치료·입원" },
+  { id: "diagnosis", label: "중대질환" },
+  { id: "special", label: "특수청구" },
+]
+
+const COVERAGE_GROUP_LABELS: Record<Exclude<CoverageFilter, "all">, string> = {
+  care: "치료·입원",
+  diagnosis: "중대질환",
+  special: "특수청구",
+}
+
+const GUIDE_MESSAGE_STORAGE_KEY = "claim_documents_custom_messages_v1"
 
 const onlyDigits = (value: string) => value.replace(/[^\d]/g, "")
 
@@ -61,6 +77,9 @@ export default function ClaimDocumentsPage() {
   const [guideMode, setGuideMode] = useState<GuideMode>("claim")
   const [visitType, setVisitType] = useState<VisitType>("hospitalization")
   const [selectedCoverageIds, setSelectedCoverageIds] = useState<string[]>([])
+  const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all")
+  const [coverageSearchText, setCoverageSearchText] = useState("")
+  const [coverageSearchDraft, setCoverageSearchDraft] = useState("")
   const [selectedInsurerIds, setSelectedInsurerIds] = useState<string[]>([])
   const [insurerFilter, setInsurerFilter] = useState<"all" | InsurerType>("all")
   const [searchText, setSearchText] = useState("")
@@ -82,10 +101,32 @@ export default function ClaimDocumentsPage() {
   const [monitoringDocumentMethod, setMonitoringDocumentMethod] = useState(MONITORING_DELIVERY_TYPES[1])
   const [monitoringSignMethod, setMonitoringSignMethod] = useState(MONITORING_DELIVERY_TYPES[1])
   const [monitoringExtraText, setMonitoringExtraText] = useState("")
+  const [customMessages, setCustomMessages] = useState<Partial<Record<GuideMode, string>>>(() => {
+    if (typeof window === "undefined") return {}
+    const saved = window.localStorage.getItem(GUIDE_MESSAGE_STORAGE_KEY)
+    if (!saved) return {}
+    try {
+      return JSON.parse(saved) as Partial<Record<GuideMode, string>>
+    } catch {
+      window.localStorage.removeItem(GUIDE_MESSAGE_STORAGE_KEY)
+      return {}
+    }
+  })
+  const [messageDraft, setMessageDraft] = useState<string | null>(null)
+  const [messageSaved, setMessageSaved] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const selectedCoverages = COVERAGES.filter((coverage) => selectedCoverageIds.includes(coverage.id))
   const selectedInsurers = INSURERS.filter((insurer) => selectedInsurerIds.includes(insurer.id))
+
+  const filteredCoverages = useMemo(() => {
+    const keyword = coverageSearchText.trim().toLowerCase()
+    return COVERAGES.filter((coverage) => {
+      const filterMatched = coverageFilter === "all" || coverage.group === coverageFilter
+      const keywordMatched = !keyword || `${coverage.label} ${coverage.docs.join(" ")} ${coverage.note ?? ""}`.toLowerCase().includes(keyword)
+      return filterMatched && keywordMatched
+    })
+  }, [coverageFilter, coverageSearchText])
 
   useEffect(() => {
     let mounted = true
@@ -109,7 +150,7 @@ export default function ClaimDocumentsPage() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [advisorLabel, advisorPhone])
 
   const filteredInsurers = useMemo(() => {
     const keyword = searchText.trim().toLowerCase()
@@ -267,6 +308,8 @@ export default function ClaimDocumentsPage() {
     visitType,
   ])
 
+  const finalMessageText = messageDraft ?? customMessages[guideMode] ?? previewText
+
   const toggleCoverage = (coverageId: string) => {
     setSelectedCoverageIds((prev) => prev.includes(coverageId)
       ? prev.filter((id) => id !== coverageId)
@@ -280,15 +323,36 @@ export default function ClaimDocumentsPage() {
   }
 
   const copyMessage = async () => {
-    await navigator.clipboard.writeText(previewText)
+    await navigator.clipboard.writeText(finalMessageText)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1800)
+  }
+
+  const saveMessageDraft = () => {
+    const next = { ...customMessages, [guideMode]: finalMessageText }
+    setCustomMessages(next)
+    window.localStorage.setItem(GUIDE_MESSAGE_STORAGE_KEY, JSON.stringify(next))
+    setMessageDraft(null)
+    setMessageSaved(true)
+    window.setTimeout(() => setMessageSaved(false), 1800)
+  }
+
+  const restoreDefaultMessage = () => {
+    const next = { ...customMessages }
+    delete next[guideMode]
+    setCustomMessages(next)
+    window.localStorage.setItem(GUIDE_MESSAGE_STORAGE_KEY, JSON.stringify(next))
+    setMessageDraft(null)
+    setMessageSaved(false)
   }
 
   const resetGuide = () => {
     setGuideMode("claim")
     setVisitType("hospitalization")
     setSelectedCoverageIds([])
+    setCoverageFilter("all")
+    setCoverageSearchText("")
+    setCoverageSearchDraft("")
     setSelectedInsurerIds([])
     setInsurerFilter("all")
     setSearchText("")
@@ -310,6 +374,7 @@ export default function ClaimDocumentsPage() {
     setMonitoringDocumentMethod(MONITORING_DELIVERY_TYPES[1])
     setMonitoringSignMethod(MONITORING_DELIVERY_TYPES[1])
     setMonitoringExtraText("")
+    setMessageDraft(null)
     setCopied(false)
   }
 
@@ -378,7 +443,11 @@ export default function ClaimDocumentsPage() {
                 {GUIDE_MODES.map((mode) => (
                   <button
                     key={mode.id}
-                    onClick={() => setGuideMode(mode.id)}
+                    onClick={() => {
+                      setGuideMode(mode.id)
+                      setMessageDraft(null)
+                      setMessageSaved(false)
+                    }}
                     className={`rounded-2xl border-2 p-5 text-left transition ${
                       guideMode === mode.id
                         ? "border-[#2563eb] bg-blue-50"
@@ -446,8 +515,83 @@ export default function ClaimDocumentsPage() {
                 </Panel>
 
                 <Panel title="4. 담보 선택" icon={<Stethoscope className="h-5 w-5" />}>
+                  <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap gap-2">
+                      {COVERAGE_FILTERS.map((filter) => (
+                        <button
+                          key={filter.id}
+                          onClick={() => setCoverageFilter(filter.id)}
+                          className={`rounded-full px-4 py-2 text-[13px] font-black transition ${
+                            coverageFilter === filter.id
+                              ? "bg-emerald-600 text-white"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex w-full gap-2 lg:max-w-md">
+                      <label className="relative block min-w-0 flex-1">
+                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                          value={coverageSearchDraft}
+                          onChange={(event) => setCoverageSearchDraft(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") setCoverageSearchText(coverageSearchDraft.trim())
+                          }}
+                          placeholder="담보명 또는 필요서류 검색"
+                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-[14px] font-bold outline-none focus:border-emerald-500"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setCoverageSearchText(coverageSearchDraft.trim())}
+                        className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#1a3a6e] px-5 py-3 text-[14px] font-black text-white shadow-sm transition hover:bg-[#214b89]"
+                      >
+                        <Search className="h-4 w-4" />
+                        검색
+                      </button>
+                      {(coverageSearchText || coverageSearchDraft) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverageSearchDraft("")
+                            setCoverageSearchText("")
+                          }}
+                          className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[13px] font-black text-slate-600 transition hover:bg-slate-50"
+                        >
+                          초기화
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {coverageSearchText && (
+                    <div className="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-[13px] font-black text-emerald-800">
+                      “{coverageSearchText}” 검색 결과 {filteredCoverages.length}개
+                    </div>
+                  )}
+
+                  {selectedCoverages.length > 0 && (
+                    <div className="mb-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                      <p className="mb-3 text-[13px] font-black text-emerald-800">선택한 담보</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedCoverages.map((coverage) => (
+                          <button
+                            key={coverage.id}
+                            onClick={() => toggleCoverage(coverage.id)}
+                            className="rounded-full border border-emerald-200 bg-white px-3 py-2 text-[12px] font-black text-emerald-800"
+                          >
+                            {coverage.label} ×
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {COVERAGES.map((coverage) => {
+                    {filteredCoverages.map((coverage) => {
                       const active = selectedCoverageIds.includes(coverage.id)
                       return (
                         <button
@@ -463,7 +607,7 @@ export default function ClaimDocumentsPage() {
                             <div>
                               <p className="text-[15px] font-black text-slate-900">{coverage.label}</p>
                               <p className="mt-1 text-[12px] font-bold text-slate-500">
-                                {coverage.group === "care" ? "치료·입원" : coverage.group === "diagnosis" ? "중대질환" : "특수 청구"}
+                                {COVERAGE_GROUP_LABELS[coverage.group]}
                               </p>
                             </div>
                             <span className={`flex h-7 w-7 items-center justify-center rounded-full border ${active ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-300 text-transparent"}`}>
@@ -474,6 +618,11 @@ export default function ClaimDocumentsPage() {
                       )
                     })}
                   </div>
+                  {filteredCoverages.length === 0 && (
+                    <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-[14px] font-bold text-slate-500">
+                      검색 결과가 없습니다.
+                    </div>
+                  )}
                 </Panel>
               </>
             ) : guideMode === "notice" ? (
@@ -659,11 +808,38 @@ export default function ClaimDocumentsPage() {
           </div>
 
           <div className="space-y-6">
-            <Panel title="최종 고객 안내 문구" icon={<FileText className="h-5 w-5" />}>
+            <Panel
+              title="최종 고객 안내 문구"
+              icon={<FileText className="h-5 w-5" />}
+              action={(
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={restoreDefaultMessage}
+                    className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-black text-slate-600 transition hover:bg-slate-50"
+                  >
+                    기본값
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveMessageDraft}
+                    className="inline-flex min-h-10 items-center justify-center rounded-2xl bg-[#1a3a6e] px-4 py-2 text-[13px] font-black text-white transition hover:bg-[#214b89]"
+                  >
+                    {messageSaved ? "저장 완료" : "수정 저장"}
+                  </button>
+                </div>
+              )}
+            >
+              <p className="mb-3 rounded-2xl bg-blue-50 px-4 py-3 text-[13px] font-bold leading-6 text-[#1a3a6e]">
+                아래 문구를 직접 수정한 뒤 저장하면 현재 안내 종류의 기본 문구로 계속 사용됩니다. 기본값을 누르면 선택한 담보와 보험회사 기준 문구로 다시 돌아갑니다.
+              </p>
               <textarea
-                readOnly
-                value={previewText}
-                className="min-h-[720px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-5 text-[14px] font-bold leading-7 text-slate-800 outline-none"
+                value={finalMessageText}
+                onChange={(event) => {
+                  setMessageDraft(event.target.value)
+                  setMessageSaved(false)
+                }}
+                className="min-h-[720px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-5 text-[14px] font-bold leading-7 text-slate-800 outline-none focus:border-[#2563eb]"
               />
             </Panel>
           </div>

@@ -52,6 +52,10 @@ export async function ensureUserProfile(supabase: SupabaseClientLike, user: User
     branch_name: isExternal ? input.position || metadata.position || byEmail?.branch_name || '' : input.branch || metadata.branch || byEmail?.branch_name || '',
     is_approved: byEmail?.is_approved ?? false,
     crm_access: byEmail?.crm_access ?? false,
+    // 유료 기능 접근 권한 (마스터가 직원 관리에서 개별 부여)
+    office_access: byEmail?.office_access ?? false,
+    claim_access: byEmail?.claim_access ?? false,
+    branding_access: byEmail?.branding_access ?? false,
   }
 
   if (byEmail?.id) {

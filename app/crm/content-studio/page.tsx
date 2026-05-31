@@ -8,8 +8,8 @@ import { getBranch, getDepartment, isApprovedUser, normalizeRole } from '../../.
 type OutputMode = 'instagram' | 'dm'
 type ImagePosition = 'top' | 'center' | 'bottom'
 type FontKey = 'pretendard' | 'serif' | 'bold' | 'round'
+type TeamSetting = { key: string; value: string }
 
-const CANVAS_WIDTH = 1080
 const MODES: Record<OutputMode, { label: string; desc: string; width: number; height: number }> = {
   instagram: { label: '인스타그램', desc: '4:5 · 1080×1350', width: 1080, height: 1350 },
   dm: { label: '고객 DM', desc: '9:16 · 1080×1920', width: 1080, height: 1920 },
@@ -160,7 +160,8 @@ export default function ContentStudioPage() {
         .select('key, value')
         .in('key', ADMIN_IMAGE_KEYS)
       if (imageSettings) {
-        setAdminImages(ADMIN_IMAGE_KEYS.map((key) => imageSettings.find((item: any) => item.key === key)?.value || ''))
+        const settings = imageSettings as TeamSetting[]
+        setAdminImages(ADMIN_IMAGE_KEYS.map((key) => settings.find((item) => item.key === key)?.value || ''))
       }
 
       setChecking(false)
@@ -297,6 +298,20 @@ export default function ContentStudioPage() {
     link.click()
   }
 
+  const closePage = () => {
+    if (window.opener) {
+      window.close()
+      return
+    }
+
+    if (window.history.length > 1) {
+      router.back()
+      return
+    }
+
+    router.push('/dashboard')
+  }
+
   if (checking) {
     return <div className="card card-p" style={{ padding: 80, textAlign: 'center', color: '#64748b' }}>사용 권한을 확인하고 있습니다.</div>
   }
@@ -314,6 +329,14 @@ export default function ContentStudioPage() {
     <>
       <div className="page-header">
         <div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={closePage}
+            style={{ marginBottom: 12, padding: '9px 14px' }}
+          >
+            ← 뒤로가기
+          </button>
           <div className="page-title">DM 및 정보 작성</div>
           <div className="page-subtitle">공통 이미지를 올리고, 전달자별 문구와 디자인을 바꿔 PNG로 저장합니다.</div>
         </div>

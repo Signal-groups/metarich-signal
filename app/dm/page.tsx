@@ -27,7 +27,7 @@ const HUB_CARDS: HubCard[] = [
     badge: '템플릿 선택',
   },
   {
-    href: '/content-studio',
+    href: '/dm/content-studio',
     icon: '🖼️',
     iconBg: '#ede9fe',
     format: 'PNG',

@@ -386,7 +386,7 @@ export default function CustomerDetailPage() {
               <div className="cust-info-grid">
                 <Info label="연락처" value={customer.phone || '-'} />
                 <Info label="나이" value={age ? `${age}세` : '-'} sub={customer.birth_date || ''} />
-                <Info label="월 보험료" value={`${(customer.monthly_premium || 0).toLocaleString()}원`} />
+                <Info label="월 보험료" value={formatManwon(customer.monthly_premium)} />
                 <Info label="보험 건수" value={`${customer.policy_count || 0}건`} />
                 <Info label="실손" value={customer.indemnity_generation ? `${customer.indemnity_generation}세대` : '-'} />
                 <Info label="가족" value={customer.family_count ? `${customer.family_count}명` : '-'} />
@@ -515,7 +515,7 @@ export default function CustomerDetailPage() {
                   {Object.entries(byDay).map(([key, info]) => (
                     <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '5px 0', borderBottom: '1px solid #e0f2fe' }}>
                       <span style={{ color: '#334155' }}><b>{info.institution}</b> {info.companies[0] && `(${info.companies.join(', ')})`}</span>
-                      <span style={{ color: '#0369a1', fontWeight: 700 }}>{info.total.toLocaleString()}원 · {byDay[key as any]?.type || '자동이체'}</span>
+                      <span style={{ color: '#0369a1', fontWeight: 700 }}>{formatManwon(info.total)} · {byDay[key as any]?.type || '자동이체'}</span>
                     </div>
                   ))}
                   {Object.entries(byDay).map(([key, info]) => (
@@ -540,7 +540,7 @@ export default function CustomerDetailPage() {
                     </div>
                   )}
                 </div>
-                <div className="fw-700">{(policy.monthly_premium || 0).toLocaleString()}원</div>
+                <div className="fw-700">{formatManwon(policy.monthly_premium)}</div>
               </div>
             ))}
             {policies.length === 0 && <Empty text="등록된 보험계약이 없습니다." />}
@@ -572,10 +572,10 @@ export default function CustomerDetailPage() {
             )
           }
 
-          const { amountGrid, numPolicies } = buildCoverageDisplayMatrix(policies, coverages)
+          const { amountGrid, numPolicies, displayPoliciesList } = buildCoverageDisplayMatrix(policies, coverages)
 
-          // 보장분석표 헤더 행: 보험사명
-          const displayPolicies = policies.slice(0, numPolicies)
+          // 보장분석표 헤더 행: 보험사명 (폴백 포함)
+          const displayPolicies = displayPoliciesList
 
           // 섹션별 그룹 행 추적
           let lastGroup = ''
@@ -835,19 +835,7 @@ export default function CustomerDetailPage() {
         )}
 
         {tab === 'alerts' && (
-          <>
-            {alerts.map((alert) => (
-              <div key={alert.id} className={`alert-item ${!alert.is_read && !alert.is_done ? 'unread' : ''}`} style={{ marginLeft: -20, marginRight: -20 }}>
-                {!alert.is_read && !alert.is_done && <div className="alert-unread-dot" />}
-                <div className="alert-info">
-                  <div className="alert-name">{alert.customer_name || customer.name}</div>
-                  <div className="alert-msg">{alert.message || alert.type}</div>
-                </div>
-                <div className="alert-date">{alert.due_date}</div>
-              </div>
-            ))}
-            {alerts.length === 0 && <Empty text="등록된 알림이 없습니다." />}
-          </>
+          <AlertsTab customer={customer} alerts={alerts} onRefresh={load} />
         )}
 
         {tab === 'dm' && (
@@ -991,13 +979,41 @@ function toManwonDisplay(amount: number): number {
 }
 
 function buildCoverageDisplayMatrix(policiesData: any[], coveragesData: any[]) {
-  // 51행 × policies수 열 금액 그리드
-  const numPolicies = Math.min(policiesData.length, 8)
+  // policy_id 매칭 실패한 담보를 회사명으로 폴백 처리
+  const effectivePolicies = policiesData.length > 0 ? policiesData : []
+
+  // coverage에 policy_id가 없거나 매칭 안 될 때: company 기준으로 policy 추정
+  const companyToPolicyIdx = new Map<string, number>()
+  effectivePolicies.slice(0, 8).forEach((p, i) => {
+    if (p.company) companyToPolicyIdx.set(String(p.company).trim(), i)
+  })
+
+  // policy_id로 매칭 안 되는 담보는 "추가 컬럼"으로 집계
+  const hasUnmatchedCoverages = coveragesData.some((cov: any) => {
+    const policyIdx = effectivePolicies.findIndex((p) => p.id === cov.policy_id)
+    return policyIdx < 0
+  })
+  const extraCol = hasUnmatchedCoverages && effectivePolicies.length < 8 ? 1 : 0
+  const numPolicies = Math.min(effectivePolicies.length + extraCol, 8)
+  const extraColIdx = effectivePolicies.length // 추가 컬럼 인덱스
+
   const amountGrid: number[][] = Array.from({ length: 51 }, () => Array(numPolicies).fill(0))
 
   coveragesData.forEach((cov: any) => {
-    const policyIdx = policiesData.findIndex((p) => p.id === cov.policy_id)
-    if (policyIdx < 0 || policyIdx >= numPolicies) return
+    let policyIdx = effectivePolicies.findIndex((p) => p.id === cov.policy_id)
+    if (policyIdx < 0) {
+      // 폴백 1: company 기준 매칭
+      const company = String(cov.company || '').trim()
+      if (company && companyToPolicyIdx.has(company)) {
+        policyIdx = companyToPolicyIdx.get(company)!
+      } else if (extraCol > 0) {
+        // 폴백 2: 미매칭 전용 컬럼
+        policyIdx = extraColIdx
+      } else {
+        return
+      }
+    }
+    if (policyIdx >= numPolicies) return
     const name = String(cov.name || '').toLowerCase().replace(/[\s\-_·()/]/g, '')
     const ri = findCoverageRowIndexForDisplay(name)
     const amount = Number(cov.amount || 0)
@@ -1006,7 +1022,13 @@ function buildCoverageDisplayMatrix(policiesData: any[], coveragesData: any[]) {
     }
   })
 
-  return { amountGrid, numPolicies }
+  // 미매칭 컬럼이 있으면 policies 배열에 가상 항목 추가
+  const displayPoliciesList = [...effectivePolicies.slice(0, 8)]
+  if (extraCol > 0) {
+    displayPoliciesList.push({ company: '기타', product_name: '분석 데이터', monthly_premium: 0 })
+  }
+
+  return { amountGrid, numPolicies, displayPoliciesList }
 }
 
 function normalizeCoverageGraphCategory(category?: string, coverageName?: string, note?: string) {
@@ -1029,9 +1051,218 @@ function normalizeCoverageGraphCategory(category?: string, coverageName?: string
 
 function formatCoverageAmount(amount?: number) {
   const value = Number(amount) || 0
-  if (value >= 100000000) return `${Math.round(value / 100000000).toLocaleString()}억`
-  if (value >= 10000) return `${Math.round(value / 10000).toLocaleString()}만`
-  return value.toLocaleString()
+  if (value >= 100_000_000) return `${(value / 100_000_000).toFixed(1)}억원`
+  if (value >= 10_000) return `${Math.round(value / 10_000).toLocaleString()}만원`
+  return `${value.toLocaleString()}원`
+}
+
+// 월 보험료: 만원 단위 표시 (100만원 이상이면 억 단위)
+function formatManwon(value?: number): string {
+  const v = Number(value) || 0
+  if (v === 0) return '-'
+  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억원`
+  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
+  return `${v.toLocaleString()}원`
+}
+
+// ── 알림 탭 ──────────────────────────────────────────────────────────────────
+const ALERT_TYPE_LABELS: Record<string, string> = {
+  birthday: '🎂 생일',
+  car_renewal_d60: '🚗 자동차 D-60',
+  car_renewal_d30: '🚗 자동차 D-30',
+  indemnity_end: '⚠️ 면책 종료',
+  reduction_end: '⚠️ 감액 종료',
+  indemnity_renewal: '🔄 실손 재가입',
+  join_30: '📅 가입 30일',
+  join_90: '📅 가입 90일',
+  join_180: '📅 가입 180일',
+  join_365: '📅 가입 1년',
+  consulting: '💬 상담 예정',
+  car_insurance: '🚗 자동차보험 갱신',
+}
+
+const ALERT_BADGE: Record<string, string> = {
+  birthday: 'badge-pink',
+  car_renewal_d60: 'badge-purple',
+  car_renewal_d30: 'badge-purple',
+  car_insurance: 'badge-purple',
+  indemnity_end: 'badge-orange',
+  reduction_end: 'badge-orange',
+  indemnity_renewal: 'badge-cyan',
+  join_30: 'badge-blue',
+  join_90: 'badge-blue',
+  join_180: 'badge-blue',
+  join_365: 'badge-blue',
+  consulting: 'badge-green',
+}
+
+function AlertsTab({ customer, alerts, onRefresh }: { customer: any; alerts: any[]; onRefresh: () => void }) {
+  const [generating, setGenerating] = useState(false)
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [localAlerts, setLocalAlerts] = useState(alerts)
+
+  useEffect(() => { setLocalAlerts(alerts) }, [alerts])
+
+  const generateNotifications = async () => {
+    setGenerating(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setGenerating(false); return }
+
+    const today = new Date()
+    const toIso = (d: Date) => d.toISOString().slice(0, 10)
+    const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+
+    const toInsert: any[] = []
+
+    // 생일 알림 (다음 생일 기준)
+    if (customer.birth_date) {
+      const birth = new Date(customer.birth_date)
+      const nextBirthday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
+      if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1)
+      toInsert.push({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        type: 'birthday',
+        message: `${customer.name} 고객님 생일`,
+        due_date: toIso(nextBirthday),
+        is_done: false,
+        is_read: false,
+      })
+    }
+
+    // 자동차보험 갱신 알림
+    if (customer.car_insurance_renewal_date) {
+      const renewal = new Date(customer.car_insurance_renewal_date)
+      if (renewal > today) {
+        toInsert.push({
+          customer_id: customer.id,
+          customer_name: customer.name,
+          type: 'car_renewal_d60',
+          message: `자동차보험 갱신 D-60 (${customer.car_insurance_renewal_date})`,
+          due_date: toIso(addDays(renewal, -60)),
+          is_done: false, is_read: false,
+        })
+        toInsert.push({
+          customer_id: customer.id,
+          customer_name: customer.name,
+          type: 'car_renewal_d30',
+          message: `자동차보험 갱신 D-30 (${customer.car_insurance_renewal_date})`,
+          due_date: toIso(addDays(renewal, -30)),
+          is_done: false, is_read: false,
+        })
+      }
+    }
+
+    // 가입 30/90/180/365일 알림
+    if (customer.join_date) {
+      const joinDate = new Date(customer.join_date)
+      for (const days of [30, 90, 180, 365]) {
+        const alertDate = addDays(joinDate, days)
+        if (alertDate > today) {
+          toInsert.push({
+            customer_id: customer.id,
+            customer_name: customer.name,
+            type: `join_${days}`,
+            message: `계약 후 ${days}일 — 계약 안착 관리 연락`,
+            due_date: toIso(alertDate),
+            is_done: false, is_read: false,
+          })
+        }
+      }
+    }
+
+    if (toInsert.length > 0) {
+      await supabase.from('notifications').insert(toInsert)
+    }
+
+    setGenerating(false)
+    onRefresh()
+  }
+
+  const toggleDone = async (alert: any) => {
+    setToggling(alert.id)
+    const next = !alert.is_done
+    await supabase.from('notifications').update({ is_done: next, is_read: true }).eq('id', alert.id)
+    setLocalAlerts((prev) => prev.map((a) => a.id === alert.id ? { ...a, is_done: next, is_read: true } : a))
+    setToggling(null)
+  }
+
+  const pending = localAlerts.filter((a) => !a.is_done)
+  const done = localAlerts.filter((a) => a.is_done)
+
+  return (
+    <>
+      <div className="flex justify-between items-center mb-16">
+        <div>
+          <div className="card-title" style={{ marginBottom: 2 }}>알림 관리</div>
+          <div className="text-muted" style={{ fontSize: 12 }}>미완료 {pending.length}건 · 완료 {done.length}건</div>
+        </div>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={generateNotifications}
+          disabled={generating}
+        >
+          {generating ? '생성 중...' : '🔔 알림 자동 생성'}
+        </button>
+      </div>
+
+      {localAlerts.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8' }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🔔</div>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>등록된 알림이 없습니다</div>
+          <div style={{ fontSize: 12 }}>생일·자동차갱신·계약관리 알림을 자동으로 생성할 수 있습니다.</div>
+        </div>
+      )}
+
+      {pending.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 8 }}>미완료</div>
+          {pending.map((alert) => (
+            <div key={alert.id} className={`alert-item ${!alert.is_read ? 'unread' : ''}`} style={{ marginLeft: -20, marginRight: -20, display: 'flex', alignItems: 'center', gap: 10 }}>
+              {!alert.is_read && <div className="alert-unread-dot" />}
+              <span className={`badge ${ALERT_BADGE[alert.type] || 'badge-gray'}`} style={{ whiteSpace: 'nowrap' }}>
+                {ALERT_TYPE_LABELS[alert.type] || alert.type}
+              </span>
+              <div className="alert-info" style={{ flex: 1 }}>
+                <div className="alert-msg">{alert.message || alert.type}</div>
+              </div>
+              <div className="alert-date" style={{ whiteSpace: 'nowrap' }}>{alert.due_date}</div>
+              <button
+                onClick={() => toggleDone(alert)}
+                disabled={toggling === alert.id}
+                style={{ border: 'none', background: '#f0fdf4', color: '#16a34a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                {toggling === alert.id ? '...' : '완료'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {done.length > 0 && (
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8', marginBottom: 8 }}>완료</div>
+          {done.map((alert) => (
+            <div key={alert.id} className="alert-item" style={{ marginLeft: -20, marginRight: -20, opacity: 0.55 }}>
+              <span className="badge badge-gray" style={{ whiteSpace: 'nowrap' }}>
+                {ALERT_TYPE_LABELS[alert.type] || alert.type}
+              </span>
+              <div className="alert-info" style={{ flex: 1 }}>
+                <div className="alert-msg" style={{ textDecoration: 'line-through' }}>{alert.message || alert.type}</div>
+              </div>
+              <div className="alert-date">{alert.due_date}</div>
+              <button
+                onClick={() => toggleDone(alert)}
+                style={{ border: 'none', background: '#f1f5f9', color: '#64748b', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+              >
+                취소
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  )
 }
 
 function Info({ label, value, sub }: { label: string; value: string; sub?: string }) {

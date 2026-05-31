@@ -5,6 +5,25 @@ import { useParams } from 'next/navigation'
 import { supabase } from '../../../../../lib/supabase'
 
 // ─── 담보 → 행 인덱스 매핑 ──────────────────────────────────────────────────
+// ─── 폴백 데이터 변환 헬퍼 ─────────────────────────────────────────────────
+function normalizeReportDate(value: any): string | null {
+  const text = String(value || '').trim()
+  if (!text || text === '확인필요' || text === 'null') return null
+  const normalized = text.replace(/\./g, '-')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized
+  if (/^\d{2}-\d{2}-\d{2}$/.test(normalized)) return `20${normalized}`
+  return null
+}
+
+function normalizeReportMoney(value: any, source: any): number {
+  const num = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
+  if (!Number.isFinite(num) || num <= 0) return 0
+  const version = String(source?.version || '').toLowerCase()
+  const isManwon = version.includes('insurance_analysis_v') || version.includes('만원')
+  return Math.round(num * (isManwon ? 10000 : 1))
+}
+
+// ─── 담보 → 행 인덱스 매핑 ──────────────────────────────────────────────────
 function findRowIdx(name: string): number {
   const n = name.toLowerCase().replace(/[\s\-_·()/]/g, '')
   const map: { keywords: string[]; idx: number }[] = [
@@ -120,12 +139,51 @@ export default function CustomerReportPage() {
       const { data: ud } = await supabase.from('users').select('name,phone').eq('id', session.user.id).single()
       setAdvisorName(ud?.name || '')
       setAdvisorPhone(ud?.phone || '')
-      const [{ data: cust }, { data: pols }, { data: covs }] = await Promise.all([
+      const [{ data: cust }, { data: pols }, { data: covs }, { data: analysisRows }] = await Promise.all([
         supabase.from('customers').select('*').eq('id', id).single(),
         supabase.from('policies').select('*').eq('customer_id', id).order('start_date', { ascending: false }),
         supabase.from('coverages').select('*').eq('customer_id', id),
+        supabase.from('upload_analyses').select('*').eq('customer_id', id).order('created_at', { ascending: false }).limit(1),
       ])
-      setCustomer(cust); setPolicies(pols || []); setCoverages(covs || [])
+      setCustomer(cust)
+
+      // 폴백: policies/coverages DB가 비어있으면 최신 GPTs 분석에서 추출
+      if ((pols && pols.length > 0) || (covs && covs.length > 0)) {
+        setPolicies(pols || [])
+        setCoverages(covs || [])
+      } else if (analysisRows && analysisRows.length > 0) {
+        const structured = analysisRows[0]?.structured_json || {}
+        const rawPolicies = Array.isArray(structured.policies) ? structured.policies
+          : Array.isArray(structured.contracts) ? structured.contracts : []
+        // 가상 policy 객체로 변환
+        const syntheticPolicies = rawPolicies.map((p: any, i: number) => ({
+          id: `synth-${i}`,
+          company: p.company || '',
+          product_name: p.product_name || p.product || '',
+          start_date: normalizeReportDate(p.start_date),
+          end_date: normalizeReportDate(p.end_date || p.maturity_date),
+          payment_period: p.payment_period || '',
+          monthly_premium: normalizeReportMoney(p.monthly_premium || p.premium, structured),
+        }))
+        // 가상 coverage 객체로 변환
+        const syntheticCoverages: any[] = []
+        rawPolicies.forEach((p: any) => {
+          const covList: any[] = Array.isArray(p.coverages) ? p.coverages : []
+          covList.forEach((cov: any) => {
+            syntheticCoverages.push({
+              id: `synth-cov-${syntheticCoverages.length}`,
+              name: cov.coverage_name || cov.name || '',
+              amount: normalizeReportMoney(cov.amount || cov.coverage_amount, structured),
+              category: cov.category || '',
+            })
+          })
+        })
+        setPolicies(syntheticPolicies)
+        setCoverages(syntheticCoverages)
+      } else {
+        setPolicies(pols || [])
+        setCoverages(covs || [])
+      }
       setLoading(false)
     }
     load()

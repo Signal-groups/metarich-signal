@@ -238,37 +238,24 @@ export default function CrmDashboard() {
         </div>
       </div>
 
+      {/* 상태별 고객 분포 + 보장분석 제안 빠른 현황 */}
       <div className="grid-3" style={{ marginBottom: 16 }}>
-        <div className="card card-p">
+        {/* 상태별 고객 분포 */}
+        <div className="card card-p" style={{ gridColumn: 'span 2' }}>
           <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>업로드 분석 현황</div>
-            <Link href="/crm/upload" className="link">이동</Link>
+            <div className="card-title" style={{ marginBottom: 0 }}>고객 상태 현황</div>
+            <Link href="/crm/customers" className="link">전체보기</Link>
           </div>
-          <Link href="/crm/upload" className="upload-zone" style={{ display: 'block', padding: 18, textDecoration: 'none' }}>
-            <div className="upload-icon" style={{ fontSize: 24 }}>📁</div>
-            <div className="upload-text" style={{ fontSize: 12 }}>파일 업로드하기</div>
-            <div className="upload-sub">암, 뇌, 심장, 수술 등 항목별 자료 정리</div>
-          </Link>
+          <StatusDistribution customers={customers} />
         </div>
 
+        {/* 이번달 보험료 요약 */}
         <div className="card card-p">
           <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>PDF 리포트</div>
-            <Link href="/crm/reports" className="link">생성</Link>
+            <div className="card-title" style={{ marginBottom: 0 }}>보험료 현황</div>
+            <Link href="/crm/customers" className="link">고객관리</Link>
           </div>
-          <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.8 }}>
-            고객별 상담 요약, 보장 태그, 월 보험료 정보를 PDF로 정리해 상담 전후 공유 자료로 활용합니다.
-          </div>
-        </div>
-
-        <div className="card card-p">
-          <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>운영 설정</div>
-            <Link href="/crm/settings" className="link">설정</Link>
-          </div>
-          <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.8 }}>
-            담당자 정보, 알림, 자료 보관 방식, 화면 표시 기준을 고객관리 흐름에 맞게 조정합니다.
-          </div>
+          <PremiumSummary customers={customers} />
         </div>
       </div>
 
@@ -298,7 +285,7 @@ export default function CrmDashboard() {
                     </Link>
                   </td>
                   <td>{customer.phone || '-'}</td>
-                  <td>{(customer.monthly_premium || 0).toLocaleString()}원</td>
+                  <td>{formatPremium(customer.monthly_premium)}</td>
                   <td><span className={`badge ${statusBadges[customer.status] || 'badge-gray'}`}>{statusLabels[customer.status] || customer.status || '-'}</span></td>
                   <td>{customer.join_date || '-'}</td>
                   <td><Link href={`/crm/customers/${customer.id}`} className="btn btn-secondary btn-xs">상세</Link></td>
@@ -349,6 +336,77 @@ function MiniStatus({ label, value, color }: { label: string; value: number; col
 
 function EmptyState({ text }: { text: string }) {
   return <div style={{ padding: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{text}</div>
+}
+
+const STATUS_INFO: { key: string; label: string; color: string; bg: string }[] = [
+  { key: 'new',        label: '신규',   color: '#64748b', bg: '#f1f5f9' },
+  { key: 'analysis',   label: '분석',   color: '#2563eb', bg: '#eff6ff' },
+  { key: 'consulting', label: '상담',   color: '#d97706', bg: '#fffbeb' },
+  { key: 'proposal',   label: '제안',   color: '#7c3aed', bg: '#f5f3ff' },
+  { key: 'contracted', label: '계약',   color: '#059669', bg: '#f0fdf4' },
+  { key: 'managing',   label: '관리',   color: '#0891b2', bg: '#ecfeff' },
+  { key: 'hold',       label: '보류',   color: '#dc2626', bg: '#fff7ed' },
+]
+
+function StatusDistribution({ customers }: { customers: any[] }) {
+  if (customers.length === 0) return <EmptyState text="등록된 고객이 없습니다." />
+  const counts = STATUS_INFO.map((s) => ({
+    ...s,
+    count: customers.filter((c) => c.status === s.key).length,
+  })).filter((s) => s.count > 0)
+  const max = Math.max(...counts.map((s) => s.count), 1)
+
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {counts.map((s) => (
+        <div key={s.key} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 36px', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: s.color, background: s.bg, borderRadius: 8, padding: '3px 8px', textAlign: 'center' }}>
+            {s.label}
+          </span>
+          <div style={{ height: 14, borderRadius: 999, background: '#f1f5f9', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${(s.count / max) * 100}%`, borderRadius: 999, background: s.color, transition: 'width .5s' }} />
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 900, color: s.color, textAlign: 'right' }}>{s.count}명</span>
+        </div>
+      ))}
+      <div style={{ marginTop: 4, display: 'flex', justifyContent: 'flex-end' }}>
+        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>전체 {customers.length}명</span>
+      </div>
+    </div>
+  )
+}
+
+function PremiumSummary({ customers }: { customers: any[] }) {
+  const total = customers.reduce((s, c) => s + (c.monthly_premium || 0), 0)
+  const contracted = customers.filter((c) => c.status === 'contracted' || c.status === 'managing')
+  const contractedPremium = contracted.reduce((s, c) => s + (c.monthly_premium || 0), 0)
+  const avgPremium = customers.length > 0 ? total / customers.length : 0
+
+  const rows = [
+    { label: '총 월 보험료', value: Math.round(total / 10000), unit: '만원', color: '#7c3aed' },
+    { label: '계약·관리 고객', value: Math.round(contractedPremium / 10000), unit: '만원', color: '#059669' },
+    { label: '고객 평균', value: Math.round(avgPremium / 10000), unit: '만원', color: '#2563eb' },
+    { label: '계약·관리 수', value: contracted.length, unit: '명', color: '#0891b2' },
+  ]
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      {rows.map((row) => (
+        <div key={row.label} style={{ background: '#f8fafc', borderRadius: 14, padding: '14px 16px', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, marginBottom: 6 }}>{row.label}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: row.color }}>
+            {row.value.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 400, color: '#94a3b8', marginLeft: 2 }}>{row.unit}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function formatPremium(value?: number): string {
+  const v = Number(value) || 0
+  if (v === 0) return '-'
+  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
+  return `${v.toLocaleString()}원`
 }
 
 function normalizeName(value: any) {
