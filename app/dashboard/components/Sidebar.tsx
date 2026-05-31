@@ -260,7 +260,7 @@ export default function Sidebar({
   };
 
   const openBrandingAi = () => {
-    window.open(`${window.location.origin}/dashboard?tab=branding`, "_blank", "noopener,noreferrer");
+    window.open(`${window.location.origin}/branding-builder`, "_blank", "noopener,noreferrer");
     setIsOpen(false);
   };
 

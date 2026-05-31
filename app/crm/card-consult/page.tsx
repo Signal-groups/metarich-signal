@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '../../../lib/supabase'
 
 // ──────────────────────────────────────────────
@@ -134,7 +133,6 @@ function getPersonality(perception: string, criteria: string[]) {
 // ──────────────────────────────────────────────
 
 export default function CardConsultPage() {
-  const router = useRouter()
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [advisor, setAdvisor] = useState({ name: '', phone: '' })
 
@@ -204,7 +202,7 @@ export default function CardConsultPage() {
       window.close()
       return
     }
-    router.replace('/dashboard')
+    window.location.href = '/card-consult'
   }
 
   return (

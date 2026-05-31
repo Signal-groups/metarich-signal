@@ -45,7 +45,7 @@ export default function CardConsultLayout({ children }: { children: React.ReactN
       window.close()
       return
     }
-    router.replace('/dashboard')
+    window.location.href = '/card-consult'
   }
 
   const openOffice = () => {
@@ -57,7 +57,7 @@ export default function CardConsultLayout({ children }: { children: React.ReactN
   }
 
   const goHome = () => {
-    router.push('/dashboard')
+    window.location.href = '/card-consult'
   }
 
   return (
@@ -76,7 +76,7 @@ export default function CardConsultLayout({ children }: { children: React.ReactN
           onOpenOffice={openOffice}
           onOpenConsulting={openConsulting}
           onTabChange={(value: string) => {
-            if (value === 'tab:branding' || value === 'branding') router.push('/dashboard?tab=branding')
+            if (value === 'tab:branding' || value === 'branding') window.open(`${window.location.origin}/branding-builder`, '_blank', 'noopener,noreferrer')
             else router.push('/dashboard')
           }}
           activeTab={null}
