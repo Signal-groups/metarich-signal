@@ -56,6 +56,10 @@ export default function CardConsultLayout({ children }: { children: React.ReactN
     router.push('/dashboard')
   }
 
+  const goHome = () => {
+    router.push('/dashboard')
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9', position: 'relative' }}>
       {user && (
@@ -78,26 +82,49 @@ export default function CardConsultLayout({ children }: { children: React.ReactN
           activeTab={null}
         />
       )}
-      <button
-        onClick={closeWindow}
+      <div
         style={{
           position: 'fixed',
           top: 16,
           right: 16,
           zIndex: 999,
-          background: '#1A2744',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 10,
-          padding: '8px 16px',
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          display: 'flex',
+          gap: 8,
         }}
       >
-        닫기
-      </button>
+        <button
+          onClick={goHome}
+          style={{
+            background: '#fff',
+            color: '#1A2744',
+            border: '1px solid rgba(26,39,68,0.18)',
+            borderRadius: 10,
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
+          }}
+        >
+          홈으로 돌아가기
+        </button>
+        <button
+          onClick={closeWindow}
+          style={{
+            background: '#1A2744',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 10,
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 800,
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          }}
+        >
+          창닫기
+        </button>
+      </div>
       <main className={user ? 'lg:ml-[300px] pb-24 lg:pb-0' : ''}>
         {children}
       </main>
