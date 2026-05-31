@@ -198,11 +198,7 @@ export default function CardConsultPage() {
   const stepLabels = ['기본 정보', '카드 선택', '보험 기준', '결과 확인']
 
   const closePage = () => {
-    if (window.opener) {
-      window.close()
-      return
-    }
-    window.location.href = '/card-consult'
+    window.close()
   }
 
   return (
