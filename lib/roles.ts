@@ -100,9 +100,8 @@ export function isApprovedUser(user: any): boolean {
 }
 
 function enabled(value: any): boolean {
-  return value === true || value === "true" || value === 1 || value === "1";
+  return value === true || value === "true" || value === 1 || value === "1"
 }
-
 
 // 유료 기능 접근 권한 함수
 // 마스터는 항상 접근 가능 / 그 외는 직원관리에서 개별 허용한 경우만
@@ -115,8 +114,7 @@ export function canAccessCrm(user: any): boolean {
 
 /** 사무실 업무 탭 */
 export function canAccessOffice(user: any): boolean {
-  const role = normalizeRole(user);
-  return isApprovedUser(user) || role === "master" || enabled(user?.office_access);
+  return isApprovedUser(user) || normalizeRole(user) === "master" || enabled(user?.office_access);
 }
 
 /** AI 자동화 청구 */

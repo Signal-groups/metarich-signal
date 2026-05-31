@@ -89,7 +89,6 @@ export default function Sidebar({
   const canManageStaff = isOrganizationAdminAccount(user);
   const isStaff = isAgent;
   const isApproved = isApprovedUser(user);
-  // 유료 기능 접근 권한 (마스터는 항상 true, 그 외는 마스터가 직원관리에서 허용한 경우만)
   const canUseOffice = canAccessOffice(user);
   const canUseCrm = canAccessCrm(user);
   const canUseClaim = canAccessClaim(user);
@@ -259,11 +258,6 @@ export default function Sidebar({
     setIsOpen(false);
   };
 
-  const openBrandingAi = () => {
-    window.open(`${window.location.origin}/branding-builder`, "_blank", "noopener,noreferrer");
-    setIsOpen(false);
-  };
-
   const openInsuranceLibrary = () => {
     window.open(`${window.location.origin}/insurance-tools/coverage-stats`, "_blank", "noopener,noreferrer");
     setIsOpen(false);
@@ -379,8 +373,8 @@ export default function Sidebar({
                 <NavItem
                   icon="🎨"
                   label="설계사 브랜딩 AI"
-                  active={activeTab === 'branding'}
-                  onClick={openBrandingAi}
+                  active={false}
+                  onClick={() => window.open(`${window.location.origin}/branding-builder`, "_blank", "noopener,noreferrer")}
                   badge="베타"
                 />
               )}
