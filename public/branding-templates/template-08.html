@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="ko"><head><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='14' fill='%230a0a0a'/&gt;&lt;path d='M38 4 L14 36 L28 36 L24 60 L50 26 L34 26 Z' fill='%23FFEB00' stroke='%23FFEB00' stroke-width='1' stroke-linejoin='round'/&gt;&lt;/svg&gt;">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOLT&amp;CO · 볼트앤코 — We Make Brands Unforgettable</title>
+<meta name="description" content="VOLT&amp;CO — 서울 기반 크리에이티브 마케팅 에이전시. 브랜딩, 디지털, 콘텐츠, PR, 퍼포먼스. 240+ 캠페인, 평균 ROI 5.8배.">
+
+<!-- ============================================
+     의존성
+     - Google Fonts:
+       · Syne (800/700/600) — 헤드라인
+       · Barlow Condensed (700/600/400) — 영문 임팩트
+       · Noto Sans KR (300/400/500/700) — 본문
+       · Caveat (400/600) — 손글씨 메모
+     ============================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&amp;family=Barlow+Condensed:wght@400;500;600;700&amp;family=Noto+Sans+KR:wght@300;400;500;700&amp;family=Caveat:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+
+<style>
+/* ============================================
+   1. 디자인 토큰
+   ============================================ */
+:root {
+  /* 배경 */
+  --bg: #f5f0eb;             /* 크림 오프화이트 (메인) */
+  --bg-deeper: #ebe4dc;       /* 더 어두운 크림 */
+  --bg-card: #ffffff;
+  --navy: #1d3557;            /* 딥 네이비 (서브 배경) */
+  --navy-deep: #14253f;
+  --navy-light: #2a4470;
+
+  /* 포인트 컬러 */
+  --red: #e63946;             /* 비비드 레드 */
+  --red-deep: #c52a37;
+  --amber: #f4a261;           /* 오렌지 앰버 */
+  --amber-deep: #d98a4a;
+
+  /* 텍스트 */
+  --ink: #1a1a1a;
+  --ink-soft: #4a4a4a;
+  --ink-mute: #6e6e6e;
+  --line: #d8d3cc;
+
+  /* 폰트 */
+  --font-display: 'Syne', sans-serif;
+  --font-condensed: 'Barlow Condensed', sans-serif;
+  --font-body: 'Noto Sans KR', sans-serif;
+  --font-script: 'Caveat', cursive;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* 간격 */
+  --section-py: clamp(80px, 10vw, 140px);
+  --container: 1400px;
+}
+
+/* ============================================
+   2. 글로벌 리셋
+   ============================================ */
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }
+body {
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-weight:400;
+  line-height:1.7;
+  font-size:16px;
+  overflow-x:hidden;
+}
+img { max-width:100%; display:block; }
+a { color:inherit; text-decoration:none; }
+button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+
+.container {
+  max-width:var(--container);
+  margin:0 auto;
+  padding:0 40px;
+}
+
+/* ============================================
+   3. 공통 유틸리티
+   ============================================ */
+.eyebrow {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:14px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--red);
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:24px;
+}
+.eyebrow::before {
+  content:'';
+  width:32px;
+  height:2px;
+  background:var(--red);
+}
+.section-num {
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--ink-mute);
+  letter-spacing:0.15em;
+  margin-bottom:16px;
+}
+.scribble {
+  /* Caveat 손글씨 장식 (요청 명시) */
+  font-family:var(--font-script);
+  font-weight:600;
+  color:var(--red);
+  display:inline-block;
+}
+.scribble-arrow::after {
+  content:' →';
+  display:inline-block;
+  transform:rotate(20deg);
+  margin-left:4px;
+}
+
+/* ============================================
+   4. 네비게이션
+   ============================================ */
+.nav {
+  position:fixed;
+  top:0; left:0; right:0;
+  padding:24px 40px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  z-index:100;
+  transition:background 0.4s, padding 0.3s, border-color 0.3s;
+  border-bottom:1px solid transparent;
+}
+.nav.scrolled {
+  background:rgba(245, 240, 235, 0.92);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom-color:var(--line);
+  padding:16px 40px;
+}
+.nav-logo {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:24px;
+  letter-spacing:-0.02em;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.nav-logo::before {
+  content:'';
+  width:14px; height:14px;
+  background:var(--red);
+  border-radius:50%;
+  display:inline-block;
+}
+.nav-menu {
+  display:flex;
+  gap:36px;
+  list-style:none;
+}
+.nav-menu a {
+  font-family:var(--font-condensed);
+  font-weight:500;
+  font-size:15px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  transition:color 0.2s;
+  position:relative;
+}
+.nav-menu a:hover { color:var(--red); }
+.nav-cta {
+  padding:12px 24px;
+  background:var(--ink);
+  color:var(--bg);
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:14px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  transition:background 0.2s;
+}
+.nav-cta:hover { background:var(--red); }
+@media (max-width: 1000px) {
+  .nav-menu { display:none; }
+}
+
+/* ============================================
+   5. SECTION 1 - HERO (텍스트 중심 비대칭)
+   ============================================ */
+.hero {
+  min-height:100vh;
+  padding:140px 40px 80px;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  overflow:hidden;
+}
+.hero::before {
+  /* 우측 하단 거대한 빨간 도트 - 비대칭 장식 */
+  content:'';
+  position:absolute;
+  right:-80px; bottom:-80px;
+  width:280px; height:280px;
+  background:var(--red);
+  border-radius:50%;
+  z-index:0;
+  opacity:0.95;
+}
+.hero-content {
+  position:relative;
+  z-index:2;
+  max-width:1400px;
+  margin:0 auto;
+  width:100%;
+}
+.hero-meta {
+  /* 우측 상단 — 한국명 + 위치 */
+  position:absolute;
+  top:0; right:40px;
+  text-align:right;
+  font-family:var(--font-condensed);
+  font-size:14px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  line-height:1.6;
+}
+.hero-meta strong {
+  color:var(--ink);
+  font-weight:600;
+}
+.hero-title {
+  /* 메인 타이포그래피 — Syne 800 */
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(56px, 11vw, 180px);
+  line-height:0.92;
+  letter-spacing:-0.04em;
+  color:var(--ink);
+  margin-bottom:48px;
+  position:relative;
+}
+.hero-title .line {
+  display:block;
+  overflow:hidden;
+}
+.hero-title .word {
+  display:inline-block;
+  /* 등장 애니메이션 (요청 명시) */
+  opacity:0;
+  transform:translateY(80%);
+  animation:wordReveal 0.9s cubic-bezier(0.2, 0.6, 0.2, 1) forwards;
+}
+.hero-title .word.delay-1 { animation-delay:0.1s; }
+.hero-title .word.delay-2 { animation-delay:0.25s; }
+.hero-title .word.delay-3 { animation-delay:0.4s; }
+.hero-title .word.delay-4 { animation-delay:0.55s; }
+.hero-title .word.delay-5 { animation-delay:0.7s; }
+@keyframes wordReveal {
+  to { opacity:1; transform:translateY(0); }
+}
+.hero-title em {
+  font-style:italic;
+  color:var(--red);
+  font-family:var(--font-display);
+  font-weight:700;
+}
+.hero-bottom {
+  display:grid;
+  grid-template-columns:1.2fr 1fr;
+  gap:80px;
+  align-items:end;
+  margin-top:40px;
+}
+.hero-desc {
+  max-width:480px;
+  font-size:17px;
+  color:var(--ink-soft);
+  line-height:1.7;
+}
+.hero-desc strong {
+  color:var(--ink);
+  font-weight:700;
+}
+/* 손글씨 메모 (Caveat) - 요청 명시 */
+.hero-note {
+  font-family:var(--font-script);
+  font-weight:600;
+  font-size:24px;
+  color:var(--red);
+  position:absolute;
+  top:30%;
+  right:20%;
+  transform:rotate(-6deg);
+  max-width:200px;
+  line-height:1.3;
+  z-index:3;
+  opacity:0;
+  animation:noteFade 1s ease 1.2s forwards;
+}
+@keyframes noteFade {
+  to { opacity:1; transform:rotate(-6deg) translateY(-4px); }
+}
+.hero-note::before {
+  /* 화살표 */
+  content:'';
+  position:absolute;
+  bottom:-32px;
+  left:30px;
+  width:32px;
+  height:32px;
+  border-left:2px solid var(--red);
+  border-bottom:2px solid var(--red);
+  transform:rotate(-15deg);
+  border-radius:0 0 0 16px;
+}
+/* 우측 수상 로고들 (요청 명시) */
+.hero-awards {
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  align-items:flex-end;
+}
+.hero-award-list {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+  text-align:right;
+}
+.hero-award {
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 16px;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:100px;
+  font-family:var(--font-condensed);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+}
+.hero-award::before {
+  content:'';
+  width:8px; height:8px;
+  background:var(--amber);
+  border-radius:50%;
+}
+.hero-award:nth-child(2)::before { background:var(--red); }
+.hero-award:nth-child(3)::before { background:var(--navy); }
+
+.scroll-indicator {
+  position:absolute;
+  bottom:30px;
+  left:40px;
+  font-family:var(--font-condensed);
+  font-size:11px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+  color:var(--ink-mute);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  z-index:2;
+}
+.scroll-indicator::after {
+  content:'';
+  width:60px;
+  height:1px;
+  background:var(--ink);
+  animation:scrollLineSlide 2s ease-in-out infinite;
+}
+@keyframes scrollLineSlide {
+  0%, 100% { transform:scaleX(0.4); transform-origin:left; }
+  50%      { transform:scaleX(1); transform-origin:left; }
+}
+@media (max-width: 900px) {
+  .hero { padding:120px 24px 80px; }
+  .hero-meta { position:static; text-align:left; margin-bottom:24px; }
+  .hero-bottom { grid-template-columns:1fr; gap:48px; }
+  .hero-note { display:none; }
+  .hero-awards { align-items:flex-start; }
+}
+
+/* ============================================
+   6. SECTION 2 - MANIFESTO (NEW)
+   - 풀폭 선언문, 비대칭 텍스트 배치
+   ============================================ */
+.manifesto {
+  background:var(--red);
+  color:#fff;
+  padding:var(--section-py) 40px;
+  position:relative;
+  overflow:hidden;
+}
+.manifesto::before {
+  /* 좌측 거대한 워터마크 텍스트 */
+  content:'M.';
+  position:absolute;
+  left:-20px; bottom:-60px;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:480px;
+  line-height:0.8;
+  color:rgba(255,255,255,0.08);
+  letter-spacing:-0.05em;
+  pointer-events:none;
+}
+.manifesto-grid {
+  display:grid;
+  grid-template-columns:280px 1fr;
+  gap:80px;
+  position:relative;
+  z-index:1;
+  max-width:1400px;
+  margin:0 auto;
+}
+.manifesto-side .label {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:14px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.7);
+  margin-bottom:16px;
+}
+.manifesto-side h3 {
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:36px;
+  line-height:1.1;
+  letter-spacing:-0.02em;
+  margin-bottom:24px;
+}
+.manifesto-side p {
+  font-size:14px;
+  color:rgba(255,255,255,0.85);
+  line-height:1.7;
+}
+.manifesto-text {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(36px, 5.5vw, 80px);
+  line-height:1.05;
+  letter-spacing:-0.03em;
+  color:#fff;
+}
+.manifesto-text em {
+  font-style:italic;
+  font-weight:700;
+  color:var(--amber);
+}
+.manifesto-text .strike {
+  position:relative;
+  color:rgba(255,255,255,0.6);
+}
+.manifesto-text .strike::after {
+  content:'';
+  position:absolute;
+  left:-4px; right:-4px;
+  top:55%;
+  height:6px;
+  background:var(--amber);
+  transform:rotate(-2deg);
+}
+.manifesto-signature {
+  margin-top:48px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+  font-family:var(--font-script);
+  font-weight:600;
+  font-size:32px;
+  color:var(--amber);
+}
+.manifesto-signature::before {
+  content:'';
+  width:60px; height:2px;
+  background:var(--amber);
+}
+@media (max-width: 900px) {
+  .manifesto-grid { grid-template-columns:1fr; gap:32px; }
+  .manifesto::before { font-size:280px; }
+}
+
+/* ============================================
+   7. SECTION 3 - 핵심 수치 (네이비 배경)
+   ============================================ */
+.stats {
+  background:var(--navy);
+  color:#fff;
+  padding:var(--section-py) 40px;
+  position:relative;
+  overflow:hidden;
+}
+.stats-head {
+  max-width:1400px;
+  margin:0 auto 80px;
+  display:grid;
+  grid-template-columns:1fr 1.5fr;
+  gap:80px;
+  align-items:end;
+}
+.stats-head .eyebrow {
+  color:var(--amber);
+}
+.stats-head .eyebrow::before { background:var(--amber); }
+.stats-head h2 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(40px, 5vw, 72px);
+  line-height:1.05;
+  letter-spacing:-0.03em;
+  color:#fff;
+}
+.stats-head h2 em {
+  font-style:italic;
+  color:var(--amber);
+  font-weight:700;
+}
+.stats-head .right p {
+  color:rgba(255,255,255,0.75);
+  font-size:16px;
+  line-height:1.7;
+  max-width:480px;
+}
+.stats-grid {
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  border-top:1px solid rgba(255,255,255,0.15);
+}
+.stat-block {
+  padding:48px 32px;
+  border-right:1px solid rgba(255,255,255,0.15);
+  position:relative;
+  transition:background 0.3s;
+}
+.stat-block:last-child { border-right:none; }
+.stat-block:hover { background:rgba(255,255,255,0.03); }
+.stat-block .num-row {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:20px;
+}
+.stat-num {
+  font-family:var(--font-condensed);
+  font-weight:700;
+  font-size:clamp(64px, 8vw, 120px);
+  line-height:0.9;
+  letter-spacing:-0.04em;
+  color:#fff;
+}
+.stat-unit {
+  font-family:var(--font-display);
+  font-weight:700;
+  font-style:italic;
+  font-size:32px;
+  color:var(--amber);
+  margin-top:12px;
+}
+.stat-label {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:14px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.85);
+  margin-bottom:6px;
+}
+.stat-detail {
+  font-size:13px;
+  color:rgba(255,255,255,0.6);
+  font-family:var(--font-mono);
+}
+@media (max-width: 1000px) {
+  .stats-head { grid-template-columns:1fr; gap:32px; }
+  .stats-grid { grid-template-columns:repeat(2, 1fr); }
+  .stat-block:nth-child(2) { border-right:none; }
+}
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns:1fr; }
+  .stat-block { border-right:none !important; border-bottom:1px solid rgba(255,255,255,0.15); }
+}
+
+/* ============================================
+   8. SECTION 4 - 서비스 (5가지)
+   ============================================ */
+.services {
+  padding:var(--section-py) 40px;
+}
+.services-head {
+  max-width:1400px;
+  margin:0 auto 80px;
+  display:grid;
+  grid-template-columns:1fr 1.5fr;
+  gap:80px;
+  align-items:end;
+}
+.services-head h2 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(48px, 6vw, 96px);
+  line-height:1;
+  letter-spacing:-0.03em;
+  color:var(--ink);
+}
+.services-head h2 em {
+  font-style:italic;
+  color:var(--red);
+  font-weight:700;
+}
+.services-head .right p {
+  font-size:17px;
+  color:var(--ink-soft);
+  line-height:1.7;
+}
+.services-grid {
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(12, 1fr);
+  gap:24px;
+}
+.service-card {
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  padding:40px 32px;
+  position:relative;
+  overflow:hidden;
+  transition:all 0.4s ease;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+}
+.service-card:hover {
+  background:var(--ink);
+  color:var(--bg);
+  border-color:var(--ink);
+  transform:translateY(-6px);
+}
+/* 비대칭 그리드 — 5개 카드를 다른 사이즈로 */
+.service-card:nth-child(1) { grid-column:span 5; min-height:340px; }
+.service-card:nth-child(2) { grid-column:span 4; min-height:340px; }
+.service-card:nth-child(3) { grid-column:span 3; min-height:340px; }
+.service-card:nth-child(4) { grid-column:span 4; min-height:340px; }
+.service-card:nth-child(5) { grid-column:span 8; min-height:340px; }
+@media (max-width: 1000px) {
+  .service-card { grid-column:span 12 !important; min-height:auto; }
+}
+.service-num {
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--red);
+  letter-spacing:0.1em;
+  margin-bottom:24px;
+}
+.service-card:hover .service-num { color:var(--amber); }
+.service-card h3 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:36px;
+  line-height:1.05;
+  letter-spacing:-0.02em;
+  margin-bottom:16px;
+}
+.service-card .ko {
+  font-family:var(--font-condensed);
+  font-size:14px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--ink-mute);
+  margin-bottom:20px;
+}
+.service-card:hover .ko { color:rgba(245,240,235,0.6); }
+.service-card p {
+  font-size:14px;
+  color:var(--ink-soft);
+  line-height:1.7;
+  margin-bottom:24px;
+  flex:1;
+}
+.service-card:hover p { color:rgba(245,240,235,0.85); }
+.service-tags {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:auto;
+}
+.service-tag {
+  font-family:var(--font-mono);
+  font-size:11px;
+  padding:4px 10px;
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--ink-mute);
+}
+.service-card:hover .service-tag {
+  border-color:rgba(245,240,235,0.3);
+  color:rgba(245,240,235,0.8);
+}
+
+/* ============================================
+   9. SECTION 5 - 포트폴리오 (4개)
+   - 비대칭 그리드 + 호버 시 성과 오버레이
+   ============================================ */
+.portfolio {
+  padding:var(--section-py) 40px;
+  background:var(--bg-deeper);
+}
+.portfolio-head {
+  max-width:1400px;
+  margin:0 auto 80px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:48px;
+  flex-wrap:wrap;
+}
+.portfolio-head h2 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(48px, 6vw, 96px);
+  line-height:1;
+  letter-spacing:-0.03em;
+}
+.portfolio-head h2 em {
+  font-style:italic;
+  color:var(--red);
+  font-weight:700;
+}
+.portfolio-head .meta {
+  font-family:var(--font-condensed);
+  font-size:14px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--ink-mute);
+}
+.portfolio-grid {
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(12, 1fr);
+  grid-auto-rows:280px;
+  gap:24px;
+}
+.work {
+  position:relative;
+  overflow:hidden;
+  cursor:pointer;
+  background:#000;
+}
+.work:nth-child(1) { grid-column:1 / 8; grid-row:span 2; }
+.work:nth-child(2) { grid-column:8 / 13; grid-row:span 1; }
+.work:nth-child(3) { grid-column:8 / 13; grid-row:span 1; }
+.work:nth-child(4) { grid-column:1 / 13; grid-row:span 1; }
+@media (max-width: 1000px) {
+  .portfolio-grid { grid-template-columns:1fr; grid-auto-rows:300px; }
+  .work { grid-column:1 / -1 !important; grid-row:span 1 !important; }
+}
+.work-img {
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center;
+  transition:transform 0.8s ease, filter 0.5s;
+}
+.work:hover .work-img {
+  transform:scale(1.05);
+  filter:brightness(0.4);
+}
+.work:nth-child(1) .work-img { background-image:url('https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=1200&q=80'); }
+.work:nth-child(2) .work-img { background-image:url('https://images.unsplash.com/photo-1542744095-291d1f67b221?w=900&q=80'); }
+.work:nth-child(3) .work-img { background-image:url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=900&q=80'); }
+.work:nth-child(4) .work-img { background-image:url('https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1400&q=80'); }
+.work-base {
+  position:absolute;
+  bottom:0; left:0; right:0;
+  padding:32px 36px;
+  color:#fff;
+  z-index:2;
+  background:linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+}
+.work-tag {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--amber);
+  margin-bottom:8px;
+}
+.work-title {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:32px;
+  line-height:1.1;
+  letter-spacing:-0.02em;
+}
+/* 호버 시 성과 오버레이 (요청 명시) */
+.work-overlay {
+  position:absolute;
+  inset:0;
+  z-index:3;
+  padding:36px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+  background:rgba(29, 53, 87, 0.92);
+  color:#fff;
+  opacity:0;
+  transition:opacity 0.4s ease;
+}
+.work:hover .work-overlay { opacity:1; }
+.work-overlay .client {
+  font-family:var(--font-condensed);
+  font-size:14px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--amber);
+  margin-bottom:8px;
+}
+.work-overlay h4 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:28px;
+  line-height:1.1;
+  letter-spacing:-0.02em;
+  margin-bottom:24px;
+}
+.work-overlay .results {
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:16px 32px;
+  width:100%;
+  max-width:480px;
+}
+.work-overlay .result-num {
+  font-family:var(--font-condensed);
+  font-weight:700;
+  font-size:36px;
+  line-height:1;
+  letter-spacing:-0.02em;
+  color:var(--amber);
+}
+.work-overlay .result-label {
+  font-size:11px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.75);
+  margin-top:4px;
+}
+
+/* ============================================
+   10. SECTION 6 - 프로세스 (지그재그 5단계)
+   ============================================ */
+.process {
+  padding:var(--section-py) 40px;
+}
+.process-head {
+  max-width:1400px;
+  margin:0 auto 100px;
+  text-align:center;
+}
+.process-head h2 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(48px, 6vw, 96px);
+  line-height:1;
+  letter-spacing:-0.03em;
+}
+.process-head h2 em { font-style:italic; color:var(--red); font-weight:700; }
+.process-head p {
+  font-size:17px;
+  color:var(--ink-soft);
+  max-width:540px;
+  margin:24px auto 0;
+  line-height:1.7;
+}
+.process-steps {
+  max-width:1200px;
+  margin:0 auto;
+  position:relative;
+}
+.process-step {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:80px;
+  align-items:center;
+  margin-bottom:80px;
+  position:relative;
+}
+.process-step:last-child { margin-bottom:0; }
+.process-step:nth-child(even) {
+  /* 짝수 단계는 좌우 반전 */
+  direction:rtl;
+}
+.process-step:nth-child(even) > * { direction:ltr; }
+.process-step .visual {
+  aspect-ratio:5/4;
+  background:var(--bg-deeper);
+  position:relative;
+  overflow:hidden;
+}
+.process-step .visual::before {
+  /* 단계 번호 거대 워터마크 */
+  content:attr(data-num);
+  position:absolute;
+  bottom:-40px;
+  right:-20px;
+  font-family:var(--font-condensed);
+  font-weight:700;
+  font-size:280px;
+  line-height:0.8;
+  color:rgba(230, 57, 70, 0.15);
+  letter-spacing:-0.05em;
+}
+.process-step:nth-child(2) .visual { background:var(--navy); }
+.process-step:nth-child(3) .visual { background:var(--red); }
+.process-step:nth-child(4) .visual { background:var(--ink); }
+.process-step:nth-child(5) .visual { background:var(--amber); }
+.process-step .visual-content {
+  position:absolute;
+  inset:0;
+  padding:48px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  z-index:1;
+}
+.process-step .visual-tag {
+  font-family:var(--font-mono);
+  font-size:12px;
+  letter-spacing:0.15em;
+  margin-bottom:8px;
+  color:#fff;
+  opacity:0.7;
+}
+.process-step:nth-child(1) .visual-tag { color:var(--ink-mute); opacity:1; }
+.process-step .visual-headline {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:48px;
+  line-height:1.05;
+  letter-spacing:-0.02em;
+  color:#fff;
+}
+.process-step:nth-child(1) .visual-headline { color:var(--ink); }
+.process-step:nth-child(5) .visual-headline { color:var(--ink); }
+.process-step .text {
+  padding:32px 0;
+}
+.process-step .step-num {
+  font-family:var(--font-display);
+  font-weight:700;
+  font-style:italic;
+  font-size:80px;
+  line-height:0.8;
+  color:var(--red);
+  margin-bottom:24px;
+  letter-spacing:-0.04em;
+}
+.process-step h3 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:48px;
+  line-height:1.1;
+  letter-spacing:-0.02em;
+  margin-bottom:20px;
+}
+.process-step h3 .ko {
+  display:block;
+  font-family:var(--font-condensed);
+  font-size:18px;
+  font-weight:600;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--ink-mute);
+  margin-top:8px;
+}
+.process-step .text > p {
+  font-size:16px;
+  color:var(--ink-soft);
+  line-height:1.8;
+  margin-bottom:24px;
+  max-width:480px;
+}
+.process-step .deliverables {
+  list-style:none;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:24px;
+}
+.process-step .deliverables li {
+  font-family:var(--font-mono);
+  font-size:12px;
+  padding:6px 12px;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+}
+@media (max-width: 900px) {
+  .process-step { grid-template-columns:1fr; gap:32px; direction:ltr !important; margin-bottom:60px; }
+  .process-step .visual-headline { font-size:32px; }
+  .process-step h3 { font-size:36px; }
+  .process-step .step-num { font-size:60px; }
+}
+
+/* ============================================
+   11. SECTION 7 - 팀 (3명, 비대칭)
+   ============================================ */
+.team {
+  padding:var(--section-py) 40px;
+  background:var(--ink);
+  color:#fff;
+  position:relative;
+  overflow:hidden;
+}
+.team-head {
+  max-width:1400px;
+  margin:0 auto 80px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:80px;
+  align-items:end;
+}
+.team-head .eyebrow { color:var(--amber); }
+.team-head .eyebrow::before { background:var(--amber); }
+.team-head h2 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(48px, 6vw, 96px);
+  line-height:1;
+  letter-spacing:-0.03em;
+  color:#fff;
+}
+.team-head h2 em { font-style:italic; color:var(--red); font-weight:700; }
+.team-head p {
+  color:rgba(255,255,255,0.7);
+  font-size:16px;
+  line-height:1.7;
+}
+.team-grid {
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(12, 1fr);
+  gap:32px;
+}
+.member {
+  position:relative;
+}
+/* 비대칭 — 각 인물 다른 위치/사이즈 */
+.member:nth-child(1) { grid-column:1 / 5; margin-top:0; }
+.member:nth-child(2) { grid-column:5 / 9; margin-top:80px; }
+.member:nth-child(3) { grid-column:9 / 13; margin-top:0; }
+@media (max-width: 1000px) {
+  .member { grid-column:1 / -1 !important; margin-top:0 !important; }
+}
+.member-img {
+  aspect-ratio:3/4;
+  background-size:cover;
+  background-position:center;
+  filter:grayscale(0.3);
+  margin-bottom:24px;
+  position:relative;
+  transition:filter 0.5s;
+}
+.member:hover .member-img { filter:grayscale(0); }
+.member:nth-child(1) .member-img { background-image:url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80'); }
+.member:nth-child(2) .member-img { background-image:url('https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=600&q=80'); }
+.member:nth-child(3) .member-img { background-image:url('https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=600&q=80'); }
+.member-img::after {
+  /* 모서리 액센트 */
+  content:'';
+  position:absolute;
+  bottom:-12px; right:-12px;
+  width:60px; height:60px;
+  background:var(--red);
+  z-index:-1;
+  transition:bottom 0.3s, right 0.3s;
+}
+.member:nth-child(2) .member-img::after { background:var(--amber); }
+.member:nth-child(3) .member-img::after { background:var(--navy-light); }
+.member:hover .member-img::after { bottom:-8px; right:-8px; }
+.member-role {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--red);
+  margin-bottom:8px;
+}
+.member:nth-child(2) .member-role { color:var(--amber); }
+.member-name {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:32px;
+  line-height:1.05;
+  letter-spacing:-0.02em;
+  margin-bottom:14px;
+}
+.member-name .en {
+  display:block;
+  font-family:var(--font-condensed);
+  font-weight:500;
+  font-size:14px;
+  letter-spacing:0.12em;
+  color:rgba(255,255,255,0.5);
+  margin-top:4px;
+  text-transform:uppercase;
+}
+.member-bio {
+  font-size:14px;
+  color:rgba(255,255,255,0.7);
+  line-height:1.7;
+  margin-bottom:16px;
+}
+.member-fact {
+  /* 손글씨 메모 (Caveat) */
+  font-family:var(--font-script);
+  font-weight:600;
+  font-size:20px;
+  color:var(--amber);
+  line-height:1.3;
+}
+.member-fact::before {
+  content:'P.S. ';
+  font-family:var(--font-mono);
+  font-style:italic;
+  font-size:12px;
+  font-weight:400;
+  color:rgba(255,255,255,0.5);
+  letter-spacing:0.1em;
+  display:inline-block;
+  margin-right:6px;
+  vertical-align:middle;
+}
+
+/* ============================================
+   12. SECTION 8 - 클라이언트 후기 (3개)
+   ============================================ */
+.testimonials {
+  padding:var(--section-py) 40px;
+}
+.testi-head {
+  max-width:1400px;
+  margin:0 auto 80px;
+}
+.testi-head h2 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(48px, 6vw, 96px);
+  line-height:1;
+  letter-spacing:-0.03em;
+}
+.testi-head h2 em { font-style:italic; color:var(--red); font-weight:700; }
+.testi-grid {
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:32px;
+}
+.testi-card {
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  padding:48px 36px;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+}
+.testi-card:nth-child(2) {
+  background:var(--navy);
+  color:#fff;
+  border-color:var(--navy);
+  margin-top:40px;
+}
+.testi-quote {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:120px;
+  line-height:0.7;
+  color:var(--red);
+  margin-bottom:8px;
+}
+.testi-card:nth-child(2) .testi-quote { color:var(--amber); }
+.testi-text {
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:20px;
+  line-height:1.4;
+  letter-spacing:-0.01em;
+  margin-bottom:32px;
+  flex:1;
+}
+.testi-meta {
+  padding-top:24px;
+  border-top:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.testi-card:nth-child(2) .testi-meta { border-top-color:rgba(255,255,255,0.2); }
+.testi-avatar {
+  width:48px; height:48px;
+  border-radius:50%;
+  background:linear-gradient(135deg, var(--red), var(--amber));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:18px;
+  flex-shrink:0;
+}
+.testi-card:nth-child(2) .testi-avatar { background:linear-gradient(135deg, var(--amber), var(--bg)); color:var(--navy); }
+.testi-card:nth-child(3) .testi-avatar { background:linear-gradient(135deg, var(--navy), var(--red)); }
+.testi-name {
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:16px;
+  letter-spacing:-0.01em;
+  margin-bottom:2px;
+}
+.testi-position {
+  font-family:var(--font-condensed);
+  font-size:13px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--ink-mute);
+}
+.testi-card:nth-child(2) .testi-position { color:rgba(255,255,255,0.6); }
+.testi-company {
+  margin-left:auto;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:18px;
+  letter-spacing:-0.02em;
+  color:var(--ink);
+  opacity:0.5;
+}
+.testi-card:nth-child(2) .testi-company { color:#fff; opacity:0.5; }
+@media (max-width: 1000px) {
+  .testi-grid { grid-template-columns:1fr; }
+  .testi-card:nth-child(2) { margin-top:0; }
+}
+
+/* ============================================
+   13. SECTION 9 - 클라이언트 로고 marquee (요청 명시)
+   ============================================ */
+.clients {
+  padding:60px 0;
+  background:var(--ink);
+  color:#fff;
+  overflow:hidden;
+  position:relative;
+}
+.clients-label {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:0.24em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.5);
+  text-align:center;
+  margin-bottom:32px;
+}
+.marquee-wrap {
+  position:relative;
+}
+.marquee-wrap::before,
+.marquee-wrap::after {
+  /* 좌우 페이드 마스크 */
+  content:'';
+  position:absolute;
+  top:0; bottom:0;
+  width:120px;
+  z-index:2;
+  pointer-events:none;
+}
+.marquee-wrap::before {
+  left:0;
+  background:linear-gradient(to right, var(--ink), transparent);
+}
+.marquee-wrap::after {
+  right:0;
+  background:linear-gradient(to left, var(--ink), transparent);
+}
+.marquee {
+  display:flex;
+  gap:80px;
+  animation:marqueeScroll 35s linear infinite;
+  white-space:nowrap;
+  width:max-content;
+  align-items:center;
+}
+@keyframes marqueeScroll {
+  0% { transform:translateX(0); }
+  100% { transform:translateX(-50%); }
+}
+.marquee-item {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:40px;
+  letter-spacing:-0.02em;
+  color:rgba(255,255,255,0.7);
+  flex-shrink:0;
+  transition:color 0.3s;
+  cursor:pointer;
+}
+.marquee-item:hover { color:var(--amber); }
+.marquee-divider {
+  width:8px; height:8px;
+  background:var(--red);
+  border-radius:50%;
+  flex-shrink:0;
+}
+
+/* ============================================
+   14. SECTION 10 - 프로젝트 문의 (마지막)
+   ============================================ */
+.contact {
+  padding:var(--section-py) 40px;
+  background:var(--bg);
+  position:relative;
+  overflow:hidden;
+}
+.contact::before {
+  /* 배경 워터마크 */
+  content:"LET'S TALK.";
+  position:absolute;
+  bottom:-80px;
+  left:50%;
+  transform:translateX(-50%);
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(120px, 18vw, 320px);
+  line-height:0.8;
+  letter-spacing:-0.05em;
+  color:rgba(230, 57, 70, 0.06);
+  pointer-events:none;
+  white-space:nowrap;
+}
+.contact-grid {
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 1.2fr;
+  gap:80px;
+  align-items:start;
+  position:relative;
+  z-index:1;
+}
+.contact-text h2 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:clamp(48px, 7vw, 120px);
+  line-height:0.95;
+  letter-spacing:-0.04em;
+  margin-bottom:32px;
+}
+.contact-text h2 em {
+  font-style:italic;
+  color:var(--red);
+  font-weight:700;
+}
+.contact-text > p {
+  font-size:17px;
+  color:var(--ink-soft);
+  line-height:1.7;
+  margin-bottom:48px;
+  max-width:440px;
+}
+.contact-channels {
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  margin-bottom:48px;
+}
+.contact-channel {
+  padding:20px 0;
+  border-bottom:1px solid var(--line);
+  display:grid;
+  grid-template-columns:120px 1fr;
+  gap:24px;
+  align-items:center;
+}
+.contact-channel .label {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--red);
+}
+.contact-channel .value {
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:22px;
+  letter-spacing:-0.01em;
+}
+.contact-social {
+  display:flex;
+  gap:16px;
+}
+.contact-social a {
+  width:48px; height:48px;
+  border:1.5px solid var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-condensed);
+  font-weight:700;
+  font-size:14px;
+  letter-spacing:0.06em;
+  transition:all 0.25s;
+}
+.contact-social a:hover {
+  background:var(--red);
+  border-color:var(--red);
+  color:#fff;
+}
+
+/* 폼 박스 */
+.brief-form {
+  background:var(--bg-card);
+  border:1.5px solid var(--ink);
+  padding:48px 44px;
+  position:relative;
+}
+.brief-form::before {
+  /* 손글씨 라벨 */
+  content:'PROJECT BRIEF →';
+  position:absolute;
+  top:-16px; left:32px;
+  background:var(--bg);
+  padding:0 16px;
+  font-family:var(--font-script);
+  font-weight:600;
+  font-size:24px;
+  color:var(--red);
+}
+.brief-form h3 {
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:28px;
+  letter-spacing:-0.02em;
+  margin-bottom:8px;
+  margin-top:8px;
+}
+.brief-form-sub {
+  font-size:14px;
+  color:var(--ink-mute);
+  margin-bottom:32px;
+}
+.form-row {
+  display:flex;
+  flex-direction:column;
+  margin-bottom:24px;
+}
+.form-row.split {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+.form-row.split > div { display:flex; flex-direction:column; }
+.form-row label {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:12px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  margin-bottom:10px;
+}
+.form-row label .req { color:var(--red); margin-left:2px; }
+.form-row input,
+.form-row select,
+.form-row textarea {
+  padding:14px 0;
+  background:transparent;
+  border:none;
+  border-bottom:1.5px solid var(--line);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:15px;
+  transition:border-color 0.25s;
+}
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus {
+  outline:none;
+  border-bottom-color:var(--red);
+}
+.form-row select {
+  -webkit-appearance:none;
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1L6 6L11 1' stroke='%23e63946' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 4px center;
+  padding-right:24px;
+  cursor:pointer;
+}
+.form-row textarea {
+  resize:vertical;
+  min-height:100px;
+  border:1.5px solid var(--line);
+  padding:14px 16px;
+}
+.form-row textarea:focus { border-color:var(--red); }
+/* 관심 서비스 체크박스 */
+.form-checks .check-list {
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:8px;
+}
+.check-item {
+  display:flex;
+  align-items:center;
+  padding:12px 14px;
+  border:1.5px solid var(--line);
+  cursor:pointer;
+  font-family:var(--font-condensed);
+  font-weight:500;
+  font-size:13px;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  transition:border-color 0.2s, background 0.2s;
+}
+.check-item:hover { border-color:var(--red); }
+.check-item input {
+  margin-right:8px;
+  accent-color:var(--red);
+}
+.check-item input:checked ~ span { color:var(--red); }
+@media (max-width: 768px) {
+  .form-checks .check-list { grid-template-columns:1fr; }
+}
+.form-agree {
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  margin:24px 0;
+  font-size:12px;
+  color:var(--ink-mute);
+  line-height:1.6;
+}
+.form-agree input {
+  margin-top:4px;
+  accent-color:var(--red);
+}
+.form-agree a { color:var(--red); text-decoration:underline; }
+.form-submit {
+  width:100%;
+  padding:20px;
+  background:var(--ink);
+  color:var(--bg);
+  font-family:var(--font-condensed);
+  font-weight:700;
+  font-size:16px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:background 0.25s;
+}
+.form-submit:hover { background:var(--red); }
+@media (max-width: 1000px) {
+  .contact-grid { grid-template-columns:1fr; gap:60px; }
+  .brief-form { padding:32px 24px; }
+}
+
+/* ============================================
+   15. 푸터
+   ============================================ */
+footer {
+  background:var(--ink);
+  color:#fff;
+  padding:80px 40px 32px;
+}
+.foot-grid {
+  max-width:1400px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:48px;
+  padding-bottom:48px;
+  border-bottom:1px solid rgba(255,255,255,0.15);
+}
+.foot-brand .nav-logo {
+  font-size:28px;
+  color:#fff;
+  margin-bottom:16px;
+}
+.foot-tag {
+  font-size:14px;
+  color:rgba(255,255,255,0.6);
+  line-height:1.7;
+  max-width:380px;
+}
+.foot-col h5 {
+  font-family:var(--font-condensed);
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--amber);
+  margin-bottom:18px;
+}
+.foot-col ul {
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.foot-col a {
+  font-size:14px;
+  color:rgba(255,255,255,0.75);
+  transition:color 0.2s;
+}
+.foot-col a:hover { color:var(--amber); }
+.foot-bottom {
+  max-width:1400px;
+  margin:0 auto;
+  padding-top:24px;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:rgba(255,255,255,0.4);
+}
+@media (max-width: 900px) {
+  .foot-grid { grid-template-columns:1fr 1fr; gap:32px; }
+}
+
+/* ============================================
+   16. 슬라이드 인 애니메이션 (요청 명시)
+   ============================================ */
+.slide-in {
+  opacity:0;
+  transform:translateY(40px);
+  transition:opacity 0.9s cubic-bezier(0.2, 0.6, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.slide-in.in {
+  opacity:1;
+  transform:translateY(0);
+}
+
+@media (max-width: 768px) {
+  .container { padding:0 24px; }
+  .nav { padding:18px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     네비게이션
+     ============================================ -->
+<nav class="nav" id="nav">
+  <a href="#hero" class="nav-logo">VOLT&amp;CO</a>
+  <ul class="nav-menu">
+    <li><a href="#manifesto">Manifesto</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#portfolio">Work</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#team">Team</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">Start a Project</a>
+</nav>
+
+<!-- ============================================
+     SECTION 1 - HERO
+     ============================================ -->
+<section class="hero" id="hero">
+  <div class="hero-meta">
+    <strong>볼트앤코</strong> · est. 2017<br>
+    Seoul · Korea
+  </div>
+
+  <div class="hero-content">
+    <h1 class="hero-title">
+      <span class="line">
+        <span class="word delay-1">WE</span> <span class="word delay-2">MAKE</span>
+      </span>
+      <span class="line">
+        <span class="word delay-3">BRANDS</span>
+      </span>
+      <span class="line">
+        <span class="word delay-4"><em>UNFOR-</em></span>
+      </span>
+      <span class="line">
+        <span class="word delay-5"><em>GETTABLE.</em></span>
+      </span>
+    </h1>
+
+    <div class="hero-bottom">
+      <p class="hero-desc">
+        <strong>VOLT&amp;CO는 서울 기반 크리에이티브 마케팅 에이전시입니다.</strong>
+        브랜드의 본질을 발견하고, 시장을 흔드는 캠페인으로 사람들의 기억에 남는 일.
+        그게 우리가 매일 하는 일입니다.
+      </p>
+
+      <div class="hero-awards">
+        <div class="hero-award-list">
+          <div class="hero-award">Cannes Lions 2025 — Bronze</div>
+          <div class="hero-award">Spikes Asia 2025 — Gold</div>
+          <div class="hero-award">한국광고대상 2024 — 대상</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 손글씨 메모 (Caveat) -->
+  <div class="hero-note">
+    "광고가 아니라<br>이야기를 만듭니다"
+  </div>
+
+  <div class="scroll-indicator">SCROLL</div>
+</section>
+
+<!-- ============================================
+     SECTION 2 - MANIFESTO (NEW)
+     ============================================ -->
+<section class="manifesto" id="manifesto">
+  <div class="manifesto-grid slide-in">
+    <div class="manifesto-side">
+      <div class="label">// MANIFESTO 02</div>
+      <h3>우리가 일하는 방식</h3>
+      <p>
+        매일 아침, 어제 알던 것을 잊고 출근합니다.<br>
+        편안한 공식을 거부하고 — 새로운 질문에서 다시 시작합니다.
+      </p>
+    </div>
+
+    <div>
+      <div class="manifesto-text">
+        We don't make <span class="strike">ads</span>.<br>
+        We make <em>moments</em><br>
+        people <em>can't unsee.</em>
+      </div>
+      <div class="manifesto-signature">
+        — VOLT&amp;CO Studio, Seoul
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 3 - 핵심 수치
+     ============================================ -->
+<section class="stats" id="stats">
+  <div class="stats-head slide-in">
+    <div>
+      <div class="eyebrow">// 03 NUMBERS</div>
+      <h2>숫자가<br><em>말합니다.</em></h2>
+    </div>
+    <div class="right">
+      <p>
+        2017년 시작 이후 240여 개 캠페인을 320여 개 브랜드와 함께 완성했습니다. 평균 ROI 5.8배, 14개의 글로벌·국내 광고제 수상이 우리의 결과입니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-block slide-in">
+      <div class="num-row">
+        <div class="stat-num" data-target="240">0</div>
+        <div class="stat-unit">+</div>
+      </div>
+      <div class="stat-label">Campaigns Delivered</div>
+      <div class="stat-detail">2017 — 2026 누적</div>
+    </div>
+    <div class="stat-block slide-in">
+      <div class="num-row">
+        <div class="stat-num" data-target="320">0</div>
+        <div class="stat-unit">+</div>
+      </div>
+      <div class="stat-label">Brands Partnered</div>
+      <div class="stat-detail">스타트업 ~ 대기업</div>
+    </div>
+    <div class="stat-block slide-in">
+      <div class="num-row">
+        <div class="stat-num" data-target="58">0</div>
+        <div class="stat-unit">×</div>
+      </div>
+      <div class="stat-label">Average ROAS</div>
+      <div class="stat-detail">5.8× / 캠페인 평균</div>
+    </div>
+    <div class="stat-block slide-in">
+      <div class="num-row">
+        <div class="stat-num" data-target="14">0</div>
+        <div class="stat-unit">★</div>
+      </div>
+      <div class="stat-label">Awards Received</div>
+      <div class="stat-detail">Cannes · Spikes · 한광</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 4 - 서비스 (5가지)
+     ============================================ -->
+<section class="services" id="services">
+  <div class="services-head slide-in">
+    <div>
+      <div class="eyebrow">// 04 SERVICES</div>
+      <h2>What we<br><em>do.</em></h2>
+    </div>
+    <div class="right">
+      <p>
+        브랜드의 한 줄짜리 정의부터 캠페인의 마지막 픽셀까지. 다섯 영역에서 우리만의 답을 만듭니다. 한 영역만 의뢰하셔도, 전 과정을 통합 운영하셔도 좋습니다.
+      </p>
+    </div>
+  </div>
+
+  <div class="services-grid">
+    <div class="service-card slide-in">
+      <div class="service-num">/ 01 BRAND</div>
+      <h3>Branding<br>Identity</h3>
+      <div class="ko">브랜딩 / 아이덴티티 시스템</div>
+      <p>네이밍, 로고, 보이스, 비주얼 시스템까지. 시장에서 "이 브랜드답다"고 말할 수 있는 한 줄짜리 정의를 함께 발견합니다.</p>
+      <div class="service-tags">
+        <span class="service-tag">Naming</span>
+        <span class="service-tag">Identity</span>
+        <span class="service-tag">Voice</span>
+        <span class="service-tag">Guideline</span>
+      </div>
+    </div>
+
+    <div class="service-card slide-in">
+      <div class="service-num">/ 02 DIGITAL</div>
+      <h3>Digital<br>Marketing</h3>
+      <div class="ko">디지털 마케팅</div>
+      <p>SNS·SEO·콘텐츠·이메일까지. 데이터 기반 운영으로 매월 캠페인을 최적화합니다.</p>
+      <div class="service-tags">
+        <span class="service-tag">SNS</span>
+        <span class="service-tag">SEO</span>
+        <span class="service-tag">CRM</span>
+      </div>
+    </div>
+
+    <div class="service-card slide-in">
+      <div class="service-num">/ 03 CONTENT</div>
+      <h3>Content<br>Studio</h3>
+      <div class="ko">콘텐츠 제작</div>
+      <p>영상·사진·텍스트·디자인. 인하우스 스튜디오에서 직접.</p>
+      <div class="service-tags">
+        <span class="service-tag">Film</span>
+        <span class="service-tag">Photo</span>
+        <span class="service-tag">Copy</span>
+      </div>
+    </div>
+
+    <div class="service-card slide-in">
+      <div class="service-num">/ 04 PR</div>
+      <h3>Public<br>Relations</h3>
+      <div class="ko">PR / 미디어 운영</div>
+      <p>매체·인플루언서 관계 운영. 위기 관리 컨설팅까지.</p>
+      <div class="service-tags">
+        <span class="service-tag">Media</span>
+        <span class="service-tag">Influencer</span>
+        <span class="service-tag">Crisis</span>
+      </div>
+    </div>
+
+    <div class="service-card slide-in">
+      <div class="service-num">/ 05 PERFORMANCE</div>
+      <h3>Performance<br>Advertising</h3>
+      <div class="ko">퍼포먼스 광고 / 데이터</div>
+      <p>구글·메타·네이버·카카오·틱톡 통합 운영. 매주 리포트, 매월 ROAS 최적화. 자체 개발 데이터 대시보드로 캠페인 성과를 실시간 추적합니다.</p>
+      <div class="service-tags">
+        <span class="service-tag">Google Ads</span>
+        <span class="service-tag">Meta</span>
+        <span class="service-tag">Naver</span>
+        <span class="service-tag">Kakao</span>
+        <span class="service-tag">TikTok</span>
+        <span class="service-tag">Dashboard</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 5 - 포트폴리오 (4개 캠페인)
+     ============================================ -->
+<section class="portfolio" id="portfolio">
+  <div class="portfolio-head slide-in">
+    <h2>Selected<br><em>Work.</em></h2>
+    <div class="meta">// 05 / 2024 — 2026</div>
+  </div>
+
+  <div class="portfolio-grid">
+    <!-- Work 1 (큰 카드) -->
+    <div class="work slide-in">
+      <div class="work-img"></div>
+      <div class="work-base">
+        <div class="work-tag">Branding · Campaign · 2025</div>
+        <div class="work-title">"흔들리지 않는 빨강"<br>아모레퍼시픽 OOO</div>
+      </div>
+      <div class="work-overlay">
+        <div class="client">CLIENT · 아모레퍼시픽</div>
+        <h4>"흔들리지 않는 빨강"<br>리브랜딩 캠페인</h4>
+        <div class="results">
+          <div>
+            <div class="result-num">+182%</div>
+            <div class="result-label">브랜드 검색량</div>
+          </div>
+          <div>
+            <div class="result-num">7.4×</div>
+            <div class="result-label">캠페인 ROAS</div>
+          </div>
+          <div>
+            <div class="result-num">42억</div>
+            <div class="result-label">Earned Media 가치</div>
+          </div>
+          <div>
+            <div class="result-num">CANNES</div>
+            <div class="result-label">2025 Bronze Lion</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Work 2 -->
+    <div class="work slide-in">
+      <div class="work-img"></div>
+      <div class="work-base">
+        <div class="work-tag">F&amp;B · Digital · 2025</div>
+        <div class="work-title">스타벅스 코리아<br>Reserve 캠페인</div>
+      </div>
+      <div class="work-overlay">
+        <div class="client">CLIENT · 스타벅스 코리아</div>
+        <h4>Reserve 신규 매장<br>런칭 캠페인</h4>
+        <div class="results">
+          <div>
+            <div class="result-num">+340%</div>
+            <div class="result-label">매장 방문</div>
+          </div>
+          <div>
+            <div class="result-num">8.2×</div>
+            <div class="result-label">광고 ROAS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Work 3 -->
+    <div class="work slide-in">
+      <div class="work-img"></div>
+      <div class="work-base">
+        <div class="work-tag">Tech · Performance · 2024</div>
+        <div class="work-title">토스 신규 가입자<br>퍼포먼스 캠페인</div>
+      </div>
+      <div class="work-overlay">
+        <div class="client">CLIENT · 토스 (Toss)</div>
+        <h4>신규 회원 유입<br>퍼포먼스 캠페인</h4>
+        <div class="results">
+          <div>
+            <div class="result-num">12.8M</div>
+            <div class="result-label">신규 가입</div>
+          </div>
+          <div>
+            <div class="result-num">↓62%</div>
+            <div class="result-label">CAC 감소</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Work 4 (와이드) -->
+    <div class="work slide-in">
+      <div class="work-img"></div>
+      <div class="work-base">
+        <div class="work-tag">Fashion · Integrated · 2026</div>
+        <div class="work-title">무신사 — "RAW &amp; UNFILTERED" 글로벌 캠페인</div>
+      </div>
+      <div class="work-overlay">
+        <div class="client">CLIENT · MUSINSA</div>
+        <h4>"RAW &amp; UNFILTERED"<br>글로벌 캠페인</h4>
+        <div class="results">
+          <div>
+            <div class="result-num">128M</div>
+            <div class="result-label">글로벌 도달</div>
+          </div>
+          <div>
+            <div class="result-num">+220%</div>
+            <div class="result-label">해외 가입자</div>
+          </div>
+          <div>
+            <div class="result-num">18국</div>
+            <div class="result-label">캠페인 송출</div>
+          </div>
+          <div>
+            <div class="result-num">SPIKES</div>
+            <div class="result-label">2025 Gold</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 6 - 프로세스 (5단계 지그재그)
+     ============================================ -->
+<section class="process" id="process">
+  <div class="process-head slide-in">
+    <div class="eyebrow">// 06 HOW WE WORK</div>
+    <h2>한 캠페인을<br>완성하는 <em>다섯 단계.</em></h2>
+    <p>리서치에서 분석까지. 평균 12-16주 소요되며, 매주 진행 상황을 클라이언트와 공유합니다.</p>
+  </div>
+
+  <div class="process-steps">
+    <!-- Step 1 -->
+    <div class="process-step slide-in">
+      <div class="visual" data-num="01">
+        <div class="visual-content">
+          <div class="visual-tag">// PHASE 01</div>
+          <div class="visual-headline">Research<br>&amp; Discovery</div>
+        </div>
+      </div>
+      <div class="text">
+        <div class="step-num">01.</div>
+        <h3>리서치 · 발견<span class="ko">Research · Discovery</span></h3>
+        <p>시장 데이터, 경쟁사 분석, 소비자 인터뷰. 표면이 아닌 진짜 문제를 발견하는 데 2~3주를 씁니다. 여기서 답이 나오지 않으면 다음 단계는 무의미합니다.</p>
+        <ul class="deliverables">
+          <li>Market Map</li>
+          <li>Persona Doc</li>
+          <li>Insight Report</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="process-step slide-in">
+      <div class="visual" data-num="02">
+        <div class="visual-content">
+          <div class="visual-tag" style="color: rgba(255, 255, 255, 0.7);">// PHASE 02</div>
+          <div class="visual-headline">Strategy<br>&amp; Brief</div>
+        </div>
+      </div>
+      <div class="text">
+        <div class="step-num">02.</div>
+        <h3>전략 · 브리프<span class="ko">Strategy · Brief</span></h3>
+        <p>발견한 인사이트로 캠페인의 한 문장 — 핵심 메시지를 정의합니다. 이 문장이 흔들리지 않으면 캠페인 전체가 흔들리지 않습니다.</p>
+        <ul class="deliverables">
+          <li>Strategic Brief</li>
+          <li>Big Idea</li>
+          <li>KPI Tree</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="process-step slide-in">
+      <div class="visual" data-num="03">
+        <div class="visual-content">
+          <div class="visual-tag" style="color: rgba(255, 255, 255, 0.85);">// PHASE 03</div>
+          <div class="visual-headline">Creative<br>Development</div>
+        </div>
+      </div>
+      <div class="text">
+        <div class="step-num">03.</div>
+        <h3>크리에이티브 개발<span class="ko">Creative · Production</span></h3>
+        <p>아트 디렉터, 카피라이터, 디자이너, 영상 감독이 한 방에 모입니다. 한 번에 답이 나오지 않을 때까지 — 평균 3~4안을 가지고 갑니다.</p>
+        <ul class="deliverables">
+          <li>Storyboard</li>
+          <li>Visual System</li>
+          <li>Master Asset</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="process-step slide-in">
+      <div class="visual" data-num="04">
+        <div class="visual-content">
+          <div class="visual-tag" style="color: rgba(255, 255, 255, 0.7);">// PHASE 04</div>
+          <div class="visual-headline">Launch<br>&amp; Execution</div>
+        </div>
+      </div>
+      <div class="text">
+        <div class="step-num">04.</div>
+        <h3>런칭 · 실행<span class="ko">Launch · Execution</span></h3>
+        <p>매체 운영, 인플루언서 관리, PR 송출 동시 진행. 첫 일주일은 24시간 모니터링. 광고비가 가장 효율적으로 일하는 시간입니다.</p>
+        <ul class="deliverables">
+          <li>Media Plan</li>
+          <li>Influencer Wave</li>
+          <li>PR Push</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="process-step slide-in">
+      <div class="visual" data-num="05">
+        <div class="visual-content">
+          <div class="visual-tag" style="color: rgba(0, 0, 0, 0.6);">// PHASE 05</div>
+          <div class="visual-headline">Analysis<br>&amp; Iteration</div>
+        </div>
+      </div>
+      <div class="text">
+        <div class="step-num">05.</div>
+        <h3>분석 · 반복<span class="ko">Analysis · Optimization</span></h3>
+        <p>캠페인 종료가 끝이 아닙니다. 학습한 데이터를 다음 캠페인의 시작점으로 가져갑니다. 반복할수록 효율은 더 높아집니다.</p>
+        <ul class="deliverables">
+          <li>Final Report</li>
+          <li>Learning Doc</li>
+          <li>Next-step Brief</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 7 - 팀 (3명, 비대칭)
+     ============================================ -->
+<section class="team" id="team">
+  <div class="team-head slide-in">
+    <div>
+      <div class="eyebrow">// 07 PEOPLE</div>
+      <h2>The people<br>who <em>make it.</em></h2>
+    </div>
+    <div>
+      <p>3개 헤드의 핵심 디렉터와 28명의 크루. 한 프로젝트에 평균 6~8명이 풀타임으로 붙습니다. 외주 없이 인하우스에서 끝까지.</p>
+    </div>
+  </div>
+
+  <div class="team-grid">
+    <div class="member slide-in">
+      <div class="member-img"></div>
+      <div class="member-role">// CREATIVE DIRECTOR</div>
+      <div class="member-name">
+        김유진
+        <span class="en">Yujin Kim</span>
+      </div>
+      <p class="member-bio">전 Cheil Worldwide. 13년 차. Cannes Lions·Spikes Asia 12회 수상. 카피와 비주얼 모두에 손을 대는 보기 드문 디렉터.</p>
+      <div class="member-fact">
+        매일 출근길에 시집 한 권을 사 옴
+      </div>
+    </div>
+
+    <div class="member slide-in">
+      <div class="member-img"></div>
+      <div class="member-role">// STRATEGY DIRECTOR</div>
+      <div class="member-name">
+        이정훈
+        <span class="en">Jeonghoon Lee</span>
+      </div>
+      <p class="member-bio">맥킨지 4년 + 제일기획 7년. 데이터로 시작해서 인사이트로 끝냅니다. "왜?"를 5번 묻지 않으면 회의를 끝내지 않습니다.</p>
+      <div class="member-fact">
+        엑셀 단축키 200개 외움. 진짜로
+      </div>
+    </div>
+
+    <div class="member slide-in">
+      <div class="member-img"></div>
+      <div class="member-role">// DESIGN DIRECTOR</div>
+      <div class="member-name">
+        박서윤
+        <span class="en">Seoyun Park</span>
+      </div>
+      <p class="member-bio">RISD 졸업. 뉴욕 Sagmeister 스튜디오에서 6년. 픽셀 단위 디테일에 집착하는 동시에 한 번에 큰 그림을 보는 능력.</p>
+      <div class="member-fact">
+        키보드보다 펜으로 먼저 그립니다
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 8 - 클라이언트 후기 (3개)
+     ============================================ -->
+<section class="testimonials" id="testimonials">
+  <div class="testi-head slide-in">
+    <div class="eyebrow">// 08 WHAT THEY SAY</div>
+    <h2>Words from<br>our <em>clients.</em></h2>
+  </div>
+
+  <div class="testi-grid">
+    <div class="testi-card slide-in">
+      <div class="testi-quote">"</div>
+      <div class="testi-text">
+        VOLT&amp;CO와 일하면서 "왜?"라는 질문을 가장 많이 받았습니다. 처음엔 피곤했는데, 결과물을 보고 그게 왜 필요했는지 알게 됐습니다.
+      </div>
+      <div class="testi-meta">
+        <div class="testi-avatar">A</div>
+        <div>
+          <div class="testi-name">정O민 CMO</div>
+          <div class="testi-position">F&amp;B Brand · 2025</div>
+        </div>
+        <div class="testi-company">A.P</div>
+      </div>
+    </div>
+
+    <div class="testi-card slide-in">
+      <div class="testi-quote">"</div>
+      <div class="testi-text">
+        에이전시는 많이 만나봤는데, 데이터를 이렇게 진지하게 다루는 곳은 처음이었습니다. 결과물이 예쁘기만 한 게 아니라 결과가 나옵니다.
+      </div>
+      <div class="testi-meta">
+        <div class="testi-avatar">T</div>
+        <div>
+          <div class="testi-name">박O철 마케팅 총괄</div>
+          <div class="testi-position">Tech Startup · 2025</div>
+        </div>
+        <div class="testi-company">TS</div>
+      </div>
+    </div>
+
+    <div class="testi-card slide-in">
+      <div class="testi-quote">"</div>
+      <div class="testi-text">
+        브랜드 톤이 흔들릴 때마다 VOLT&amp;CO에 갑니다. "이게 우리답다"는 한 마디를 듣고 오면, 다시 일할 수 있습니다.
+      </div>
+      <div class="testi-meta">
+        <div class="testi-avatar">M</div>
+        <div>
+          <div class="testi-name">이O주 브랜드 매니저</div>
+          <div class="testi-position">Fashion · 2024</div>
+        </div>
+        <div class="testi-company">MS</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 9 - 클라이언트 로고 marquee
+     ============================================ -->
+<section class="clients" id="clients">
+  <div class="clients-label">// 09 — 320+ Brands trust us</div>
+
+  <div class="marquee-wrap">
+    <div class="marquee">
+      <span class="marquee-item">아모레퍼시픽</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">스타벅스</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">TOSS</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">MUSINSA</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">CJ제일제당</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">SAMSUNG C&amp;T</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">LG생활건강</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">현대카드</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">KAKAO</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">NAVER</span>
+      <span class="marquee-divider"></span>
+
+      <!-- 무한 스크롤을 위한 동일 셋 반복 -->
+      <span class="marquee-item">아모레퍼시픽</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">스타벅스</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">TOSS</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">MUSINSA</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">CJ제일제당</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">SAMSUNG C&amp;T</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">LG생활건강</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">현대카드</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">KAKAO</span>
+      <span class="marquee-divider"></span>
+      <span class="marquee-item">NAVER</span>
+      <span class="marquee-divider"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     SECTION 10 - 프로젝트 문의 (마지막)
+     ============================================ -->
+<section class="contact" id="contact">
+  <div class="contact-grid slide-in">
+    <div class="contact-text">
+      <div class="eyebrow">// 10 LET'S WORK</div>
+      <h2>Got a<br><em>brief?</em></h2>
+      <p>
+        지금 가지고 계신 문제, 가지고 계신 데이터, 가지고 계신 예산.<br>
+        가장 솔직한 상태로 보내주세요. 24시간 안에 답장드리겠습니다.
+      </p>
+
+      <div class="contact-channels">
+        <div class="contact-channel">
+          <div class="label">Phone</div>
+          <div class="value">02-XXX-XXXX</div>
+        </div>
+        <div class="contact-channel">
+          <div class="label">Email</div>
+          <div class="value">hello@voltand.co</div>
+        </div>
+        <div class="contact-channel">
+          <div class="label">Studio</div>
+          <div class="value">서울 성동구 성수동</div>
+        </div>
+      </div>
+
+      <div class="contact-social">
+        <a href="#">IG</a>
+        <a href="#">BE</a>
+        <a href="#">VM</a>
+        <a href="#">IN</a>
+      </div>
+    </div>
+
+    <!-- 프로젝트 브리프 폼 -->
+    <form class="brief-form"><h3>프로젝트 브리프</h3>
+<div class="dp-cta-fields" style="display:flex;flex-direction:column;gap:14px;margin-top:16px;width:100%">
+  <div>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">성함 <span style="color:#e85d5d;margin-left:2px">*</span></label>
+    <input type="text" name="name" required="" placeholder="홍길동" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none">
+  </div>
+  <div>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">연락처 <span style="color:#e85d5d;margin-left:2px">*</span></label>
+    <input type="tel" name="phone" required="" placeholder="010-0000-0000" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none">
+  </div>
+  <div>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">이메일</label>
+    <input type="email" name="email" placeholder="email@example.com" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none">
+  </div>
+  <div>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">요청사항·문의</label>
+    <textarea name="message" rows="4" placeholder="문의 내용을 자유롭게 입력해 주세요" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none;resize:vertical;min-height:90px"></textarea>
+  </div>
+  <button type="submit" class="form-submit">Send the brief →</button>
+</div></form>
+  </div>
+</section>
+
+<!-- ============================================
+     푸터
+     ============================================ -->
+<footer>
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <a href="#hero" class="nav-logo" style="color: rgb(255, 255, 255);">VOLT&amp;CO</a>
+      <p class="foot-tag">
+        We don't make ads. We make moments people can't unsee.<br>
+        볼트앤코 · est. 2017 · Seoul, Korea
+      </p>
+    </div>
+    <div class="foot-col">
+      <h5>Studio</h5>
+      <ul>
+        <li><a href="#manifesto">Manifesto</a></li>
+        <li><a href="#team">Team</a></li>
+        <li><a href="#process">Process</a></li>
+        <li><a href="#">Careers</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h5>Work</h5>
+      <ul>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#portfolio">Portfolio</a></li>
+        <li><a href="#testimonials">Reviews</a></li>
+        <li><a href="#clients">Clients</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h5>Connect</h5>
+      <ul>
+        <li><a href="#contact">Start a project</a></li>
+        <li><a href="#">hello@voltand.co</a></li>
+        <li><a href="#">Newsletter</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 VOLT&amp;CO INC. ALL RIGHTS RESERVED.</div>
+    <div>BUSINESS LICENSE 123-45-67890</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================
+   1. 네비게이션 스크롤 효과
+   ============================================ */
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 30);
+});
+
+/* ============================================
+   2. 핵심 수치 카운터 애니메이션
+   - data-target 속성에 목표 숫자 (소수점은 ".58" 같은 식으로 처리)
+   ============================================ */
+function animateNumber(el, target) {
+    const duration = 1800;
+    const startTime = performance.now();
+
+    function update(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out
+        const current = Math.floor(target * eased);
+        el.textContent = current.toLocaleString('ko-KR');
+
+        if (progress < 1) requestAnimationFrame(update);
+    }
+
+    requestAnimationFrame(update);
+}
+
+const numObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const el = entry.target;
+            const target = parseInt(el.dataset.target);
+            animateNumber(el, target);
+            numObserver.unobserve(el);
+        }
+    });
+}, { threshold: 0.4 });
+
+document.querySelectorAll('[data-target]').forEach(el => numObserver.observe(el));
+
+/* ============================================
+   3. 섹션 슬라이드 인 애니메이션 (요청 명시)
+   ============================================ */
+const slideObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            slideObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0.12 });
+
+// 슬라이드 인을 적용할 요소들
+document.querySelectorAll(
+    '.manifesto-grid, .stats-head, .stat-block, .services-head, ' +
+    '.service-card, .portfolio-head, .work, .process-head, .process-step, ' +
+    '.team-head, .member, .testi-head, .testi-card, .contact-grid'
+).forEach(el => {
+    el.classList.add('slide-in');
+    slideObserver.observe(el);
+});
+
+/* ============================================
+   4. 부드러운 스크롤
+   ============================================ */
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            e.preventDefault();
+            const offset = 80;
+            const top = target.getBoundingClientRect().top + window.scrollY - offset;
+            window.scrollTo({ top, behavior: 'smooth' });
+        }
+    });
+});
+
+/* ============================================
+   5. 프로젝트 브리프 폼 처리
+   - 실제 운영 시:
+     · fetch('/api/brief', { method: 'POST', ... })
+     · 또는 Formspree, Notion API, Slack Webhook 연동
+   ============================================ */
+function submitBrief(e) {
+    e.preventDefault();
+
+    try {
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // 체크박스 (관심 서비스 - 복수선택) 별도 처리
+        data.services = formData.getAll('services');
+
+        // TODO: 실제 백엔드로 전송
+        // fetch('/api/brief', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify(data)
+        // });
+
+        console.log('[VOLT&CO] Brief submitted:', data);
+
+        alert(
+            '✓ 프로젝트 브리프가 전송되었습니다.\n\n' +
+            '24시간 안에 ' + (data.email || '입력하신 이메일') + '로\n' +
+            '담당 디렉터가 직접 답장드리겠습니다.\n\n' +
+            '— VOLT&CO Studio'
+        );
+        e.target.reset();
+    } catch (err) {
+        console.error('[VOLT&CO] Form error:', err);
+        alert('전송 중 오류가 발생했습니다.\nhello@voltand.co로 직접 메일 주세요.');
+    }
+}
+</script>
+
+
+
+
+<!-- ============================================================
+  보험의 기준(배진우) · 메타리치 시그널그룹 브랜딩 AI
+  이 페이지는 설계사 브랜딩 도구에서 생성되었습니다.
+  용도: 영업·홍보·고객전달·제안서 브리핑 (조직 내 사용 허용)
+  금지: 재배포·재판매·타 조직 사용
+  ============================================================ -->
+</body></html>

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export type PersistedUploadItem = {
   id: string
   ownerId?: string
@@ -42,7 +44,7 @@ export async function fetchUploadAnalyses(supabase: any, advisorId: string, cust
 
   const { data, error } = await query
   if (error) {
-    console.warn('upload_analyses 조회 실패', error.message)
+    console.warn('Failed to fetch upload analyses', error.message)
     return []
   }
 
@@ -51,23 +53,57 @@ export async function fetchUploadAnalyses(supabase: any, advisorId: string, cust
 
 export async function saveGptsAnalysisToSupabase(supabase: any, params: SaveAnalysisParams) {
   const structured = params.structuredAnalysis || {}
-  const { data, error } = await supabase
+
+  const { data: existing } = await supabase
     .from('upload_analyses')
-    .insert({
-      advisor_id: params.advisorId,
-      customer_id: params.customerId,
-      customer_name: params.customerName,
-      file_name: params.fileName,
-      summary: params.summary,
-      structured_json: structured,
-      source: 'gpts',
-      version: structured.version || 'unknown',
-    })
-    .select('*')
-    .single()
+    .select('id')
+    .eq('advisor_id', params.advisorId)
+    .eq('customer_id', params.customerId)
+    .eq('source', 'gpts')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  let data: any
+  let error: any
+
+  if (existing?.id) {
+    const result = await supabase
+      .from('upload_analyses')
+      .update({
+        customer_name: params.customerName,
+        file_name: params.fileName,
+        summary: params.summary,
+        structured_json: structured,
+        version: structured.version || 'unknown',
+        created_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id)
+      .select('*')
+      .single()
+    data = result.data
+    error = result.error
+  } else {
+    const result = await supabase
+      .from('upload_analyses')
+      .insert({
+        advisor_id: params.advisorId,
+        customer_id: params.customerId,
+        customer_name: params.customerName,
+        file_name: params.fileName,
+        summary: params.summary,
+        structured_json: structured,
+        source: 'gpts',
+        version: structured.version || 'unknown',
+      })
+      .select('*')
+      .single()
+    data = result.data
+    error = result.error
+  }
 
   if (error) {
-    console.warn('upload_analyses 저장 실패', error.message)
+    console.warn('Failed to save upload analysis', error.message)
     return { ok: false, error }
   }
 
@@ -75,6 +111,11 @@ export async function saveGptsAnalysisToSupabase(supabase: any, params: SaveAnal
     advisorId: params.advisorId,
     customerId: params.customerId,
     analysisId: data.id,
+    structuredAnalysis: structured,
+  })
+
+  await syncCustomerFromAnalysis(supabase, {
+    customerId: params.customerId,
     structuredAnalysis: structured,
   })
 
@@ -130,19 +171,26 @@ async function replacePolicyRowsFromAnalysis(supabase: any, params: {
   const groups = extractPolicyGroups(params.structuredAnalysis)
   if (groups.length === 0) return
 
+  const { data: existingPolicies } = await supabase
+    .from('policies')
+    .select('id')
+    .eq('advisor_id', params.advisorId)
+    .eq('customer_id', params.customerId)
+    .eq('source_type', 'gpts')
+
+  if (Array.isArray(existingPolicies) && existingPolicies.length > 0) {
+    const existingIds = existingPolicies.map((policy: any) => policy.id)
+    await supabase.from('coverages').delete().in('policy_id', existingIds)
+    await supabase.from('policies').delete().in('id', existingIds)
+  }
+
   await supabase
     .from('coverages')
     .delete()
     .eq('advisor_id', params.advisorId)
     .eq('customer_id', params.customerId)
     .eq('source_type', 'gpts')
-
-  await supabase
-    .from('policies')
-    .delete()
-    .eq('advisor_id', params.advisorId)
-    .eq('customer_id', params.customerId)
-    .eq('source_type', 'gpts')
+    .is('policy_id', null)
 
   for (const group of groups) {
     const { data: policy, error } = await supabase
@@ -168,7 +216,7 @@ async function replacePolicyRowsFromAnalysis(supabase: any, params: {
       .single()
 
     if (error || !policy?.id) {
-      console.warn('GPTs 계약 저장 실패', error?.message)
+      console.warn('Failed to save GPTs policy', error?.message)
       continue
     }
 
@@ -191,7 +239,7 @@ async function replacePolicyRowsFromAnalysis(supabase: any, params: {
 
     if (coverageRows.length > 0) {
       const { error: coverageError } = await supabase.from('coverages').insert(coverageRows)
-      if (coverageError) console.warn('GPTs 담보 저장 실패', coverageError.message)
+      if (coverageError) console.warn('Failed to save GPTs coverages', coverageError.message)
     }
   }
 }
@@ -202,6 +250,7 @@ function extractPolicyGroups(data: any) {
     company: policy.company || policy.insurer || data?.extracted?.company || '보험사 미확인',
     product_name: policy.product_name || policy.product || policy.name || '상품명 미확인',
     policy_number: policy.policy_number || policy.contract_number || null,
+    policy_type: policy.policy_type || policy.type || 'manual',
     monthly_premium: normalizeMoney(policy.monthly_premium || policy.premium, multiplierSource),
     start_date: policy.start_date || policy.contract_date,
     end_date: policy.end_date || policy.maturity_date,
@@ -224,14 +273,15 @@ function firstArray(...values: any[]) {
 function normalizeMoney(value: any, source: any) {
   const number = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
   if (!Number.isFinite(number) || number <= 0) return null
-  const unitText = `${source?.version || ''} ${source?.amount_unit || ''} ${source?.money_unit || ''}`.toLowerCase()
-  const multiplier = unitText.includes('insurance_analysis_v3') || unitText.includes('만원') || unitText.includes('manwon') ? 10000 : 1
-  return Math.round(number * multiplier)
+  const version = String(source?.version || '').toLowerCase()
+  const unitText = `${version} ${source?.amount_unit || ''} ${source?.money_unit || ''}`.toLowerCase()
+  const isManwonUnit = version.includes('insurance_analysis_v') || unitText.includes('만원') || unitText.includes('manwon')
+  return Math.round(number * (isManwonUnit ? 10000 : 1))
 }
 
 function normalizeDate(value: any) {
   const text = String(value || '').trim()
-  if (!text || text === '확인필요' || text === '미표시') return null
+  if (!text || text === '확인필요' || text === '미확인') return null
   const normalized = text.replace(/\./g, '-')
   if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized
   if (/^\d{2}-\d{2}-\d{2}$/.test(normalized)) return `20${normalized}`
@@ -240,7 +290,7 @@ function normalizeDate(value: any) {
 
 function extractMaturityAge(value: any) {
   const text = String(value || '')
-  const match = text.match(/(\d{2,3})\s*세/)
+  const match = text.match(/(\d{2,3})\s*세?/)
   return match ? Number(match[1]) : null
 }
 
@@ -252,13 +302,13 @@ function formatPaymentPeriod(years: any, maturity: any) {
 
 function normalizeCoverageCategory(category: any, name: any) {
   const text = `${category || ''} ${name || ''}`
-  if (/암|항암|중입자|표적/.test(text)) return '암'
+  if (/암|항암|표적/.test(text)) return '암'
   if (/뇌|뇌졸중|뇌출혈/.test(text)) return '뇌'
-  if (/심장|심근경색|허혈성|순환계/.test(text)) return '심장'
+  if (/심장|심근경색|허혈/.test(text)) return '심장'
   if (/수술/.test(text)) return '수술'
   if (/입원|일당|통원/.test(text)) return '입원'
   if (/간병|요양/.test(text)) return '간병'
-  if (/운전자|교통|벌금|변호사|자동차부상/.test(text)) return '운전자'
+  if (/운전|교통|벌금|변호사|자동차/.test(text)) return '운전자'
   if (/치아|임플란트|크라운/.test(text)) return '치아'
   if (/사망/.test(text)) return '사망'
   if (/실손|의료비/.test(text)) return '실손'
@@ -274,7 +324,7 @@ function formatAnalysisSummary(data: any) {
     `[GPTs 보장분석] ${customer.name || data?.customer_name || '고객명 미확인'}`,
     policies.length ? `가입 상품: ${policies.map((policy: any) => policy.company || policy.product_name || policy.product).filter(Boolean).slice(0, 5).join(', ')}` : '',
     listSection('강점', analysis.strengths),
-    listSection('부족/확인 필요', analysis.weaknesses || analysis.missing_coverages),
+    listSection('부족 확인 필요', analysis.weaknesses || analysis.missing_coverages),
     listSection('추천 방향', analysis.recommendation || analysis.recommendations),
   ].filter(Boolean).join('\n')
 }
@@ -287,4 +337,45 @@ function listSection(title: string, value: any) {
 
 function firstLine(value: string) {
   return String(value || '').split('\n').map((line) => line.trim()).find(Boolean) || ''
+}
+
+async function syncCustomerFromAnalysis(supabase: any, params: {
+  customerId: string
+  structuredAnalysis: any
+}) {
+  if (!params.customerId) return
+  const data = params.structuredAnalysis || {}
+  const customer = data?.customer || {}
+  const policies = firstArray(data?.policies, data?.contracts)
+
+  const patch: Record<string, any> = {}
+
+  const monthlyPremium = normalizeMoney(
+    customer.monthly_premium || customer.monthly_total || data.monthly_premium,
+    data
+  )
+  if (monthlyPremium && monthlyPremium > 0) patch.monthly_premium = monthlyPremium
+
+  const contractCount = Number(customer.contract_count || customer.policy_count || policies.length || 0)
+  if (contractCount > 0) patch.policy_count = contractCount
+
+  const age = Number(customer.age || 0)
+  if (age > 0) {
+    const estimatedYear = new Date().getFullYear() - age
+    const { data: existingCustomer } = await supabase.from('customers').select('birth_date').eq('id', params.customerId).maybeSingle()
+    if (!existingCustomer?.birth_date) {
+      patch.birth_date = `${estimatedYear}-01-01`
+    }
+  }
+
+  const hasIndemnity = data?.coverage_summary?.has_indemnity
+  if (hasIndemnity != null) {
+    patch.has_indemnity = Boolean(hasIndemnity)
+  }
+
+  if (Object.keys(patch).length === 0) return
+
+  patch.updated_at = new Date().toISOString()
+  const { error } = await supabase.from('customers').update(patch).eq('id', params.customerId)
+  if (error) console.warn('Failed to sync customer from analysis', error.message)
 }

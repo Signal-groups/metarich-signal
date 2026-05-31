@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, react-hooks/set-state-in-effect */
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Dashboard Page (Main Entry) - Sidebar Sync & Route Fix
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -30,8 +32,9 @@ import AgentView from "./components/AgentView"
 import MasterView from "./components/MasterView" 
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
+import BrandingAIPage from "./components/BrandingAIPage"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
-import { normalizeRole, isApprovedUser } from "../../lib/roles"
+import { normalizeRole, isApprovedUser, canAccessBranding } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
 function ToolIcon({ icon }: { icon: string }) {
@@ -149,10 +152,17 @@ export default function DashboardPage() {
     const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };
 
     const effectiveRole = normalizeRole(userInfo);
+    const hydratedUser = { ...userInfo, effectiveRole };
     setMenuStatus(statusMap);
-    setUser({ ...userInfo, effectiveRole });
+    setUser(hydratedUser);
 
-    if (effectiveRole !== 'guest' && isApprovedUser(userInfo) && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'office') {
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
+    if (urlParams.get("tab") === "branding" && canAccessBranding(hydratedUser)) {
+      setActiveTab("branding");
+      setViewMode("consulting");
+    }
+
+    if (effectiveRole !== 'guest' && isApprovedUser(userInfo) && urlParams.get('mode') === 'office') {
       setViewMode('office');
     }
 
@@ -246,7 +256,8 @@ export default function DashboardPage() {
       <main className="flex-1 p-4 pb-28 transition-all duration-300 lg:ml-[300px] lg:p-10">
         <div className="max-w-[1400px] mx-auto">
           {(
-            viewMode === 'office' ? renderOfficeView() : (
+            activeTab === 'branding' ? <BrandingAIPage user={user} /> :
+      viewMode === 'office' ? renderOfficeView() : (
               <div className="max-w-5xl mx-auto py-6 md:py-8">
                 <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                   <div>

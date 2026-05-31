@@ -99,14 +99,36 @@ export function isApprovedUser(user: any): boolean {
   return role === "master" || role === "headquarters" || role === "leader" || role === "manager" || user?.is_approved === true || user?.is_approved === "true";
 }
 
+function enabled(value: any): boolean {
+  return value === true || value === "true" || value === 1 || value === "1";
+}
+
+
+// 유료 기능 접근 권한 함수
+// 마스터는 항상 접근 가능 / 그 외는 직원관리에서 개별 허용한 경우만
+
+/** 고객 CRM */
 export function canAccessCrm(user: any): boolean {
   const role = normalizeRole(user);
-  // CRM은 마스터 역할 또는 마스터가 명시적으로 crm_access=true를 부여한 사용자만 접근 가능
-  return (
-    role === "master" ||
-    user?.crm_access === true ||
-    user?.crm_access === "true"
-  );
+  return role === "master" || enabled(user?.crm_access);
+}
+
+/** 사무실 업무 탭 */
+export function canAccessOffice(user: any): boolean {
+  const role = normalizeRole(user);
+  return isApprovedUser(user) || role === "master" || enabled(user?.office_access);
+}
+
+/** AI 자동화 청구 */
+export function canAccessClaim(user: any): boolean {
+  const role = normalizeRole(user);
+  return role === "master" || enabled(user?.claim_access);
+}
+
+/** 설계사 브랜딩 AI */
+export function canAccessBranding(user: any): boolean {
+  const role = normalizeRole(user);
+  return role === "master" || enabled(user?.branding_access) || enabled(user?.crm_access) || enabled(user?.paid_access);
 }
 
 export function canSeeUser(viewer: any, target: any): boolean {

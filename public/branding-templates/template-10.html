@@ -1,0 +1,2587 @@
+<!DOCTYPE html>
+<html lang="ko"><head><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='14' fill='%230a0a0a'/&gt;&lt;path d='M38 4 L14 36 L28 36 L24 60 L50 26 L34 26 Z' fill='%23FFEB00' stroke='%23FFEB00' stroke-width='1' stroke-linejoin='round'/&gt;&lt;/svg&gt;">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[에이전시명] — 광고비, 쓴 만큼이 아니라 번 만큼.</title>
+
+<!-- ================================================================
+  Google Fonts:
+   · Syne 800       → 헤드라인 (display)
+   · Noto Sans KR   → 본문
+   · JetBrains Mono → 숫자/데이터 (표·메트릭)
+================================================================= -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&amp;family=Noto+Sans+KR:wght@400;500;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     0. Design Tokens
+     ============================================================ */
+  :root {
+    /* Color */
+    --bg:        #0d1424;          /* 메인 다크 네이비 */
+    --bg-deep:   #080d1a;          /* 더 깊은 톤 (푸터/그라디언트 끝점) */
+    --card:      #161e30;          /* 카드 배경 */
+    --card-hi:   #1c2640;          /* 카드 hover/강조 */
+    --line:      rgba(255,255,255,0.07);
+    --line-2:    rgba(255,255,255,0.12);
+    --mint:      #34d5b0;          /* 메인 포인트 (퍼포먼스 민트) */
+    --mint-soft: rgba(52,213,176,0.12);
+    --mint-glow: rgba(52,213,176,0.35);
+    --blue:      #5b8fff;          /* 보조 블루 */
+    --blue-soft: rgba(91,143,255,0.12);
+    --red:       #f56565;          /* 감소/하락 지표 */
+    --white:     #ffffff;
+    --text:      rgba(255,255,255,0.86);
+    --text-mute: rgba(255,255,255,0.55);
+    --text-dim:  rgba(255,255,255,0.38);
+
+    /* Type */
+    --f-display: 'Syne', sans-serif;
+    --f-body:    'Noto Sans KR', sans-serif;
+    --f-mono:    'JetBrains Mono', monospace;
+
+    /* Layout */
+    --max:       1240px;
+    --r-sm:      10px;
+    --r:         16px;
+    --r-lg:      24px;
+  }
+
+  /* ============================================================
+     1. Reset & Base
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--f-body);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+
+    /* 미세 그리드 패턴 — 다크 대시보드 느낌 강화 */
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(52,213,176,0.06) 0%, transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(91,143,255,0.05) 0%, transparent 40%),
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: auto, auto, 64px 64px, 64px 64px;
+    background-attachment: fixed;
+  }
+  img  { max-width: 100%; display: block; }
+  a    { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+  /* 영문/숫자 클래스 */
+  .display { font-family: var(--f-display); font-weight: 800; letter-spacing: -0.02em; }
+  .mono    { font-family: var(--f-mono); }
+
+  /* 컨테이너 */
+  .container {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  section {
+    padding: 120px 0;
+    position: relative;
+  }
+  @media (max-width: 768px) {
+    section { padding: 80px 0 60px; }
+  }
+
+  /* ============================================================
+     2. 공통 섹션 헤더 (5단 구조)
+     ── eyebrow / H2 / subcopy / body / micro CTA
+     ============================================================ */
+  .sec-head {
+    margin-bottom: 64px;
+    max-width: 760px;
+  }
+  .sec-head.center {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--mint);
+    margin-bottom: 20px;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--mint);
+  }
+  .sec-head h2 {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: clamp(32px, 4.5vw, 56px);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: var(--white);
+    margin-bottom: 18px;
+  }
+  .sec-head h2 .accent { color: var(--mint); }
+  .subcopy {
+    font-size: 17px;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 14px;
+    max-width: 640px;
+  }
+  .sec-head.center .subcopy { margin-left: auto; margin-right: auto; }
+  .body-line {
+    font-size: 14px;
+    color: var(--text-mute);
+    margin-bottom: 18px;
+    max-width: 580px;
+  }
+  .sec-head.center .body-line { margin-left: auto; margin-right: auto; }
+  .micro-cta {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--mint);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: gap .2s, color .2s;
+  }
+  .micro-cta:hover { gap: 12px; color: #5fe3c6; }
+  .micro-cta::after { content: '→'; }
+
+  /* ============================================================
+     3. 네비게이션
+     ============================================================ */
+  .nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(13, 20, 36, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .3s, background .3s;
+  }
+  .nav.scrolled {
+    border-bottom-color: var(--line);
+    background: rgba(13, 20, 36, 0.9);
+  }
+  .nav-inner {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.03em;
+    color: var(--white);
+  }
+  .brand .dot {
+    color: var(--mint);
+    margin-left: 1px;
+  }
+  .nav-menu {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+  }
+  .nav-menu a {
+    font-size: 14px;
+    color: var(--text-mute);
+    transition: color .2s;
+  }
+  .nav-menu a:hover { color: var(--white); }
+  .nav-cta {
+    background: var(--mint);
+    color: #0a1020;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 999px;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .nav-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px var(--mint-glow);
+  }
+  @media (max-width: 880px) {
+    .nav-menu { display: none; }
+  }
+
+  /* ============================================================
+     4. 버튼
+     ============================================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 28px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    transition: transform .2s, box-shadow .2s, background .2s, color .2s, border-color .2s;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--mint);
+    color: #0a1020;
+    box-shadow: 0 8px 28px rgba(52,213,176,0.25);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(52,213,176,0.4);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--white);
+    border: 1px solid var(--line-2);
+  }
+  .btn-ghost:hover {
+    border-color: var(--mint);
+    color: var(--mint);
+  }
+  .btn-dark {
+    background: #0a1020;
+    color: var(--white);
+  }
+  .btn-dark:hover { background: #050810; }
+
+  /* ============================================================
+     5. SECTION 1 — 히어로
+     ============================================================ */
+  .hero {
+    min-height: 100vh;
+    padding: 140px 0 80px;
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 60px;
+    align-items: center;
+    width: 100%;
+  }
+  @media (max-width: 980px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+
+  .hero h1 {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: clamp(40px, 6vw, 78px);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    color: var(--white);
+    margin: 22px 0 28px;
+  }
+  .hero h1 .strike {
+    position: relative;
+    color: var(--text-mute);
+    display: inline-block;
+  }
+  .hero h1 .strike::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 52%;
+    height: 4px;
+    background: var(--red);
+    border-radius: 2px;
+    transform: rotate(-3deg);
+  }
+  .hero h1 .accent { color: var(--mint); }
+
+  .hero-lead {
+    font-size: 18px;
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 540px;
+    margin-bottom: 16px;
+  }
+  .hero-body {
+    font-size: 14px;
+    color: var(--text-mute);
+    max-width: 500px;
+    margin-bottom: 36px;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+
+  /* 신뢰 보조 — 거래 브랜드 */
+  .hero-trust {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--f-mono);
+    letter-spacing: 0.05em;
+  }
+  .hero-trust .logos {
+    display: flex;
+    gap: 18px;
+    color: var(--text-mute);
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+  .hero-trust .logos span { opacity: 0.6; }
+
+  /* 우측 ROAS 차트 카드 */
+  .hero-chart {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 28px 30px;
+    position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .hero-chart::before {
+    /* 좌상단 mint 글로우 */
+    content: '';
+    position: absolute;
+    top: -100px; left: -100px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, var(--mint-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .chart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .chart-title {
+    font-size: 13px;
+    color: var(--text-mute);
+    font-family: var(--f-mono);
+    letter-spacing: 0.05em;
+  }
+  .chart-tabs {
+    display: flex;
+    gap: 6px;
+  }
+  .chart-tabs span {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: var(--f-mono);
+    color: var(--text-dim);
+    border: 1px solid var(--line-2);
+  }
+  .chart-tabs span.on {
+    color: var(--mint);
+    background: var(--mint-soft);
+    border-color: transparent;
+  }
+  .chart-metric {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .chart-metric .value {
+    font-family: var(--f-mono);
+    font-weight: 700;
+    font-size: 44px;
+    color: var(--white);
+    letter-spacing: -0.02em;
+  }
+  .chart-metric .delta {
+    font-family: var(--f-mono);
+    font-size: 14px;
+    color: var(--mint);
+    background: var(--mint-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+
+  .chart-svg {
+    width: 100%;
+    height: 240px;
+    display: block;
+    position: relative;
+  }
+  .chart-svg .grid-line {
+    stroke: var(--line);
+    stroke-dasharray: 2 4;
+  }
+  .chart-svg .area-fill {
+    fill: url(#mintFade);
+    opacity: 0;
+    transition: opacity 1s ease 0.6s;
+  }
+  .chart-svg.in .area-fill { opacity: 1; }
+  .chart-svg .line-stroke {
+    fill: none;
+    stroke: var(--mint);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    /* path length ~600, 진입 시 stroke-dasharray로 그리는 애니메이션 */
+    stroke-dasharray: 800;
+    stroke-dashoffset: 800;
+    transition: stroke-dashoffset 1.6s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .chart-svg.in .line-stroke { stroke-dashoffset: 0; }
+  .chart-svg .dot {
+    fill: var(--white);
+    stroke: var(--mint);
+    stroke-width: 2;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .chart-svg.in .dot { opacity: 1; transition-delay: 1.6s; }
+  .chart-svg .dot.peak {
+    r: 6;
+    filter: drop-shadow(0 0 8px var(--mint));
+  }
+  .chart-xlabel {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    fill: var(--text-dim);
+  }
+
+  /* 하단 mini KPI strip */
+  .chart-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+  }
+  .chart-strip .item {
+    text-align: left;
+  }
+  .chart-strip .label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .chart-strip .num {
+    font-family: var(--f-mono);
+    font-weight: 700;
+    color: var(--white);
+    font-size: 16px;
+  }
+  .chart-strip .num.up::after  { content: ' ▲'; color: var(--mint); font-size: 10px; }
+  .chart-strip .num.down::after{ content: ' ▼'; color: var(--red);  font-size: 10px; }
+
+  /* ============================================================
+     6. SECTION 2 — 핵심 성과
+     ============================================================ */
+  .stats-main {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 880px) { .stats-main { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .stats-main { grid-template-columns: 1fr; } }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 28px 26px;
+    transition: border-color .25s, transform .25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card:hover {
+    border-color: var(--mint);
+    transform: translateY(-3px);
+  }
+  .stat-card .lab {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .stat-card .num {
+    font-family: var(--f-mono);
+    font-weight: 700;
+    font-size: clamp(32px, 4vw, 44px);
+    color: var(--white);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  .stat-card .num .unit {
+    font-size: 0.55em;
+    color: var(--mint);
+    margin-left: 4px;
+  }
+  .stat-card .desc {
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.5;
+  }
+  /* 미니 sparkline */
+  .stat-card .spark {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    width: 110px;
+    height: 60px;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* 8개 보조 (매체별) */
+  .stats-sub-title {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 36px 0 14px;
+  }
+  .stats-sub {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    overflow: hidden;
+    padding: 4px;
+  }
+  @media (max-width: 880px) { .stats-sub { grid-template-columns: repeat(2, 1fr); } }
+  .stats-sub .cell {
+    padding: 18px 20px;
+    border-radius: 10px;
+    transition: background .2s;
+  }
+  .stats-sub .cell:hover { background: var(--card-hi); }
+  .stats-sub .cell .ch {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--mint);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .stats-sub .cell .v {
+    font-family: var(--f-mono);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--white);
+    margin-bottom: 4px;
+  }
+  .stats-sub .cell .l {
+    font-size: 12px;
+    color: var(--text-mute);
+  }
+
+  /* ============================================================
+     7. SECTION 3 — 풀퍼널 접근법
+     ============================================================ */
+  .funnel-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    position: relative;
+  }
+  @media (max-width: 980px) { .funnel-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 540px) { .funnel-grid { grid-template-columns: 1fr; } }
+
+  .funnel-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 30px 26px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .25s, transform .25s;
+  }
+  .funnel-card:hover {
+    border-color: var(--mint);
+    transform: translateY(-4px);
+  }
+  /* 좌측 미세 컬러 바 */
+  .funnel-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--mint);
+    opacity: 0.5;
+  }
+  .funnel-card[data-stage="1"]::before { background: var(--blue); }
+  .funnel-card[data-stage="2"]::before { background: #8a7dff; }
+  .funnel-card[data-stage="3"]::before { background: var(--mint); }
+  .funnel-card[data-stage="4"]::before { background: #ffb04a; }
+
+  .funnel-step {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 6px;
+  }
+  .funnel-name {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--white);
+    margin-bottom: 18px;
+    letter-spacing: -0.02em;
+  }
+  .funnel-block {
+    margin-bottom: 14px;
+  }
+  .funnel-block .h {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .funnel-block .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .funnel-block .tag {
+    font-size: 11px;
+    padding: 4px 9px;
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    border-radius: 999px;
+  }
+  .funnel-perf {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .funnel-perf .label {
+    font-size: 11px;
+    color: var(--text-mute);
+    margin-bottom: 2px;
+  }
+  .funnel-perf .value {
+    font-family: var(--f-mono);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--mint);
+  }
+
+  /* ============================================================
+     8. SECTION 4 — 운영 매체 8개
+     ============================================================ */
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 980px) { .media-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 540px) { .media-grid { grid-template-columns: 1fr; } }
+
+  .media-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 22px;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+    position: relative;
+  }
+  .media-card:hover {
+    border-color: var(--mint);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(52,213,176,0.15);
+  }
+  .media-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .media-logo {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    display: grid; place-items: center;
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--white);
+    letter-spacing: -0.04em;
+  }
+  .media-cert {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--mint);
+    background: var(--mint-soft);
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .media-name {
+    font-weight: 700;
+    color: var(--white);
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .media-en {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+  .media-spend {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    color: var(--white);
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .media-spend small {
+    display: block;
+    color: var(--text-dim);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 3px;
+  }
+
+  /* ============================================================
+     9. SECTION 5 — 운영 프로세스 (5 steps)
+     ============================================================ */
+  .process-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .process-step {
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    gap: 30px;
+    align-items: center;
+    padding: 28px 30px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    transition: border-color .25s, transform .25s;
+  }
+  .process-step:hover { border-color: var(--mint); }
+  .process-step .num {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: 56px;
+    color: var(--mint);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .process-step .body h4 {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--white);
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .process-step .body p {
+    font-size: 14px;
+    color: var(--text-mute);
+    margin-bottom: 10px;
+    max-width: 580px;
+  }
+  .process-step .deliver {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .process-step .deliver span {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text);
+    padding: 4px 9px;
+    background: rgba(52,213,176,0.08);
+    border: 1px solid rgba(52,213,176,0.2);
+    border-radius: 6px;
+  }
+  .process-step .timeline {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .process-step .timeline strong {
+    display: block;
+    color: var(--white);
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+  @media (max-width: 768px) {
+    .process-step {
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+    }
+    .process-step .timeline { grid-column: 1 / -1; text-align: left; }
+    .process-step .num { font-size: 40px; }
+  }
+
+  /* ============================================================
+     10. SECTION 6 — 케이스 스터디 4건
+     ============================================================ */
+  .case-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 880px) { .case-grid { grid-template-columns: 1fr; } }
+
+  .case-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    transition: border-color .3s, box-shadow .3s, transform .3s;
+    position: relative;
+    overflow: hidden;
+  }
+  /* 케이스 카드 hover — 민트 글로우 */
+  .case-card:hover {
+    border-color: var(--mint);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(52,213,176,0.18);
+  }
+  .case-card::after {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, var(--mint-glow) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity .4s;
+    pointer-events: none;
+  }
+  .case-card:hover::after { opacity: 1; }
+
+  .case-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .case-industry {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--mint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .case-period {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .case-title {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--white);
+    margin-bottom: 22px;
+    letter-spacing: -0.02em;
+  }
+  .case-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 20px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 22px;
+  }
+  .case-metric .label {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .case-metric .value {
+    font-family: var(--f-mono);
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--white);
+    line-height: 1.2;
+  }
+  .case-metric .change {
+    font-size: 11px;
+    color: var(--mint);
+    font-family: var(--f-mono);
+    margin-top: 4px;
+  }
+  .case-metric .change.down { color: var(--mint); }   /* CPA 감소도 좋은 신호이므로 mint */
+  .case-insight {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.65;
+    padding-left: 14px;
+    border-left: 2px solid var(--mint);
+  }
+  .case-insight strong { color: var(--white); }
+
+  /* ============================================================
+     11. SECTION 7 — 리포팅 샘플 (3 카드)
+     ============================================================ */
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 980px) { .report-grid { grid-template-columns: 1fr; } }
+
+  .report-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 30px;
+    position: relative;
+    transition: border-color .25s, transform .25s;
+  }
+  .report-card:hover {
+    border-color: var(--mint);
+    transform: translateY(-4px);
+  }
+  .report-card.featured {
+    background: linear-gradient(180deg, var(--card) 0%, var(--card-hi) 100%);
+    border-color: rgba(52,213,176,0.3);
+  }
+  .report-card.featured::before {
+    content: 'MOST USED';
+    position: absolute;
+    top: 16px; right: 16px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--mint);
+    background: var(--mint-soft);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.1em;
+  }
+  .report-cycle {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--mint);
+    letter-spacing: 0.15em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .report-name {
+    font-family: var(--f-display);
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--white);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+  .report-desc {
+    font-size: 13px;
+    color: var(--text-mute);
+    margin-bottom: 22px;
+    line-height: 1.6;
+  }
+  .report-items {
+    list-style: none;
+    margin-bottom: 22px;
+  }
+  .report-items li {
+    font-size: 13px;
+    color: var(--text);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .report-items li:last-child { border-bottom: none; }
+  .report-items li::before {
+    content: '✓';
+    color: var(--mint);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .report-foot {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+  }
+  .report-foot .v { color: var(--white); }
+
+  /* ============================================================
+     12. SECTION 8 — 클라이언트 후기 4건
+     ============================================================ */
+  .review-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 880px) { .review-grid { grid-template-columns: 1fr; } }
+
+  .review-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 32px;
+    position: relative;
+    transition: border-color .25s, transform .25s;
+  }
+  .review-card:hover {
+    border-color: var(--mint);
+    transform: translateY(-3px);
+  }
+  .review-card::before {
+    content: '"';
+    position: absolute;
+    top: 14px; right: 24px;
+    font-family: var(--f-display);
+    font-size: 80px;
+    color: var(--mint);
+    opacity: 0.2;
+    line-height: 1;
+  }
+  .review-stars {
+    color: var(--mint);
+    font-size: 14px;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  .review-text {
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 24px;
+    min-height: 84px;
+  }
+  .review-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .review-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--mint), var(--blue));
+    display: grid; place-items: center;
+    font-family: var(--f-display);
+    font-weight: 700;
+    color: #0a1020;
+  }
+  .review-meta strong {
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .review-meta .role {
+    display: block;
+    font-size: 12px;
+    color: var(--text-mute);
+    font-family: var(--f-mono);
+    margin-top: 2px;
+  }
+
+  /* ============================================================
+     13. SECTION 9 — FAQ 7문항
+     ============================================================ */
+  .faq-list {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--line);
+    transition: background .2s;
+  }
+  .faq-item.open { border-bottom-color: var(--mint); }
+  .faq-q {
+    width: 100%;
+    text-align: left;
+    padding: 24px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--white);
+  }
+  .faq-q .q-num {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--mint);
+    margin-right: 16px;
+    width: 30px;
+    flex-shrink: 0;
+  }
+  .faq-q-text { flex: 1; }
+  .faq-toggle {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    border: 1px solid var(--line-2);
+    border-radius: 50%;
+    color: var(--text-mute);
+    display: grid; place-items: center;
+    transition: transform .25s, color .25s, border-color .25s;
+  }
+  .faq-item.open .faq-toggle {
+    transform: rotate(45deg);
+    color: var(--mint);
+    border-color: var(--mint);
+  }
+  .faq-a {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease;
+  }
+  .faq-a-inner {
+    padding: 0 4px 28px 50px;
+    color: var(--text-mute);
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  /* ============================================================
+     14. SECTION 10 — 최종 CTA + 푸터
+     ============================================================ */
+  .final-cta {
+    /* 풀블리드 mint 그라디언트 */
+    background:
+      radial-gradient(circle at 80% 100%, rgba(91,143,255,0.4) 0%, transparent 50%),
+      radial-gradient(circle at 0% 0%, rgba(52,213,176,0.5) 0%, transparent 60%),
+      linear-gradient(135deg, #34d5b0 0%, #2bb495 50%, #5b8fff 100%);
+    padding: 140px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  /* 노이즈 텍스처 — SVG 인라인 */
+  .final-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/></svg>");
+    opacity: 0.15;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+  .final-cta .container { position: relative; z-index: 1; }
+  .final-cta .eyebrow {
+    color: #0a1020;
+    opacity: 0.85;
+  }
+  .final-cta .eyebrow::before { background: #0a1020; opacity: 0.5; }
+  .final-cta h2 {
+    font-family: var(--f-display);
+    font-weight: 800;
+    font-size: clamp(36px, 5.5vw, 72px);
+    color: #0a1020;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .final-cta .lead {
+    font-size: 18px;
+    color: rgba(10,16,32,0.75);
+    max-width: 580px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+  }
+  .final-cta-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .final-cta .btn-dark {
+    padding: 18px 32px;
+    font-size: 16px;
+  }
+  .final-cta .btn-outline-dark {
+    background: transparent;
+    color: #0a1020;
+    border: 1.5px solid #0a1020;
+    padding: 18px 32px;
+    font-size: 16px;
+  }
+  .final-cta .btn-outline-dark:hover {
+    background: #0a1020;
+    color: var(--mint);
+  }
+  /* 신뢰 보조 텍스트 3개 */
+  .final-trust {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    font-family: var(--f-mono);
+    font-size: 13px;
+    color: rgba(10,16,32,0.7);
+    font-weight: 500;
+  }
+  .final-trust span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .final-trust span::before {
+    content: '✓';
+    color: #0a1020;
+    font-weight: 700;
+  }
+
+  /* ============================================================
+     15. 푸터
+     ============================================================ */
+  .footer {
+    background: var(--bg-deep);
+    padding: 80px 0 30px;
+    border-top: 1px solid var(--line);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 50px;
+    border-bottom: 1px solid var(--line);
+  }
+  @media (max-width: 880px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; gap: 30px; } }
+
+  .footer-brand p {
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.7;
+    margin: 16px 0 22px;
+    max-width: 360px;
+  }
+  .footer-sns {
+    display: flex;
+    gap: 8px;
+  }
+  .footer-sns a {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    color: var(--text);
+    font-size: 13px;
+    transition: background .2s, border-color .2s, color .2s;
+  }
+  .footer-sns a:hover {
+    background: var(--mint);
+    color: #0a1020;
+    border-color: var(--mint);
+  }
+  .footer-col h6 {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 18px;
+  }
+  .footer-col ul { list-style: none; }
+  .footer-col li {
+    margin-bottom: 10px;
+  }
+  .footer-col a {
+    font-size: 13px;
+    color: var(--text-mute);
+    transition: color .2s;
+  }
+  .footer-col a:hover { color: var(--mint); }
+  .footer-bottom {
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--f-mono);
+  }
+
+  /* ============================================================
+     16. 모바일 sticky 하단 CTA 바
+     ============================================================ */
+  .mobile-cta {
+    display: none;
+    position: fixed;
+    bottom: 12px; left: 12px; right: 12px;
+    z-index: 90;
+    background: rgba(13,20,36,0.92);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 10px 12px 10px 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .mobile-cta .info {
+    flex: 1;
+    min-width: 0;
+  }
+  .mobile-cta .lab {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--mint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .mobile-cta .txt {
+    font-size: 13px;
+    color: var(--white);
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mobile-cta .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  @media (max-width: 768px) {
+    .mobile-cta { display: flex; }
+    body { padding-bottom: 80px; } /* sticky CTA가 콘텐츠를 가리지 않도록 */
+  }
+
+  /* ============================================================
+     17. 스크롤 진입 애니메이션
+     ============================================================ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .8s ease, transform .8s ease;
+  }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity .6s ease, transform .6s ease;
+  }
+  .reveal-stagger.in > * { opacity: 1; transform: translateY(0); }
+  .reveal-stagger.in > *:nth-child(1) { transition-delay: .04s; }
+  .reveal-stagger.in > *:nth-child(2) { transition-delay: .10s; }
+  .reveal-stagger.in > *:nth-child(3) { transition-delay: .16s; }
+  .reveal-stagger.in > *:nth-child(4) { transition-delay: .22s; }
+  .reveal-stagger.in > *:nth-child(5) { transition-delay: .28s; }
+  .reveal-stagger.in > *:nth-child(6) { transition-delay: .34s; }
+  .reveal-stagger.in > *:nth-child(7) { transition-delay: .40s; }
+  .reveal-stagger.in > *:nth-child(8) { transition-delay: .46s; }
+</style>
+</head>
+<body>
+
+<!-- ===== 네비게이션 ===== -->
+<nav class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="#hero" class="brand">PERFM<span class="dot">.</span></a>
+    <ul class="nav-menu">
+      <li><a href="#performance">성과</a></li>
+      <li><a href="#funnel">접근법</a></li>
+      <li><a href="#media">매체</a></li>
+      <li><a href="#process">프로세스</a></li>
+      <li><a href="#cases">케이스</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <a href="#cta" class="nav-cta">무료 진단</a>
+  </div>
+</nav>
+
+<!-- =============================================================
+  SECTION 1. 히어로
+============================================================== -->
+<section class="hero" id="hero">
+  <div class="container hero-grid">
+    <!-- 좌측 카피 -->
+    <div class="hero-text reveal visible show active aos-animate is-visible in-view in">
+      <span class="eyebrow">PERFORMANCE MARKETING AGENCY</span>
+      <h1>
+        광고비, <span class="strike">쓴 만큼</span>이 아니라<br>
+        <span class="accent">번 만큼.</span>
+      </h1>
+      <p class="hero-lead">
+        매월 평균 ROAS 540%, 누적 1,200건의 캠페인을 운영한 데이터 드리븐 에이전시.
+        보고서가 아니라 매출이 증명합니다.
+      </p>
+      <p class="hero-body">
+        Google · Meta · 네이버 · 카카오 등 8개 매체를 한 팀이 통합 운영하며,
+        퍼널 단계별 KPI를 매일 추적합니다.
+      </p>
+      <div class="hero-ctas">
+        <a href="#cta" class="btn btn-primary">무료 광고 진단 신청 →</a>
+        <a href="#cases" class="btn btn-ghost">케이스 보기</a>
+      </div>
+      <!-- 신뢰 보조 — 거래 브랜드 -->
+      <div class="hero-trust">
+        <span>TRUSTED BY 200+</span>
+        <div class="logos">
+          <span>SAMSUNG</span>
+          <span>MUSINSA</span>
+          <span>KURLY</span>
+          <span>YANOLJA</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우측 ROAS 차트 mockup -->
+    <div class="hero-chart reveal visible show active aos-animate is-visible in-view in">
+      <div class="chart-head">
+        <div class="chart-title">ROAS · 12개월 추이</div>
+        <div class="chart-tabs">
+          <span>1M</span><span>3M</span><span class="on">12M</span><span>ALL</span>
+        </div>
+      </div>
+      <div class="chart-metric">
+        <div class="value mono">540<span style="font-size: 0.5em; color: var(--mint);">%</span></div>
+        <div class="delta">▲ +260% YoY</div>
+      </div>
+      <!-- SVG 라인 차트 -->
+      <svg class="chart-svg in" viewBox="0 0 600 240" preserveAspectRatio="none" id="heroChart">
+        <defs>
+          <linearGradient id="mintFade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#34d5b0" stop-opacity="0.35"></stop>
+            <stop offset="100%" stop-color="#34d5b0" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        <!-- 가로 그리드 -->
+        <line class="grid-line" x1="0" y1="40" x2="600" y2="40"></line>
+        <line class="grid-line" x1="0" y1="100" x2="600" y2="100"></line>
+        <line class="grid-line" x1="0" y1="160" x2="600" y2="160"></line>
+        <line class="grid-line" x1="0" y1="220" x2="600" y2="220"></line>
+        <!-- 영역 채우기 -->
+        <path class="area-fill" d="M 0 200 L 50 195 L 100 180 L 150 170 L 200 155 L 250 150 L 300 130 L 350 110 L 400 95 L 450 75 L 500 60 L 550 50 L 600 40 L 600 240 L 0 240 Z"></path>
+        <!-- 라인 -->
+        <path class="line-stroke" d="M 0 200 L 50 195 L 100 180 L 150 170 L 200 155 L 250 150 L 300 130 L 350 110 L 400 95 L 450 75 L 500 60 L 550 50 L 600 40"></path>
+        <!-- 데이터 포인트 -->
+        <circle class="dot" cx="100" cy="180" r="3"></circle>
+        <circle class="dot" cx="200" cy="155" r="3"></circle>
+        <circle class="dot" cx="300" cy="130" r="3"></circle>
+        <circle class="dot" cx="400" cy="95" r="3"></circle>
+        <circle class="dot" cx="500" cy="60" r="3"></circle>
+        <circle class="dot peak" cx="600" cy="40"></circle>
+        <!-- x축 라벨 -->
+        <text class="chart-xlabel" x="0" y="238">JAN</text>
+        <text class="chart-xlabel" x="200" y="238">MAY</text>
+        <text class="chart-xlabel" x="400" y="238">SEP</text>
+        <text class="chart-xlabel" x="558" y="238">DEC</text>
+      </svg>
+      <!-- 하단 mini KPI -->
+      <div class="chart-strip">
+        <div class="item">
+          <div class="label">SPEND</div>
+          <div class="num mono up">₩ 8.2B</div>
+        </div>
+        <div class="item">
+          <div class="label">CPA</div>
+          <div class="num mono down">−42%</div>
+        </div>
+        <div class="item">
+          <div class="label">CONV</div>
+          <div class="num mono up">186K</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 2. 핵심 성과 (4 main + 8 secondary)
+============================================================== -->
+<section id="performance">
+  <div class="container">
+    <div class="sec-head reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">CORE PERFORMANCE</span>
+      <h2>숫자가 곧 <span class="accent">신뢰</span>입니다.</h2>
+      <p class="subcopy">
+        지난 36개월간 누적 광고비 287억 원, 1,200건 이상의 캠페인에서 만들어진 실제 평균 데이터입니다.
+        프리젠테이션용 베스트케이스가 아닌 전체 평균으로 공개합니다.
+      </p>
+      <p class="body-line">
+        매체별 인증 등급과 평균 운영 규모는 매 분기 업데이트됩니다.
+      </p>
+      <a href="#cta" class="micro-cta">동일 기준으로 우리 계정 진단받기 </a>
+    </div>
+
+    <!-- 4개 메인 -->
+    <div class="stats-main reveal-stagger">
+      <div class="stat-card">
+        <div class="lab">CUMULATIVE SPEND</div>
+        <div class="num mono"><span data-count="287" data-prefix="₩ ">0</span><span class="unit">억+</span></div>
+        <div class="desc">누적 집행 광고비 — 36개월 기준</div>
+      </div>
+      <div class="stat-card">
+        <div class="lab">AVG · ROAS</div>
+        <div class="num mono"><span data-count="540">0</span><span class="unit">%</span></div>
+        <div class="desc">전체 캠페인 평균 광고 수익률</div>
+      </div>
+      <div class="stat-card">
+        <div class="lab">REVENUE GENERATED</div>
+        <div class="num mono"><span data-count="1547">0</span><span class="unit">억+</span></div>
+        <div class="desc">광고로 발생한 신규 매출 기여</div>
+      </div>
+      <div class="stat-card">
+        <div class="lab">CPA REDUCTION</div>
+        <div class="num mono">−<span data-count="42">0</span><span class="unit">%</span></div>
+        <div class="desc">계정 인수 후 평균 6개월 내 절감률</div>
+      </div>
+    </div>
+
+    <!-- 8개 매체별 보조 -->
+    <div class="stats-sub-title">BY CHANNEL · 매체별 평균 ROAS</div>
+    <div class="stats-sub reveal-stagger">
+      <div class="cell"><div class="ch">GOOGLE ADS</div>     <div class="v mono">680%</div><div class="l">검색·쇼핑·디스플레이</div></div>
+      <div class="cell"><div class="ch">META</div>           <div class="v mono">420%</div><div class="l">FB·IG·DPA·CAPI</div></div>
+      <div class="cell"><div class="ch">NAVER</div>          <div class="v mono">920%</div><div class="l">SA·쇼핑·브랜드검색</div></div>
+      <div class="cell"><div class="ch">KAKAO MOMENT</div>   <div class="v mono">380%</div><div class="l">디스플레이·메시지</div></div>
+      <div class="cell"><div class="ch">TIKTOK</div>         <div class="v mono">310%</div><div class="l">CBO·VV·Spark Ads</div></div>
+      <div class="cell"><div class="ch">YOUTUBE</div>        <div class="v mono">240%</div><div class="l">TrueView·Demand Gen</div></div>
+      <div class="cell"><div class="ch">DAANGN</div>         <div class="v mono">450%</div><div class="l">로컬·동네 타겟팅</div></div>
+      <div class="cell"><div class="ch">ADMOB / DSP</div>    <div class="v mono">290%</div><div class="l">앱 인스톨·프로그래매틱</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 3. 풀퍼널 접근법
+============================================================== -->
+<section id="funnel">
+  <div class="container">
+    <div class="sec-head reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">FULL-FUNNEL APPROACH</span>
+      <h2>전환만 보지 않습니다.<br><span class="accent">퍼널 전체</span>로 이깁니다.</h2>
+      <p class="subcopy">
+        하단 퍼널만 두드리면 단기 ROAS는 좋아져도 신규 유입이 마릅니다.
+        인지 → 고려 → 전환 → 리텐션을 동시에 설계해, 광고비를 끄는 순간에도 매출이 흐르게 만듭니다.
+      </p>
+      <p class="body-line">
+        각 단계별 KPI와 평균 성과는 [에이전시명] 자체 1,200건 캠페인 평균치 기준입니다.
+      </p>
+      <a href="#cases" class="micro-cta">단계별 사례 보기 </a>
+    </div>
+
+    <div class="funnel-grid reveal-stagger">
+      <!-- 1. 인지 -->
+      <div class="funnel-card" data-stage="1">
+        <div class="funnel-step mono">STAGE 01</div>
+        <h4 class="funnel-name">인지 · Awareness</h4>
+        <div class="funnel-block">
+          <div class="h">매체</div>
+          <div class="tags">
+            <span class="tag">YouTube</span>
+            <span class="tag">Display</span>
+            <span class="tag">TikTok TopView</span>
+          </div>
+        </div>
+        <div class="funnel-block">
+          <div class="h">핵심 KPI</div>
+          <div class="tags">
+            <span class="tag">Reach</span>
+            <span class="tag">CPM</span>
+            <span class="tag">VTR</span>
+          </div>
+        </div>
+        <div class="funnel-perf">
+          <div class="label">평균 도달 향상</div>
+          <div class="value mono">+320%</div>
+        </div>
+      </div>
+
+      <!-- 2. 고려 -->
+      <div class="funnel-card" data-stage="2">
+        <div class="funnel-step mono">STAGE 02</div>
+        <h4 class="funnel-name">고려 · Consideration</h4>
+        <div class="funnel-block">
+          <div class="h">매체</div>
+          <div class="tags">
+            <span class="tag">Naver SA</span>
+            <span class="tag">Brand Search</span>
+            <span class="tag">Meta Engage</span>
+          </div>
+        </div>
+        <div class="funnel-block">
+          <div class="h">핵심 KPI</div>
+          <div class="tags">
+            <span class="tag">CTR</span>
+            <span class="tag">방문 체류</span>
+            <span class="tag">조회 완료율</span>
+          </div>
+        </div>
+        <div class="funnel-perf">
+          <div class="label">평균 CTR</div>
+          <div class="value mono">4.2%</div>
+        </div>
+      </div>
+
+      <!-- 3. 전환 -->
+      <div class="funnel-card" data-stage="3">
+        <div class="funnel-step mono">STAGE 03</div>
+        <h4 class="funnel-name">전환 · Conversion</h4>
+        <div class="funnel-block">
+          <div class="h">매체</div>
+          <div class="tags">
+            <span class="tag">검색광고</span>
+            <span class="tag">쇼핑광고</span>
+            <span class="tag">Meta DPA</span>
+          </div>
+        </div>
+        <div class="funnel-block">
+          <div class="h">핵심 KPI</div>
+          <div class="tags">
+            <span class="tag">ROAS</span>
+            <span class="tag">CPA</span>
+            <span class="tag">전환율</span>
+          </div>
+        </div>
+        <div class="funnel-perf">
+          <div class="label">평균 ROAS</div>
+          <div class="value mono">540%</div>
+        </div>
+      </div>
+
+      <!-- 4. 리텐션 -->
+      <div class="funnel-card" data-stage="4">
+        <div class="funnel-step mono">STAGE 04</div>
+        <h4 class="funnel-name">리텐션 · Retention</h4>
+        <div class="funnel-block">
+          <div class="h">매체</div>
+          <div class="tags">
+            <span class="tag">CRM</span>
+            <span class="tag">RT</span>
+            <span class="tag">App Push</span>
+          </div>
+        </div>
+        <div class="funnel-block">
+          <div class="h">핵심 KPI</div>
+          <div class="tags">
+            <span class="tag">LTV</span>
+            <span class="tag">재구매율</span>
+            <span class="tag">잔존율</span>
+          </div>
+        </div>
+        <div class="funnel-perf">
+          <div class="label">LTV 향상</div>
+          <div class="value mono">+42%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 4. 운영 매체 8개
+============================================================== -->
+<section id="media">
+  <div class="container">
+    <div class="sec-head reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">MEDIA PARTNERS</span>
+      <h2>한 팀이 <span class="accent">8개 매체</span>를<br>통합 운영합니다.</h2>
+      <p class="subcopy">
+        매체별로 외주를 쪼개면 데이터가 흩어집니다. [에이전시명]은 한 팀이 8개 매체를 동시에 보고,
+        한 대시보드에서 매체 간 예산을 실시간으로 옮깁니다.
+      </p>
+      <p class="body-line">
+        모든 매체에서 공식 인증 파트너 등급을 보유하고 있으며, 인증 갱신 내역은 분기 단위로 공개합니다.
+      </p>
+      <a href="#process" class="micro-cta">매체 진단 프로세스 </a>
+    </div>
+
+    <div class="media-grid reveal-stagger">
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(66, 133, 244);">G</div>
+          <span class="media-cert">PREMIER</span>
+        </div>
+        <div class="media-name">Google Ads</div>
+        <div class="media-en mono">SEARCH · DISPLAY · PMAX</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 1,820,000,000
+        </div>
+      </div>
+
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(8, 102, 255);">M</div>
+          <span class="media-cert">BIZ PARTNER</span>
+        </div>
+        <div class="media-name">Meta</div>
+        <div class="media-en mono">FB · IG · DPA · CAPI</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 2,240,000,000
+        </div>
+      </div>
+
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(3, 199, 90);">N</div>
+          <span class="media-cert">1ST GRADE</span>
+        </div>
+        <div class="media-name">네이버</div>
+        <div class="media-en mono">SA · 쇼핑 · 브랜드검색</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 1,460,000,000
+        </div>
+      </div>
+
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(254, 229, 0); background: rgb(60, 30, 30);">K</div>
+          <span class="media-cert">OFFICIAL</span>
+        </div>
+        <div class="media-name">카카오모먼트</div>
+        <div class="media-en mono">디스플레이 · 메시지 · 동영상</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 940,000,000
+        </div>
+      </div>
+
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(255, 0, 80);">T</div>
+          <span class="media-cert">MKT PARTNER</span>
+        </div>
+        <div class="media-name">TikTok</div>
+        <div class="media-en mono">CBO · VV · Spark Ads</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 620,000,000
+        </div>
+      </div>
+
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(255, 0, 0);">Y</div>
+          <span class="media-cert">CERTIFIED</span>
+        </div>
+        <div class="media-name">YouTube</div>
+        <div class="media-en mono">TRUEVIEW · DEMAND GEN</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 1,120,000,000
+        </div>
+      </div>
+
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(255, 111, 15);">당</div>
+          <span class="media-cert">PARTNER</span>
+        </div>
+        <div class="media-name">당근</div>
+        <div class="media-en mono">동네 · 비즈프로필 · 로컬</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 320,000,000
+        </div>
+      </div>
+
+      <div class="media-card">
+        <div class="media-head">
+          <div class="media-logo" style="color: rgb(52, 213, 176);">A</div>
+          <span class="media-cert">CERTIFIED</span>
+        </div>
+        <div class="media-name">AdMob / DSP</div>
+        <div class="media-en mono">앱 인스톨 · 프로그래매틱</div>
+        <div class="media-spend mono">
+          <small>YEAR SPEND</small>
+          ₩ 480,000,000
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 5. 운영 프로세스 5단계
+============================================================== -->
+<section id="process">
+  <div class="container">
+    <div class="sec-head reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">OPERATION PROCESS</span>
+      <h2>계약부터 첫 리포트까지<br><span class="accent">14일</span>이면 충분합니다.</h2>
+      <p class="subcopy">
+        모든 단계마다 산출물을 문서로 남깁니다. 담당자가 바뀌어도, 대행사가 바뀌어도
+        다음 사람이 그대로 이어받을 수 있도록 운영합니다.
+      </p>
+      <p class="body-line">
+        진단 보고서·계정 셋업 문서·크리에이티브 가이드·운영 SOP·주간 리포트 — 모두 NDA 기반 클라이언트 자산입니다.
+      </p>
+      <a href="#cta" class="micro-cta">14일 온보딩 일정 받기 </a>
+    </div>
+
+    <div class="process-list reveal-stagger">
+      <div class="process-step">
+        <div class="num mono">01</div>
+        <div class="body">
+          <h4>매체 진단 (Media Audit)</h4>
+          <p>현재 운영 중인 모든 매체 계정을 인수받아 캠페인 구조·타겟·키워드·크리에이티브·전환 추적까지 24개 항목으로 점검합니다.</p>
+          <div class="deliver">
+            <span>32page 진단 리포트</span>
+            <span>개선 우선순위 매트릭스</span>
+            <span>예상 절감액 시뮬레이션</span>
+          </div>
+        </div>
+        <div class="timeline mono">
+          <strong>D+1 ~ D+3</strong>
+          영업일 3일
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="num mono">02</div>
+        <div class="body">
+          <h4>계정 셋업 (Account Setup)</h4>
+          <p>전환 이벤트, GA4 / Meta Pixel / CAPI / Naver Premium Log 연동, 광고 계정 구조 재설계, UTM 규칙 통일까지 세팅을 정비합니다.</p>
+          <div class="deliver">
+            <span>전환 추적 매핑표</span>
+            <span>UTM 네이밍 SOP</span>
+            <span>계정 구조 다이어그램</span>
+          </div>
+        </div>
+        <div class="timeline mono">
+          <strong>D+4 ~ D+7</strong>
+          영업일 4일
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="num mono">03</div>
+        <div class="body">
+          <h4>크리에이티브 (Creative Production)</h4>
+          <p>매체·퍼널 단계별 소재를 기획-제작-검수까지 인하우스에서 처리합니다. 1차 론칭 시 이미지 32컷·영상 8편·카피 80개 단위로 시작합니다.</p>
+          <div class="deliver">
+            <span>크리에이티브 브리프</span>
+            <span>A/B 테스트 가설안</span>
+            <span>1차 소재 일괄 납품</span>
+          </div>
+        </div>
+        <div class="timeline mono">
+          <strong>D+5 ~ D+10</strong>
+          영업일 6일
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="num mono">04</div>
+        <div class="body">
+          <h4>입찰·예산 운영 (Bidding &amp; Pacing)</h4>
+          <p>매일 09:00·14:00·18:00 3회 매체 전환 데이터를 점검하며, 매체 간 예산을 시간 단위로 이동합니다. 주간 단위가 아닌 일 단위 운영입니다.</p>
+          <div class="deliver">
+            <span>일일 입찰 로그</span>
+            <span>예산 이동 히스토리</span>
+            <span>이상치 알림 자동화</span>
+          </div>
+        </div>
+        <div class="timeline mono">
+          <strong>D+11 ~ 상시</strong>
+          매일 운영
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="num mono">05</div>
+        <div class="body">
+          <h4>리포팅 (Reporting &amp; Insights)</h4>
+          <p>주간·월간·실시간 3중 리포트로 결과만 보고하지 않고, "이번 주 무엇을 바꿨고, 다음 주 무엇을 할지"를 함께 전달합니다.</p>
+          <div class="deliver">
+            <span>주간 인사이트 리포트</span>
+            <span>월간 전략 회의록</span>
+            <span>실시간 대시보드 액세스</span>
+          </div>
+        </div>
+        <div class="timeline mono">
+          <strong>D+14 ~ 상시</strong>
+          매주 회신
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 6. 케이스 스터디 4건
+============================================================== -->
+<section id="cases">
+  <div class="container">
+    <div class="sec-head reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">CASE STUDIES</span>
+      <h2>매출이 증명한 <span class="accent">4가지 사례</span></h2>
+      <p class="subcopy">
+        업종·예산·KPI가 모두 다른 4건. 같은 ROAS 기준으로 측정해도 상황별로 전혀 다른 답이 필요합니다.
+        사례별 광고주 동의 후 익명·블라인드 처리해 게재합니다.
+      </p>
+      <p class="body-line">
+        모든 수치는 GA4 + 매체 어드민 + 자체 BI 도구 3개 채널 교차 검증치 기준입니다.
+      </p>
+      <a href="#cta" class="micro-cta">전체 포트폴리오 받기 </a>
+    </div>
+
+    <div class="case-grid reveal-stagger">
+      <!-- Case 1 -->
+      <article class="case-card">
+        <div class="case-head">
+          <span class="case-industry">E-COMMERCE · FASHION</span>
+          <span class="case-period mono">6개월 · 2025</span>
+        </div>
+        <h3 class="case-title">패션 D2C C사 — 광고비 5천 → 8천만 원, ROAS 380% → 720%</h3>
+        <div class="case-metrics">
+          <div class="case-metric">
+            <div class="label">SPEND</div>
+            <div class="value mono">8,000만</div>
+            <div class="change">+60%</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">ROAS</div>
+            <div class="value mono">720%</div>
+            <div class="change">+89%p</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">CPA</div>
+            <div class="value mono">18,500원</div>
+            <div class="change down">−42%</div>
+          </div>
+        </div>
+        <p class="case-insight">
+          <strong>핵심 인사이트:</strong> Meta DPA 카탈로그 세분화(SKU 단위 → 컬러·사이즈 단위) + 네이버 쇼핑 검색 전환 광고 비중 확대로 신규 유입 비용을 낮추면서 재구매까지 끌어올렸습니다.
+        </p>
+      </article>
+
+      <!-- Case 2 -->
+      <article class="case-card">
+        <div class="case-head">
+          <span class="case-industry">D2C · BEAUTY</span>
+          <span class="case-period mono">9개월 · 2024–2025</span>
+        </div>
+        <h3 class="case-title">뷰티 신생 브랜드 N사 — 0원 시작, 9개월 만에 월 매출 4.8억</h3>
+        <div class="case-metrics">
+          <div class="case-metric">
+            <div class="label">SPEND</div>
+            <div class="value mono">3,000만/월</div>
+            <div class="change">신규</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">ROAS</div>
+            <div class="value mono">610%</div>
+            <div class="change">+400%p</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">신규고객</div>
+            <div class="value mono">+280%</div>
+            <div class="change">월 평균</div>
+          </div>
+        </div>
+        <p class="case-insight">
+          <strong>핵심 인사이트:</strong> 인지도 0의 신생 브랜드는 전환광고만 돌리면 학습이 안 됩니다. 첫 3개월은 영상 인지 + 인플루언서 콘텐츠로 모수를 만들고, 그 뒤 RT로 회수했습니다.
+        </p>
+      </article>
+
+      <!-- Case 3 -->
+      <article class="case-card">
+        <div class="case-head">
+          <span class="case-industry">APP · B2C SERVICE</span>
+          <span class="case-period mono">4개월 · 2025</span>
+        </div>
+        <h3 class="case-title">앱서비스 K사 — 인스톨 단가 8,500원 → 3,200원, 일 신규 가입 12배</h3>
+        <div class="case-metrics">
+          <div class="case-metric">
+            <div class="label">CPI</div>
+            <div class="value mono">3,200원</div>
+            <div class="change down">−62%</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">D1 잔존</div>
+            <div class="value mono">38%</div>
+            <div class="change">+14%p</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">신규가입</div>
+            <div class="value mono">×12</div>
+            <div class="change">일 기준</div>
+          </div>
+        </div>
+        <p class="case-insight">
+          <strong>핵심 인사이트:</strong> CPI만 낮추면 잔존이 무너집니다. AdMob·TikTok 인스톨 광고는 quality 이벤트(가입+첫 활동)로 입찰 기준을 바꿔 단가는 낮추되 잔존은 끌어올렸습니다.
+        </p>
+      </article>
+
+      <!-- Case 4 -->
+      <article class="case-card">
+        <div class="case-head">
+          <span class="case-industry">F&amp;B · OFFLINE</span>
+          <span class="case-period mono">5개월 · 2025</span>
+        </div>
+        <h3 class="case-title">식음료 M사 — 매장 방문 +180%, 오프라인 매출 +95%</h3>
+        <div class="case-metrics">
+          <div class="case-metric">
+            <div class="label">매장방문</div>
+            <div class="value mono">+180%</div>
+            <div class="change">YoY</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">매출</div>
+            <div class="value mono">+95%</div>
+            <div class="change">YoY</div>
+          </div>
+          <div class="case-metric">
+            <div class="label">광고비</div>
+            <div class="value mono">2,000만/월</div>
+            <div class="change">유지</div>
+          </div>
+        </div>
+        <p class="case-insight">
+          <strong>핵심 인사이트:</strong> 오프라인은 ROAS 측정이 어렵습니다. 당근 동네 광고 + 네이버 플레이스 + 매장 쿠폰 코드를 묶어 "광고-방문-결제"를 추적할 수 있는 구조부터 만들었습니다.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 7. 리포팅 샘플 3종
+============================================================== -->
+<section id="reports">
+  <div class="container">
+    <div class="sec-head reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">REPORTING SAMPLES</span>
+      <h2>리포트는 결과가 아니라 <span class="accent">다음 행동</span>입니다.</h2>
+      <p class="subcopy">
+        주간·월간·실시간 3중 구조로 운영합니다. "지난주 ROAS는 540%였습니다"가 아니라
+        "이번 주에 무엇을 바꿔야 다음 주 ROAS가 600%가 되는가"를 매번 적습니다.
+      </p>
+      <p class="body-line">
+        실시간 대시보드는 Looker Studio + 자체 BI 시트를 함께 제공하며, 광고주 사내 시스템 임베딩도 가능합니다.
+      </p>
+      <a href="#cta" class="micro-cta">샘플 리포트 PDF 받기 </a>
+    </div>
+
+    <div class="report-grid reveal-stagger">
+      <!-- Weekly -->
+      <div class="report-card">
+        <div class="report-cycle">WEEKLY</div>
+        <h4 class="report-name">주간 리포트</h4>
+        <p class="report-desc">매주 월요일 오전 10시 발송. 한 주의 성과와 다음 주 운영 방향을 정리합니다.</p>
+        <ul class="report-items">
+          <li>주간 KPI 요약 (ROAS·CPA·매출)</li>
+          <li>매체별 광고비 / 전환 / ROAS</li>
+          <li>퍼널 단계별 변화 추이</li>
+          <li>크리에이티브 TOP 5 / WORST 5</li>
+          <li>키워드 검색량·전환 변화</li>
+          <li>주요 의사결정 로그</li>
+          <li>다음 주 실행 액션 3가지</li>
+          <li>리스크 / 기회 요인 알림</li>
+        </ul>
+        <div class="report-foot mono">
+          <span>발송</span><span class="v">매주 월 10:00</span>
+        </div>
+      </div>
+
+      <!-- Monthly (featured) -->
+      <div class="report-card featured">
+        <div class="report-cycle">MONTHLY</div>
+        <h4 class="report-name">월간 전략 리포트</h4>
+        <p class="report-desc">월 단위 성과 분석 + 다음 달 광고 전략 수립을 함께 진행하는 회의용 리포트입니다.</p>
+        <ul class="report-items">
+          <li>월간 종합 성과 + YoY / MoM 비교</li>
+          <li>매체 / 캠페인별 ROAS 분해</li>
+          <li>고객 코호트 분석 (신규·재구매)</li>
+          <li>경쟁사 광고 트렌드 모니터링</li>
+          <li>크리에이티브 학습 데이터</li>
+          <li>다음 달 예산 제안 및 분배</li>
+          <li>퍼널 보틀넥 진단</li>
+          <li>분기 KPI 진척률 트래킹</li>
+          <li>임원 보고용 요약 1page</li>
+        </ul>
+        <div class="report-foot mono">
+          <span>발송</span><span class="v">매월 1영업일</span>
+        </div>
+      </div>
+
+      <!-- Realtime -->
+      <div class="report-card">
+        <div class="report-cycle">REALTIME</div>
+        <h4 class="report-name">실시간 대시보드</h4>
+        <p class="report-desc">언제든 접속 가능한 라이브 대시보드. 광고주 임원·실무자 누구나 동일 화면을 봅니다.</p>
+        <ul class="report-items">
+          <li>실시간 광고비 소진 모니터링</li>
+          <li>매체별 ROAS 라이브 변동</li>
+          <li>전환 이벤트 실시간 발화</li>
+          <li>크리에이티브별 CTR 변동</li>
+          <li>예산 페이싱 (이상 진행 알림)</li>
+          <li>매체 간 예산 이동 로그</li>
+          <li>이상치 / 경고 자동 알림</li>
+          <li>임베딩 / 사내 SSO 지원</li>
+        </ul>
+        <div class="report-foot mono">
+          <span>접근</span><span class="v">24/7 LIVE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 8. 클라이언트 후기 4건
+============================================================== -->
+<section id="reviews">
+  <div class="container">
+    <div class="sec-head reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">CLIENT REVIEWS</span>
+      <h2>가장 정확한 평가는<br><span class="accent">광고주의 말</span>입니다.</h2>
+      <p class="subcopy">
+        퍼포먼스 마케팅에서 광고주의 만족은 "ROAS가 올랐다"가 아닙니다.
+        "투명하다", "다음을 안다", "계속 함께하고 싶다" — 이 세 가지가 지표입니다.
+      </p>
+      <p class="body-line">
+        후기는 모두 광고주 동의 후 게재했으며, 원문 첨부 가능합니다 (NDA 제외 항목).
+      </p>
+      <a href="#cta" class="micro-cta">레퍼런스 콜 신청 </a>
+    </div>
+
+    <div class="review-grid reveal-stagger">
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">
+          이전 대행사는 "ROAS 좋아졌어요"가 끝이었는데, 여기는 "왜 좋아졌고, 다음 주에 무엇을 더 바꿀지"까지 매주 적어주세요. 의사결정 회의에 보고서 그대로 올려도 되는 수준입니다. 광고비를 1.6배 늘려도 ROAS가 떨어지지 않더라고요.
+        </p>
+        <div class="review-author">
+          <div class="review-avatar">L</div>
+          <div class="review-meta">
+            <strong>이OO 마케팅 본부장</strong>
+            <span class="role">패션 이커머스 C사 · 50인+ 규모</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">
+          신생 D2C라 처음에는 광고비도 적고 데이터도 없어서 어디서도 잘 안 받아주셨는데, 이 팀은 "그래서 이렇게 시작하면 된다"부터 같이 짜주셨어요. 9개월 만에 월 매출 4.8억까지 왔고, 무엇보다 우리 팀이 광고를 이해하게 됐다는 게 더 큰 자산입니다.
+        </p>
+        <div class="review-author">
+          <div class="review-avatar">P</div>
+          <div class="review-meta">
+            <strong>박OO 대표</strong>
+            <span class="role">뷰티 D2C 브랜드 N사 · 시드 단계</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">
+          앱 마케팅은 CPI만 낮춰서는 잔존이 다 무너지는데, 이쪽은 quality 이벤트 기준으로 입찰을 다시 짜주셨어요. CPI는 60% 떨어지고 D1 잔존은 14%p 올랐습니다. 인하우스 그로스팀과의 협업 방식도 깔끔합니다 — 데이터 의사결정 회의에 같이 들어옵니다.
+        </p>
+        <div class="review-author">
+          <div class="review-avatar">K</div>
+          <div class="review-meta">
+            <strong>김OO 그로스 리드</strong>
+            <span class="role">앱 서비스 K사 · 시리즈 B</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-card">
+        <div class="review-stars">★★★★★</div>
+        <p class="review-text">
+          오프라인 매장이라 ROAS 측정이 사실상 불가능하다고 생각했는데, "방문-쿠폰-결제" 트래킹 구조부터 만들어주셨어요. 광고비는 그대로인데 매출이 거의 두 배 됐습니다. 무엇보다 영업일 1일 내 회신은 정말 지켜집니다 — 이게 의외로 큰 차이예요.
+        </p>
+        <div class="review-author">
+          <div class="review-avatar">M</div>
+          <div class="review-meta">
+            <strong>문OO 운영팀장</strong>
+            <span class="role">F&amp;B 프랜차이즈 M사 · 35개 매장</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 9. FAQ 7문항
+============================================================== -->
+<section id="faq">
+  <div class="container">
+    <div class="sec-head center reveal visible show active aos-animate is-visible in-view">
+      <span class="eyebrow">FAQ</span>
+      <h2>계약 전 가장 많이 묻는<br><span class="accent">7가지</span></h2>
+      <p class="subcopy">
+        수수료·매체비·계약 기간·보고 주기 등 결정에 직접 영향 주는 항목만 모았습니다.
+        그 외 항목은 무료 진단 미팅에서 모두 답변드립니다.
+      </p>
+      <p class="body-line">
+        본 FAQ는 표준 조건 기준이며, 실제 계약은 광고주 상황에 맞춰 조정됩니다.
+      </p>
+      <a href="#cta" class="micro-cta">미팅 일정 잡기 </a>
+    </div>
+
+    <div class="faq-list reveal visible show active aos-animate is-visible in-view">
+      <div class="faq-item">
+        <button class="faq-q">
+          <span class="q-num mono">Q1</span>
+          <span class="faq-q-text">대행 수수료는 어떻게 책정되나요?</span>
+          <span class="faq-toggle">+</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          기본은 광고비 대비 정률 수수료(보통 12~18%)이며, 광고비 규모와 운영 매체 수에 따라 조정됩니다.
+          월 광고비 5억 원 이상 광고주는 정액제(Retainer) 또는 성과연동 하이브리드(Base + ROAS bonus)도 협의 가능합니다.
+          모든 수수료 구조는 계약서에 명시하며, 숨은 부가 비용은 없습니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span class="q-num mono">Q2</span>
+          <span class="faq-q-text">매체비는 별도인가요?</span>
+          <span class="faq-toggle">+</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          네, 매체비(실제 광고 집행 비용)와 대행 수수료는 별도입니다.
+          매체비는 광고주가 직접 매체사에 결제하거나, 저희가 대납 후 정산 청구하는 방식 중 선택 가능합니다.
+          어느 방식이든 매체사 세금계산서 원본을 그대로 전달드립니다 — 매체비에 마진을 붙이는 일은 없습니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span class="q-num mono">Q3</span>
+          <span class="faq-q-text">최소 광고비 기준이 있나요?</span>
+          <span class="faq-toggle">+</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          정식 운영은 월 광고비 1,000만 원부터 권장드립니다. 그 이하 규모에서는 매체별 학습이 충분히 일어나지 않아
+          데이터 드리븐 운영의 효과가 제한됩니다. 다만 시드~프리A 단계 신생 브랜드는 별도 스타트업 트랙(월 300만 원~)을 운영하니 별도 문의 부탁드립니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span class="q-num mono">Q4</span>
+          <span class="faq-q-text">계약 기간은 어떻게 되나요?</span>
+          <span class="faq-toggle">+</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          최소 3개월(분기) 단위 계약을 권장드립니다. 광고 매체별 학습이 안정화되는 데 보통 6~8주가 필요하기 때문입니다.
+          이후로는 월 단위 자동 갱신이며, 30일 전 통보로 자유롭게 종료 가능합니다.
+          단기 캠페인성 운영(런칭·시즈널)은 별도 단기 계약 가능합니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span class="q-num mono">Q5</span>
+          <span class="faq-q-text">중간 해지나 환불이 가능한가요?</span>
+          <span class="faq-toggle">+</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          최소 계약 기간(3개월) 이전 해지의 경우, 잔여 기간 수수료의 50%만 정산하시면 됩니다.
+          남은 매체비 잔액은 100% 환불됩니다. 단순 변심이 아닌 합의 종료라면 위약금 없이 종료 가능합니다.
+          모든 계정·자료는 광고주 소유이므로, 종료 시 24시간 내 권한 이양과 자료 인계가 완료됩니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span class="q-num mono">Q6</span>
+          <span class="faq-q-text">사내 인하우스 마케팅팀과 협업할 수 있나요?</span>
+          <span class="faq-toggle">+</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          오히려 인하우스팀이 있을 때 더 효과적입니다. 저희는 매체 운영·크리에이티브 제작·일 단위 입찰 관리를 맡고,
+          인하우스팀은 브랜드·고객 인사이트·LTV 전략을 맡는 역할 분담을 추천드립니다.
+          주간 회의에는 인하우스 그로스팀이 함께 참여하며, 슬랙·노션·아사나 등 광고주 협업 도구에 직접 입주해 일합니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span class="q-num mono">Q7</span>
+          <span class="faq-q-text">보고 주기는 어떻게 되나요?</span>
+          <span class="faq-toggle">+</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          기본은 주간(월요일)·월간(매월 1영업일)·실시간(라이브 대시보드) 3중 구조입니다.
+          광고주 요청 시 격주·격월 등으로 조정 가능하며, 임원 보고용 요약 1page도 매월 별도 제공됩니다.
+          긴급 이슈(예: 매체 정책 변동, 광고비 페이싱 이상)는 발생 1시간 이내 카카오·슬랙으로 즉시 공유됩니다.
+        </div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================
+  SECTION 10. 최종 CTA + 푸터
+============================================================== -->
+<section class="final-cta" id="cta">
+  <div class="container">
+    <span class="eyebrow">FREE AUDIT</span>
+    <h2>당신의 광고비,<br>새 주인을 만날 시간.</h2>
+    <p class="lead">
+      현재 운영 중인 광고 계정을 24개 항목으로 무료 진단해 드립니다.<br>
+      결과가 만족스럽지 않다면 — 그냥 진단 리포트만 받고 끝나도 됩니다.
+    </p>
+    <div class="final-cta-btns">
+      <a href="#" class="btn btn-dark">무료 광고 계정 진단 →</a>
+      <a href="#" class="btn btn-outline-dark">포트폴리오 다운로드</a>
+    </div>
+    <div class="final-trust">
+      <span>진단료 없음</span>
+      <span>영업일 1일 내 회신</span>
+      <span>NDA 가능</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 푸터 ===== -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand">PERFM<span class="dot">.</span></div>
+        <p>
+          데이터 드리븐 퍼포먼스 마케팅 에이전시.<br>
+          200+ 브랜드, 누적 광고비 287억 원, 1,200건의 캠페인.
+        </p>
+        <div class="footer-sns">
+          <a href="#" aria-label="LinkedIn">in</a>
+          <a href="#" aria-label="Brunch">B</a>
+          <a href="#" aria-label="Instagram">IG</a>
+          <a href="#" aria-label="YouTube">▶</a>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h6>SERVICE</h6>
+        <ul>
+          <li><a href="#performance">핵심 성과</a></li>
+          <li><a href="#funnel">풀퍼널 접근</a></li>
+          <li><a href="#media">운영 매체</a></li>
+          <li><a href="#process">프로세스</a></li>
+          <li><a href="#reports">리포팅</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h6>COMPANY</h6>
+        <ul>
+          <li><a href="#cases">케이스 스터디</a></li>
+          <li><a href="#reviews">클라이언트 후기</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#">팀 / 채용</a></li>
+          <li><a href="#">블로그</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h6>CONTACT</h6>
+        <ul>
+          <li><a href="mailto:hello@perfm.co.kr">hello@perfm.co.kr</a></li>
+          <li><a href="tel:0212345678">02-1234-5678</a></li>
+          <li><a href="#">서울 강남구 테헤란로 000</a></li>
+          <li><a href="#cta">무료 진단 신청 →</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 PERFM. ALL RIGHTS RESERVED. · 사업자등록번호 000-00-00000 · 대표 김OO</span>
+      <span>PRIVACY · TERMS · NDA TEMPLATE</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== 모바일 sticky CTA 바 ===== -->
+<div class="mobile-cta" style="transition: opacity 0.3s, transform 0.3s; opacity: 0; transform: translateY(120%); pointer-events: none;">
+  <div class="info">
+    <div class="lab">FREE AUDIT</div>
+    <div class="txt">광고 계정 무료 진단 받기</div>
+  </div>
+  <a href="#cta" class="btn btn-primary">신청 →</a>
+</div>
+
+<!-- =============================================================
+  스크립트 — 인터랙션
+============================================================== -->
+<script>
+  /* ========== 1. 네비 스크롤 시 음영 강조 ========== */
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  /* ========== 2. 진입 애니메이션 (IntersectionObserver) ========== */
+  // .reveal / .reveal-stagger 클래스가 viewport에 들어오면 .in 추가
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target); // 1회성 — 성능 최적화
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => io.observe(el));
+
+  /* ========== 3. 히어로 ROAS 차트 진입 시 그리기 ========== */
+  const heroChart = document.getElementById('heroChart');
+  if (heroChart) {
+    const chartIO = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // CSS transition 트리거
+          entry.target.classList.add('in');
+          chartIO.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    chartIO.observe(heroChart);
+  }
+
+  /* ========== 4. 숫자 카운트업 ==========
+     data-count="목표값" 요소를 0부터 부드럽게 증가
+     ─ 한국어 천단위 콤마(,) 포맷 적용
+     ─ data-prefix가 있으면 앞에 붙임 (예: "₩ ")
+  ============================================== */
+  const counters = document.querySelectorAll('[data-count]');
+  const counterIO = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const target = parseInt(el.dataset.count, 10);
+      const prefix = el.dataset.prefix || '';
+      const duration = 1800;
+      const start = performance.now();
+
+      const tick = (now) => {
+        const t = Math.min((now - start) / duration, 1);
+        // easeOutCubic
+        const eased = 1 - Math.pow(1 - t, 3);
+        const current = Math.floor(target * eased);
+        el.textContent = prefix + current.toLocaleString('ko-KR');
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      counterIO.unobserve(el);
+    });
+  }, { threshold: 0.4 });
+  counters.forEach(c => counterIO.observe(c));
+
+  /* ========== 5. FAQ 아코디언 (단일 오픈) ========== */
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const q = item.querySelector('.faq-q');
+    const a = item.querySelector('.faq-a');
+    q.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+
+      // 다른 항목 모두 닫기
+      document.querySelectorAll('.faq-item').forEach(other => {
+        other.classList.remove('open');
+        other.querySelector('.faq-a').style.maxHeight = null;
+      });
+
+      // 클릭한 항목 토글
+      if (!isOpen) {
+        item.classList.add('open');
+        a.style.maxHeight = a.scrollHeight + 'px';
+      }
+    });
+  });
+
+  /* ========== 6. 모바일 sticky CTA — 히어로 지나면 노출 ========== */
+  // 히어로를 벗어나면 표시, 최종 CTA 섹션에 진입하면 숨김 (중복 방지)
+  const mobileCta = document.querySelector('.mobile-cta');
+  const finalCta  = document.getElementById('cta');
+  const hero      = document.getElementById('hero');
+
+  function updateMobileCta() {
+    if (window.innerWidth > 768) return;
+    const heroBottom  = hero.getBoundingClientRect().bottom;
+    const finalTop    = finalCta.getBoundingClientRect().top;
+    const winH        = window.innerHeight;
+
+    // 히어로 지나야 표시 + 최종 CTA 섹션 안에서는 숨김
+    const show = heroBottom < 0 && finalTop > winH * 0.6;
+    mobileCta.style.opacity = show ? '1' : '0';
+    mobileCta.style.transform = show ? 'translateY(0)' : 'translateY(120%)';
+    mobileCta.style.pointerEvents = show ? 'auto' : 'none';
+  }
+  // 초기 트랜지션 셋업
+  if (mobileCta) {
+    mobileCta.style.transition = 'opacity .3s, transform .3s';
+    mobileCta.style.opacity = '0';
+    mobileCta.style.transform = 'translateY(120%)';
+    window.addEventListener('scroll', updateMobileCta);
+    window.addEventListener('resize', updateMobileCta);
+    updateMobileCta();
+  }
+</script>
+
+
+
+
+<!-- ============================================================
+  보험의 기준(배진우) · 메타리치 시그널그룹 브랜딩 AI
+  이 페이지는 설계사 브랜딩 도구에서 생성되었습니다.
+  용도: 영업·홍보·고객전달·제안서 브리핑 (조직 내 사용 허용)
+  금지: 재배포·재판매·타 조직 사용
+  ============================================================ -->
+</body></html>

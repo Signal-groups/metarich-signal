@@ -1,28 +1,44 @@
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+import Sidebar from '../dashboard/components/Sidebar'
+import { DEFAULT_MENU_STATUS } from '../../lib/consultingTools'
+import { isApprovedUser } from '../../lib/roles'
 import { supabase } from '../../lib/supabase'
 
 export default function CardConsultLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const pathname = usePathname()
-  const [checking, setChecking] = useState(true)
+  const [user, setUser] = useState<any>(null)
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [menuStatus, setMenuStatus] = useState<any>({ ...DEFAULT_MENU_STATUS })
 
   useEffect(() => {
-    // 로그인 여부만 확인 — CRM 권한 불필요
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        const redirectTo = encodeURIComponent(pathname || '/card-consult')
-        router.replace(`/login?redirectTo=${redirectTo}`)
-        return
-      }
-      setChecking(false)
-    }).catch(() => {
-      const redirectTo = encodeURIComponent(pathname || '/card-consult')
-      router.replace(`/login?redirectTo=${redirectTo}`)
-    })
-  }, [pathname, router])
+    let mounted = true
+
+    supabase.auth.getUser()
+      .then(async ({ data: { user: authUser } }) => {
+        if (!mounted || !authUser) return
+
+        const { data } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .maybeSingle()
+
+        if (mounted && data && isApprovedUser(data)) {
+          setUser(data)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const closeWindow = () => {
     if (window.opener) {
@@ -32,38 +48,59 @@ export default function CardConsultLayout({ children }: { children: React.ReactN
     router.replace('/dashboard')
   }
 
-  if (checking) {
-    return (
-      <div style={{
-        minHeight: '100vh', background: '#f1f5f9',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div style={{
-          width: 28, height: 28, border: '3px solid #1A2744',
-          borderTopColor: 'transparent', borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+  const openOffice = () => {
+    router.push('/dashboard?mode=office')
+  }
+
+  const openConsulting = () => {
+    router.push('/dashboard')
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9', position: 'relative' }}>
-      {/* 창 닫기 버튼 — 우측 상단 고정 */}
+      {user && (
+        <Sidebar
+          user={user}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          mode="consulting"
+          onBack={undefined}
+          externalMenuStatus={menuStatus}
+          onMenuStatusChange={setMenuStatus}
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
+          onOpenOffice={openOffice}
+          onOpenConsulting={openConsulting}
+          onTabChange={(value: string) => {
+            if (value === 'tab:branding' || value === 'branding') router.push('/dashboard?tab=branding')
+            else router.push('/dashboard')
+          }}
+          activeTab={null}
+        />
+      )}
       <button
         onClick={closeWindow}
         style={{
-          position: 'fixed', top: 16, right: 16, zIndex: 999,
-          background: '#1A2744', color: '#fff',
-          border: 'none', borderRadius: 10,
-          padding: '8px 16px', fontSize: 13, fontWeight: 700,
-          cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          position: 'fixed',
+          top: 16,
+          right: 16,
+          zIndex: 999,
+          background: '#1A2744',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 10,
+          padding: '8px 16px',
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         }}
       >
-        홈으로 ✕
+        닫기
       </button>
-      {children}
+      <main className={user ? 'lg:ml-[300px] pb-24 lg:pb-0' : ''}>
+        {children}
+      </main>
     </div>
   )
 }

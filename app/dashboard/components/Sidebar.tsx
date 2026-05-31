@@ -29,7 +29,7 @@ import {
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
-import { canAccessCrm, normalizeRole, roleLabel, isApprovedUser, isOrganizationAdminAccount } from "../../../lib/roles"
+import { canAccessCrm, canAccessOffice, canAccessClaim, canAccessBranding, normalizeRole, roleLabel, isApprovedUser, isOrganizationAdminAccount } from "../../../lib/roles"
 
 function ToolIcon({ icon }: { icon: string }) {
   const className = "h-5 w-5"
@@ -85,12 +85,15 @@ export default function Sidebar({
   const isManager = currentRole === 'manager';
   const isAgent = currentRole === 'agent' || isManager || isLeader || isMaster;
   
-  const isAdmin = isMaster; 
+  const isAdmin = isMaster;
   const canManageStaff = isOrganizationAdminAccount(user);
   const isStaff = isAgent;
   const isApproved = isApprovedUser(user);
-  const canUseOffice = isStaff && isApproved;
+  // 유료 기능 접근 권한 (마스터는 항상 true, 그 외는 마스터가 직원관리에서 허용한 경우만)
+  const canUseOffice = canAccessOffice(user);
   const canUseCrm = canAccessCrm(user);
+  const canUseClaim = canAccessClaim(user);
+  const canUseBranding = canAccessBranding(user);
 
   const getRankDisplay = (role: string) => {
     if (!isApproved) return '게스트(승인대기)';
@@ -347,7 +350,7 @@ export default function Sidebar({
                 />
               )}
 
-              {isMaster && (
+              {canUseClaim && (
                 <NavItem
                   icon="청구"
                   label="보험금 청구 자동화"
@@ -357,13 +360,23 @@ export default function Sidebar({
                 />
               )}
 
-              {isMaster && (
+              {canUseClaim && (
                 <NavItem
                   icon="AI"
                   label="AI 자동화 도구"
                   active={false}
                   onClick={showAiAutomationStatus}
                   badge="준비중"
+                />
+              )}
+
+              {canUseBranding && (
+                <NavItem
+                  icon="🎨"
+                  label="설계사 브랜딩 AI"
+                  active={activeTab === 'branding'}
+                  onClick={() => onTabChange && onTabChange('tab:branding')}
+                  badge="베타"
                 />
               )}
 

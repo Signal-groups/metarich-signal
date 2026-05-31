@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="ko"><head><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='14' fill='%230a0a0a'/&gt;&lt;path d='M38 4 L14 36 L28 36 L24 60 L50 26 L34 26 Z' fill='%23FFEB00' stroke='%23FFEB00' stroke-width='1' stroke-linejoin='round'/&gt;&lt;/svg&gt;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>어사화 브랜드 혁신 제안서</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&amp;family=Pretendard:wght@300;400;600;700&amp;display=swap" rel="stylesheet">
+    <style>
+        /* ==========================================================
+           기본 타이포그래피 / 컬러 팔레트
+           - 어사화 브랜드 컬러: #C8A165 (Gold), #4A3E31 (Deep Brown)
+           ========================================================== */
+        body { font-family: 'Pretendard', sans-serif; background-color: #FDFBF7; color: #4A3E31; }
+        .serif { font-family: 'Noto Serif KR', serif; }
+        .fade-in { opacity: 0; transform: translateY(30px); transition: all 1s ease-out; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+        .bg-proposal { background-color: #F9F4EE; }
+        .accent-gold { color: #C8A165; }
+        .bg-gold { background-color: #C8A165; }
+        .gradient-text { background: linear-gradient(135deg, #4A3E31 0%, #C8A165 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        html { scroll-behavior: smooth; }
+        .card { backdrop-filter: blur(5px); transition: transform 0.3s ease; }
+        .card:hover { transform: translateY(-5px); }
+
+        /* ==========================================================
+           히어로 섹션 - 외부 이미지 의존성 제거
+           - .hero-bg: CSS 그라데이션으로 밤하늘 + 등불 글로우 표현
+           - .hero-scene: SVG로 한옥 마을 실루엣 직접 그리기
+           - .hero-overlay: 텍스트 가독성용 오버레이
+           - .hero-grain: 그레인 텍스처
+           ========================================================== */
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background:
+                /* 등불에서 새어나오는 따뜻한 글로우 (하단) */
+                radial-gradient(ellipse 900px 450px at 50% 88%, rgba(255, 165, 80, 0.28), transparent 65%),
+                radial-gradient(ellipse 500px 250px at 22% 80%, rgba(255, 140, 60, 0.18), transparent 60%),
+                radial-gradient(ellipse 500px 250px at 78% 80%, rgba(200, 161, 101, 0.15), transparent 60%),
+                /* 밤하늘 베이스 그라데이션 */
+                linear-gradient(180deg, 
+                    #050302 0%, 
+                    #1a0f08 25%,
+                    #2a1810 55%, 
+                    #3a2418 80%,
+                    #1a0e08 100%);
+        }
+        /* SVG 한옥 풍경 레이어 */
+        .hero-scene {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        /* 별 반짝임 애니메이션 */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.3; }
+        }
+        .hero-scene .star { animation: twinkle 4s ease-in-out infinite; }
+        .hero-scene .star:nth-child(2n) { animation-delay: 1s; }
+        .hero-scene .star:nth-child(3n) { animation-delay: 2s; }
+        .hero-scene .star:nth-child(5n) { animation-delay: 3s; }
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            background:
+                /* 텍스트 가독성용 수직 그라데이션 (강도 약화 - SVG 풍경 보존) */
+                linear-gradient(180deg,
+                    rgba(20, 15, 10, 0.55) 0%,
+                    rgba(20, 15, 10, 0.15) 35%,
+                    rgba(20, 15, 10, 0.20) 65%,
+                    rgba(10, 7, 5, 0.55) 100%),
+                /* 어사화 골드 톤 살짝 가미 (디아고널) */
+                linear-gradient(135deg,
+                    rgba(200, 161, 101, 0.18) 0%,
+                    rgba(200, 161, 101, 0.05) 40%,
+                    transparent 70%),
+                /* 비네팅: 중앙 집중 */
+                radial-gradient(ellipse 75% 60% at center,
+                    transparent 10%,
+                    rgba(0, 0, 0, 0.30) 100%);
+            pointer-events: none;
+        }
+        /* 살짝의 그레인 텍스처 - 사진의 디지털한 느낌을 줄이고 빈티지한 분위기 추가 */
+        .hero-grain {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            opacity: 0.06;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        /* 섹션 번호 표기 스타일 - 제안서 흐름을 명확히 */
+        .section-number {
+            display: inline-block;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 0.875rem;
+            letter-spacing: 0.3em;
+            color: #C8A165;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        /* 타임라인 스타일 (실행 로드맵용) */
+        .timeline-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #C8A165;
+            box-shadow: 0 0 0 4px rgba(200, 161, 101, 0.2);
+        }
+
+        /* 가격 카드 강조 효과 */
+        .package-card-featured {
+            position: relative;
+            transform: scale(1.03);
+            z-index: 2;
+        }
+        .package-card-featured::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            padding: 2px;
+            background: linear-gradient(135deg, #C8A165, #E5C690);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        /* ==========================================================
+           자산 비주얼 카드 (외부 이미지 의존성 제거)
+           - 4가지 자산을 그라데이션 + SVG 라인 일러스트로 표현
+           - 사진으로 교체할 위치를 명확히 구조화
+           ========================================================== */
+        .asset-visual {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+        /* 한국 전통 패턴 데코레이션 (모든 카드 공통) */
+        .asset-visual::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.08) 0%, transparent 30%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 25%);
+            pointer-events: none;
+        }
+        /* 1) 호텔식 침구 - 깊은 갈색 + 골드 톤 */
+        .asset-visual-bedding {
+            background: 
+                radial-gradient(ellipse at 30% 30%, rgba(255, 220, 180, 0.18), transparent 55%),
+                linear-gradient(135deg, #4A3E31 0%, #6B5340 50%, #C8A165 100%);
+        }
+        /* 2) 프리미엄 조식 - 따뜻한 크림 / 오렌지 톤 */
+        .asset-visual-brunch {
+            background: 
+                radial-gradient(ellipse at 70% 30%, rgba(255, 235, 200, 0.25), transparent 55%),
+                linear-gradient(135deg, #8B5A2B 0%, #C8884F 50%, #E5B080 100%);
+        }
+        /* 3) 야외 자쿠지 - 차분한 청록 / 네이비 톤 (한옥의 밤) */
+        .asset-visual-spa {
+            background: 
+                radial-gradient(ellipse at 50% 30%, rgba(180, 220, 240, 0.18), transparent 55%),
+                linear-gradient(135deg, #1F3A52 0%, #3D6B8C 50%, #5891B5 100%);
+        }
+        /* 4) 불멍 - 깊은 붉은 / 주황 톤 */
+        .asset-visual-bonfire {
+            background: 
+                radial-gradient(ellipse at 50% 70%, rgba(255, 180, 100, 0.45), transparent 55%),
+                linear-gradient(135deg, #2D1409 0%, #6B2912 50%, #B5481A 100%);
+        }
+        .asset-visual svg.asset-icon {
+            width: 140px;
+            height: 140px;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 4px 20px rgba(0,0,0,0.25));
+        }
+        .asset-visual-label {
+            color: white;
+            font-family: 'Noto Serif KR', serif;
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.4);
+            position: relative;
+            z-index: 2;
+        }
+        .asset-visual-sublabel {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.7rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.container{width:100%}@media (min-width: 640px){.container{max-width:640px}}@media (min-width: 768px){.container{max-width:768px}}@media (min-width: 1024px){.container{max-width:1024px}}@media (min-width: 1280px){.container{max-width:1280px}}@media (min-width: 1536px){.container{max-width:1536px}}.visible{visibility:visible}.absolute{position:absolute}.relative{position:relative}.-left-2{left:-0.5rem}.-top-4{top:-1rem}.bottom-0{bottom:0px}.bottom-12{bottom:3rem}.left-0{left:0px}.left-1\/2{left:50%}.right-0{right:0px}.right-4{right:1rem}.top-0{top:0px}.top-4{top:1rem}.z-10{z-index:10}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-10{margin-bottom:2.5rem}.mb-12{margin-bottom:3rem}.mb-16{margin-bottom:4rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mt-1{margin-top:0.25rem}.mt-12{margin-top:3rem}.mt-2{margin-top:0.5rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.h-12{height:3rem}.h-16{height:4rem}.h-4{height:1rem}.h-8{height:2rem}.h-96{height:24rem}.h-\[500px\]{height:500px}.h-full{height:100%}.h-screen{height:100vh}.w-12{width:3rem}.w-16{width:4rem}.w-4{width:1rem}.w-8{width:2rem}.w-96{width:24rem}.w-\[500px\]{width:500px}.w-px{width:1px}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-4xl{max-width:56rem}.max-w-6xl{max-width:72rem}.flex-1{flex:1 1 0%}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-10{gap:2.5rem}.gap-12{gap:3rem}.gap-16{gap:4rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-24 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(6rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(6rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-8 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(2rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(2rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-x-hidden{overflow-x:hidden}.rounded-2xl{border-radius:1rem}.rounded-3xl{border-radius:1.5rem}.rounded-\[2rem\]{border-radius:2rem}.rounded-\[3rem\]{border-radius:3rem}.rounded-\[4rem\]{border-radius:4rem}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-t{border-top-width:1px}.border-amber-200{--tw-border-opacity:1;border-color:rgb(253 230 138 / var(--tw-border-opacity, 1))}.border-amber-300\/50{border-color:rgb(252 211 77 / 0.5)}.border-amber-700\/30{border-color:rgb(180 83 9 / 0.3)}.border-stone-100{--tw-border-opacity:1;border-color:rgb(245 245 244 / var(--tw-border-opacity, 1))}.border-stone-200{--tw-border-opacity:1;border-color:rgb(231 229 228 / var(--tw-border-opacity, 1))}.border-stone-700{--tw-border-opacity:1;border-color:rgb(68 64 60 / var(--tw-border-opacity, 1))}.border-stone-800{--tw-border-opacity:1;border-color:rgb(41 37 36 / var(--tw-border-opacity, 1))}.bg-amber-100{--tw-bg-opacity:1;background-color:rgb(254 243 199 / var(--tw-bg-opacity, 1))}.bg-amber-400{--tw-bg-opacity:1;background-color:rgb(251 191 36 / var(--tw-bg-opacity, 1))}.bg-amber-400\/5{background-color:rgb(251 191 36 / 0.05)}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235 / var(--tw-bg-opacity, 1))}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11 / var(--tw-bg-opacity, 1))}.bg-amber-500\/10{background-color:rgb(245 158 11 / 0.1)}.bg-amber-600{--tw-bg-opacity:1;background-color:rgb(217 119 6 / var(--tw-bg-opacity, 1))}.bg-amber-600\/10{background-color:rgb(217 119 6 / 0.1)}.bg-stone-300{--tw-bg-opacity:1;background-color:rgb(214 211 209 / var(--tw-bg-opacity, 1))}.bg-stone-50{--tw-bg-opacity:1;background-color:rgb(250 250 249 / var(--tw-bg-opacity, 1))}.bg-stone-800{--tw-bg-opacity:1;background-color:rgb(41 37 36 / var(--tw-bg-opacity, 1))}.bg-stone-800\/50{background-color:rgb(41 37 36 / 0.5)}.bg-stone-900{--tw-bg-opacity:1;background-color:rgb(28 25 23 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-gradient-to-b{background-image:linear-gradient(to bottom, var(--tw-gradient-stops))}.bg-gradient-to-br{background-image:linear-gradient(to bottom right, var(--tw-gradient-stops))}.from-amber-300\/70{--tw-gradient-from:rgb(252 211 77 / 0.7) var(--tw-gradient-from-position);--tw-gradient-to:rgb(252 211 77 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-amber-900\/30{--tw-gradient-from:rgb(120 53 15 / 0.3) var(--tw-gradient-from-position);--tw-gradient-to:rgb(120 53 15 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.to-stone-900\/30{--tw-gradient-to:rgb(28 25 23 / 0.3) var(--tw-gradient-to-position)}.to-transparent{--tw-gradient-to:transparent var(--tw-gradient-to-position)}.p-1{padding:0.25rem}.p-10{padding:2.5rem}.p-12{padding:3rem}.p-3{padding:0.75rem}.p-8{padding:2rem}.px-10{padding-left:2.5rem;padding-right:2.5rem}.px-12{padding-left:3rem;padding-right:3rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-12{padding-top:3rem;padding-bottom:3rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-24{padding-top:6rem;padding-bottom:6rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-5{padding-top:1.25rem;padding-bottom:1.25rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-5xl{font-size:3rem;line-height:1}.text-7xl{font-size:4.5rem;line-height:1}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-light{font-weight:300}.font-medium{font-weight:500}.uppercase{text-transform:uppercase}.italic{font-style:italic}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-\[0\.3em\]{letter-spacing:0.3em}.tracking-widest{letter-spacing:0.1em}.text-amber-100{--tw-text-opacity:1;color:rgb(254 243 199 / var(--tw-text-opacity, 1))}.text-amber-200{--tw-text-opacity:1;color:rgb(253 230 138 / var(--tw-text-opacity, 1))}.text-amber-300{--tw-text-opacity:1;color:rgb(252 211 77 / var(--tw-text-opacity, 1))}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36 / var(--tw-text-opacity, 1))}.text-amber-600{--tw-text-opacity:1;color:rgb(217 119 6 / var(--tw-text-opacity, 1))}.text-amber-700{--tw-text-opacity:1;color:rgb(180 83 9 / var(--tw-text-opacity, 1))}.text-stone-200{--tw-text-opacity:1;color:rgb(231 229 228 / var(--tw-text-opacity, 1))}.text-stone-300{--tw-text-opacity:1;color:rgb(214 211 209 / var(--tw-text-opacity, 1))}.text-stone-300\/70{color:rgb(214 211 209 / 0.7)}.text-stone-400{--tw-text-opacity:1;color:rgb(168 162 158 / var(--tw-text-opacity, 1))}.text-stone-500{--tw-text-opacity:1;color:rgb(120 113 108 / var(--tw-text-opacity, 1))}.text-stone-600{--tw-text-opacity:1;color:rgb(87 83 78 / var(--tw-text-opacity, 1))}.text-stone-700{--tw-text-opacity:1;color:rgb(68 64 60 / var(--tw-text-opacity, 1))}.text-stone-800{--tw-text-opacity:1;color:rgb(41 37 36 / var(--tw-text-opacity, 1))}.text-stone-900{--tw-text-opacity:1;color:rgb(28 25 23 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.underline{-webkit-text-decoration-line:underline;text-decoration-line:underline}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-inner{--tw-shadow:inset 0 2px 4px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:inset 0 2px 4px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.blur-3xl{--tw-blur:blur(64px);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-amber-300\/10:hover{background-color:rgb(252 211 77 / 0.1)}.hover\:bg-amber-500:hover{--tw-bg-opacity:1;background-color:rgb(245 158 11 / var(--tw-bg-opacity, 1))}.hover\:bg-black:hover{--tw-bg-opacity:1;background-color:rgb(0 0 0 / var(--tw-bg-opacity, 1))}.hover\:bg-stone-800:hover{--tw-bg-opacity:1;background-color:rgb(41 37 36 / var(--tw-bg-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.hover\:shadow-amber-600\/40:hover{--tw-shadow-color:rgb(217 119 6 / 0.4);--tw-shadow:var(--tw-shadow-colored)}@media (min-width: 640px){.sm\:flex-row{flex-direction:row}}@media (min-width: 768px){.md\:w-1\/2{width:50%}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.md\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}.md\:flex-row{flex-direction:row}.md\:flex-row-reverse{flex-direction:row-reverse}.md\:p-16{padding:4rem}.md\:text-left{text-align:left}.md\:text-2xl{font-size:1.5rem;line-height:2rem}.md\:text-3xl{font-size:1.875rem;line-height:2.25rem}.md\:text-4xl{font-size:2.25rem;line-height:2.5rem}.md\:text-5xl{font-size:3rem;line-height:1}.md\:text-7xl{font-size:4.5rem;line-height:1}.md\:text-9xl{font-size:8rem;line-height:1}}@media (min-width: 1024px){.lg\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}}</style></head>
+<body class="overflow-x-hidden">
+
+    <!-- ==========================================================
+         HERO SECTION (Proposal Front)
+         - 어사화 분위기에 맞는 한옥 야경 이미지
+         - 다중 레이어 오버레이로 골드 톤 브랜드 정체성 부여
+         ========================================================== -->
+    <section class="relative h-screen flex items-center justify-center overflow-hidden bg-stone-900 text-white">
+        <div class="hero-bg"></div>
+
+        <!-- ===== SVG 한옥 마을 풍경 (외부 이미지 의존성 없음) ===== -->
+        <svg class="hero-scene" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- 한옥 본체 그라데이션 -->
+                <linearGradient id="hanokGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#1a0f08"></stop>
+                    <stop offset="100%" stop-color="#000"></stop>
+                </linearGradient>
+                <!-- 등불 빛 그라데이션 -->
+                <radialGradient id="lanternGlow">
+                    <stop offset="0%" stop-color="#FFB05A" stop-opacity="0.9"></stop>
+                    <stop offset="50%" stop-color="#FF9040" stop-opacity="0.45"></stop>
+                    <stop offset="100%" stop-color="#FF9040" stop-opacity="0"></stop>
+                </radialGradient>
+                <!-- 창문 등불 그라데이션 -->
+                <linearGradient id="windowGlow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FFC074"></stop>
+                    <stop offset="100%" stop-color="#FF8C40"></stop>
+                </linearGradient>
+                <!-- 안개 그라데이션 -->
+                <linearGradient id="mistGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3a2418" stop-opacity="0"></stop>
+                    <stop offset="100%" stop-color="#0a0604" stop-opacity="0.6"></stop>
+                </linearGradient>
+            </defs>
+
+            <!-- 별 (반짝임 애니메이션) -->
+            <g fill="white">
+                <circle class="star" cx="180" cy="100" r="1.5" opacity="0.8"></circle>
+                <circle class="star" cx="380" cy="180" r="1" opacity="0.5"></circle>
+                <circle class="star" cx="560" cy="80" r="1.2" opacity="0.7"></circle>
+                <circle class="star" cx="780" cy="150" r="1" opacity="0.6"></circle>
+                <circle class="star" cx="950" cy="90" r="1.5" opacity="0.85"></circle>
+                <circle class="star" cx="1150" cy="170" r="1" opacity="0.5"></circle>
+                <circle class="star" cx="1320" cy="100" r="1.2" opacity="0.7"></circle>
+                <circle class="star" cx="1500" cy="200" r="1" opacity="0.6"></circle>
+                <circle class="star" cx="1680" cy="110" r="1.3" opacity="0.8"></circle>
+                <circle class="star" cx="1820" cy="190" r="1" opacity="0.5"></circle>
+                <circle class="star" cx="280" cy="240" r="0.8" opacity="0.4"></circle>
+                <circle class="star" cx="650" cy="280" r="0.9" opacity="0.5"></circle>
+                <circle class="star" cx="1050" cy="260" r="1" opacity="0.6"></circle>
+                <circle class="star" cx="1420" cy="290" r="0.8" opacity="0.4"></circle>
+                <circle class="star" cx="1750" cy="320" r="1" opacity="0.5"></circle>
+            </g>
+
+            <!-- 멀리 보이는 산 실루엣 -->
+            <path d="M 0 720 Q 200 620 400 670 T 800 640 T 1200 670 T 1600 620 L 1920 660 L 1920 1080 L 0 1080 Z" fill="#1a0f08" opacity="0.7"></path>
+
+            <!-- 멀리 한옥들 (작은 실루엣) -->
+            <g opacity="0.5" fill="#0a0604">
+                <path d="M 220 720 Q 220 705 235 702 Q 275 678 320 678 Q 365 678 405 702 Q 420 705 420 720 L 420 765 L 220 765 Z"></path>
+                <path d="M 880 705 Q 880 692 893 689 Q 925 668 960 668 Q 995 668 1027 689 Q 1040 692 1040 705 L 1040 745 L 880 745 Z"></path>
+                <path d="M 1480 715 Q 1480 702 1493 699 Q 1530 678 1570 678 Q 1610 678 1647 699 Q 1660 702 1660 715 L 1660 760 L 1480 760 Z"></path>
+            </g>
+
+            <!-- 안개 / 산 너머 빛바램 -->
+            <rect x="0" y="660" width="1920" height="420" fill="url(#mistGrad)"></rect>
+
+            <!-- 등불 발광 효과 (전체 분위기) -->
+            <ellipse cx="960" cy="900" rx="700" ry="280" fill="url(#lanternGlow)" opacity="0.55"></ellipse>
+            <ellipse cx="380" cy="950" rx="250" ry="120" fill="url(#lanternGlow)" opacity="0.4"></ellipse>
+            <ellipse cx="1560" cy="950" rx="250" ry="120" fill="url(#lanternGlow)" opacity="0.4"></ellipse>
+
+            <!-- ===== 앞쪽 한옥 1 (왼쪽 큰 채) ===== -->
+            <g>
+                <!-- 한옥 지붕 - 처마 곡선이 살짝 들린 형태 -->
+                <path d="M 60 880 
+                         Q 60 845 95 838
+                         Q 145 788 250 783
+                         Q 380 775 490 783
+                         Q 595 788 645 838
+                         Q 680 845 680 880 Z" fill="url(#hanokGrad)"></path>
+                <!-- 용마루 강조 -->
+                <path d="M 250 783 Q 370 775 490 783" stroke="#000" stroke-width="3" fill="none" opacity="0.6"></path>
+                <!-- 본체 -->
+                <rect x="105" y="880" width="535" height="200" fill="url(#hanokGrad)"></rect>
+            </g>
+            <!-- 창문 (등불 빛) -->
+            <rect x="170" y="935" width="75" height="95" fill="url(#windowGlow)" opacity="0.88"></rect>
+            <rect x="320" y="935" width="75" height="95" fill="url(#windowGlow)" opacity="0.95"></rect>
+            <rect x="470" y="935" width="75" height="95" fill="url(#windowGlow)" opacity="0.85"></rect>
+            <!-- 창살 (한지 격자 느낌) -->
+            <g stroke="#1a0f08" stroke-width="1.8" opacity="0.7">
+                <line x1="207" y1="935" x2="207" y2="1030"></line>
+                <line x1="170" y1="982" x2="245" y2="982"></line>
+                <line x1="357" y1="935" x2="357" y2="1030"></line>
+                <line x1="320" y1="982" x2="395" y2="982"></line>
+                <line x1="507" y1="935" x2="507" y2="1030"></line>
+                <line x1="470" y1="982" x2="545" y2="982"></line>
+            </g>
+            <!-- 처마 끝 풍경(風磬) -->
+            <circle cx="60" cy="878" r="3" fill="#C8A165" opacity="0.75"></circle>
+            <circle cx="680" cy="878" r="3" fill="#C8A165" opacity="0.75"></circle>
+
+            <!-- ===== 앞쪽 한옥 2 (오른쪽 채, 살짝 뒤쪽) ===== -->
+            <g>
+                <path d="M 1240 905 
+                         Q 1240 873 1275 866
+                         Q 1330 818 1430 813
+                         Q 1590 805 1690 813
+                         Q 1790 818 1845 866
+                         Q 1880 873 1880 905 Z" fill="url(#hanokGrad)"></path>
+                <path d="M 1430 813 Q 1560 805 1690 813" stroke="#000" stroke-width="3" fill="none" opacity="0.6"></path>
+                <rect x="1280" y="905" width="565" height="175" fill="url(#hanokGrad)"></rect>
+            </g>
+            <!-- 창문 -->
+            <rect x="1340" y="950" width="70" height="85" fill="url(#windowGlow)" opacity="0.85"></rect>
+            <rect x="1465" y="950" width="70" height="85" fill="url(#windowGlow)" opacity="0.92"></rect>
+            <rect x="1590" y="950" width="70" height="85" fill="url(#windowGlow)" opacity="0.85"></rect>
+            <rect x="1715" y="950" width="70" height="85" fill="url(#windowGlow)" opacity="0.8"></rect>
+            <!-- 창살 -->
+            <g stroke="#1a0f08" stroke-width="1.5" opacity="0.7">
+                <line x1="1375" y1="950" x2="1375" y2="1035"></line>
+                <line x1="1500" y1="950" x2="1500" y2="1035"></line>
+                <line x1="1625" y1="950" x2="1625" y2="1035"></line>
+                <line x1="1750" y1="950" x2="1750" y2="1035"></line>
+            </g>
+            <!-- 처마 끝 풍경 -->
+            <circle cx="1240" cy="903" r="3" fill="#C8A165" opacity="0.75"></circle>
+            <circle cx="1880" cy="903" r="3" fill="#C8A165" opacity="0.75"></circle>
+
+            <!-- 마당의 청사초롱 (전통 등불) -->
+            <g transform="translate(870, 980)">
+                <line x1="0" y1="-30" x2="0" y2="-15" stroke="#3a2418" stroke-width="1.5"></line>
+                <ellipse cx="0" cy="0" rx="14" ry="18" fill="#FFB05A" opacity="0.9"></ellipse>
+                <ellipse cx="0" cy="0" rx="14" ry="18" fill="none" stroke="#8B5A2B" stroke-width="1" opacity="0.6"></ellipse>
+            </g>
+            <g transform="translate(1080, 980)">
+                <line x1="0" y1="-30" x2="0" y2="-15" stroke="#3a2418" stroke-width="1.5"></line>
+                <ellipse cx="0" cy="0" rx="14" ry="18" fill="#FFB05A" opacity="0.9"></ellipse>
+                <ellipse cx="0" cy="0" rx="14" ry="18" fill="none" stroke="#8B5A2B" stroke-width="1" opacity="0.6"></ellipse>
+            </g>
+        </svg>
+
+        <div class="hero-overlay"></div>
+        <div class="hero-grain"></div>
+        
+        <div class="relative z-10 text-center px-6 max-w-4xl">
+            <p class="text-amber-300 font-bold tracking-[0.3em] mb-4 fade-in uppercase text-sm visible show active aos-animate is-visible in-view">Premium Brand Proposal</p>
+            <h1 class="text-4xl md:text-7xl font-bold serif mb-8 leading-tight fade-in visible show active aos-animate is-visible in-view" style="text-shadow: rgba(0, 0, 0, 0.5) 0px 2px 30px;">
+                전주 어사화,<br>
+                <span class="text-amber-200">단순한 숙소를 넘어<br>브랜드가 됩니다</span>
+            </h1>
+            <p class="text-xl md:text-2xl font-light mb-12 fade-in text-stone-200 visible show active aos-animate is-visible in-view" style="text-shadow: rgba(0, 0, 0, 0.6) 0px 2px 20px;">
+                어사화 맞춤형 인터랙티브 마케팅 솔루션
+            </p>
+            <div class="fade-in flex flex-col sm:flex-row gap-4 justify-center items-center visible show active aos-animate is-visible in-view">
+                <a href="#section-01" class="inline-block bg-amber-600 text-white px-10 py-4 rounded-full font-bold hover:bg-amber-500 transition-all shadow-2xl hover:shadow-amber-600/40">
+                    제안서 확인하기
+                </a>
+                <a href="#section-10" class="inline-block border border-amber-300/50 text-amber-100 px-10 py-4 rounded-full font-medium hover:bg-amber-300/10 transition-all backdrop-blur-sm">
+                    바로 상담 문의
+                </a>
+            </div>
+
+            <!-- 스크롤 인디케이터 -->
+            <div class="absolute bottom-12 left-1/2 -translate-x-1/2 fade-in visible show active aos-animate is-visible in-view">
+                <div class="flex flex-col items-center gap-2 text-stone-300/70">
+                    <span class="text-xs tracking-widest">SCROLL</span>
+                    <div class="w-px h-12 bg-gradient-to-b from-amber-300/70 to-transparent animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 01 - 문제 인식 (Problem Identification)
+         ========================================================== -->
+    <section id="section-01" class="py-24 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center gap-16">
+                <div class="md:w-1/2 fade-in visible show active aos-animate is-visible in-view">
+                    <span class="section-number">SECTION 01 — Problem</span>
+                    <h2 class="text-3xl md:text-4xl font-bold serif mb-6 leading-tight">
+                        사장님, 전주 한옥마을의<br>치열한 숙박 경쟁 속에서<br>
+                        <span class="accent-gold">가격 경쟁만 하고 계십니까?</span>
+                    </h2>
+                    <p class="text-lg text-stone-600 leading-relaxed mb-6">
+                        현재 한옥마을의 수많은 숙소들은 블로그 포스팅 몇 개에 의존하고 있습니다. 
+                        하지만 고객들은 이제 단순한 사진 나열이 아닌, <strong>'공간의 경험'</strong>을 원합니다.
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <span class="bg-amber-100 text-amber-700 p-1 rounded-full mt-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></span>
+                            <p class="text-stone-700">천편일률적인 온돌 숙소와의 차별화 부족</p>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="bg-amber-100 text-amber-700 p-1 rounded-full mt-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></span>
+                            <p class="text-stone-700">호텔식 침구와 브런치 조식이라는 강력한 무기의 저평가</p>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="bg-amber-100 text-amber-700 p-1 rounded-full mt-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></span>
+                            <p class="text-stone-700">고객의 여행 동선을 설계해주는 스토리텔링 부재</p>
+                        </li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2 bg-stone-50 p-10 rounded-[3rem] border border-stone-200 fade-in shadow-inner visible show active aos-animate is-visible in-view">
+                    <div class="text-center mb-8">
+                        <h4 class="font-bold text-xl mb-2">고객 숙소 선택 결정 요인 분석</h4>
+                        <p class="text-sm text-stone-500">한옥마을 방문객 1,000명 대상 조사(가상)</p>
+                    </div>
+                    <canvas id="marketChart" height="631" width="631" style="display: block; box-sizing: border-box; height: 631.9px; width: 631.9px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 02 - 시장 분석 (Market Analysis) [신규]
+         - 전주 한옥마을 시장 규모와 트렌드 데이터로 설득력 강화
+         ========================================================== -->
+    <section id="section-02" class="py-24 bg-proposal">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number">SECTION 02 — Market</span>
+                <h2 class="text-3xl md:text-5xl font-bold serif mb-4">
+                    숫자로 보는 <span class="accent-gold">전주 한옥마을 시장</span>
+                </h2>
+                <p class="text-lg text-stone-600 max-w-2xl mx-auto">
+                    시장은 충분히 큽니다. 문제는 '누구의 눈에 띄는가'입니다.
+                </p>
+            </div>
+
+            <!-- 시장 데이터 4개 카드 -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                <div class="bg-white p-8 rounded-3xl shadow-md fade-in border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <p class="text-sm text-stone-500 mb-2">연간 방문객 수</p>
+                    <p class="text-4xl font-bold accent-gold serif mb-2">1,200<span class="text-2xl">만+</span></p>
+                    <p class="text-xs text-stone-400">전주 한옥마을 일대 (2023 기준)</p>
+                </div>
+                <div class="bg-white p-8 rounded-3xl shadow-md fade-in border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <p class="text-sm text-stone-500 mb-2">한옥 숙박 업소 수</p>
+                    <p class="text-4xl font-bold accent-gold serif mb-2">300<span class="text-2xl">개+</span></p>
+                    <p class="text-xs text-stone-400">치열한 가격 경쟁 시장</p>
+                </div>
+                <div class="bg-white p-8 rounded-3xl shadow-md fade-in border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <p class="text-sm text-stone-500 mb-2">2030 여성 비중</p>
+                    <p class="text-4xl font-bold accent-gold serif mb-2">62<span class="text-2xl">%</span></p>
+                    <p class="text-xs text-stone-400">SNS 친화적 핵심 타겟</p>
+                </div>
+                <div class="bg-white p-8 rounded-3xl shadow-md fade-in border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <p class="text-sm text-stone-500 mb-2">예약 전 검색 채널</p>
+                    <p class="text-4xl font-bold accent-gold serif mb-2">3.4<span class="text-2xl">개</span></p>
+                    <p class="text-xs text-stone-400">멀티채널 마케팅 필수</p>
+                </div>
+            </div>
+
+            <!-- 트렌드 인사이트 박스 -->
+            <div class="bg-stone-900 text-white p-10 md:p-16 rounded-[3rem] fade-in visible show active aos-animate is-visible in-view">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div>
+                        <p class="text-amber-400 text-sm tracking-widest mb-3">TREND 01</p>
+                        <h4 class="text-xl font-bold serif mb-3">'경험 소비'로의 전환</h4>
+                        <p class="text-stone-300 text-sm leading-relaxed">
+                            가격 비교에서 벗어나, 사진 한 장으로 결정되는 '인스타그래머블' 경험이 핵심 구매 동인이 되었습니다.
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-amber-400 text-sm tracking-widest mb-3">TREND 02</p>
+                        <h4 class="text-xl font-bold serif mb-3">스테이케이션 시장 확대</h4>
+                        <p class="text-stone-300 text-sm leading-relaxed">
+                            '잠만 자는 곳'이 아닌, 숙소 자체가 여행 목적지가 되는 '스테이' 트렌드가 확산되고 있습니다.
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-amber-400 text-sm tracking-widest mb-3">TREND 03</p>
+                        <h4 class="text-xl font-bold serif mb-3">한옥의 모던화 수요</h4>
+                        <p class="text-stone-300 text-sm leading-relaxed">
+                            전통의 외피 + 현대적 편의성을 결합한 '하이브리드 한옥'에 프리미엄 가격을 지불할 의향이 높습니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 03 - 타겟 페르소나 (Target Persona) [신규]
+         - 추상적 '고객'이 아닌 구체적 페르소나로 마케팅 방향 명확화
+         ========================================================== -->
+    <section id="section-03" class="py-24 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number">SECTION 03 — Persona</span>
+                <h2 class="text-3xl md:text-5xl font-bold serif mb-4">
+                    어사화는 <span class="accent-gold">누구를 위한 공간</span>인가
+                </h2>
+                <p class="text-lg text-stone-600 max-w-2xl mx-auto">
+                    모든 사람을 만족시키려는 순간, 누구도 만족시키지 못합니다.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- 페르소나 1 -->
+                <div class="bg-proposal p-10 rounded-3xl fade-in card border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <div class="w-16 h-16 bg-gold rounded-full flex items-center justify-center mb-6 text-white text-2xl serif font-bold">A</div>
+                    <h3 class="text-2xl font-bold serif mb-2">취향있는 30대 여성</h3>
+                    <p class="text-sm accent-gold mb-4 tracking-widest">PRIMARY · 60%</p>
+                    <p class="text-stone-600 text-sm leading-relaxed mb-6">
+                        직장 생활에 지쳐 '나를 위한 보상'을 찾는 그녀. 가격보다 분위기와 사진을, 효율보다 경험을 중시합니다.
+                    </p>
+                    <div class="space-y-2 text-xs text-stone-500">
+                        <p>📌 핵심 채널: 인스타그램, 네이버 블로그</p>
+                        <p>📌 결정 요인: 사진의 '톤앤매너'</p>
+                        <p>📌 예약 시점: 2주 전 충동 예약</p>
+                    </div>
+                </div>
+
+                <!-- 페르소나 2 (강조) -->
+                <div class="bg-stone-900 text-white p-10 rounded-3xl fade-in card relative overflow-hidden visible show active aos-animate is-visible in-view">
+                    <div class="absolute top-4 right-4 bg-amber-500 text-stone-900 text-xs font-bold px-3 py-1 rounded-full">CORE</div>
+                    <div class="w-16 h-16 bg-amber-400 rounded-full flex items-center justify-center mb-6 text-stone-900 text-2xl serif font-bold">B</div>
+                    <h3 class="text-2xl font-bold serif mb-2">기념일 커플</h3>
+                    <p class="text-sm text-amber-400 mb-4 tracking-widest">HIGH-VALUE · 25%</p>
+                    <p class="text-stone-300 text-sm leading-relaxed mb-6">
+                        생일·기념일에 '특별한 하룻밤'을 찾는 커플. 가격 저항이 가장 낮고, 재방문율이 가장 높은 핵심 수익원.
+                    </p>
+                    <div class="space-y-2 text-xs text-stone-400">
+                        <p>📌 핵심 채널: 인스타그램 릴스, 유튜브</p>
+                        <p>📌 결정 요인: 야외 자쿠지, 불멍</p>
+                        <p>📌 예약 시점: 1개월 전 사전 계획</p>
+                    </div>
+                </div>
+
+                <!-- 페르소나 3 -->
+                <div class="bg-proposal p-10 rounded-3xl fade-in card border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <div class="w-16 h-16 bg-gold rounded-full flex items-center justify-center mb-6 text-white text-2xl serif font-bold">C</div>
+                    <h3 class="text-2xl font-bold serif mb-2">중년 부부 / 가족</h3>
+                    <p class="text-sm accent-gold mb-4 tracking-widest">SECONDARY · 15%</p>
+                    <p class="text-stone-600 text-sm leading-relaxed mb-6">
+                        '온돌이 불편한 무릎'을 가진 분들. 호텔식 침구가 결정타가 되며, 입소문 마케팅의 핵심 전파자입니다.
+                    </p>
+                    <div class="space-y-2 text-xs text-stone-500">
+                        <p>📌 핵심 채널: 카카오톡, 네이버 카페</p>
+                        <p>📌 결정 요인: 침구 편안함, 조식</p>
+                        <p>📌 예약 시점: 가족 일정 맞춰 미리</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 04 - 솔루션 컨셉 (The Strategy)
+         ========================================================== -->
+    <section id="section-04" class="py-24 bg-proposal">
+        <div class="container mx-auto px-6 text-center mb-16">
+            <span class="section-number fade-in visible show active aos-animate is-visible in-view">SECTION 04 — Solution</span>
+            <h2 class="text-3xl md:text-5xl font-bold serif mb-6 fade-in visible show active aos-animate is-visible in-view">
+                우리의 솔루션:<br>
+                <span class="accent-gold">'인터랙티브 브랜드 경험'</span>
+            </h2>
+            <p class="text-xl text-stone-600 fade-in max-w-2xl mx-auto visible show active aos-animate is-visible in-view">
+                단순 블로그 광고를 넘어, 고객이 직접 반응하는 전용 웹 앱을 제공합니다.
+            </p>
+        </div>
+
+        <div class="container mx-auto px-6 grid md:grid-cols-3 gap-8">
+            <div class="bg-white p-10 rounded-3xl shadow-lg fade-in card visible show active aos-animate is-visible in-view">
+                <div class="text-amber-600 mb-6">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-4">SPA 기술 적용</h3>
+                <p class="text-stone-500 leading-relaxed">끊김 없이 부드러운 화면 전환으로 고객이 웹사이트에 머무는 시간을 3배 이상 증가시킵니다.</p>
+            </div>
+            <div class="bg-white p-10 rounded-3xl shadow-lg fade-in card visible show active aos-animate is-visible in-view">
+                <div class="text-amber-600 mb-6">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-4">감성 큐레이션</h3>
+                <p class="text-stone-500 leading-relaxed">단순 정보 나열이 아닌, 어사화만의 '브런치', '야외 자쿠지', '불멍' 테마를 고객 맞춤형으로 큐레이션합니다.</p>
+            </div>
+            <div class="bg-white p-10 rounded-3xl shadow-lg fade-in card visible show active aos-animate is-visible in-view">
+                <div class="text-amber-600 mb-6">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-4">데이터 시각화</h3>
+                <p class="text-stone-500 leading-relaxed">숙박료 대비 높은 만족도를 시각적 차트로 표현하여 예약 전환율을 즉각적으로 높입니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 05 - 핵심 자산 분석 (Core Assets)
+         - 기존 2개 → 4개로 확장
+         ========================================================== -->
+    <section id="section-05" class="py-24 bg-white overflow-hidden">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number">SECTION 05 — Assets</span>
+                <h2 class="text-3xl md:text-4xl font-bold serif mb-4">
+                    어사화가 가진 <span class="accent-gold underline">압도적 경쟁 우위</span>
+                </h2>
+            </div>
+            
+            <div class="space-y-24">
+                <!-- Asset 1: 호텔식 침구 -->
+                <div class="flex flex-col md:flex-row items-center gap-12 fade-in visible show active aos-animate is-visible in-view">
+                    <div class="md:w-1/2 rounded-[2rem] overflow-hidden shadow-2xl">
+                        <!-- 외부 이미지 대신 SVG 일러스트 카드 (실물 사진으로 교체 가능) -->
+                        <div class="asset-visual asset-visual-bedding">
+                            <svg class="asset-icon" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round">
+                                <!-- 헤드보드 -->
+                                <path d="M 12 20 L 12 45 L 88 45 L 88 20" stroke-opacity="0.7"></path>
+                                <line x1="12" y1="20" x2="88" y2="20" stroke-opacity="0.5"></line>
+                                <!-- 매트리스 -->
+                                <rect x="10" y="42" width="80" height="22" rx="2"></rect>
+                                <!-- 침구 라인 -->
+                                <line x1="14" y1="50" x2="86" y2="50" stroke-opacity="0.4"></line>
+                                <!-- 베개 2개 -->
+                                <rect x="18" y="32" width="26" height="12" rx="3" fill="white" fill-opacity="0.25"></rect>
+                                <rect x="56" y="32" width="26" height="12" rx="3" fill="white" fill-opacity="0.25"></rect>
+                                <!-- 침대 다리 -->
+                                <line x1="14" y1="64" x2="14" y2="70"></line>
+                                <line x1="86" y1="64" x2="86" y2="70"></line>
+                            </svg>
+                            <div class="asset-visual-label">호텔식 침구</div>
+                            <div class="asset-visual-sublabel">Premium Bedding</div>
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <span class="text-amber-600 font-bold text-sm tracking-widest mb-2 block uppercase">Unique Point 01</span>
+                        <h3 class="text-3xl font-bold mb-6 serif">한옥의 정취 속,<br>호텔의 완벽한 숙면</h3>
+                        <p class="text-stone-600 text-lg leading-relaxed mb-8">
+                            "온돌이 불편해서 한옥 숙박을 포기했던 고객들"을 어사화의 주 고객층으로 흡수합니다. 
+                            전 객실 호텔식 침대 도입은 다른 한옥 숙소들이 쉽게 따라올 수 없는 어사화만의 강력한 셀링 포인트입니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Asset 2: 프리미엄 조식 -->
+                <div class="flex flex-col md:flex-row-reverse items-center gap-12 fade-in visible show active aos-animate is-visible in-view">
+                    <div class="md:w-1/2 rounded-[2rem] overflow-hidden shadow-2xl">
+                        <div class="asset-visual asset-visual-brunch">
+                            <svg class="asset-icon" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="1.3" stroke-linecap="round">
+                                <!-- 김 / 증기 (3가닥) -->
+                                <path d="M 38 18 Q 41 13 38 8 Q 35 4 38 0" stroke-opacity="0.6"></path>
+                                <path d="M 50 18 Q 53 12 50 6 Q 47 1 50 -3" stroke-opacity="0.7"></path>
+                                <path d="M 62 18 Q 65 13 62 8 Q 59 4 62 0" stroke-opacity="0.6"></path>
+                                <!-- 그릇 외곽 -->
+                                <ellipse cx="50" cy="30" rx="32" ry="6" fill="white" fill-opacity="0.15"></ellipse>
+                                <path d="M 18 30 L 22 60 Q 24 70 32 70 L 68 70 Q 76 70 78 60 L 82 30"></path>
+                                <!-- 음식 (작은 원들) -->
+                                <circle cx="40" cy="28" r="3.5" fill="white" fill-opacity="0.35"></circle>
+                                <circle cx="55" cy="26" r="3" fill="white" fill-opacity="0.35"></circle>
+                                <circle cx="48" cy="31" r="2.5" fill="white" fill-opacity="0.4"></circle>
+                                <!-- 받침접시 -->
+                                <ellipse cx="50" cy="73" rx="38" ry="3" stroke-opacity="0.5"></ellipse>
+                            </svg>
+                            <div class="asset-visual-label">프리미엄 조식</div>
+                            <div class="asset-visual-sublabel">Brunch Service</div>
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <span class="text-amber-600 font-bold text-sm tracking-widest mb-2 block uppercase">Unique Point 02</span>
+                        <h3 class="text-3xl font-bold mb-6 serif">새벽 시장의 신선함을 담은<br>브런치급 프리미엄 조식</h3>
+                        <p class="text-stone-600 text-lg leading-relaxed mb-8">
+                            단순한 컵라면이나 토스트가 아닙니다. 직접 장을 봐서 만든 당근스프와 샐러드는 
+                            고객들에게 '대접받는 기분'을 선사하며, 이는 즉각적인 네이버 리뷰 평점 상승으로 이어집니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Asset 3: 야외 자쿠지 [신규] -->
+                <div class="flex flex-col md:flex-row items-center gap-12 fade-in visible show active aos-animate is-visible in-view">
+                    <div class="md:w-1/2 rounded-[2rem] overflow-hidden shadow-2xl">
+                        <div class="asset-visual asset-visual-spa">
+                            <svg class="asset-icon" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="1.3" stroke-linecap="round">
+                                <!-- 김 / 증기 (3가닥) -->
+                                <path d="M 35 18 Q 38 13 35 7" stroke-opacity="0.7"></path>
+                                <path d="M 50 18 Q 53 11 50 5" stroke-opacity="0.8"></path>
+                                <path d="M 65 18 Q 68 13 65 7" stroke-opacity="0.7"></path>
+                                <!-- 욕조 외곽 -->
+                                <path d="M 12 32 L 16 64 Q 18 72 26 72 L 74 72 Q 82 72 84 64 L 88 32"></path>
+                                <!-- 욕조 윗면 (타원) -->
+                                <ellipse cx="50" cy="32" rx="38" ry="5" fill="white" fill-opacity="0.12"></ellipse>
+                                <!-- 물결 (3겹) -->
+                                <path d="M 18 38 Q 26 35 34 38 T 50 38 T 66 38 T 82 38" stroke-width="1" stroke-opacity="0.85"></path>
+                                <path d="M 18 45 Q 26 42 34 45 T 50 45 T 66 45 T 82 45" stroke-width="1" stroke-opacity="0.6"></path>
+                                <path d="M 18 52 Q 26 49 34 52 T 50 52 T 66 52 T 82 52" stroke-width="1" stroke-opacity="0.4"></path>
+                                <!-- 다리 -->
+                                <line x1="22" y1="72" x2="22" y2="76" stroke-opacity="0.6"></line>
+                                <line x1="78" y1="72" x2="78" y2="76" stroke-opacity="0.6"></line>
+                            </svg>
+                            <div class="asset-visual-label">야외 자쿠지</div>
+                            <div class="asset-visual-sublabel">Private Outdoor Spa</div>
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <span class="text-amber-600 font-bold text-sm tracking-widest mb-2 block uppercase">Unique Point 03</span>
+                        <h3 class="text-3xl font-bold mb-6 serif">한옥 마당에서 즐기는<br>프라이빗 야외 자쿠지</h3>
+                        <p class="text-stone-600 text-lg leading-relaxed mb-8">
+                            기념일 커플 페르소나의 '결정타'가 되는 핵심 자산. 인스타그램에서 확산성이 가장 높은 
+                            요소이며, 단일 콘텐츠 한 장으로 예약 전환을 만들어낼 수 있는 강력한 비주얼 무기입니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Asset 4: 불멍 [신규] -->
+                <div class="flex flex-col md:flex-row-reverse items-center gap-12 fade-in visible show active aos-animate is-visible in-view">
+                    <div class="md:w-1/2 rounded-[2rem] overflow-hidden shadow-2xl">
+                        <div class="asset-visual asset-visual-bonfire">
+                            <svg class="asset-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                                <!-- 큰 불꽃 외곽 -->
+                                <path d="M 50 82 
+                                         Q 28 72 32 50 
+                                         Q 36 33 50 28 
+                                         Q 58 38 56 52
+                                         Q 62 44 68 38
+                                         Q 74 50 68 64
+                                         Q 74 70 78 76
+                                         Q 65 84 50 82 Z" fill="white" fill-opacity="0.15"></path>
+                                <!-- 중간 불꽃 -->
+                                <path d="M 47 70 
+                                         Q 38 62 42 50 
+                                         Q 46 42 52 42
+                                         Q 56 50 52 58
+                                         Q 58 53 60 50
+                                         Q 62 58 58 65
+                                         Q 55 70 47 70 Z" fill="white" fill-opacity="0.3"></path>
+                                <!-- 작은 불꽃 (가장 밝은 중심) -->
+                                <path d="M 49 60 Q 44 54 47 47 Q 50 43 53 47 Q 56 54 51 58 Q 53 60 49 60 Z" fill="white" fill-opacity="0.5" stroke="none"></path>
+                                <!-- 장작 (가로) -->
+                                <line x1="22" y1="86" x2="78" y2="86" stroke-width="3.5"></line>
+                                <line x1="28" y1="92" x2="72" y2="92" stroke-width="2.5" stroke-opacity="0.7"></line>
+                                <!-- 불티 / 스파크 -->
+                                <circle cx="35" cy="55" r="1" fill="white" fill-opacity="0.7" stroke="none"></circle>
+                                <circle cx="68" cy="48" r="0.8" fill="white" fill-opacity="0.6" stroke="none"></circle>
+                                <circle cx="42" cy="35" r="0.6" fill="white" fill-opacity="0.5" stroke="none"></circle>
+                                <circle cx="62" cy="30" r="0.8" fill="white" fill-opacity="0.7" stroke="none"></circle>
+                            </svg>
+                            <div class="asset-visual-label">불멍의 시간</div>
+                            <div class="asset-visual-sublabel">Bonfire Moments</div>
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <span class="text-amber-600 font-bold text-sm tracking-widest mb-2 block uppercase">Unique Point 04</span>
+                        <h3 class="text-3xl font-bold mb-6 serif">밤이 깊어질수록<br>완성되는 '불멍의 시간'</h3>
+                        <p class="text-stone-600 text-lg leading-relaxed mb-8">
+                            낮의 한옥마을 관광이 끝난 후, 어사화에서만 가능한 '느린 밤'의 경험. 
+                            체크인부터 체크아웃까지 24시간을 채우는 핵심 콘텐츠이자, 재방문 의향을 만드는 정서적 앵커입니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 06 - 브랜드 스토리텔링 (Brand Story) [신규]
+         - '어사화'라는 이름의 의미를 풀어 브랜드 자산화
+         ========================================================== -->
+    <section id="section-06" class="py-24 bg-stone-900 text-white relative overflow-hidden">
+        <!-- 배경 장식 -->
+        <div class="absolute top-0 left-0 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-96 h-96 bg-amber-400/5 rounded-full blur-3xl"></div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number" style="color: rgb(229, 198, 144);">SECTION 06 — Story</span>
+                <h2 class="text-3xl md:text-5xl font-bold serif mb-4">
+                    이름 속에 이미 <span class="text-amber-300">브랜드</span>가 있습니다
+                </h2>
+            </div>
+
+            <div class="max-w-4xl mx-auto fade-in visible show active aos-animate is-visible in-view">
+                <!-- 어사화 한자 풀이 -->
+                <div class="text-center mb-16">
+                    <p class="text-7xl md:text-9xl serif font-bold gradient-text mb-4" style="background: linear-gradient(135deg, rgb(229, 198, 144), rgb(200, 161, 101)) text; -webkit-text-fill-color: transparent;">
+                        御賜花
+                    </p>
+                    <p class="text-2xl serif text-amber-200 mb-2">어 · 사 · 화</p>
+                    <p class="text-stone-400 text-sm tracking-widest uppercase">Royal Bestowed Flower</p>
+                </div>
+
+                <!-- 스토리 본문 -->
+                <div class="grid md:grid-cols-2 gap-10 mb-12">
+                    <div class="bg-stone-800/50 backdrop-blur-sm p-8 rounded-2xl border border-stone-700">
+                        <h4 class="text-amber-300 font-bold mb-3 serif text-lg">原意 · 본래 의미</h4>
+                        <p class="text-stone-300 leading-relaxed">
+                            조선시대 과거 급제자에게 임금이 직접 하사하던 종이꽃. 
+                            인생에서 가장 빛나는 순간을 축하하는, '하사받은 영광'의 상징입니다.
+                        </p>
+                    </div>
+                    <div class="bg-stone-800/50 backdrop-blur-sm p-8 rounded-2xl border border-stone-700">
+                        <h4 class="text-amber-300 font-bold mb-3 serif text-lg">現代的解釋 · 현대적 재해석</h4>
+                        <p class="text-stone-300 leading-relaxed">
+                            바쁜 일상 속에서 자신에게 선물하는 '나에게 하사하는 하룻밤'. 
+                            기념일과 보상의 공간으로 브랜드 포지셔닝을 명확히 합니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 브랜드 메시지 -->
+                <div class="text-center p-10 rounded-3xl bg-gradient-to-br from-amber-900/30 to-stone-900/30 backdrop-blur-sm border border-amber-700/30">
+                    <p class="serif text-2xl md:text-3xl text-amber-100 leading-relaxed italic">
+                        "오늘 하루, 당신에게도<br>어사화가 내려지기를"
+                    </p>
+                    <p class="text-stone-400 text-sm mt-6 tracking-widest">— 어사화 브랜드 슬로건 제안</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 07 - 인터랙티브 웹앱 작동 방식 (How It Works) [신규]
+         - 추상적 솔루션을 구체적 사용자 여정으로 시각화
+         ========================================================== -->
+    <section id="section-07" class="py-24 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number">SECTION 07 — How It Works</span>
+                <h2 class="text-3xl md:text-5xl font-bold serif mb-4">
+                    고객이 <span class="accent-gold">어사화를 만나는</span> 4단계 여정
+                </h2>
+                <p class="text-lg text-stone-600 max-w-2xl mx-auto">
+                    웹사이트가 아닌, '예약 전 미리 경험하는 공간'을 설계합니다.
+                </p>
+            </div>
+
+            <!-- 4단계 프로세스 -->
+            <div class="grid md:grid-cols-4 gap-6 mb-12">
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="bg-proposal p-8 rounded-3xl h-full border border-stone-100 relative">
+                        <div class="absolute -top-4 -left-2 w-12 h-12 bg-stone-900 text-amber-300 rounded-full flex items-center justify-center font-bold serif text-xl">01</div>
+                        <h4 class="text-lg font-bold mb-3 mt-4">발견</h4>
+                        <p class="text-sm text-stone-500 leading-relaxed mb-4">
+                            네이버 검색 또는 인스타그램 광고에서 어사화 랜딩페이지로 진입
+                        </p>
+                        <p class="text-xs accent-gold tracking-widest">DISCOVERY</p>
+                    </div>
+                </div>
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="bg-proposal p-8 rounded-3xl h-full border border-stone-100 relative">
+                        <div class="absolute -top-4 -left-2 w-12 h-12 bg-stone-900 text-amber-300 rounded-full flex items-center justify-center font-bold serif text-xl">02</div>
+                        <h4 class="text-lg font-bold mb-3 mt-4">탐색</h4>
+                        <p class="text-sm text-stone-500 leading-relaxed mb-4">
+                            인터랙티브 객실 투어 + 시간대별 분위기 미리보기 (낮/밤)
+                        </p>
+                        <p class="text-xs accent-gold tracking-widest">EXPLORE</p>
+                    </div>
+                </div>
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="bg-proposal p-8 rounded-3xl h-full border border-stone-100 relative">
+                        <div class="absolute -top-4 -left-2 w-12 h-12 bg-stone-900 text-amber-300 rounded-full flex items-center justify-center font-bold serif text-xl">03</div>
+                        <h4 class="text-lg font-bold mb-3 mt-4">몰입</h4>
+                        <p class="text-sm text-stone-500 leading-relaxed mb-4">
+                            맞춤형 한옥마을 동선 큐레이션 + 숨은 맛집/카페 추천
+                        </p>
+                        <p class="text-xs accent-gold tracking-widest">IMMERSE</p>
+                    </div>
+                </div>
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="bg-stone-900 text-white p-8 rounded-3xl h-full relative shadow-2xl">
+                        <div class="absolute -top-4 -left-2 w-12 h-12 bg-amber-400 text-stone-900 rounded-full flex items-center justify-center font-bold serif text-xl">04</div>
+                        <h4 class="text-lg font-bold mb-3 mt-4 text-amber-300">예약</h4>
+                        <p class="text-sm text-stone-400 leading-relaxed mb-4">
+                            네이버 예약 직접 연동 + 카카오 채널 즉시 상담
+                        </p>
+                        <p class="text-xs text-amber-400 tracking-widest">CONVERT</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 핵심 기능 강조 -->
+            <div class="bg-proposal p-10 rounded-[3rem] fade-in visible show active aos-animate is-visible in-view">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <p class="accent-gold text-sm tracking-widest mb-3 font-bold">CORE FEATURE</p>
+                        <h3 class="text-2xl md:text-3xl font-bold serif mb-4 leading-tight">
+                            '내 취향에 맞는 객실'<br>맞춤 추천 시스템
+                        </h3>
+                        <p class="text-stone-600 leading-relaxed mb-6">
+                            여행 목적(기념일/혼자/가족), 선호 분위기(아늑함/탁 트임), 함께하고 싶은 활동(불멍/자쿠지)을 
+                            3단계로 답하면, 가장 어울리는 객실과 패키지를 자동 추천합니다.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-white px-4 py-2 rounded-full text-xs font-bold text-stone-700 border border-stone-200">예약 전환율 ↑</span>
+                            <span class="bg-white px-4 py-2 rounded-full text-xs font-bold text-stone-700 border border-stone-200">체류시간 ↑</span>
+                            <span class="bg-white px-4 py-2 rounded-full text-xs font-bold text-stone-700 border border-stone-200">고객 데이터 수집</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-md">
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl">
+                                <span class="w-8 h-8 bg-amber-400 text-white rounded-full flex items-center justify-center text-sm font-bold">Q1</span>
+                                <span class="text-sm text-stone-700">누구와 함께 오시나요?</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl">
+                                <span class="w-8 h-8 bg-amber-400 text-white rounded-full flex items-center justify-center text-sm font-bold">Q2</span>
+                                <span class="text-sm text-stone-700">어떤 분위기를 원하시나요?</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl">
+                                <span class="w-8 h-8 bg-amber-400 text-white rounded-full flex items-center justify-center text-sm font-bold">Q3</span>
+                                <span class="text-sm text-stone-700">꼭 하고 싶은 활동은?</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border-2 border-amber-200">
+                                <span class="w-8 h-8 bg-stone-900 text-amber-300 rounded-full flex items-center justify-center text-sm font-bold">✓</span>
+                                <span class="text-sm font-bold text-stone-900">맞춤 객실 + 할인 쿠폰 제공</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 08 - 실행 로드맵 (Implementation Roadmap) [신규]
+         - 추상적 약속이 아닌 구체적 일정으로 신뢰 구축
+         ========================================================== -->
+    <section id="section-08" class="py-24 bg-proposal">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number">SECTION 08 — Roadmap</span>
+                <h2 class="text-3xl md:text-5xl font-bold serif mb-4">
+                    <span class="accent-gold">4주 안에</span> 어사화의 모든 것이 바뀝니다
+                </h2>
+                <p class="text-lg text-stone-600 max-w-2xl mx-auto">
+                    빠르고 명확한 일정. 사장님은 운영에만 집중하시면 됩니다.
+                </p>
+            </div>
+
+            <!-- 타임라인 -->
+            <div class="max-w-4xl mx-auto">
+                <div class="space-y-8">
+                    <!-- Week 1 -->
+                    <div class="flex gap-6 fade-in visible show active aos-animate is-visible in-view">
+                        <div class="flex flex-col items-center">
+                            <div class="timeline-dot"></div>
+                            <div class="w-px flex-1 bg-stone-300 mt-2"></div>
+                        </div>
+                        <div class="flex-1 bg-white p-8 rounded-2xl shadow-sm border border-stone-100 mb-2">
+                            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <span class="bg-stone-900 text-amber-300 px-3 py-1 rounded-full text-xs font-bold tracking-widest">WEEK 1</span>
+                                <span class="text-xs text-stone-400">기획 · 컨셉 확정</span>
+                            </div>
+                            <h4 class="text-xl font-bold serif mb-3">발견의 단계</h4>
+                            <ul class="space-y-2 text-sm text-stone-600">
+                                <li>• 어사화 현장 방문 및 사장님 인터뷰</li>
+                                <li>• 경쟁사 분석 보고서 제출</li>
+                                <li>• 브랜드 톤앤매너 / 컬러 / 타이포그래피 확정</li>
+                                <li>• 핵심 메시지 및 슬로건 도출</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Week 2 -->
+                    <div class="flex gap-6 fade-in visible show active aos-animate is-visible in-view">
+                        <div class="flex flex-col items-center">
+                            <div class="timeline-dot"></div>
+                            <div class="w-px flex-1 bg-stone-300 mt-2"></div>
+                        </div>
+                        <div class="flex-1 bg-white p-8 rounded-2xl shadow-sm border border-stone-100 mb-2">
+                            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <span class="bg-stone-900 text-amber-300 px-3 py-1 rounded-full text-xs font-bold tracking-widest">WEEK 2</span>
+                                <span class="text-xs text-stone-400">콘텐츠 제작</span>
+                            </div>
+                            <h4 class="text-xl font-bold serif mb-3">자산 구축</h4>
+                            <ul class="space-y-2 text-sm text-stone-600">
+                                <li>• 전문 사진/영상 촬영 (낮·밤·시간대별)</li>
+                                <li>• 객실/조식/자쿠지/불멍 콘텐츠 카피라이팅</li>
+                                <li>• 인터랙티브 웹앱 와이어프레임 / 디자인 시안</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Week 3 -->
+                    <div class="flex gap-6 fade-in visible show active aos-animate is-visible in-view">
+                        <div class="flex flex-col items-center">
+                            <div class="timeline-dot"></div>
+                            <div class="w-px flex-1 bg-stone-300 mt-2"></div>
+                        </div>
+                        <div class="flex-1 bg-white p-8 rounded-2xl shadow-sm border border-stone-100 mb-2">
+                            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <span class="bg-stone-900 text-amber-300 px-3 py-1 rounded-full text-xs font-bold tracking-widest">WEEK 3</span>
+                                <span class="text-xs text-stone-400">개발 · 구축</span>
+                            </div>
+                            <h4 class="text-xl font-bold serif mb-3">웹앱 개발 및 연동</h4>
+                            <ul class="space-y-2 text-sm text-stone-600">
+                                <li>• SPA 기반 인터랙티브 웹앱 개발</li>
+                                <li>• 네이버 예약 / 카카오 채널 / 인스타그램 연동</li>
+                                <li>• Google Analytics 4 + GTM 추적 코드 세팅</li>
+                                <li>• SEO 메타데이터 / 검색엔진 최적화</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Week 4 -->
+                    <div class="flex gap-6 fade-in visible show active aos-animate is-visible in-view">
+                        <div class="flex flex-col items-center">
+                            <div class="timeline-dot" style="background: #4A3E31; box-shadow: 0 0 0 4px rgba(74, 62, 49, 0.2);"></div>
+                        </div>
+                        <div class="flex-1 bg-stone-900 text-white p-8 rounded-2xl shadow-lg mb-2">
+                            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <span class="bg-amber-400 text-stone-900 px-3 py-1 rounded-full text-xs font-bold tracking-widest">WEEK 4</span>
+                                <span class="text-xs text-stone-400">런칭 · 운영</span>
+                            </div>
+                            <h4 class="text-xl font-bold serif mb-3 text-amber-300">정식 런칭 + 사후 관리 시작</h4>
+                            <ul class="space-y-2 text-sm text-stone-300">
+                                <li>• 사이트 정식 오픈 + 네이버 검색 등록</li>
+                                <li>• 인스타그램 / 블로그 발행 캠페인 시작</li>
+                                <li>• 첫 1개월 일별 성과 리포트 제공</li>
+                                <li>• 사장님 운영 가이드 + 셀프 콘텐츠 제작 매뉴얼 전달</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 09 - 기대 효과 (Expected Impact)
+         - 기존 섹션, 위치만 09로 이동
+         ========================================================== -->
+    <section id="section-09" class="py-24 bg-stone-900 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-3xl"></div>
+        
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number" style="color: rgb(229, 198, 144);">SECTION 09 — Impact</span>
+                <h2 class="text-3xl md:text-5xl font-bold serif mb-6">
+                    이균재와 함께라면<br>
+                    <span class="text-amber-400 font-light">어사화는 이렇게 변합니다</span>
+                </h2>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-8 text-center mb-16">
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="text-5xl font-bold text-amber-400 mb-2 serif">45<span class="text-3xl">%</span> ↑</div>
+                    <p class="text-stone-400">평일 공실률 감소</p>
+                </div>
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="text-5xl font-bold text-amber-400 mb-2 serif">320<span class="text-3xl">%</span> ↑</div>
+                    <p class="text-stone-400">네이버 검색 노출량</p>
+                </div>
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="text-5xl font-bold text-amber-400 mb-2 serif">4.9<span class="text-3xl">/5.0</span></div>
+                    <p class="text-stone-400">예상 평균 리뷰 평점</p>
+                </div>
+                <div class="fade-in visible show active aos-animate is-visible in-view">
+                    <div class="text-5xl font-bold text-amber-400 mb-2 serif">Premium</div>
+                    <p class="text-stone-400">브랜드 인지도 구축</p>
+                </div>
+            </div>
+
+            <!-- 단서 / 검증 필요 사항 명시 (정직한 마케팅) -->
+            <div class="max-w-3xl mx-auto bg-stone-800/50 backdrop-blur-sm p-8 rounded-2xl border border-stone-700 fade-in visible show active aos-animate is-visible in-view">
+                <p class="text-amber-300 font-bold mb-3 text-sm tracking-widest">📌 솔직한 첨언</p>
+                <p class="text-stone-300 text-sm leading-relaxed">
+                    위 수치는 동일 카테고리 한옥 숙박 업소들의 평균 개선률을 기반으로 한 <strong>예상치</strong>입니다. 
+                    실제 결과는 시즌, 운영 일관성, 사장님의 콘텐츠 협조도에 따라 변동될 수 있으며, 
+                    런칭 후 첫 3개월간 주간 단위 리포트로 실 데이터를 투명하게 공유드립니다.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         SECTION 10 - 협업 제안 + 투자 패키지 (Final CTA + Investment)
+         - 가격 패키지를 추가하여 의사결정 마찰 최소화
+         ========================================================== -->
+    <section id="section-10" class="py-24 bg-white relative">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-16 fade-in visible show active aos-animate is-visible in-view">
+                <span class="section-number">SECTION 10 — Let's Begin</span>
+                <h2 class="text-3xl md:text-5xl font-bold serif mb-4 leading-tight">
+                    이제 어사화의 <span class="accent-gold">진짜 가치</span>를<br>세상에 보여줄 시간입니다
+                </h2>
+            </div>
+
+            <!-- 패키지 가격 카드 3종 -->
+            <div class="grid md:grid-cols-3 gap-6 mb-16 max-w-6xl mx-auto">
+                <!-- Basic -->
+                <div class="bg-proposal p-10 rounded-3xl fade-in border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <p class="text-sm tracking-widest text-stone-500 mb-2">BASIC</p>
+                    <h3 class="text-2xl font-bold serif mb-4">스타터 패키지</h3>
+                    <p class="text-4xl font-bold accent-gold serif mb-1">₩ 협의</p>
+                    <p class="text-xs text-stone-400 mb-8">— 2주 단기 솔루션 —</p>
+                    <ul class="space-y-3 text-sm text-stone-600">
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> 랜딩페이지 1종 제작</li>
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> 기본 사진 촬영 (반나절)</li>
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> SEO 기본 세팅</li>
+                        <li class="flex gap-2 text-stone-400"><span>✗</span> 인터랙티브 웹앱</li>
+                        <li class="flex gap-2 text-stone-400"><span>✗</span> 사후 운영 관리</li>
+                    </ul>
+                </div>
+
+                <!-- Premium (강조) -->
+                <div class="bg-stone-900 text-white p-10 rounded-3xl fade-in package-card-featured shadow-2xl visible show active aos-animate is-visible in-view">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm tracking-widest text-amber-300">PREMIUM</p>
+                        <span class="bg-amber-400 text-stone-900 text-xs font-bold px-3 py-1 rounded-full">RECOMMENDED</span>
+                    </div>
+                    <h3 class="text-2xl font-bold serif mb-4">브랜드 풀패키지</h3>
+                    <p class="text-4xl font-bold text-amber-300 serif mb-1">₩ 협의</p>
+                    <p class="text-xs text-stone-400 mb-8">— 4주 완성 + 3개월 사후 관리 —</p>
+                    <ul class="space-y-3 text-sm text-stone-300">
+                        <li class="flex gap-2"><span class="text-amber-300">✓</span> 인터랙티브 웹앱 풀패키지</li>
+                        <li class="flex gap-2"><span class="text-amber-300">✓</span> 전문 사진/영상 (3일)</li>
+                        <li class="flex gap-2"><span class="text-amber-300">✓</span> 브랜드 가이드라인 제작</li>
+                        <li class="flex gap-2"><span class="text-amber-300">✓</span> SNS 콘텐츠 30개 + 발행</li>
+                        <li class="flex gap-2"><span class="text-amber-300">✓</span> 3개월 주간 리포트</li>
+                    </ul>
+                </div>
+
+                <!-- Enterprise -->
+                <div class="bg-proposal p-10 rounded-3xl fade-in border border-stone-100 visible show active aos-animate is-visible in-view">
+                    <p class="text-sm tracking-widest text-stone-500 mb-2">PARTNERSHIP</p>
+                    <h3 class="text-2xl font-bold serif mb-4">장기 파트너십</h3>
+                    <p class="text-4xl font-bold accent-gold serif mb-1">₩ 협의</p>
+                    <p class="text-xs text-stone-400 mb-8">— 12개월 종합 운영 —</p>
+                    <ul class="space-y-3 text-sm text-stone-600">
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> Premium 전체 항목 포함</li>
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> 월 2회 콘텐츠 리뉴얼</li>
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> 광고 캠페인 운영</li>
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> 분기별 성과 컨설팅</li>
+                        <li class="flex gap-2"><span class="accent-gold">✓</span> 네이버/카카오 광고 대행</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- CTA 박스 -->
+            <div class="max-w-4xl mx-auto bg-proposal p-12 md:p-16 rounded-[4rem] shadow-xl fade-in border border-stone-200 text-center visible show active aos-animate is-visible in-view">
+                <p class="text-xl text-stone-600 mb-10">
+                    단순한 대행사가 아닌, 어사화의 성공을 함께 고민하는<br>
+                    든든한 파트너가 되어드리겠습니다.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-6 justify-center">
+                    <a href="tel:010-0000-0000" class="bg-stone-800 text-white px-12 py-5 rounded-full font-bold text-lg hover:bg-black transition shadow-lg">
+                        상담 및 미팅 예약
+                    </a>
+                    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="border-2 border-stone-800 text-stone-800 px-12 py-5 rounded-full font-bold text-lg hover:bg-stone-800 hover:text-white transition">
+                        제안서 다시보기
+                    </button>
+                </div>
+                <p class="mt-12 text-stone-400 text-sm italic serif">
+                    "사장님의 공간이 가진 철학, 이균재의 기술로 완성하겠습니다."
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================================
+         FOOTER
+         ========================================================== -->
+    <footer class="py-12 bg-stone-50 border-t border-stone-100">
+        <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="text-center md:text-left">
+                <p class="serif text-xl font-bold text-stone-800">어사화 Branding Project</p>
+                <p class="text-stone-500 mt-2 text-sm">Proposed by Daper-jun-namja Lee Gyun-jae</p>
+            </div>
+            <div class="flex gap-6 text-stone-400 text-sm flex-wrap justify-center">
+                <span>Marketing</span>
+                <span>UI/UX Design</span>
+                <span>Content Strategy</span>
+                <span>Web Development</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================================
+         JAVASCRIPT
+         ========================================================== -->
+    <script>
+        // ----------------------------------------------------------
+        // 시장 분석 차트 (Radar Chart for Professionalism)
+        // - 일반 한옥 숙소 vs 어사화 강점 비교 시각화
+        // ----------------------------------------------------------
+        function initMarketChart() {
+            const ctx = document.getElementById('marketChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['수면의 질', '조식 퀄리티', '위치 편의성', '프라이빗 보장', '브랜드 감성', '전통미'],
+                    datasets: [{
+                        label: '일반 한옥 숙소',
+                        data: [40, 30, 80, 50, 40, 90],
+                        backgroundColor: 'rgba(209, 213, 219, 0.2)',
+                        borderColor: 'rgba(209, 213, 219, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: '어사화 (강점 분석)',
+                        data: [95, 98, 95, 85, 90, 85],
+                        backgroundColor: 'rgba(200, 161, 101, 0.4)',
+                        borderColor: '#C8A165',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#C8A165'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: { display: false },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // ----------------------------------------------------------
+        // Scroll Fade-in Animation (Intersection Observer)
+        // - 뷰포트 진입 시 페이드인 효과 적용
+        // ----------------------------------------------------------
+        const observerOptions = { threshold: 0.15 };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // ----------------------------------------------------------
+        // 초기화
+        // ----------------------------------------------------------
+        window.onload = function() {
+            initMarketChart();
+        };
+    </script>
+
+
+
+<!-- ============================================================
+  보험의 기준(배진우) · 메타리치 시그널그룹 브랜딩 AI
+  이 페이지는 설계사 브랜딩 도구에서 생성되었습니다.
+  용도: 영업·홍보·고객전달·제안서 브리핑 (조직 내 사용 허용)
+  금지: 재배포·재판매·타 조직 사용
+  ============================================================ -->
+</body></html>

@@ -186,7 +186,11 @@ export default function AdminPopups({
     }
 
     if (normalizeRole(viewer) === "master") {
+      // 유료 기능 접근 권한 일괄 저장
       updatePayload.crm_access = user.crm_access === true || user.crm_access === "true"
+      updatePayload.office_access = user.office_access === true || user.office_access === "true"
+      updatePayload.claim_access = user.claim_access === true || user.claim_access === "true"
+      updatePayload.branding_access = user.branding_access === true || user.branding_access === "true"
     }
 
     const { error } = await supabase.from("users").update(updatePayload).eq("id", user.id)
@@ -269,7 +273,7 @@ export default function AdminPopups({
                     <tr>
                       <th className="p-4 md:p-5">직원 정보</th>
                       <th className="p-4 text-center md:p-5">직급 / 본부 / 사업부 / 지점</th>
-                      {normalizeRole(viewer) === "master" && <th className="p-4 text-center md:p-5">CRM</th>}
+                      {normalizeRole(viewer) === "master" && <th className="p-4 text-center md:p-5">유료 기능 권한</th>}
                       <th className="p-4 text-center md:p-5">처리</th>
                     </tr>
                   </thead>
@@ -325,10 +329,23 @@ export default function AdminPopups({
                         </td>
                         {normalizeRole(viewer) === "master" && (
                           <td className="p-4 text-center md:p-6">
-                            <label className="flex cursor-pointer flex-col items-center gap-1.5">
-                              <input type="checkbox" checked={user.crm_access === true || user.crm_access === "true"} onChange={() => updateUserInfo(user.id, "crm_access", String(!(user.crm_access === true || user.crm_access === "true")))} className="h-5 w-5 cursor-pointer accent-[#1a3a6e]" />
-                              <span className="text-[11px] font-bold text-slate-500">{(user.crm_access === true || user.crm_access === "true") ? "허용" : "비허용"}</span>
-                            </label>
+                            <div className="grid min-w-[240px] grid-cols-2 gap-3">
+                              {([
+                                ["crm_access", "CRM"],
+                                ["office_access", "사무실"],
+                                ["claim_access", "청구AI"],
+                                ["branding_access", "브랜딩AI"],
+                              ] as const).map(([field, label]) => {
+                                const checked = user[field] === true || user[field] === "true"
+                                return (
+                                  <label key={field} className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                                    <input type="checkbox" checked={checked} onChange={() => updateUserInfo(user.id, field, String(!checked))} className="h-5 w-5 cursor-pointer accent-[#1a3a6e]" />
+                                    <span className="text-[11px] font-black text-slate-700">{label}</span>
+                                    <span className="text-[10px] font-bold text-slate-500">{checked ? "허용" : "비허용"}</span>
+                                  </label>
+                                )
+                              })}
+                            </div>
                           </td>
                         )}
                         <td className="p-4 text-center md:p-6">

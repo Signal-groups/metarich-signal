@@ -1,0 +1,146 @@
+[
+  {
+    "id": "ext-01",
+    "file": "template-01.html",
+    "name": "다이닝 프리미엄형",
+    "category": "프리미엄",
+    "style": "dark-gold",
+    "dp_remaining": 0,
+    "size_kb": 1524
+  },
+  {
+    "id": "ext-02",
+    "file": "template-02.html",
+    "name": "다이닝 엘레강스형",
+    "category": "프리미엄",
+    "style": "dark-gold",
+    "dp_remaining": 0,
+    "size_kb": 1524
+  },
+  {
+    "id": "ext-03",
+    "file": "template-03.html",
+    "name": "아카데미 클린형",
+    "category": "교육/전문",
+    "style": "light-blue",
+    "dp_remaining": 0,
+    "size_kb": 827
+  },
+  {
+    "id": "ext-04",
+    "file": "template-04.html",
+    "name": "다크 퍼플 임팩트형",
+    "category": "임팩트",
+    "style": "dark-purple",
+    "dp_remaining": 0,
+    "size_kb": 3463
+  },
+  {
+    "id": "ext-05",
+    "file": "template-05.html",
+    "name": "대시보드 보고서형",
+    "category": "전문/데이터",
+    "style": "light-clean",
+    "dp_remaining": 0,
+    "size_kb": 1104
+  },
+  {
+    "id": "ext-06",
+    "file": "template-06.html",
+    "name": "브랜드 혁신 제안형",
+    "category": "제안서",
+    "style": "white-serif",
+    "dp_remaining": 0,
+    "size_kb": 91
+  },
+  {
+    "id": "ext-07",
+    "file": "template-07.html",
+    "name": "아틀리에 베이지형",
+    "category": "프리미엄",
+    "style": "beige",
+    "dp_remaining": 0,
+    "size_kb": 2373
+  },
+  {
+    "id": "ext-08",
+    "file": "template-08.html",
+    "name": "볼드 크림 에너지형",
+    "category": "임팩트",
+    "style": "cream-bold",
+    "dp_remaining": 0,
+    "size_kb": 67
+  },
+  {
+    "id": "ext-09",
+    "file": "template-09.html",
+    "name": "다크 그로스형",
+    "category": "임팩트",
+    "style": "dark-minimal",
+    "dp_remaining": 0,
+    "size_kb": 90
+  },
+  {
+    "id": "ext-10",
+    "file": "template-10.html",
+    "name": "다크 네이비 전문형",
+    "category": "전문/데이터",
+    "style": "dark-navy",
+    "dp_remaining": 0,
+    "size_kb": 77
+  },
+  {
+    "id": "ext-11",
+    "file": "template-11.html",
+    "name": "다크 퍼플 스튜디오형",
+    "category": "임팩트",
+    "style": "dark-purple2",
+    "dp_remaining": 0,
+    "size_kb": 840
+  },
+  {
+    "id": "ext-12",
+    "file": "template-12.html",
+    "name": "라이트 세무/전문형",
+    "category": "전문/데이터",
+    "style": "light-mono",
+    "dp_remaining": 0,
+    "size_kb": 102
+  },
+  {
+    "id": "ext-13",
+    "file": "template-13.html",
+    "name": "화이트 노무/컨설팅형",
+    "category": "전문/데이터",
+    "style": "white-warm",
+    "dp_remaining": 0,
+    "size_kb": 436
+  },
+  {
+    "id": "ext-14",
+    "file": "template-14.html",
+    "name": "B2B SaaS 플랫폼형",
+    "category": "테크",
+    "style": "tech-blue",
+    "dp_remaining": 0,
+    "size_kb": 263
+  },
+  {
+    "id": "ext-15",
+    "file": "template-15.html",
+    "name": "민트 그린 서비스형",
+    "category": "서비스",
+    "style": "mint",
+    "dp_remaining": 0,
+    "size_kb": 58
+  },
+  {
+    "id": "ext-16",
+    "file": "template-16.html",
+    "name": "에메랄드 에듀형",
+    "category": "교육/전문",
+    "style": "emerald",
+    "dp_remaining": 0,
+    "size_kb": 174
+  }
+]

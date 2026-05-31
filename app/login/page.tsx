@@ -7,6 +7,7 @@ import { supabase } from "../../lib/supabase"
 const rememberedEmailKey = "insu-remembered-email"
 const rememberIdKey = "insu-remember-id"
 const autoLoginKey = "insu-auto-login"
+const publicRedirectFallbacks = new Set(["/card-consult"])
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -20,7 +21,8 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const value = params.get("redirectTo") || "/dashboard"
-    const nextRedirect = value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard"
+    const safeRedirect = value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard"
+    const nextRedirect = publicRedirectFallbacks.has(safeRedirect) ? "/dashboard" : safeRedirect
     const savedRemember = localStorage.getItem(rememberIdKey) !== "false"
     const savedAutoLogin = localStorage.getItem(autoLoginKey) === "true"
     const savedEmail = localStorage.getItem(rememberedEmailKey) || ""
