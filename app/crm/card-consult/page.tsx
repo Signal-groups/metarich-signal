@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 
 // ──────────────────────────────────────────────
@@ -97,6 +97,8 @@ const CRITERIA_OPTIONS = [
   { label: '잘 모르겠다 / 상담사 추천', icon: '🤝' },
 ]
 
+const MAX_CONCERN_CARDS = 5
+
 function getPersonality(perception: string, criteria: string[]) {
   if (perception === '과다한 것 같다') {
     return {
@@ -135,6 +137,7 @@ function getPersonality(perception: string, criteria: string[]) {
 export default function CardConsultPage() {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [advisor, setAdvisor] = useState({ name: '', phone: '' })
+  const resultRef = useRef<HTMLDivElement>(null)
 
   // Step 1
   const [customerName, setCustomerName] = useState('')
@@ -172,9 +175,23 @@ export default function CardConsultPage() {
   const toggleCard = (id: string) => {
     if (selectedCards.includes(id)) {
       setSelectedCards(prev => prev.filter(c => c !== id))
-    } else if (selectedCards.length < 3) {
+    } else if (selectedCards.length < MAX_CONCERN_CARDS) {
       setSelectedCards(prev => [...prev, id])
     }
+  }
+
+  const saveResultImage = async () => {
+    if (!resultRef.current) return
+    const { default: html2canvas } = await import('html2canvas')
+    const canvas = await html2canvas(resultRef.current, {
+      backgroundColor: '#f1f5f9',
+      scale: 2,
+      useCORS: true,
+    })
+    const link = document.createElement('a')
+    link.href = canvas.toDataURL('image/png')
+    link.download = `보장카드상담-${customerName || '고객'}-${new Date().toISOString().slice(0, 10)}.png`
+    link.click()
   }
 
   const toggleCriteria = (label: string) => {
@@ -194,6 +211,7 @@ export default function CardConsultPage() {
 
   const personality = getPersonality(premiumPerception, criteria)
   const selectedCardData = selectedCards.map(id => CARDS.find(c => c.id === id)!)
+  const advisorExpertLabel = `${advisor.name || '담당자'} 보험 전문가`
 
   const stepLabels = ['기본 정보', '카드 선택', '보험 기준', '결과 확인']
 
@@ -360,9 +378,9 @@ export default function CardConsultPage() {
               </h1>
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
-                background: selectedCards.length === 3 ? '#dcfce7' : '#f1f5f9',
+                background: selectedCards.length > 0 ? '#dcfce7' : '#f1f5f9',
                 borderRadius: 50, padding: '6px 16px',
-                color: selectedCards.length === 3 ? '#15803d' : '#64748b',
+                color: selectedCards.length > 0 ? '#15803d' : '#64748b',
                 fontSize: 13, fontWeight: 700, transition: 'all 0.3s',
               }}>
                 {selectedCards.length === 3 ? '✓ 3가지 선택 완료!' : `${selectedCards.length} / 3 선택`}
