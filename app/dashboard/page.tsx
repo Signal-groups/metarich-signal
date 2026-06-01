@@ -88,17 +88,17 @@ function ConsultingBox({
   onToggle: (id: string) => void,
 }) {
   return (
-    <div className="relative">
+    <div className="relative min-w-0 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <button 
         onClick={() => !isEditMode && onClick(menu)} 
-        className={`h-40 w-full bg-white rounded-2xl flex flex-col p-5 shadow-sm border text-left transition-all group ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
+        className={`h-40 w-full min-w-0 bg-white rounded-2xl flex flex-col p-5 shadow-sm border text-left transition-all group [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all] ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
       >
         <div className="mb-3 transition-transform group-hover:scale-110">
           <ToolIcon icon={menu.icon} />
         </div>
-        <div className="flex-1">
-          <h3 className="text-[15px] font-bold text-[#1e293b] mb-1">{menu.title}</h3>
-          <p className="text-[12px] text-[#94a3b8] leading-tight break-keep">{menu.desc}</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-1 min-w-0 text-[15px] font-bold text-[#1e293b] leading-snug [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">{menu.title}</h3>
+          <p className="min-w-0 text-[12px] text-[#94a3b8] leading-tight [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">{menu.desc}</p>
         </div>
         <div className="mt-4 text-[12px] font-bold text-[#2563eb] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           시작하기
@@ -236,7 +236,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f4ff] flex flex-col lg:flex-row overflow-x-hidden">
+    <div className="min-h-screen bg-[#f0f4ff] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <Sidebar 
         user={user} 
         selectedDate={selectedDate} 
@@ -253,12 +253,12 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      <main className="flex-1 p-4 pb-28 transition-all duration-300 lg:ml-[300px] lg:p-10">
-        <div className="max-w-[1400px] mx-auto">
+      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 lg:ml-[300px] lg:p-10">
+        <div className="mx-auto max-w-[1400px] min-w-0">
           {(
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
       viewMode === 'office' ? renderOfficeView() : (
-              <div className="max-w-5xl mx-auto py-6 md:py-8">
+              <div className="mx-auto max-w-5xl min-w-0 py-6 md:py-8">
                 <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h1 className="text-3xl font-black text-[#1a3a6e] tracking-tight">고객 상담 도구</h1>

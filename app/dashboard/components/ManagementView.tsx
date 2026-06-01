@@ -219,7 +219,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
   const achievementRate = Math.round((totals.amt / (deptMeta.targetAmt || 1)) * 100)
 
   return (
-    <div className="flex-1 space-y-6 p-4 pb-20 font-black text-black md:p-6">
+    <div className="min-w-0 flex-1 space-y-6 p-4 pb-20 font-black text-[#111827] md:p-6 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <div onClick={() => setIsNoticeExpanded(!isNoticeExpanded)} className={`flex cursor-pointer items-center rounded-2xl border-l-[6px] border-[#2563eb] bg-white p-4 shadow-sm transition-all ${isNoticeExpanded ? "min-h-[3.5rem] h-auto" : "h-14 overflow-hidden"}`}>
         <div className={`w-full text-sm font-black text-[#1a3a6e] md:text-base ${isNoticeExpanded ? "whitespace-normal leading-relaxed" : "whitespace-nowrap"}`}>
           {globalNotice}
@@ -245,7 +245,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-6">
+      <div className="grid min-w-0 grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-6">
         {QUICK_LINKS.map((link) => <QuickLink key={link.label} {...link} />)}
         {canUseCrm && <QuickLink href="/crm" label="고객관리" />}
         <div className="relative col-span-2 md:col-span-1">
@@ -368,7 +368,7 @@ export function departmentSettingsKey(headquarter: string, department: string) {
 
 function Metric({ label, value }: { label: string, value: string }) {
   return (
-    <div className="rounded-2xl bg-white/10 p-4 text-center">
+    <div className="min-w-0 rounded-2xl bg-white/10 p-4 text-center [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <p className="mb-1 text-[12px] text-sky-200">{label}</p>
       <p className="text-lg font-black text-white">{value}</p>
     </div>
@@ -378,7 +378,7 @@ function Metric({ label, value }: { label: string, value: string }) {
 function MonitorBar({ label, rate, current, target, unit }: any) {
   const styles = rate >= 80 ? { bar: "bg-blue-500", text: "text-blue-600" } : rate >= 65 ? { bar: "bg-orange-500", text: "text-orange-600" } : rate >= 30 ? { bar: "bg-yellow-400", text: "text-yellow-500" } : { bar: "bg-red-500", text: "text-red-600" }
   return (
-    <div className="space-y-3 font-black">
+    <div className="min-w-0 space-y-3 font-black [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <div className="flex items-end justify-between">
         <div className="flex flex-col">
           <span className="text-[10px] font-black uppercase text-slate-400">{label}</span>
@@ -395,7 +395,7 @@ function MonitorBar({ label, rate, current, target, unit }: any) {
 
 function QuickLink({ href, label }: { href: string, label: string }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center text-[13px] font-black shadow-sm transition-all hover:border-[#2563eb] hover:text-[#1a3a6e]">
+    <a href={href} target="_blank" rel="noreferrer" className="flex min-w-0 items-center justify-center rounded-2xl border border-slate-200 bg-white p-4 text-center text-[13px] font-black leading-snug shadow-sm transition-all hover:border-[#2563eb] hover:text-[#1a3a6e] [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       {label}
     </a>
   )
@@ -403,7 +403,7 @@ function QuickLink({ href, label }: { href: string, label: string }) {
 
 function FilterButton({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`rounded-full px-4 py-2 text-[13px] font-black transition ${active ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+    <button onClick={onClick} className={`max-w-full rounded-full px-4 py-2 text-[13px] font-black leading-snug transition [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all] ${active ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
       {label}
     </button>
   )

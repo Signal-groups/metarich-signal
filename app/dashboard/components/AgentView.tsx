@@ -158,7 +158,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20">
+    <div className="min-w-0 space-y-6 animate-in slide-in-from-bottom-4 pb-20 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       {/* Upper Notice Banner */}
       <div className="bg-[#1a3a6e] p-4 rounded-2xl flex items-center gap-4 overflow-hidden shadow-lg border border-white/10">
         <span className="bg-[#0ea5e9] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-widest shrink-0 uppercase">Notice</span>
@@ -168,7 +168,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       </div>
 
       {/* Quick Links Section */}
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-white flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-white flex flex-col md:flex-row justify-between items-center gap-6 min-w-0">
         <div className="flex items-center gap-4 shrink-0">
           <div className="w-12 h-12 rounded-full bg-[#eff6ff] flex items-center justify-center text-[#2563eb] text-xl">👤</div>
           <div>
@@ -176,7 +176,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <p className="text-[11px] text-[#94a3b8] font-bold uppercase mt-1 tracking-widest">Insurance Agent</p>
           </div>
         </div>
-        <div className="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-center">
+        <div className="flex min-w-0 flex-wrap gap-2 w-full md:w-auto justify-center">
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-[#f8fafc] text-[#475569]" />
@@ -424,7 +424,7 @@ function QuickBtn({ label, url, onClick, color, className }: any) {
   return (
     <button 
       onClick={handleClick} 
-      className={`${color} ${className || ""} px-5 py-3 rounded-xl font-bold text-[12px] shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 hover:shadow-md shrink-0`}
+      className={`${color} ${className || ""} min-w-0 max-w-full px-5 py-3 rounded-xl font-bold text-[12px] leading-snug shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 hover:shadow-md [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]`}
     >
       {label}
     </button> 
