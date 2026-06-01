@@ -573,7 +573,7 @@ export default function ProductAllPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#eef2f7] text-slate-900">
+    <main className="min-h-screen bg-[#eef2f7] text-slate-900 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <div className="grid min-h-screen lg:grid-cols-[310px_1fr]">
         <aside className="bg-[#142132] text-slate-200 lg:sticky lg:top-0 lg:h-screen">
           <div className="flex h-full flex-col">
@@ -753,7 +753,7 @@ function ProductTypeTable({ productTypes }: { productTypes: NonNullable<ProductT
 
 function InfoBlock({ icon, title, items, tone = "slate" }: { icon: ReactNode; title: string; items: string[]; tone?: "slate" | "amber" }) {
   return (
-    <section className={`rounded-lg border p-5 ${tone === "amber" ? "border-amber-100 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
+    <section className={`rounded-lg border p-5 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all] ${tone === "amber" ? "border-amber-100 bg-amber-50" : "border-slate-200 bg-slate-50"}`}>
       <div className={`mb-3 flex items-center gap-2 text-[15px] font-black ${tone === "amber" ? "text-amber-700" : "text-[#14386f]"}`}>
         {icon}
         {title}

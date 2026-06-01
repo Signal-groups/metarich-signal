@@ -623,7 +623,7 @@ export default function SalesBookPage() {
   }, [memo])
 
   return (
-    <main className="min-h-screen bg-[#eef3fb] text-slate-900">
+    <main className="min-h-screen bg-[#eef3fb] text-slate-900 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <div className="mx-auto max-w-[1480px] px-5 py-6 md:px-8">
         <section className="mb-5 rounded-2xl bg-[#12325f] px-6 py-6 text-white shadow-lg md:px-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
@@ -753,7 +753,7 @@ function ListCard({ title, items }: { title: string; items: string[] }) {
         {items.map((item, index) => (
           <div key={item} className="flex gap-3 rounded-xl bg-slate-50 px-4 py-3">
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-[12px] font-black text-[#2563eb] shadow-sm">{index + 1}</span>
-            <span className="text-[14px] font-bold leading-7 text-slate-700">{item}</span>
+            <span className="min-w-0 text-[14px] font-bold leading-7 text-slate-700">{item}</span>
           </div>
         ))}
       </div>
@@ -763,7 +763,7 @@ function ListCard({ title, items }: { title: string; items: string[] }) {
 
 function InfoCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all] md:p-6">
       <h2 className="mb-4 text-xl font-black text-[#12325f]">{title}</h2>
       {children}
     </section>

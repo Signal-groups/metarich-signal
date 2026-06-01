@@ -391,7 +391,7 @@ export default function SalesMasterPage() {
   }, [customerType, phase, situation])
 
   return (
-    <main className="min-h-screen bg-[#eef3fb] text-slate-900">
+    <main className="min-h-screen bg-[#eef3fb] text-slate-900 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <div className="mx-auto max-w-[1480px] px-5 py-6 md:px-8">
         <section className="mb-5 rounded-2xl bg-[#173b72] px-6 py-6 text-white shadow-lg md:px-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
@@ -579,7 +579,7 @@ function DbSection() {
 
 function AppointmentSection() {
   return (
-    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-4 md:grid-cols-2">
       {appointmentScripts.map((item) => (
         <InfoCard key={item.type} title={item.type}>
           <p className="mb-4 text-[13px] font-black text-[#2563eb]">{item.tip}</p>
@@ -765,7 +765,7 @@ function ListCard({ title, items }: { title: string; items: string[] }) {
 
 function InfoCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all] md:p-6">
       <h2 className="mb-4 text-xl font-black text-[#173b72]">{title}</h2>
       {children}
     </section>

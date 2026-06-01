@@ -383,7 +383,7 @@ export default function CardConsultPage() {
                 color: selectedCards.length > 0 ? '#15803d' : '#64748b',
                 fontSize: 13, fontWeight: 700, transition: 'all 0.3s',
               }}>
-                {selectedCards.length === 3 ? '✓ 3가지 선택 완료!' : `${selectedCards.length} / 3 선택`}
+                {selectedCards.length > 0 ? `${selectedCards.length} / ${MAX_CONCERN_CARDS} 선택` : `최대 ${MAX_CONCERN_CARDS}개까지 선택`}
               </div>
             </div>
 
@@ -395,7 +395,7 @@ export default function CardConsultPage() {
               {CARDS.map(card => {
                 const idx = selectedCards.indexOf(card.id)
                 const isSelected = idx !== -1
-                const isFull = selectedCards.length >= 3 && !isSelected
+                const isFull = selectedCards.length >= MAX_CONCERN_CARDS && !isSelected
                 return (
                   <div
                     key={card.id}
@@ -441,8 +441,8 @@ export default function CardConsultPage() {
 
             <NavButton
               onClick={() => setStep(3)}
-              disabled={selectedCards.length !== 3}
-              label={selectedCards.length === 3 ? '다음 단계로 →' : `${3 - selectedCards.length}개 더 선택해 주세요`}
+              disabled={selectedCards.length === 0}
+              label={selectedCards.length > 0 ? '다음 단계로 →' : '걱정되는 보장을 선택해 주세요'}
             />
             <BackButton onClick={() => setStep(1)} />
           </div>
@@ -512,6 +512,7 @@ export default function CardConsultPage() {
         ═══════════════════════════════════════════ */}
         {step === 4 && (
           <div style={{ animation: 'fadeInUp 0.4s ease' }}>
+            <div ref={resultRef}>
 
             {/* 성향 분석 배너 */}
             <div style={{
@@ -571,7 +572,8 @@ export default function CardConsultPage() {
                     key={card.id}
                     onClick={() => setFlippedSet(prev => {
                       const next = new Set(prev)
-                      next.has(card.id) ? next.delete(card.id) : next.add(card.id)
+                      if (next.has(card.id)) next.delete(card.id)
+                      else next.add(card.id)
                       return next
                     })}
                     style={{ perspective: '1000px', cursor: 'pointer' }}
@@ -672,7 +674,7 @@ export default function CardConsultPage() {
                 고객님의 보장 파트너
               </div>
               <div style={{ color: '#fff', fontSize: 22, fontWeight: 900, marginBottom: 6 }}>
-                {advisor.name || '담당자'}
+                {advisorExpertLabel}
               </div>
               {advisor.phone && (
                 <div style={{
@@ -686,8 +688,20 @@ export default function CardConsultPage() {
                 </div>
               )}
             </div>
+            </div>
 
             {/* 새 상담 시작 */}
+            <button
+              onClick={saveResultImage}
+              style={{
+                width: '100%', background: '#1A2744', color: '#fff',
+                border: 'none', borderRadius: 16, padding: '14px 0',
+                fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+                marginBottom: 10,
+              }}
+            >
+              결과 이미지 저장
+            </button>
             <button
               onClick={resetAll}
               style={{
