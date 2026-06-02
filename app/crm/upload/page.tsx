@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx'
 import XLSXStyle from 'xlsx-js-style'
 import { supabase } from '../../../lib/supabase'
 import { blobToDataUrl, deleteLocalFile, getLocalFile, saveLocalFile } from '../../../lib/crmLocalFiles'
-import { fetchUploadAnalyses, mergeAnalysisItems, saveGptsAnalysisToSupabase } from '../../../lib/crmAnalysisPersistence'
+import { fetchUploadAnalyses, mergeAnalysisItems, saveGptsAnalysisToSupabase, CoverageDiffItem } from '../../../lib/crmAnalysisPersistence'
 import { buildStyledSheet, parseBojangtableSheet } from '../../../lib/coverageExcel'
 
 const CATEGORIES = ['전체', '보장분석', '암', '뇌', '심장', '수술', '간병', '재가', '치매']
@@ -88,6 +88,7 @@ export default function UploadPage() {
   const [importing, setImporting] = useState(false)
   const [gptsCode, setGptsCode] = useState('')
   const [gptsError, setGptsError] = useState('')
+  const [gptsDiff, setGptsDiff] = useState<CoverageDiffItem[] | null>(null)
 
   useEffect(() => {
     const loadCustomers = async () => {
@@ -409,6 +410,7 @@ export default function UploadPage() {
 
   const applyGptsCode = async () => {
     setGptsError('')
+    setGptsDiff(null)
     try {
       const parsed = parseGptsJsonCode(gptsCode)
       const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId)
@@ -462,6 +464,10 @@ export default function UploadPage() {
 
       if (saved.ok && saved.data) {
         setItems((prev) => mergeAnalysisItems([saved.data as UploadItem], prev.filter((item) => item.id !== id)))
+        // 변경 감지 결과 표시
+        if (saved.diff && saved.diff.length > 0) {
+          setGptsDiff(saved.diff)
+        }
       } else {
         setGptsError('화면에는 임시 반영했습니다. Supabase SQL 적용 전이면 다른 기기에서는 아직 보이지 않을 수 있습니다.')
       }
@@ -562,6 +568,45 @@ export default function UploadPage() {
           style={{ minHeight: 150, resize: 'vertical', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace', fontSize: 12, lineHeight: 1.6 }}
         />
         {gptsError && <div style={{ marginTop: 8, color: '#b91c1c', fontSize: 12 }}>{gptsError}</div>}
+
+        {/* ── 보장 변경 감지 결과 ── */}
+        {gptsDiff && gptsDiff.length > 0 && (
+          <div style={{ marginTop: 12, border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', fontSize: 12 }}>
+            <div style={{ background: '#f8fafc', padding: '8px 12px', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>📋 보장 변경 감지 결과</span>
+              <button onClick={() => setGptsDiff(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 14 }}>✕</button>
+            </div>
+            <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+              {gptsDiff.filter(i => i.status !== 'unchanged').map((item, idx) => {
+                const color = item.status === 'added' ? '#15803d' : item.status === 'removed' ? '#b91c1c' : '#1d4ed8'
+                const bg = item.status === 'added' ? '#f0fdf4' : item.status === 'removed' ? '#fef2f2' : '#eff6ff'
+                const label = item.status === 'added' ? '✚ 추가' : item.status === 'removed' ? '✕ 제거' : '↑ 변경'
+                const amtStr = (v: number | null | undefined) => v != null ? `${(v / 10000).toLocaleString()}만원` : '-'
+                return (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: bg, borderTop: '1px solid #f1f5f9' }}>
+                    <span style={{ color, fontWeight: 700, width: 40, flexShrink: 0 }}>{label}</span>
+                    <span style={{ color: '#475569', flex: 1 }}>[{item.category}] {item.name}</span>
+                    {item.status === 'changed' && (
+                      <span style={{ color, fontWeight: 600 }}>{amtStr(item.prevAmount)} → {amtStr(item.nextAmount)}</span>
+                    )}
+                    {item.status === 'added' && <span style={{ color }}>{amtStr(item.nextAmount)}</span>}
+                    {item.status === 'removed' && <span style={{ color }}>{amtStr(item.prevAmount)}</span>}
+                  </div>
+                )
+              })}
+              {gptsDiff.every(i => i.status === 'unchanged') && (
+                <div style={{ padding: '10px 12px', color: '#64748b' }}>변경된 보장 항목이 없습니다.</div>
+              )}
+            </div>
+            <div style={{ padding: '6px 12px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', color: '#64748b', display: 'flex', gap: 12 }}>
+              <span>✚ 추가 {gptsDiff.filter(i => i.status === 'added').length}건</span>
+              <span>✕ 제거 {gptsDiff.filter(i => i.status === 'removed').length}건</span>
+              <span>↑ 변경 {gptsDiff.filter(i => i.status === 'changed').length}건</span>
+              <span>= 유지 {gptsDiff.filter(i => i.status === 'unchanged').length}건</span>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-center" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
           <div className="text-muted" style={{ fontSize: 12 }}>
             코드블록 표시가 함께 복사되어도 자동으로 JSON 부분만 읽습니다.

@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import LongTermCareCalc from "./LongTermCareCalc"
 
 const C = {
   gold: "#C9A84C",
@@ -20,7 +21,7 @@ const C = {
   muted: "#718096",
 }
 
-type TabId = "retirement" | "compare" | "inflation" | "compound" | "variable"
+type TabId = "retirement" | "care" | "compare" | "inflation" | "compound" | "variable"
 type RetirementLevelId = "unprepared" | "minimum" | "standard" | "comfort"
 type PensionType = "db" | "dc" | "irp"
 type CompoundMode = "single" | "monthly"
@@ -53,6 +54,7 @@ const dcaPriceAt = (index: number) => {
 
 const MENU: { id: TabId; label: string; desc: string }[] = [
   { id: "retirement", label: "노후 자금 계산", desc: "국민연금·퇴직연금·필요 생활비" },
+  { id: "care", label: "재가/장기요양 계산", desc: "등급·횟수·본인부담·설계 보장 적용" },
   { id: "compare", label: "보험 vs 은행 저축", desc: "동일 납입 조건 수령액 비교" },
   { id: "inflation", label: "화폐가치 하락", desc: "물가 상승에 따른 구매력 변화" },
   { id: "compound", label: "복리 계산", desc: "일시납·월적립식과 거치기간" },
@@ -309,6 +311,7 @@ export default function FinancialCalc() {
           </div>
 
           {tab === "retirement" && <RetirementCalc state={state} patch={patch} />}
+          {tab === "care" && <LongTermCareCalc />}
           {tab === "compare" && <CompareCalc />}
           {tab === "inflation" && <InflationCalc />}
           {tab === "compound" && <CompoundCalc age={state.age} />}
@@ -792,3 +795,4 @@ function VariableCalc() {
     </div>
   )
 }
+

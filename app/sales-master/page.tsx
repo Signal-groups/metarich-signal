@@ -459,7 +459,7 @@ function ProcessHome({ onSelect }: { onSelect: (id: StageId) => void }) {
           <div className="mt-6 space-y-2">
             {stages.map((stage) => (
               <button key={stage.id} onClick={() => onSelect(stage.id)} className="flex w-full items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left hover:bg-[#eff6ff]">
-                <span className="rounded-lg bg-white px-3 py-2 text-[12px] font-black text-[#2563eb] shadow-sm">{stage.no}</span>
+                <span className="inline-flex h-9 min-w-10 shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-white px-3 text-[12px] font-black leading-none text-[#2563eb] shadow-sm">{stage.no}</span>
                 <span>
                   <span className="block text-[14px] font-black text-slate-900">{stage.subtitle}</span>
                   <span className="block text-[12px] font-bold text-slate-500">{stage.title}</span>
@@ -472,9 +472,9 @@ function ProcessHome({ onSelect }: { onSelect: (id: StageId) => void }) {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {stages.map((stage) => (
             <button key={stage.id} onClick={() => onSelect(stage.id)} className="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#2563eb] hover:shadow-md">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <span className="rounded-xl bg-[#eff6ff] px-3 py-2 text-[13px] font-black text-[#2563eb]">{stage.no}</span>
-                <span className="text-[12px] font-black uppercase tracking-[0.12em] text-slate-400">{stage.title}</span>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <span className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-[#eff6ff] px-3 text-[13px] font-black leading-none text-[#2563eb]">{stage.no}</span>
+                <span className="min-w-0 text-right text-[12px] font-black uppercase leading-5 tracking-[0.12em] text-slate-400 [overflow-wrap:anywhere] [text-wrap:balance] [word-break:keep-all]">{stage.title}</span>
               </div>
               <h3 className="text-xl font-black text-[#173b72]">{stage.subtitle}</h3>
               <p className="mt-3 min-h-[72px] text-[14px] font-bold leading-7 text-slate-600">{stage.summary}</p>

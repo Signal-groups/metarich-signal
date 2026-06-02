@@ -54,20 +54,26 @@ export async function fetchUploadAnalyses(supabase: any, advisorId: string, cust
 export async function saveGptsAnalysisToSupabase(supabase: any, params: SaveAnalysisParams) {
   const structured = params.structuredAnalysis || {}
 
-  const { data: existing } = await supabase
+  // ── 기존 gpts 분석 전체 조회 (중복 방지) ──
+  const { data: existingAll } = await supabase
     .from('upload_analyses')
-    .select('id')
+    .select('id, structured_json')
     .eq('advisor_id', params.advisorId)
     .eq('customer_id', params.customerId)
     .eq('source', 'gpts')
     .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+
+  const allExisting = Array.isArray(existingAll) ? existingAll : []
+  const latestExisting = allExisting[0] ?? null
+
+  // 이전 분석 데이터 저장 (변경 감지용)
+  const prevStructured = latestExisting?.structured_json ?? null
 
   let data: any
   let error: any
 
-  if (existing?.id) {
+  if (latestExisting?.id) {
+    // 가장 최신 1개만 update
     const result = await supabase
       .from('upload_analyses')
       .update({
@@ -78,11 +84,17 @@ export async function saveGptsAnalysisToSupabase(supabase: any, params: SaveAnal
         version: structured.version || 'unknown',
         created_at: new Date().toISOString(),
       })
-      .eq('id', existing.id)
+      .eq('id', latestExisting.id)
       .select('*')
       .single()
     data = result.data
     error = result.error
+
+    // 나머지 중복 항목 삭제
+    const duplicateIds = allExisting.slice(1).map((e: any) => e.id)
+    if (duplicateIds.length > 0) {
+      await supabase.from('upload_analyses').delete().in('id', duplicateIds)
+    }
   } else {
     const result = await supabase
       .from('upload_analyses')
@@ -119,7 +131,73 @@ export async function saveGptsAnalysisToSupabase(supabase: any, params: SaveAnal
     structuredAnalysis: structured,
   })
 
-  return { ok: true, data: analysisRowToUploadItem(data) }
+  // 변경 감지 결과 계산
+  const diff = prevStructured ? diffAnalysis(prevStructured, structured) : null
+
+  return { ok: true, data: analysisRowToUploadItem(data), diff }
+}
+
+// ── 보장분석 변경 감지 ──
+export type CoverageDiffItem = {
+  status: 'added' | 'removed' | 'changed' | 'unchanged'
+  company: string
+  product: string
+  category: string
+  name: string
+  prevAmount?: number | null
+  nextAmount?: number | null
+}
+
+export function diffAnalysis(prev: any, next: any): CoverageDiffItem[] {
+  const prevPolicies = firstArray(prev?.policies, prev?.contracts)
+  const nextPolicies = firstArray(next?.policies, next?.contracts)
+
+  // key: "회사명|상품명|담보명"
+  type CovMap = Map<string, { company: string; product: string; category: string; name: string; amount: number | null }>
+
+  function buildMap(policies: any[]): CovMap {
+    const map: CovMap = new Map()
+    for (const p of policies) {
+      const company = p.company || '보험사 미확인'
+      const product = p.product_name || p.product || p.name || '상품명 미확인'
+      for (const cov of firstArray(p.coverages, p.coverage)) {
+        const name = cov.coverage_name || cov.name || '담보명 미확인'
+        const category = cov.category || '기타'
+        const key = `${company}|${product}|${name}`
+        map.set(key, { company, product, category, name, amount: cov.amount ?? null })
+      }
+    }
+    return map
+  }
+
+  const prevMap = buildMap(prevPolicies)
+  const nextMap = buildMap(nextPolicies)
+  const result: CoverageDiffItem[] = []
+
+  // 이전에 있던 항목 비교
+  for (const [key, prev] of prevMap) {
+    if (!nextMap.has(key)) {
+      result.push({ status: 'removed', ...prev, prevAmount: prev.amount, nextAmount: null })
+    } else {
+      const next = nextMap.get(key)!
+      const changed = prev.amount !== next.amount
+      result.push({
+        status: changed ? 'changed' : 'unchanged',
+        ...next,
+        prevAmount: prev.amount,
+        nextAmount: next.amount,
+      })
+    }
+  }
+
+  // 새로 추가된 항목
+  for (const [key, next] of nextMap) {
+    if (!prevMap.has(key)) {
+      result.push({ status: 'added', ...next, prevAmount: null, nextAmount: next.amount })
+    }
+  }
+
+  return result
 }
 
 export function analysisRowToUploadItem(row: any): PersistedUploadItem {

@@ -1,5 +1,5 @@
-"use client"
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 설계사 브랜딩 AI — 독립 빌더 페이지 (새 창으로 열림)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export { default } from '../dashboard/components/BrandingAIPageInner'
+import BrandingBuilderLayout from './components/BrandingBuilderLayout'
+
+export default function BrandingBuilderPage() {
+  return <BrandingBuilderLayout />
+}
