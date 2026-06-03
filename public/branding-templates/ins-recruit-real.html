@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>금융설계사 모집 | {{company}}</title>
+<meta name="description" content="{{company}} 신규·경력 금융설계사 모집. 새로운 시스템과 함께 성장하세요.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+:root{
+  --navy:#1A2744;--navy-mid:#2D4A8A;--navy-deep:#0F1A30;
+  --gold:#C9A96E;--gold-w:#E8A84B;
+  --cream:#FAFAF8;--cream-m:#F5F2ED;--cream-d:#EDE8E0;
+  --text:#111111;--text-m:#4B5563;--text-s:#9CA3AF;
+  --white:#FFFFFF;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+body{
+  font-family:'Pretendard Variable','Pretendard',-apple-system,sans-serif;
+  background:var(--cream);color:var(--text);
+  overflow-x:hidden;word-break:keep-all;overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;font-size:15px;line-height:1.75;
+}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ── 애니메이션 ── */
+.fu{opacity:0;transform:translateY(24px);
+  transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1);}
+.fu.on{opacity:1;transform:none;}
+.d1{transition-delay:.08s;}.d2{transition-delay:.16s;}.d3{transition-delay:.24s;}
+
+/* ── NAV ── */
+.nav{
+  position:sticky;top:0;z-index:200;
+  background:rgba(255,255,255,.97);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--cream-d);
+  padding:0 20px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-logo{font-weight:900;font-size:14px;letter-spacing:-.02em;color:var(--navy);}
+.nav-logo em{color:var(--gold);font-style:normal;}
+.nav-acts{display:flex;gap:6px;}
+.nb{
+  display:flex;align-items:center;gap:4px;
+  padding:7px 12px;border-radius:8px;
+  font-size:13px;font-weight:700;border:none;
+  white-space:nowrap;min-height:34px;transition:all .18s;
+}
+.nb-k{background:#FEE500;color:#3C1E1E;}
+.nb-k:hover{background:#f0d800;}
+.nb-t{background:var(--navy);color:#fff;}
+.nb-t:hover{opacity:.85;}
+.nb-h{background:var(--cream-m);color:var(--navy);border:1px solid var(--cream-d);}
+.nb-h:hover{background:var(--cream-d);}
+@media(max-width:480px){
+  .nb-h{display:none;}
+  .nb{padding:6px 9px;font-size:12px;}
+  iconify-icon{display:none;}
+}
+
+/* ── HERO ── */
+.hero{position:relative;overflow:hidden;min-height:92vh;display:flex;align-items:center;}
+.hero-bg{
+  position:absolute;inset:0;
+  background:url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1600&q=80') center 30%/cover;
+}
+.hero-ov{
+  position:absolute;inset:0;
+  background:linear-gradient(160deg,rgba(10,18,38,.92) 0%,rgba(26,39,68,.80) 55%,rgba(45,74,138,.55) 100%);
+}
+.hero-in{
+  position:relative;z-index:1;
+  width:100%;max-width:780px;
+  margin:0 auto;padding:100px 24px 100px;
+  text-align:center;
+}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(201,169,110,.18);border:1px solid rgba(201,169,110,.4);
+  border-radius:100px;padding:5px 18px;
+  font-size:13px;font-weight:700;letter-spacing:.05em;color:var(--gold);
+  margin-bottom:28px;
+}
+.pill-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);
+  animation:blink 1.8s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.hero-h1{
+  font-family:'Noto Serif KR',serif;
+  font-weight:900;font-size:clamp(30px,6.5vw,66px);
+  color:#fff;line-height:1.18;letter-spacing:-.03em;margin-bottom:20px;
+}
+.hero-h1 em{color:var(--gold);font-style:normal;}
+.hero-lead{
+  font-size:clamp(15px,2.2vw,18px);font-weight:500;
+  color:rgba(255,255,255,.78);line-height:1.75;margin-bottom:44px;
+}
+.hero-cta{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--gold);color:var(--navy);
+  border:none;border-radius:14px;
+  padding:17px 36px;font-size:16px;font-weight:800;
+  min-height:54px;
+  box-shadow:0 6px 28px rgba(201,169,110,.5);
+  transition:all .25s ease;
+}
+.hero-cta:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(201,169,110,.65);}
+
+/* ── 섹션 공통 ── */
+.sec{padding:80px 20px;}
+.sec-inner{max-width:860px;margin:0 auto;}
+.sec-inner-wide{max-width:1040px;margin:0 auto;}
+.sec-label{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--gold);margin-bottom:10px;}
+.sec-title{
+  font-weight:800;font-size:clamp(24px,4.5vw,40px);
+  color:var(--navy);line-height:1.22;letter-spacing:-.025em;
+  margin-bottom:24px;
+}
+.sec-body{
+  font-size:15px;color:var(--text-m);line-height:1.95;
+  margin-bottom:20px;
+}
+.sec-cta-wrap{margin-top:36px;text-align:center;}
+.sec-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--navy);color:#fff;border:none;
+  border-radius:12px;padding:15px 32px;
+  font-size:15px;font-weight:800;min-height:50px;
+  transition:all .22s ease;letter-spacing:-.01em;
+}
+.sec-btn:hover{background:var(--navy-mid);transform:translateY(-2px);}
+.sec-btn.gold{background:var(--gold);color:var(--navy);}
+.sec-btn.gold:hover{background:var(--gold-w);}
+
+/* ── WHY 섹션 ── */
+.why-sec{background:var(--white);}
+.why-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  margin-top:40px;margin-bottom:40px;
+}
+@media(max-width:640px){.why-grid{grid-template-columns:1fr;gap:12px;}}
+.why-card{
+  background:var(--cream-m);border:1px solid var(--cream-d);
+  border-radius:18px;padding:26px 24px;
+}
+.why-card.dark{background:var(--navy);border-color:var(--navy);}
+.why-card-icon{
+  width:42px;height:42px;border-radius:12px;
+  background:rgba(201,169,110,.15);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:14px;
+}
+.why-card-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:8px;letter-spacing:-.02em;}
+.why-card-title.white{color:#fff;}
+.why-card-body{font-size:14px;color:var(--text-m);line-height:1.85;}
+.why-card-body.white{color:rgba(255,255,255,.65);}
+
+/* ── 시스템 섹션 ── */
+.system-sec{background:var(--navy-deep);position:relative;overflow:hidden;}
+.system-sec::before{
+  content:'';position:absolute;top:-30%;right:-5%;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,169,110,.07) 0%,transparent 70%);
+}
+.system-sec .sec-label{color:var(--gold);}
+.system-sec .sec-title{color:#fff;}
+.system-sec .sec-body{color:rgba(255,255,255,.62);}
+.sys-list{display:flex;flex-direction:column;gap:14px;margin-bottom:20px;}
+.sys-item{
+  display:flex;align-items:flex-start;gap:14px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;padding:16px 20px;
+}
+.sys-item-icon{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:rgba(201,169,110,.16);
+  display:flex;align-items:center;justify-content:center;
+}
+.sys-item-title{font-size:14px;font-weight:800;color:#fff;margin-bottom:4px;}
+.sys-item-desc{font-size:13px;color:rgba(255,255,255,.52);line-height:1.7;}
+.system-sec .sec-btn{background:var(--gold);color:var(--navy);}
+.system-sec .sec-btn:hover{background:var(--gold-w);}
+
+/* ── 포지션 ── */
+.position-sec{background:var(--cream);}
+.pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:40px;margin-bottom:40px;}
+@media(max-width:640px){.pos-grid{grid-template-columns:1fr;gap:16px;}}
+.pos-card{
+  background:var(--white);border:1px solid var(--cream-d);
+  border-radius:22px;overflow:hidden;
+  box-shadow:0 4px 24px rgba(26,39,68,.06);
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+.pos-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(26,39,68,.1);}
+.pos-head{
+  padding:28px 28px 20px;
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);
+  position:relative;overflow:hidden;
+}
+.pos-head::after{
+  content:'';position:absolute;top:-20px;right:-20px;
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(255,255,255,.04);
+}
+.pos-badge{
+  display:inline-block;border-radius:100px;padding:3px 12px;
+  font-size:11px;font-weight:800;letter-spacing:.04em;margin-bottom:12px;
+}
+.badge-new{background:rgba(232,168,75,.25);color:var(--gold-w);border:1px solid rgba(232,168,75,.4);}
+.badge-career{background:rgba(201,169,110,.22);color:var(--gold);border:1px solid rgba(201,169,110,.4);}
+.pos-head h3{font-size:clamp(18px,3vw,24px);font-weight:900;color:#fff;line-height:1.25;letter-spacing:-.025em;margin-bottom:6px;}
+.pos-head p{font-size:13px;color:rgba(255,255,255,.58);line-height:1.65;}
+.pos-body{padding:22px 28px 26px;}
+.pos-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.pos-tag{
+  background:var(--cream-m);border:1px solid var(--cream-d);
+  border-radius:100px;padding:3px 12px;
+  font-size:12px;font-weight:600;color:var(--navy);
+}
+.pos-desc{font-size:14px;color:var(--text-m);line-height:1.9;}
+.pos-apply-btn{
+  display:block;width:100%;margin-top:18px;
+  background:var(--navy);color:#fff;border:none;
+  border-radius:11px;padding:13px;
+  font-size:14px;font-weight:800;min-height:48px;
+  transition:all .2s ease;
+}
+.pos-apply-btn:hover{background:var(--navy-mid);}
+
+/* ── 팀원 후기 ── */
+.stories-sec{background:var(--white);}
+.stories-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:16px;
+  margin-top:40px;margin-bottom:40px;
+}
+@media(max-width:640px){.stories-grid{grid-template-columns:1fr;gap:12px;}}
+.story-card{
+  background:var(--cream);border:1px solid var(--cream-d);
+  border-radius:20px;padding:24px 22px;
+  display:flex;flex-direction:column;
+}
+.story-profile{display:flex;align-items:center;gap:11px;margin-bottom:14px;}
+.story-avatar{
+  width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:#fff;
+}
+.story-info{flex:1;min-width:0;}
+.story-name-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:3px;}
+.story-name{font-size:14px;font-weight:800;color:var(--navy);}
+.story-years{
+  background:var(--navy);border-radius:100px;padding:2px 9px;
+  font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap;
+}
+.story-role{font-size:12px;color:var(--text-s);line-height:1.4;}
+.story-divider{width:100%;height:1px;background:var(--cream-d);margin-bottom:14px;}
+.story-text{font-size:14px;color:var(--text-m);line-height:1.9;flex:1;}
+.story-text::before{
+  content:'"';font-size:18px;font-weight:900;color:var(--gold);
+  font-family:'Noto Serif KR',serif;opacity:.65;
+  margin-right:1px;vertical-align:-.05em;
+}
+
+/* ── 절차 + 폼 통합 섹션 ── */
+.apply-sec{background:var(--cream-m);}
+.apply-grid{display:grid;grid-template-columns:1fr 1fr;gap:52px;align-items:start;}
+@media(max-width:768px){.apply-grid{grid-template-columns:1fr;gap:40px;}}
+
+/* 절차 */
+.process-list{display:flex;flex-direction:column;gap:0;margin-top:8px;}
+.p-step{display:flex;gap:18px;position:relative;padding-bottom:30px;}
+.p-step:last-child{padding-bottom:0;}
+.p-step::before{
+  content:'';position:absolute;left:21px;top:44px;
+  width:2px;height:calc(100% - 16px);
+  background:linear-gradient(to bottom,var(--cream-d),transparent);
+}
+.p-step:last-child::before{display:none;}
+.p-num{
+  width:44px;height:44px;border-radius:14px;flex-shrink:0;
+  background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:900;
+  box-shadow:0 4px 14px rgba(26,39,68,.2);
+}
+.p-step.gold-step .p-num{background:var(--gold);color:var(--navy);}
+.p-content{padding-top:10px;}
+.p-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:5px;letter-spacing:-.02em;}
+.p-desc{font-size:13px;color:var(--text-m);line-height:1.8;}
+
+/* 폼 카드 */
+.form-card{
+  background:var(--white);border:1px solid var(--cream-d);
+  border-radius:24px;overflow:hidden;
+  box-shadow:0 8px 48px rgba(26,39,68,.09);
+}
+.form-head{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);
+  padding:30px 28px 24px;position:relative;overflow:hidden;
+}
+.form-head::after{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:160px;height:160px;border-radius:50%;
+  background:rgba(255,255,255,.04);
+}
+.form-head-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.4);
+  border-radius:100px;padding:3px 12px;
+  font-size:11px;font-weight:700;color:var(--gold);margin-bottom:12px;
+}
+.form-head h2{font-size:clamp(16px,3vw,21px);font-weight:900;color:#fff;line-height:1.3;letter-spacing:-.025em;}
+.form-head p{font-size:12px;color:rgba(255,255,255,.5);line-height:1.75;margin-top:6px;}
+.form-body{padding:26px 28px;}
+@media(max-width:480px){.form-head,.form-body{padding-left:20px;padding-right:20px;}}
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.fg label .req{color:#EF4444;margin-left:2px;}
+.fg input{
+  width:100%;padding:12px 14px;
+  border:1.5px solid var(--cream-d);border-radius:10px;
+  font-size:16px;font-family:inherit;color:var(--text);
+  background:#fff;outline:none;-webkit-appearance:none;
+  min-height:48px;transition:border-color .2s,box-shadow .2s;
+}
+.fg input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,39,68,.08);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:400px){.row2{grid-template-columns:1fr;}}
+
+/* 체크박스 포지션 선택 */
+.check-group{display:flex;gap:10px;margin-top:2px;}
+.check-opt{
+  flex:1;display:flex;align-items:center;gap:9px;
+  background:var(--cream-m);border:2px solid var(--cream-d);
+  border-radius:11px;padding:12px 14px;cursor:pointer;
+  transition:all .18s ease;
+}
+.check-opt:hover{border-color:var(--navy);background:#EEF2FF;}
+.check-opt input[type="checkbox"]{
+  width:18px;height:18px;min-width:18px;
+  accent-color:var(--navy);cursor:pointer;
+}
+.check-opt input:checked ~ .check-label{color:var(--navy);}
+.check-opt:has(input:checked){border-color:var(--navy);background:#EEF2FF;}
+.check-label{font-size:14px;font-weight:700;color:var(--text-m);}
+.check-sub{font-size:11px;color:var(--text-s);margin-top:1px;}
+
+/* 개인정보 동의 */
+.consent-box{
+  background:#F0F4FF;border:1.5px solid #C7D2FE;
+  border-radius:12px;padding:14px 16px;margin-bottom:18px;
+  transition:border-color .2s,background .2s;
+}
+.consent-box.err{border-color:#EF4444;background:#FFF5F5;}
+.consent-check{display:flex;align-items:flex-start;gap:9px;cursor:pointer;}
+.consent-check input[type="checkbox"]{
+  width:18px;height:18px;min-width:18px;
+  accent-color:var(--navy);margin-top:2px;cursor:pointer;
+}
+.consent-text{font-size:13px;font-weight:700;color:var(--navy);line-height:1.6;}
+.consent-req{color:#EF4444;}
+.consent-sub{font-size:12px;color:var(--text-s);margin-top:5px;line-height:1.6;}
+
+.btn-submit{
+  width:100%;background:linear-gradient(135deg,var(--navy),var(--navy-mid));
+  color:#fff;border:none;border-radius:13px;
+  padding:17px;font-size:15px;font-weight:800;
+  min-height:52px;letter-spacing:-.01em;
+  transition:all .25s ease;
+  box-shadow:0 4px 20px rgba(26,39,68,.25);
+}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(26,39,68,.38);}
+.btn-submit:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+
+/* ── 혜택 배너 ── */
+.benefit-sec{
+  background:var(--gold);padding:64px 20px;
+}
+.benefit-in{
+  max-width:860px;margin:0 auto;
+  display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;
+}
+@media(max-width:580px){.benefit-in{grid-template-columns:1fr;gap:24px;}}
+.benefit-chip{
+  display:inline-block;background:rgba(26,39,68,.14);
+  border-radius:100px;padding:3px 14px;
+  font-size:12px;font-weight:800;color:var(--navy);
+  letter-spacing:.04em;margin-bottom:14px;
+}
+.benefit-h{
+  font-weight:800;font-size:clamp(20px,3.5vw,34px);
+  color:var(--navy);line-height:1.25;letter-spacing:-.025em;margin-bottom:10px;
+}
+.benefit-body{font-size:14px;color:rgba(26,39,68,.68);line-height:1.85;}
+.benefit-cta{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--navy);color:#fff;border:none;border-radius:13px;
+  padding:16px 28px;font-size:15px;font-weight:800;
+  min-height:52px;white-space:nowrap;
+  box-shadow:0 6px 24px rgba(26,39,68,.3);
+  transition:all .22s ease;
+}
+.benefit-cta:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(26,39,68,.42);}
+
+/* ── 모달 ── */
+.modal-wrap{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.55);z-index:999;
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal-wrap.show{display:flex;}
+.modal{
+  background:#fff;border-radius:24px;padding:48px 28px;
+  text-align:center;max-width:340px;width:100%;
+  animation:popUp .38s cubic-bezier(.16,1,.3,1);
+}
+@keyframes popUp{from{opacity:0;transform:scale(.82) translateY(18px);}to{opacity:1;transform:none;}}
+.modal-icon{font-size:50px;margin-bottom:12px;}
+.modal h3{font-size:21px;font-weight:900;color:var(--navy);margin-bottom:8px;letter-spacing:-.025em;}
+.modal p{font-size:14px;color:var(--text-m);line-height:1.85;margin-bottom:22px;}
+.modal p strong{color:var(--navy);}
+.modal-btn{
+  background:var(--navy);color:#fff;border:none;
+  border-radius:10px;padding:12px 28px;
+  font-size:14px;font-weight:700;min-height:44px;transition:opacity .2s;
+}
+.modal-btn:hover{opacity:.85;}
+
+/* ── 플로팅 ── */
+.float-btn{
+  display:none;position:fixed;bottom:16px;left:50%;
+  transform:translateX(-50%);z-index:90;
+  background:var(--gold);color:var(--navy);
+  font-size:14px;font-weight:800;
+  padding:13px 26px;border-radius:100px;border:none;
+  box-shadow:0 6px 24px rgba(201,169,110,.55);
+  white-space:nowrap;min-height:48px;
+  animation:pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 6px 24px rgba(201,169,110,.55);}50%{box-shadow:0 10px 34px rgba(201,169,110,.78);}}
+@media(max-width:640px){.float-btn{display:flex;align-items:center;gap:6px;}}
+.float-btn.hidden{display:none!important;}
+
+/* ── 푸터 ── */
+footer{background:var(--navy);padding:44px 20px 52px;text-align:center;}
+.ft-logo{font-size:15px;font-weight:900;color:rgba(255,255,255,.88);margin-bottom:18px;letter-spacing:-.01em;}
+.ft-logo em{color:var(--gold);font-style:normal;}
+.ft-links{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;margin-bottom:20px;}
+.ft-links a{font-size:13px;font-weight:600;color:rgba(255,255,255,.42);min-height:30px;display:inline-flex;align-items:center;transition:color .2s;}
+.ft-links a:hover{color:var(--gold);}
+.ft-info{font-size:12px;color:rgba(255,255,255,.25);line-height:2;}
+
+/* ── 모바일 보정 ── */
+@media(max-width:480px){
+  .hero{min-height:88vh;}
+  .hero-in{padding:80px 20px 90px;}
+  .hero-lead{font-size:14px;margin-bottom:36px;}
+  .hero-cta{padding:15px 28px;font-size:15px;}
+  .sec{padding:60px 16px;}
+  .sec-title{margin-bottom:16px;}
+  .why-card{padding:20px 18px;}
+  .pos-head{padding:22px 22px 16px;}
+  .pos-body{padding:18px 22px 22px;}
+  .apply-grid{gap:36px;}
+  .stories-grid{gap:12px;}
+  .story-card{padding:20px 18px;}
+  .benefit-sec{padding:52px 16px;}
+  footer{padding:36px 16px 44px;}
+  .ft-info{font-size:11px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="{{consultUrl}}" style="text-decoration:none;">
+    <div class="nav-logo">METARICH <em>SIGNAL</em></div>
+  </a>
+  <div class="nav-acts">
+    <a href="{{kakaoUrl}}" target="_blank" rel="noopener">
+      <button class="nb nb-k">
+        <iconify-icon icon="solar:chat-round-linear" width="14"></iconify-icon>
+        카카오톡
+      </button>
+    </a>
+    <a href="tel:{{phone}}">
+      <button class="nb nb-t">
+        <iconify-icon icon="solar:phone-linear" width="14"></iconify-icon>
+        전화·문자
+      </button>
+    </a>
+    <a href="{{consultUrl}}">
+      <button class="nb nb-h">홈페이지</button>
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-ov"></div>
+  <div class="hero-in fu">
+    <p class="hero-pill">
+      <span class="pill-dot"></span>
+      신규 · 경력 금융설계사 모집 중
+    </p>
+    <h1 class="hero-h1">
+      당신의 커리어,<br>
+      <em>{{company}}</em>과<br>
+      함께 완성하세요
+    </h1>
+    <p class="hero-lead">
+      새로운 분석 시스템과 검증된 팀 문화로<br>
+      신규·경력 모두 빠르게 성장할 수 있습니다
+    </p>
+    <button class="hero-cta" onclick="scrollToForm()">
+      <iconify-icon icon="solar:user-plus-linear" width="18"></iconify-icon>
+      지금 지원하기
+    </button>
+  </div>
+</section>
+
+<!-- WHY -->
+<section class="sec why-sec">
+  <div class="sec-inner-wide">
+    <p class="sec-label fu">WHY METARICH</p>
+    <h2 class="sec-title fu">왜 {{company}}인가요?</h2>
+    <p class="sec-body fu">
+      {{company}}은 국내 30여 개 보험사와 제휴를 맺고 있습니다.
+      특정 보험사에 속하지 않아 고객에게 가장 합리적인 제안을 할 수 있고,
+      그 객관성이 설계사의 가장 큰 무기가 됩니다.
+      이미 누적 상담 21,573건이 증명하는 신뢰입니다.
+    </p>
+    <p class="sec-body fu d1">
+      수익 구조는 투명하고 성과에 직결됩니다. 입사 초기 정착 지원금 제도, 성과에 따른
+      수수료 상위 구조, 팀장·매니저 승진 경로까지 명확하게 열려 있습니다.
+      일한 만큼, 성장한 만큼 정확하게 돌아옵니다.
+    </p>
+    <div class="why-grid fu d1">
+      <div class="why-card">
+        <div class="why-card-icon">
+          <iconify-icon icon="solar:diploma-linear" style="color:#C9A96E;" width="22"></iconify-icon>
+        </div>
+        <div class="why-card-title">체계적인 교육 시스템</div>
+        <div class="why-card-body">신규 입사자를 위한 전담 멘토와 단계별 커리큘럼. 자격증 취득 지원까지 함께 합니다.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-card-icon">
+          <iconify-icon icon="solar:graph-new-up-linear" style="color:#C9A96E;" width="22"></iconify-icon>
+        </div>
+        <div class="why-card-title">투명한 수익 구조</div>
+        <div class="why-card-body">성과에 따른 수수료와 인센티브 구조가 명확합니다. 일한 만큼 정확하게 수익이 쌓입니다.</div>
+      </div>
+      <div class="why-card dark">
+        <div class="why-card-icon" style="background:rgba(201,169,110,.2);">
+          <iconify-icon icon="solar:code-square-linear" style="color:#C9A96E;" width="22"></iconify-icon>
+        </div>
+        <div class="why-card-title white">자체 개발 인슈런스 매니저</div>
+        <div class="why-card-body white">보험료 비교·통계·수술비 계산·재무설계를 하나의 플랫폼에서. 분석은 시스템이, 상담은 설계사가 합니다.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-card-icon">
+          <iconify-icon icon="solar:people-nearby-linear" style="color:#C9A96E;" width="22"></iconify-icon>
+        </div>
+        <div class="why-card-title">협업 중심 팀 문화</div>
+        <div class="why-card-body">경쟁보다 함께 성장하는 문화. 선배의 실전 경험이 자연스럽게 전수되는 멘토링 구조입니다.</div>
+      </div>
+    </div>
+    <div class="sec-cta-wrap fu d2">
+      <button class="sec-btn gold" onclick="scrollToForm()">
+        <iconify-icon icon="solar:user-plus-linear" width="16"></iconify-icon>
+        지금 지원하기
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- SYSTEM -->
+<section class="sec system-sec">
+  <div class="sec-inner">
+    <p class="sec-label fu">INSURANCE MANAGER</p>
+    <h2 class="sec-title fu">새로운 시스템이<br>일하는 방식을 바꿉니다</h2>
+    <p class="sec-body fu">
+      {{company}}이 자체 개발 중인 <strong style="color:var(--gold-w);">인슈런스 매니저(Insurance Manager)</strong>는
+      설계사의 반복 업무를 획기적으로 줄여줍니다. 복잡한 비교 분석은 시스템이 처리하고,
+      설계사는 오직 고객과의 상담에만 집중할 수 있습니다.
+    </p>
+    <div class="sys-list fu d1">
+      <div class="sys-item">
+        <div class="sys-item-icon">
+          <iconify-icon icon="solar:chart-square-linear" style="color:#C9A96E;" width="17"></iconify-icon>
+        </div>
+        <div>
+          <div class="sys-item-title">보험료 비교</div>
+          <div class="sys-item-desc">30여 개 보험사 동일 보장 상품을 실시간 병렬 비교. 고객 나이·건강 조건을 입력하면 최적안이 즉시 도출됩니다.</div>
+        </div>
+      </div>
+      <div class="sys-item">
+        <div class="sys-item-icon">
+          <iconify-icon icon="solar:graph-new-up-linear" style="color:#C9A96E;" width="17"></iconify-icon>
+        </div>
+        <div>
+          <div class="sys-item-title">통계자료</div>
+          <div class="sys-item-desc">질병 발생률, 보험금 지급 데이터, 연령대별 청구 통계를 한 화면에서 확인합니다. 수치로 고객을 설득하세요.</div>
+        </div>
+      </div>
+      <div class="sys-item">
+        <div class="sys-item-icon">
+          <iconify-icon icon="solar:calculator-minimalistic-linear" style="color:#C9A96E;" width="17"></iconify-icon>
+        </div>
+        <div>
+          <div class="sys-item-title">수술비 계산</div>
+          <div class="sys-item-desc">수술 종류별 실제 비용과 보험 적용 후 자기부담금을 자동 계산합니다. 고객이 직관적으로 위험을 이해합니다.</div>
+        </div>
+      </div>
+      <div class="sys-item">
+        <div class="sys-item-icon">
+          <iconify-icon icon="solar:wallet-money-linear" style="color:#C9A96E;" width="17"></iconify-icon>
+        </div>
+        <div>
+          <div class="sys-item-title">재무설계</div>
+          <div class="sys-item-desc">소득·지출·자산을 입력하면 생애주기별 보험 포트폴리오가 자동 산출됩니다. 단순 판매를 넘어 종합 파트너가 됩니다.</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec-cta-wrap fu d2">
+      <button class="sec-btn" onclick="scrollToForm()">
+        <iconify-icon icon="solar:user-plus-linear" width="16"></iconify-icon>
+        지금 지원하기
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- POSITION -->
+<section class="sec position-sec">
+  <div class="sec-inner-wide">
+    <p class="sec-label fu">OPEN POSITIONS</p>
+    <h2 class="sec-title fu">현재 모집 포지션</h2>
+    <p class="sec-body fu">
+      경험이 없어도 괜찮습니다. 처음부터 체계적으로 함께 성장하는 신규 과정과,
+      기존 역량을 새로운 시스템으로 극대화하는 경력직 채용을 동시에 진행하고 있습니다.
+    </p>
+    <div class="pos-grid">
+      <div class="pos-card fu">
+        <div class="pos-head">
+          <span class="pos-badge badge-new">신규 입사</span>
+          <h3>금융설계사<br>신규 입문과정</h3>
+          <p>보험·금융 경험 없어도 괜찮습니다.<br>처음부터 체계적으로 함께 성장합니다.</p>
+        </div>
+        <div class="pos-body">
+          <div class="pos-tags">
+            <span class="pos-tag">만 29세 ~ 만 55세</span>
+            <span class="pos-tag">이직·전직 환영</span>
+            <span class="pos-tag">자격증 지원</span>
+          </div>
+          <p class="pos-desc">
+            금융·보험 자격증이 없어도 입사 후 취득을 전액 지원합니다. 전담 멘토를 배정해 실전 현장부터 차근차근 배울 수 있습니다. 정착 지원금 제도도 별도로 운영됩니다.
+          </p>
+          <button class="pos-apply-btn" onclick="setPosition('신규'); scrollToForm();">신규 입사 지원하기</button>
+        </div>
+      </div>
+      <div class="pos-card fu d1">
+        <div class="pos-head">
+          <span class="pos-badge badge-career">경력 입사</span>
+          <h3>시니어 금융설계사<br>경력직 특별 채용</h3>
+          <p>기존 역량을 새로운 시스템으로 극대화하고<br>더 높은 성과를 만들어 가세요.</p>
+        </div>
+        <div class="pos-body">
+          <div class="pos-tags">
+            <span class="pos-tag">경력 2년 이상</span>
+            <span class="pos-tag">만 55세 이하</span>
+            <span class="pos-tag">조건 우대</span>
+          </div>
+          <p class="pos-desc">
+            보험·금융 설계 경력 2년 이상 보유자를 우대합니다. 팀장·매니저급 직책 우선 배정 기회와 수수료 상위 구조, 기존 고객 포트폴리오 이전 지원까지 제공됩니다.
+          </p>
+          <button class="pos-apply-btn" onclick="setPosition('경력'); scrollToForm();">경력직 지원하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFIT -->
+<section class="benefit-sec fu">
+  <div class="benefit-in">
+    <div>
+      <div class="benefit-chip">합류 특별 혜택</div>
+      <div class="benefit-h">입사 확정 시<br>온보딩 지원 패키지를 제공합니다</div>
+      <div class="benefit-body">자격증 취득 지원 · 업무용 디지털 도구 세팅 · 입사 후 3개월 집중 케어 프로그램<br>자세한 조건은 면담 후 안내드립니다.</div>
+    </div>
+    <div>
+      <button class="benefit-cta" onclick="scrollToForm()">
+        지금 지원하기
+        <iconify-icon icon="solar:arrow-right-linear" width="17"></iconify-icon>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM STORIES -->
+<section class="sec stories-sec">
+  <div class="sec-inner-wide">
+    <p class="sec-label fu">TEAM STORIES</p>
+    <h2 class="sec-title fu">함께하는 팀원들의 이야기</h2>
+    <p class="sec-body fu">실제 입사한 설계사들이 경험한 변화를 들어보세요.</p>
+    <div class="stories-grid">
+      <div class="story-card fu">
+        <div class="story-profile">
+          <div class="story-avatar">박</div>
+          <div class="story-info">
+            <div class="story-name-row">
+              <span class="story-name">박○○ 설계사</span>
+              <span class="story-years">경력 2년차</span>
+            </div>
+            <div class="story-role">이천센터 · FA 자격 보유</div>
+          </div>
+        </div>
+        <div class="story-divider"></div>
+        <p class="story-text">이직 전 다른 보험사에서 3년을 보냈는데, 시스템 차이가 이렇게 클 줄 몰랐어요. 보험료 비교 기능 하나만으로 고객 설명 시간이 절반으로 줄었고, 수익도 전 직장 대비 40% 이상 올랐어요.</p>
+      </div>
+      <div class="story-card fu d1">
+        <div class="story-profile">
+          <div class="story-avatar">김</div>
+          <div class="story-info">
+            <div class="story-name-row">
+              <span class="story-name">김○○ 설계사</span>
+              <span class="story-years">신규 1년차</span>
+            </div>
+            <div class="story-role">원주본부 · 워킹맘 · 신규 입문 출신</div>
+          </div>
+        </div>
+        <div class="story-divider"></div>
+        <p class="story-text">아이 둘 키우면서 일할 수 있을까 걱정이 컸는데, 복잡한 분석은 시스템이 다 해줘요. 지인 영업만 하던 제가 지금은 새로운 고객도 자신 있게 상담합니다. 워킹맘도 충분히 할 수 있는 일이에요.</p>
+      </div>
+      <div class="story-card fu d1">
+        <div class="story-profile">
+          <div class="story-avatar">이</div>
+          <div class="story-info">
+            <div class="story-name-row">
+              <span class="story-name">이○○ 팀장</span>
+              <span class="story-years">경력 3년차</span>
+            </div>
+            <div class="story-role">춘천센터 · 팀장 승진</div>
+          </div>
+        </div>
+        <div class="story-divider"></div>
+        <p class="story-text">팀장 승진 후 팀을 직접 운영하면서 리더십도 많이 키웠어요. 수수료 외 인센티브 구조가 투명해서 믿고 일할 수 있고, 전국 네트워크 덕분에 고객 범위도 훨씬 넓어졌습니다.</p>
+      </div>
+      <div class="story-card fu d2">
+        <div class="story-profile">
+          <div class="story-avatar">최</div>
+          <div class="story-info">
+            <div class="story-name-row">
+              <span class="story-name">최○○ 설계사</span>
+              <span class="story-years">경력 1년차</span>
+            </div>
+            <div class="story-role">여주본부 · 경력직 · 만 55세</div>
+          </div>
+        </div>
+        <div class="story-divider"></div>
+        <p class="story-text">55세에 새 출발이 가능할까 반신반의했는데, 수술비 계산과 재무설계 툴이 워낙 잘 돼 있어서 오히려 제 연륜이 강점이 됐습니다. 시스템이 분석을 도와주니 고객 신뢰를 얻는 건 어렵지 않아요.</p>
+      </div>
+    </div>
+    <div class="sec-cta-wrap fu d2">
+      <button class="sec-btn" onclick="scrollToForm()">
+        <iconify-icon icon="solar:user-plus-linear" width="16"></iconify-icon>
+        지금 지원하기
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- 절차 + 폼 통합 -->
+<section class="sec apply-sec" id="applySection">
+  <div class="sec-inner-wide">
+    <p class="sec-label fu">HIRING PROCESS &amp; APPLY</p>
+    <h2 class="sec-title fu">입사 절차 및 지원하기</h2>
+    <div class="apply-grid">
+
+      <!-- 절차 -->
+      <div class="fu">
+        <p style="font-size:14px;color:var(--text-m);line-height:1.9;margin-bottom:28px;">
+          지원서 접수부터 입사까지 단 4단계. 부담 없이 문의만 하셔도 됩니다.
+          접수 후 24시간 내에 담당자가 직접 연락드립니다.
+        </p>
+        <div class="process-list">
+          <div class="p-step">
+            <div class="p-num">01</div>
+            <div class="p-content">
+              <div class="p-title">지원서 접수</div>
+              <p class="p-desc">우측 양식에 이름, 연락처, 신입·경력 여부를 선택해 제출해주세요. 카카오톡이나 전화로 바로 문의하셔도 됩니다.</p>
+            </div>
+          </div>
+          <div class="p-step">
+            <div class="p-num">02</div>
+            <div class="p-content">
+              <div class="p-title">1차 연락 (24시간 내)</div>
+              <p class="p-desc">접수 후 24시간 내에 담당자가 직접 연락드립니다. 간단한 통화로 지원 동기와 기대 조건을 확인합니다.</p>
+            </div>
+          </div>
+          <div class="p-step">
+            <div class="p-num">03</div>
+            <div class="p-content">
+              <div class="p-title">센터 방문 면담</div>
+              <p class="p-desc">팀장 또는 센터장과 1:1 면담을 진행합니다. 처우 조건, 업무 환경, 시스템 데모를 직접 확인할 수 있습니다.</p>
+            </div>
+          </div>
+          <div class="p-step gold-step">
+            <div class="p-num">04</div>
+            <div class="p-content">
+              <div class="p-title">입사 확정 및 온보딩</div>
+              <p class="p-desc">입사 확정 즉시 온보딩 패키지가 제공됩니다. 신규는 멘토 배정, 경력직은 팀 배치와 시스템 세팅이 바로 시작됩니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 폼 -->
+      <div class="fu d1">
+        <div class="form-card">
+          <div class="form-head">
+            <div class="form-head-badge">
+              <iconify-icon icon="solar:user-plus-linear" width="12"></iconify-icon>
+              입사 지원서
+            </div>
+            <h2>{{company}}<br>입사 지원하기</h2>
+            <p>24시간 내 담당자가 직접 연락드립니다</p>
+          </div>
+          <div class="form-body">
+            <form id="applyForm" novalidate>
+              <div class="row2">
+                <div class="fg">
+                  <label for="fname">이름<span class="req">*</span></label>
+                  <input type="text" id="fname" name="name" placeholder="홍길동" autocomplete="name" required>
+                </div>
+                <div class="fg">
+                  <label for="fphone">연락처<span class="req">*</span></label>
+                  <input type="tel" id="fphone" name="phone" placeholder="010-0000-0000" autocomplete="tel" required>
+                </div>
+              </div>
+              <div class="fg">
+                <label>구분<span class="req">*</span></label>
+                <div class="check-group">
+                  <label class="check-opt">
+                    <input type="checkbox" id="chkNew" name="type_new">
+                    <div>
+                      <div class="check-label">신입</div>
+                      <div class="check-sub">경험 없어도 가능</div>
+                    </div>
+                  </label>
+                  <label class="check-opt">
+                    <input type="checkbox" id="chkCareer" name="type_career">
+                    <div>
+                      <div class="check-label">경력</div>
+                      <div class="check-sub">2년 이상</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <div class="consent-box" id="consentBox">
+                <label class="consent-check" for="consentCheck">
+                  <input type="checkbox" id="consentCheck">
+                  <div>
+                    <p class="consent-text">
+                      {{company}} 담당자가 연락드려 입사 상담을 진행하는 것에 동의합니다.
+                      <span class="consent-req">(필수)</span>
+                    </p>
+                    <p class="consent-sub">
+                      수집 항목: 성명, 연락처 &nbsp;·&nbsp; 수집 목적: 입사 상담 및 채용 안내<br>
+                      보유 기간: 상담 종료 후 즉시 파기
+                    </p>
+                  </div>
+                </label>
+              </div>
+              <button type="submit" class="btn-submit" id="sbtn">신청하기</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft-logo">METARICH <em>SIGNAL GROUP</em></div>
+  <div class="ft-links">
+    <a href="{{consultUrl}}">홈페이지</a>
+    <a href="tel:{{phone}}">전화·문자</a>
+    <a href="{{kakaoUrl}}" target="_blank" rel="noopener">카카오톡 상담</a>
+    <a href="{{consultUrl}}/consult.html">보험 상담 신청</a>
+  </div>
+  <p class="ft-info">
+    대표번호: {{phone}} &nbsp;|&nbsp; 채용 문의: jinwoo8506@gmail.com
+  </p>
+</footer>
+
+<!-- 플로팅 버튼 -->
+<button class="float-btn" id="floatBtn" onclick="scrollToForm()">
+  <iconify-icon icon="solar:user-plus-bold" width="15"></iconify-icon>
+  지금 지원하기
+</button>
+
+<!-- 완료 모달 -->
+<div class="modal-wrap" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">🎉</div>
+    <h3>지원 완료!</h3>
+    <p>{{company}} 담당자가<br><strong>24시간 내</strong> 직접 연락드립니다.</p>
+    <button class="modal-btn" onclick="closeModal()">확인</button>
+  </div>
+</div>
+
+<script>
+/* 스크롤 애니메이션 */
+const io = new IntersectionObserver(e=>{
+  e.forEach(x=>{ if(x.isIntersecting) x.target.classList.add('on'); });
+},{threshold:.08});
+document.querySelectorAll('.fu').forEach(el=>io.observe(el));
+
+/* 플로팅 버튼 숨김 */
+const floatBtn = document.getElementById('floatBtn');
+const applyObs = new IntersectionObserver(e=>{
+  e.forEach(x=>floatBtn.classList.toggle('hidden',x.isIntersecting));
+},{threshold:.1});
+applyObs.observe(document.getElementById('applySection'));
+
+/* 폼 스크롤 */
+function scrollToForm(){
+  document.getElementById('applySection').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* 포지션 자동 체크 */
+function setPosition(type){
+  if(type==='신규') document.getElementById('chkNew').checked=true;
+  if(type==='경력') document.getElementById('chkCareer').checked=true;
+}
+
+/* 전화번호 포맷 */
+document.getElementById('fphone').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>7) v=v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7);
+  else if(v.length>3) v=v.slice(0,3)+'-'+v.slice(3);
+  this.value=v;
+});
+
+/* 동의 에러 해제 */
+document.getElementById('consentCheck').addEventListener('change',function(){
+  document.getElementById('consentBox').classList.toggle('err',!this.checked);
+});
+
+/* 전송 설정 */
+const GS='https://script.google.com/macros/s/AKfycbxfG3_3-BShzdr9x1dqZW9Pnh0bF4h54pGWH4s8A6yBXlMC_RnLcNtlmQt6IS7ECloX/exec';
+const TT='8652544241:AAEiwI3_qEnPGmgc8YluREw-LAjNBnXXaNo';
+const TC='8712434989';
+const EMAILS='jw20371035@gmail.com, jinwoo8506@gmail.com, kye1004s7@gmail.com';
+
+function sendTG(d){
+  const pos=[d.type_new?'신입':'',d.type_career?'경력':''].filter(Boolean).join('·')||'미선택';
+  const msg=[
+    '👥 *[{{company}}] 입사지원 광고랜딩*','',
+    '👤 이름: '+d.name,
+    '📞 연락처: '+d.phone,
+    '🎯 구분: '+pos,
+    '🕐 접수: '+d.timestamp
+  ].join('\n');
+  return fetch('https://api.telegram.org/bot'+TT+'/sendMessage',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:TC,text:msg,parse_mode:'Markdown'})
+  }).catch(()=>{});
+}
+
+document.getElementById('applyForm').addEventListener('submit',async function(e){
+  e.preventDefault();
+  const name=document.getElementById('fname').value.trim();
+  const phone=document.getElementById('fphone').value.trim();
+  const isNew=document.getElementById('chkNew').checked;
+  const isCareer=document.getElementById('chkCareer').checked;
+  const consent=document.getElementById('consentCheck').checked;
+
+  if(!name||!phone){alert('이름과 연락처를 입력해주세요.');return;}
+  if(!isNew&&!isCareer){alert('신입 또는 경력을 선택해주세요.');return;}
+  if(!consent){
+    document.getElementById('consentBox').classList.add('err');
+    document.getElementById('consentBox').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  const btn=document.getElementById('sbtn');
+  btn.textContent='접수 중...';btn.disabled=true;
+
+  const data={
+    formType:'recruit',
+    name,phone,
+    type_new:isNew?'신입':'',
+    type_career:isCareer?'경력':'',
+    position:[isNew?'신입':'',isCareer?'경력':''].filter(Boolean).join('+'),
+    timestamp:new Date().toLocaleString('ko-KR'),
+    extra_email:EMAILS
+  };
+
+  await Promise.all([
+    fetch(GS,{method:'POST',body:JSON.stringify(data)}).catch(()=>{}),
+    sendTG(data)
+  ]);
+
+  document.getElementById('successModal').classList.add('show');
+  this.reset();
+  btn.textContent='신청하기';btn.disabled=false;
+});
+
+function closeModal(){document.getElementById('successModal').classList.remove('show');}
+document.getElementById('successModal').addEventListener('click',function(e){
+  if(e.target===this)closeModal();
+});
+</script>
+</body>
+</html>

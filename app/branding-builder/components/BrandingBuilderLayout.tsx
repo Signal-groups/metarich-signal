@@ -5,14 +5,16 @@ import { useBrandingState } from '../hooks/useBrandingState'
 import { useEditable } from '../hooks/useEditable'
 import { useSaveLoad } from '../hooks/useSaveLoad'
 import { useSections } from '../hooks/useSections'
+import { CONCEPT_PALETTES, type LandingConcept } from '../templates/types'
+import FloatingToolbar from './FloatingToolbar'
 import AddSectionModal from './modals/AddSectionModal'
 import DownloadModal from './modals/DownloadModal'
 import LoginModal from './modals/LoginModal'
 import SaveSlotsModal from './modals/SaveSlotsModal'
-import FloatingToolbar from './FloatingToolbar'
 import Preview from './Preview'
 import Sidebar from './Sidebar'
 import Toolbar from './Toolbar'
+import type { BrandingCopyJson, GeneratedSection } from './panels/TipPanel'
 
 export default function BrandingBuilderLayout() {
   const builder = useBrandingState()
@@ -31,6 +33,31 @@ export default function BrandingBuilderLayout() {
   const handleSaveSlot = () => {
     const name = window.prompt('저장 이름을 입력하세요')
     if (name) saveLoad.saveToSlot(name)
+  }
+
+  const handleConceptSelect = (concept: LandingConcept) => {
+    builder.fillSample()
+    builder.patchState({
+      landingConcept: concept,
+      landingColor: CONCEPT_PALETTES[concept].accent,
+    })
+    builder.setActiveTab(0)
+  }
+
+  const handleApplyCopy = (copy: BrandingCopyJson, sections: GeneratedSection[]) => {
+    builder.setState((current) => ({
+      ...current,
+      agentInfo: {
+        ...current.agentInfo,
+        slogan: copy.heroHeadline || copy.slogan || current.agentInfo.slogan,
+        intro: copy.intro || current.agentInfo.intro,
+      },
+      extraSecs: [
+        ...current.extraSecs.filter((section) => !section.id.startsWith('ai-')),
+        ...sections,
+      ],
+    }))
+    builder.setActiveTab(4)
   }
 
   const getIframeHtml = () => {
@@ -70,6 +97,7 @@ export default function BrandingBuilderLayout() {
           onRestoreSection={sections.restoreSection}
           onRemoveExtraSection={sections.removeExtraSection}
           onMoveExtraSection={sections.moveExtraSection}
+          onApplyCopy={handleApplyCopy}
         />
         <Preview
           ref={previewRef}
@@ -92,6 +120,7 @@ export default function BrandingBuilderLayout() {
           onUserNameChange={saveLoad.setUserName}
           onClose={() => setShowLogin(false)}
           onLoadLatest={() => { saveLoad.loadLatest(); setShowLogin(false) }}
+          onConceptSelect={handleConceptSelect}
         />
       )}
 

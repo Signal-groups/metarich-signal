@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>채용 지원 | {{company}}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
+<style>
+:root {
+  --gold:#d97706; --gold-dark:#92400e; --gold-light:#fffbeb;
+  --dark:#0f172a; --mid:#64748b; --border:#e2e8f0; --bg:#f8fafc;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--dark);}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.95);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+  padding:0 48px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:15px;font-weight:900;letter-spacing:.05em;color:var(--dark);text-decoration:none;}
+.nav-logo span{color:#1d4ed8;}
+.nav-links{display:flex;gap:28px;}
+.nav-links a{font-size:13px;color:var(--mid);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--dark);}
+.nav-cta{background:var(--gold);color:#fff;border:none;border-radius:6px;
+  padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;}
+
+.hero{padding-top:64px;background:linear-gradient(135deg,#0f172a 0%,#1c1917 50%,#292524 100%);
+  color:#fff;text-align:center;padding-bottom:72px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 60%,rgba(217,119,6,.18) 0%,transparent 55%),
+             radial-gradient(circle at 70% 25%,rgba(251,191,36,.1) 0%,transparent 50%);}
+.hero-inner{position:relative;z-index:1;padding:80px 24px 40px;}
+.hero-badge{display:inline-block;background:rgba(217,119,6,.2);border:1px solid rgba(217,119,6,.4);
+  border-radius:100px;padding:6px 20px;font-size:11px;letter-spacing:.12em;
+  margin-bottom:24px;color:#fbbf24;}
+.hero h1{font-size:clamp(26px,4vw,44px);font-weight:900;line-height:1.25;
+  margin-bottom:14px;letter-spacing:-.02em;}
+.hero h1 em{color:#fbbf24;font-style:normal;}
+.hero p{font-size:14px;font-weight:300;color:rgba(255,255,255,.7);line-height:1.9;max-width:440px;margin:0 auto;}
+
+.perks{background:#fff;border-bottom:1px solid var(--border);}
+.perks-inner{max-width:760px;margin:0 auto;padding:32px 24px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.perk{text-align:center;padding:16px;}
+.perk-icon{font-size:28px;margin-bottom:8px;}
+.perk strong{display:block;font-size:13px;font-weight:700;margin-bottom:4px;}
+.perk span{font-size:11px;color:var(--mid);}
+
+.wrap{max-width:700px;margin:0 auto;padding:56px 24px 80px;}
+.card{background:#fff;border-radius:16px;border:1px solid var(--border);
+  box-shadow:0 4px 24px rgba(0,0,0,.06);overflow:hidden;}
+.card-head{background:linear-gradient(135deg,#1c1917,#292524);
+  color:#fff;padding:32px 40px;border-bottom:2px solid var(--gold);}
+.card-head h2{font-size:20px;font-weight:900;margin-bottom:6px;}
+.card-head p{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);}
+.card-body{padding:40px;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.fg{margin-bottom:20px;}
+.fg label{display:block;font-size:12px;font-weight:700;margin-bottom:8px;letter-spacing:.04em;}
+.fg label .req{color:#ef4444;margin-left:3px;}
+.fg input,.fg select,.fg textarea{
+  width:100%;border:1.5px solid var(--border);border-radius:8px;
+  padding:12px 16px;font-size:14px;font-family:inherit;
+  background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,119,6,.08);}
+.fg textarea{resize:vertical;min-height:120px;}
+.privacy{background:var(--gold-light);border:1px solid #fde68a;border-radius:8px;
+  padding:16px;margin-bottom:24px;}
+.privacy p{font-size:11px;color:var(--mid);line-height:1.7;margin-bottom:10px;}
+.privacy label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;cursor:pointer;}
+.privacy input[type=checkbox]{width:15px;height:15px;accent-color:var(--gold);}
+.btn-submit{width:100%;background:linear-gradient(135deg,var(--gold-dark),var(--gold));
+  color:#fff;border:none;border-radius:10px;padding:16px;
+  font-size:15px;font-weight:700;cursor:pointer;
+  transition:opacity .2s,transform .1s;letter-spacing:.04em;}
+.btn-submit:hover{opacity:.9;}
+.btn-submit:active{transform:scale(.99);}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;}
+
+.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:999;align-items:center;justify-content:center;}
+.modal-wrap.show{display:flex;}
+.modal{background:#fff;border-radius:20px;padding:48px 40px;text-align:center;max-width:360px;width:90%;}
+.modal-icon{font-size:48px;margin-bottom:16px;}
+.modal h3{font-size:20px;font-weight:900;margin-bottom:12px;}
+.modal p{font-size:14px;color:var(--mid);line-height:1.8;margin-bottom:24px;}
+.modal-btn{background:var(--gold);color:#fff;border:none;border-radius:8px;
+  padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;}
+
+footer{background:#fff;border-top:1px solid var(--border);padding:40px 48px;text-align:center;}
+.ft-logo{font-size:14px;font-weight:900;letter-spacing:.06em;margin-bottom:10px;}
+.ft-logo span{color:var(--gold);}
+footer p{font-size:12px;color:var(--mid);line-height:2;}
+
+@media(max-width:600px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .card-head,.card-body{padding:24px 20px;}
+  .row2{grid-template-columns:1fr;}
+  .perks-inner{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">METARICH <span>SIGNAL</span></a>
+  <div class="nav-links">
+    <a href="index.html">홈</a>
+    <a href="consult.html">보험상담</a>
+    <a href="recruit.html">채용안내</a>
+  </div>
+  <a href="recruit.html" class="nav-cta">지금 지원하기</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-inner" data-aos="fade-up">
+    <div class="hero-badge">CAREER · RECRUITMENT</div>
+    <h1>당신의 성장이<br><em>우리의 성장</em>입니다</h1>
+    <p>{{company}}과 함께<br>금융 전문가로 성장할 인재를 모십니다</p>
+  </div>
+</div>
+
+<div class="perks">
+  <div class="perks-inner">
+    <div class="perk" data-aos="fade-up" data-aos-delay="0">
+      <div class="perk-icon">📈</div>
+      <strong>성과 기반 보상</strong>
+      <span>실력만큼 받는 투명한 보상체계</span>
+    </div>
+    <div class="perk" data-aos="fade-up" data-aos-delay="100">
+      <div class="perk-icon">🎓</div>
+      <strong>전문 교육 지원</strong>
+      <span>체계적인 금융 전문가 양성 프로그램</span>
+    </div>
+    <div class="perk" data-aos="fade-up" data-aos-delay="200">
+      <div class="perk-icon">🤝</div>
+      <strong>33개 보험사 제휴</strong>
+      <span>국내외 최대 규모 파트너십</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card" data-aos="fade-up" data-aos-delay="100">
+    <div class="card-head">
+      <h2>입사 지원서</h2>
+      <p>아래 정보를 입력하시면 담당자가 2~3일 내 연락드립니다.</p>
+    </div>
+    <div class="card-body">
+      <form id="recruitForm">
+        <div class="row2">
+          <div class="fg">
+            <label>성함<span class="req">*</span></label>
+            <input type="text" name="name" placeholder="홍길동" required>
+          </div>
+          <div class="fg">
+            <label>연락처<span class="req">*</span></label>
+            <input type="tel" name="phone" placeholder="010-0000-0000" required>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="fg">
+            <label>경력 사항<span class="req">*</span></label>
+            <select name="exp" required>
+              <option value="">선택해주세요</option>
+              <option>신입</option>
+              <option>1~3년</option>
+              <option>3~5년</option>
+              <option>5~10년</option>
+              <option>10년 이상</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>희망 근무지<span class="req">*</span></label>
+            <select name="loc" required>
+              <option value="">선택해주세요</option>
+              <option>원주 본부</option>
+              <option>춘천 본부</option>
+              <option>이천 센터</option>
+              <option>무관</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg">
+          <label>자기소개 및 지원 동기</label>
+          <textarea name="memo" placeholder="간단한 자기소개와 지원 동기를 작성해주세요."></textarea>
+        </div>
+        <div class="privacy">
+          <p>수집 항목: 성명, 연락처 · 수집 목적: 채용 전형 진행 · 보유 기간: 채용 종료 후 즉시 파기</p>
+          <label>
+            <input type="checkbox" id="privacy" required>
+            개인정보 수집 및 이용에 동의합니다. (필수)
+          </label>
+        </div>
+        <button type="submit" class="btn-submit">지원서 제출하기</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-wrap" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">🎉</div>
+    <h3>지원 완료!</h3>
+    <p>지원서가 정상 접수되었습니다.<br>담당자가 <strong>2~3일 내</strong> 연락드릴 예정입니다.</p>
+    <button class="modal-btn" onclick="location.href='index.html'">메인으로 돌아가기</button>
+  </div>
+</div>
+
+<footer>
+  <div class="ft-logo">METARICH <span>SIGNAL GROUP</span></div>
+  <p>원주본부 : 강원특별자치도 원주시 능라동길 81, 3~6층<br>
+     이천센터 : 경기 이천시 경충대로 2723, 2~3층</p>
+</footer>
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js" onload="AOS.init({duration:700,once:false,mirror:true})"></script>
+<script>
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfG3_3-BShzdr9x1dqZW9Pnh0bF4h54pGWH4s8A6yBXlMC_RnLcNtlmQt6IS7ECloX/exec';
+const EXTRA_EMAILS = [
+  'jw20371035@gmail.com',
+  'jinwoo8506@gmail.com',
+  'kye1004s7@gmail.com'
+].join(', ');
+function formatPhone(value) {
+  let digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length > 7) return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+  if (digits.length > 3) return digits.slice(0, 3) + '-' + digits.slice(3);
+  return digits;
+}
+document.querySelector('#recruitForm [name="phone"]').addEventListener('input', function() {
+  this.value = formatPhone(this.value);
+});
+
+document.getElementById('recruitForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('.btn-submit');
+  btn.textContent = '제출 중...';
+  btn.disabled = true;
+
+  const data = {
+    formType: 'recruit',
+    name: this.name.value,
+    phone: formatPhone(this.phone.value),
+    exp: this.exp.value,
+    loc: this.loc.value,
+    memo: this.memo.value,
+    timestamp: new Date().toLocaleString('ko-KR'),
+    extra_email: EXTRA_EMAILS
+  };
+
+  try {
+    await fetch(SCRIPT_URL, {method:'POST', body:JSON.stringify(data)});
+  } catch(err) {
+    console.log('전송 오류(무시):', err);
+  }
+  document.getElementById('successModal').classList.add('show');
+});
+</script>
+</body>
+</html>

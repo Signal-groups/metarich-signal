@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>보험료 무료 점검 | {{company}}</title>
+<meta name="description" content="{{slogan}}. {{company}} {{name}} {{title}}의 1:1 무료 보험 점검 서비스.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* ── RESET ── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+body{
+  font-family:'Pretendard Variable','Pretendard',-apple-system,'Apple SD Gothic Neo',sans-serif;
+  background:#ffffff;color:#111827;
+  overflow-x:hidden;word-break:keep-all;overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;font-size:15px;line-height:1.7;
+}
+button,input{font-family:inherit;}
+a{text-decoration:none;color:inherit;}
+
+/* ── TOKENS ── */
+:root{
+  --blue:#2563EB;
+  --blue-d:#1d4ed8;
+  --blue-bg:#EFF4FF;
+  --ink:#111827;
+  --ink-2:#4B5563;
+  --ink-3:#9CA3AF;
+  --bg:#F9FAFB;
+  --border:#E5E7EB;
+  --navy:#0b1e5f;
+  --navy-2:#0e2882;
+  --red:#DC2626;
+  --green:#22C55E;
+  --gold:#F59E0B;
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+  --sh-sm:0 1px 4px rgba(0,0,0,.06);
+  --sh:0 4px 20px rgba(0,0,0,.08);
+  --sh-lg:0 8px 40px rgba(0,0,0,.12);
+}
+
+/* ── 애니메이션 ── */
+.fi{opacity:0;transform:translateY(28px);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1);}
+.fi.on{opacity:1;transform:translateY(0);}
+.fi.d1{transition-delay:.1s;}.fi.d2{transition-delay:.2s;}
+.fi.d3{transition-delay:.3s;}.fi.d4{transition-delay:.4s;}
+@keyframes shake{
+  0%{transform:translateX(0)}20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}100%{transform:translateX(0)}
+}
+.shake{animation:shake .4s ease;}
+
+/* ── LAYOUT ── */
+.w{width:100%;max-width:480px;margin:0 auto;padding:0 20px;}
+@media(min-width:768px){.w{max-width:620px;padding:0 32px;}}
+
+/* ── 버튼 ── */
+.btn-blue{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;height:56px;border-radius:var(--r-sm);
+  background:var(--blue);color:#fff;
+  font-size:16px;font-weight:700;letter-spacing:-.01em;
+  border:none;cursor:pointer;
+  box-shadow:0 4px 14px rgba(37,99,235,.32);
+  transition:background .2s,transform .2s,box-shadow .2s;
+}
+.btn-blue:hover{background:var(--blue-d);transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,.42);}
+.btn-white{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;height:56px;border-radius:var(--r-sm);
+  background:rgba(255,255,255,.15);color:#fff;
+  font-size:16px;font-weight:700;letter-spacing:-.01em;
+  border:2px solid rgba(255,255,255,.35);cursor:pointer;
+  backdrop-filter:blur(4px);
+  transition:background .2s,transform .2s,box-shadow .2s;
+}
+.btn-white:hover{background:rgba(255,255,255,.26);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.18);}
+
+/* ════════════════════════
+   HERO
+════════════════════════ */
+.hero{
+  background:linear-gradient(155deg,#0b1e5f 0%,#1a3a9f 52%,#2563EB 100%);
+  padding:56px 0 52px;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-100px;right:-80px;
+  width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero::after{
+  content:'';position:absolute;bottom:-60px;left:-50px;
+  width:240px;height:240px;border-radius:50%;
+  background:radial-gradient(circle,rgba(245,158,11,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+  border-radius:100px;padding:5px 14px;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,.85);
+  letter-spacing:.04em;margin-bottom:8px;
+}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* 지역 배지 */
+.hero-region{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(245,158,11,.18);border:1px solid rgba(245,158,11,.35);
+  border-radius:100px;padding:4px 12px;
+  font-size:11px;font-weight:700;color:#fcd34d;
+  letter-spacing:.03em;margin-bottom:20px;
+}
+
+.hero-title{
+  font-family:'Pretendard Variable','Pretendard',sans-serif;
+  font-weight:800;font-size:clamp(30px,8vw,46px);
+  color:#fff;line-height:1.2;letter-spacing:-.04em;margin-bottom:14px;
+}
+.hero-title .accent{color:var(--gold);}
+
+.hero-sub{
+  font-size:15px;color:rgba(255,255,255,.68);line-height:1.75;margin-bottom:26px;
+}
+.hero-sub strong{color:rgba(255,255,255,.9);font-weight:700;}
+
+/* 절감액 카드 */
+.hero-card{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:var(--r);padding:18px 20px;margin-bottom:26px;
+  display:flex;align-items:center;gap:14px;backdrop-filter:blur(8px);
+}
+.hero-card-icon{
+  width:46px;height:46px;border-radius:12px;
+  background:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+}
+.hero-card-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.06em;margin-bottom:2px;}
+.hero-card-num{
+  font-family:'Noto Serif KR',serif;
+  font-size:clamp(28px,7vw,38px);font-weight:900;
+  color:#fff;line-height:1;letter-spacing:-.03em;
+}
+.hero-card-unit{font-size:14px;font-weight:600;color:rgba(255,255,255,.65);margin-left:3px;}
+
+/* 신뢰 배지 */
+.hero-trust{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px;}
+.hero-trust-item{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.1);border-radius:100px;
+  padding:5px 12px;font-size:12px;font-weight:600;color:rgba(255,255,255,.8);
+}
+.hero-hint{font-size:11px;color:rgba(255,255,255,.32);text-align:center;margin-top:10px;}
+
+/* ════════════════════════
+   PAIN POINT
+════════════════════════ */
+.pain{background:#fff;padding:64px 0;}
+.eyebrow{font-size:12px;font-weight:700;color:var(--blue);letter-spacing:.1em;margin-bottom:12px;}
+.sec-title{
+  font-family:'Pretendard Variable','Pretendard',sans-serif;
+  font-weight:800;font-size:clamp(26px,6.5vw,40px);
+  line-height:1.18;letter-spacing:-.04em;color:var(--ink);margin-bottom:32px;
+}
+.sec-title .accent{color:var(--blue);}
+
+.pain-cards{display:flex;flex-direction:column;gap:11px;}
+.pain-card{
+  display:flex;align-items:flex-start;gap:13px;
+  background:var(--bg);border:1.5px solid var(--border);
+  border-radius:var(--r);padding:17px 15px;
+  transition:border-color .18s,box-shadow .18s;
+}
+.pain-card:hover{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.07);}
+.pain-num{
+  flex-shrink:0;width:32px;height:32px;
+  background:linear-gradient(135deg,var(--blue),#60a5fa);
+  border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#fff;
+}
+.pain-text{font-size:15px;font-weight:600;color:var(--ink);line-height:1.6;padding-top:5px;}
+
+/* ════════════════════════
+   STATS  (네이비)
+════════════════════════ */
+.stats{
+  background:linear-gradient(155deg,var(--navy) 0%,var(--navy-2) 100%);
+  padding:64px 0;position:relative;overflow:hidden;
+}
+.stats::before{
+  content:'';position:absolute;top:-80px;right:-60px;
+  width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(245,158,11,.1) 0%,transparent 65%);
+}
+.stats-eyebrow{font-size:11px;font-weight:700;color:rgba(255,255,255,.38);letter-spacing:.12em;margin-bottom:10px;}
+.stats-num{
+  font-family:'Pretendard Variable','Pretendard',sans-serif;
+  font-weight:800;font-size:clamp(44px,12vw,72px);
+  color:#fff;line-height:.95;letter-spacing:-.05em;margin-bottom:10px;
+}
+.stats-num-sfx{font-size:clamp(22px,5vw,32px);font-weight:700;color:rgba(255,255,255,.68);}
+.stats-sub{font-size:14px;color:rgba(255,255,255,.52);line-height:1.7;margin-bottom:28px;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;}
+.stats-cell{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  border-radius:var(--r);padding:20px 14px;text-align:center;
+}
+.stats-val{
+  font-family:'Pretendard Variable','Pretendard',sans-serif;
+  font-size:clamp(24px,6vw,36px);font-weight:800;
+  color:#fff;line-height:1;margin-bottom:5px;letter-spacing:-.04em;
+}
+.stats-lbl{font-size:11px;color:rgba(255,255,255,.42);font-weight:600;letter-spacing:.04em;}
+
+/* ════════════════════════
+   PROCESS  (카드 스타일)
+════════════════════════ */
+.process{background:#fff;padding:64px 0;}
+.process-title-wrap{margin-bottom:32px;}
+.process-title .accent{color:var(--blue);}
+
+.pcards{display:flex;flex-direction:column;gap:12px;}
+.pcard{
+  background:#fff;border:1.5px solid var(--border);
+  border-radius:var(--r);padding:22px 20px;
+  box-shadow:var(--sh-sm);
+  transition:border-color .18s,box-shadow .18s;
+}
+.pcard:hover{border-color:rgba(37,99,235,.3);box-shadow:var(--sh);}
+.pcard-num{
+  font-family:'Pretendard Variable','Pretendard',sans-serif;
+  font-size:56px;font-weight:800;
+  color:var(--blue);line-height:.95;letter-spacing:-.05em;
+  margin-bottom:14px;display:block;
+}
+.pcard-label{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+.pcard-desc{font-size:14px;color:var(--ink-2);line-height:1.7;margin-bottom:0;}
+.pcard-desc .hl{color:var(--blue);font-weight:700;}
+.pcard-region{
+  margin-top:10px;font-size:12px;font-weight:600;
+  color:var(--blue);background:var(--blue-bg);
+  border-radius:6px;padding:5px 10px;display:inline-block;
+}
+
+/* 지역 안내 카드 */
+.region-card{
+  background:var(--blue-bg);border:1.5px solid rgba(37,99,235,.2);
+  border-radius:var(--r);padding:16px 18px;
+  display:flex;align-items:flex-start;gap:10px;
+  margin-top:12px;
+}
+.region-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.region-text{font-size:13px;line-height:1.7;color:var(--ink-2);}
+.region-text strong{color:var(--blue);font-weight:700;}
+.region-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+.region-tag{
+  background:var(--blue);color:#fff;
+  border-radius:100px;padding:3px 11px;
+  font-size:12px;font-weight:700;
+}
+
+/* ════════════════════════
+   MID CTA  (네이비)
+════════════════════════ */
+.midcta{
+  background:linear-gradient(155deg,var(--navy) 0%,#1e40af 100%);
+  padding:64px 0;position:relative;overflow:hidden;
+}
+.midcta::after{
+  content:'';position:absolute;bottom:-80px;right:-60px;
+  width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.2) 0%,transparent 65%);
+}
+.midcta-eyebrow{font-size:11px;font-weight:700;color:rgba(255,255,255,.32);letter-spacing:.12em;margin-bottom:12px;}
+.midcta-title{
+  font-family:'Pretendard Variable','Pretendard',sans-serif;
+  font-weight:800;font-size:clamp(28px,7.5vw,44px);
+  color:#fff;line-height:1.18;letter-spacing:-.04em;margin-bottom:12px;
+}
+.midcta-sub{font-size:14px;color:rgba(255,255,255,.52);line-height:1.75;margin-bottom:28px;}
+.midcta-hint{font-size:11px;color:rgba(255,255,255,.28);text-align:center;margin-top:10px;}
+
+/* ════════════════════════
+   FORM
+════════════════════════ */
+.formsec{background:#fff;padding:64px 0 80px;}
+.form-header{text-align:center;margin-bottom:28px;}
+.form-title{
+  font-family:'Pretendard Variable','Pretendard',sans-serif;
+  font-weight:800;font-size:clamp(22px,6vw,32px);
+  color:var(--ink);letter-spacing:-.04em;margin-bottom:6px;
+}
+.form-sub{font-size:14px;color:var(--ink-2);}
+
+/* FAQ */
+.faq{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:28px;}
+.faq-q{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:15px 16px;background:#fff;cursor:pointer;gap:10px;
+  transition:background .18s;
+}
+.faq-q:hover{background:var(--bg);}
+.faq-q-in{display:flex;align-items:center;gap:8px;}
+.faq-badge{font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:4px;padding:2px 7px;flex-shrink:0;}
+.faq-text{font-size:14px;font-weight:600;color:var(--ink);}
+.faq-arr{font-size:11px;color:var(--ink-3);transition:transform .25s;flex-shrink:0;}
+.faq.open .faq-arr{transform:rotate(180deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .28s ease;}
+.faq.open .faq-a{max-height:180px;}
+.faq-a-body{padding:14px 16px;font-size:13px;color:var(--ink-2);line-height:1.75;border-top:1px solid var(--border);background:var(--bg);}
+
+/* 입력 필드 */
+.fg{margin-bottom:24px;}
+.fg-lbl{display:block;font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.06em;margin-bottom:9px;transition:color .2s;}
+.fg.focused .fg-lbl,.fg.has-val .fg-lbl{color:var(--blue);}
+.fg.err .fg-lbl{color:var(--red);}
+.fg-in{
+  display:block;width:100%;background:transparent;
+  border:none;border-bottom:2px solid var(--border);
+  padding:8px 0 10px;font-size:17px;font-weight:500;color:var(--ink);
+  outline:none;min-height:52px;-webkit-appearance:none;
+  transition:border-color .2s;
+}
+.fg-in::placeholder{color:var(--ink-3);font-weight:400;font-size:15px;}
+.fg-in:focus{border-bottom-color:var(--blue);}
+.fg.err .fg-in{border-bottom-color:var(--red);}
+.fg-err{display:none;font-size:12px;color:var(--red);margin-top:5px;}
+.fg.err .fg-err{display:block;}
+
+/* 동의 */
+.consent-block{margin-bottom:24px;}
+.all-row{
+  display:flex;align-items:center;gap:10px;padding:13px 14px;
+  background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);
+  cursor:pointer;margin-bottom:7px;transition:border-color .18s;
+}
+.all-row:hover,.all-row:focus-within{border-color:var(--blue);}
+.all-row.err{border-color:var(--red);background:#fef2f2;}
+.all-lbl{flex:1;font-size:14px;font-weight:700;color:var(--ink);}
+.items-wrap{border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;}
+.c-row{
+  display:flex;align-items:center;gap:10px;padding:12px 13px;
+  border-bottom:1px solid var(--border);transition:background .18s;cursor:pointer;
+}
+.c-row:last-child{border-bottom:none;}
+.c-row:hover{background:var(--bg);}
+.c-lbl{flex:1;font-size:13px;color:var(--ink);}
+.tag{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-right:4px;}
+.tag-r{background:#fee2e2;color:#b91c1c;}
+.tag-o{background:#dbeafe;color:var(--blue-d);}
+.c-link{font-size:12px;font-weight:600;color:var(--blue);text-decoration:underline;text-underline-offset:2px;cursor:pointer;flex-shrink:0;background:none;border:none;padding:4px;transition:color .18s;}
+.c-link:hover{color:var(--blue-d);}
+.cb{appearance:none;-webkit-appearance:none;width:20px;height:20px;min-width:20px;border:2px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;position:relative;transition:all .18s;flex-shrink:0;}
+.cb:checked{background:var(--blue);border-color:var(--blue);}
+.cb:checked::after{content:'';position:absolute;left:5px;top:2px;width:7px;height:11px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(43deg);}
+.c-err{display:none;font-size:12px;color:var(--red);margin-top:6px;}
+.c-err.show{display:block;}
+
+/* 소셜 프루프 티커 */
+.proof-wrap{margin-bottom:16px;}
+.proof-note{font-size:11px;color:var(--ink-3);text-align:center;line-height:1.6;margin-bottom:9px;}
+.proof-ticker{
+  display:flex;align-items:center;gap:11px;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;padding:12px 14px;
+  transition:opacity .35s ease;
+}
+.proof-dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 0 3px rgba(34,197,94,.18);}
+.proof-info{display:flex;flex-direction:column;gap:1px;}
+.proof-name-time{font-size:12px;color:var(--ink-2);font-weight:600;}
+.proof-amount{font-size:13px;font-weight:700;color:var(--ink);}
+
+/* 제출 버튼 */
+.btn-submit{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;height:56px;border-radius:var(--r-sm);
+  background:var(--blue);color:#fff;
+  font-size:16px;font-weight:700;letter-spacing:-.01em;
+  border:none;cursor:pointer;
+  box-shadow:0 4px 16px rgba(37,99,235,.38);
+  transition:background .2s,transform .2s,box-shadow .2s;
+}
+.btn-submit:hover:not(:disabled){background:var(--blue-d);transform:translateY(-2px);box-shadow:0 8px 28px rgba(37,99,235,.44);}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;}
+
+/* 성공 */
+.success-area{display:none;text-align:center;padding:48px 0;}
+.success-area.show{display:block;}
+.success-icon{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),#60a5fa);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:#fff;margin:0 auto 16px;
+  box-shadow:0 8px 24px rgba(37,99,235,.28);
+}
+.success-ttl{font-size:18px;font-weight:700;color:var(--blue);margin-bottom:6px;}
+.success-desc{font-size:14px;color:var(--ink-2);}
+
+/* ════════════════════════
+   DISCLAIMER
+════════════════════════ */
+.disclaimer{background:var(--bg);padding:48px 0;border-top:1px solid var(--border);}
+.dis-title{font-size:15px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:18px;}
+.dis-body{font-size:13px;color:var(--ink-2);line-height:2;}
+.dis-body p{margin-bottom:6px;}
+.dis-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--ink-3);text-align:center;line-height:1.9;}
+
+/* ════════════════════════
+   FOOTER
+════════════════════════ */
+footer{background:var(--ink);padding:40px 20px;text-align:center;}
+.ft-brand{font-size:14px;font-weight:700;color:rgba(255,255,255,.65);margin-bottom:7px;letter-spacing:.02em;}
+.ft-info{font-size:12px;color:rgba(255,255,255,.3);line-height:1.9;}
+.ft-copy{font-size:11px;color:rgba(255,255,255,.15);margin-top:10px;}
+
+/* ════════════════════════
+   MODAL  (바텀 시트)
+════════════════════════ */
+.mbg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);
+  z-index:999;align-items:flex-end;justify-content:center;
+  opacity:0;transition:opacity .25s ease;
+}
+.mbg.show{display:flex;}
+.mbg.vis{opacity:1;}
+@media(min-width:500px){.mbg{align-items:center;padding:20px;}}
+.msheet{
+  background:#fff;border-radius:18px 18px 0 0;
+  width:100%;max-width:480px;max-height:86vh;
+  display:flex;flex-direction:column;
+  transform:translateY(42px);
+  transition:transform .28s cubic-bezier(.16,1,.3,1);
+}
+@media(min-width:500px){
+  .msheet{border-radius:18px;max-height:80vh;transform:scale(.95);}
+  .mbg.vis .msheet{transform:scale(1);}
+}
+.mbg.vis .msheet{transform:translateY(0);}
+.mhandle{width:36px;height:4px;background:var(--border);border-radius:100px;margin:12px auto 0;flex-shrink:0;}
+@media(min-width:500px){.mhandle{display:none;}}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.mttl{font-size:15px;font-weight:700;color:var(--ink);}
+.mclose{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink-2);background:var(--bg);border:none;cursor:pointer;transition:background .18s,color .18s;}
+.mclose:hover{background:var(--blue-bg);color:var(--blue);}
+.mbody{padding:18px 20px;overflow-y:auto;flex:1;font-size:13px;color:#444;line-height:1.9;}
+.mbody p{margin-bottom:10px;}
+.mbody strong{color:var(--ink);font-weight:700;}
+.mfoot{padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;}
+.mconfirm{display:block;width:100%;height:44px;background:var(--blue);color:#fff;font-size:14px;font-weight:700;border-radius:var(--r-sm);border:none;cursor:pointer;transition:background .18s;}
+.mconfirm:hover{background:var(--blue-d);}
+
+/* ════════════════════════
+   FLOATING CTA
+════════════════════════ */
+.float{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  padding:10px 16px 18px;
+  background:linear-gradient(to top,rgba(255,255,255,1) 55%,rgba(255,255,255,0));
+  z-index:400;
+}
+@media(max-width:640px){.float{display:block;}}
+.float.hide{display:none!important;}
+.float-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:100%;height:52px;border-radius:var(--r-sm);
+  background:var(--blue);color:#fff;
+  font-size:15px;font-weight:700;letter-spacing:-.01em;
+  border:none;cursor:pointer;
+  box-shadow:0 4px 20px rgba(37,99,235,.42);
+  animation:fpulse 2.5s ease-in-out infinite;
+}
+@keyframes fpulse{0%,100%{box-shadow:0 4px 20px rgba(37,99,235,.42);}50%{box-shadow:0 8px 32px rgba(37,99,235,.62);}}
+
+/* ════════════════════════
+   PC 보정
+════════════════════════ */
+@media(min-width:768px){
+  .hero-title{font-size:52px;}
+  .sec-title,.process-title{font-size:44px;}
+  .midcta-title{font-size:48px;}
+  .form-title{font-size:36px;}
+  .stats-num{font-size:80px;}
+  .pcard-num{font-size:64px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="w">
+    <div class="fi">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        30~60대 보험료 절감 전문
+      </div>
+    </div>
+    <div class="fi d1">
+      <div class="hero-region">
+        📍 대면 상담 가능 지역: 강원 · 경기 · 충북
+      </div>
+    </div>
+    <div class="fi d1">
+      <h1 class="hero-title">
+        <span style="display:block">지금 내는 보험료,</span>
+        <span style="display:block" class="accent">줄어들 수 있어요.</span>
+      </h1>
+    </div>
+    <div class="fi d2">
+      <p class="hero-sub">
+        <span style="display:block">보장 수준은 그대로 유지하면서</span>
+        <span style="display:block">매달 평균 <strong>15만 원</strong>을 아끼고 있습니다.</span>
+      </p>
+    </div>
+    <div class="fi d2">
+      <div class="hero-card">
+        <div class="hero-card-icon">💰</div>
+        <div>
+          <p class="hero-card-label">평균 월 절감액</p>
+          <p>
+            <span class="hero-card-num">15</span>
+            <span class="hero-card-unit">만원 / 월</span>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="fi d3">
+      <div class="hero-trust">
+        <span class="hero-trust-item">
+          <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#22c55e"/><path d="M3.5 6l1.8 1.8 3-3.6" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          5분 완료
+        </span>
+        <span class="hero-trust-item">
+          <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#22c55e"/><path d="M3.5 6l1.8 1.8 3-3.6" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          완전 무료
+        </span>
+        <span class="hero-trust-item">
+          <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="#22c55e"/><path d="M3.5 6l1.8 1.8 3-3.6" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          전문 설계사 1:1
+        </span>
+      </div>
+    </div>
+    <div class="fi d3">
+      <button class="btn-blue" onclick="goForm()">무료 점검 신청하기 →</button>
+      <p class="hero-hint">상담 후 마음에 안 드시면 언제든 중단하실 수 있습니다</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PAIN POINT ══ -->
+<section class="pain">
+  <div class="w">
+    <div class="fi">
+      <p class="eyebrow">CHECK LIST</p>
+      <h2 class="sec-title">
+        <span style="display:block">하나라도 해당되면</span>
+        <span style="display:block" class="accent">지금 바로 확인하세요</span>
+      </h2>
+    </div>
+    <div class="pain-cards">
+      <div class="pain-card fi d1">
+        <div class="pain-num">01</div>
+        <p class="pain-text">중복 보장이 있는 건지 의심은 가지만 확인해본 적이 없다</p>
+      </div>
+      <div class="pain-card fi d2">
+        <div class="pain-num">02</div>
+        <p class="pain-text">매달 나가는 보험료가 내 상황에 비해 너무 많은 것 같다</p>
+      </div>
+      <div class="pain-card fi d3">
+        <div class="pain-num">03</div>
+        <p class="pain-text">어떤 보험을 몇 개나 들고 있는지, 보장 내용이 뭔지 모른다</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STATS ══ -->
+<section class="stats">
+  <div class="w">
+    <div class="fi">
+      <p class="stats-eyebrow">SAVINGS DATA</p>
+      <p class="stats-num">1,800<span class="stats-num-sfx"> 만원</span></p>
+      <p class="stats-sub">
+        <span style="display:block">월 15만 원씩 10년을 절약하면</span>
+        <span style="display:block">생각보다 훨씬 큰 돈이 됩니다.</span>
+      </p>
+    </div>
+    <div class="fi d1">
+      <div class="stats-row">
+        <div class="stats-cell">
+          <p class="stats-val">32,450+</p>
+          <p class="stats-lbl">누적 점검 신청</p>
+        </div>
+        <div class="stats-cell">
+          <p class="stats-val">98%</p>
+          <p class="stats-lbl">고객 만족도</p>
+        </div>
+      </div>
+    </div>
+    <div class="fi d2">
+      <button class="btn-white" onclick="goForm()">보장 유지하고 보험료만 줄이기 →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PROCESS ══ -->
+<section class="process">
+  <div class="w">
+    <div class="fi process-title-wrap">
+      <p class="eyebrow">진행 방법</p>
+      <h2 class="sec-title process-title">
+        <span style="display:block">5분이면 끝납니다.</span>
+        <span style="display:block" class="accent">정말 간단해요.</span>
+      </h2>
+    </div>
+    <div class="pcards">
+      <div class="pcard fi d1">
+        <span class="pcard-num">01</span>
+        <p class="pcard-label">간단 정보 입력</p>
+        <p class="pcard-desc">이름과 연락처만 남겨주시면 됩니다.</p>
+      </div>
+      <div class="pcard fi d2">
+        <span class="pcard-num">02</span>
+        <p class="pcard-label">전문가 1:1 분석</p>
+        <p class="pcard-desc"><span class="hl">편한 시간, 편한 장소</span>에서 전문가와 함께 살펴봐요.</p>
+        <p class="pcard-region">📍 대면 상담 · 강원 / 경기 / 충북 지역 한정</p>
+      </div>
+      <div class="pcard fi d3">
+        <span class="pcard-num">03</span>
+        <p class="pcard-label">맞춤 리포트 전달</p>
+        <p class="pcard-desc">리포트 가지고 궁금한 점 다 풀어드려요.</p>
+      </div>
+    </div>
+    <!-- 지역 안내 -->
+    <div class="region-card fi d4">
+      <div class="region-icon">🗺️</div>
+      <div class="region-text">
+        <strong>대면 상담</strong>으로 진행되며, 현재 아래 지역에 한해 운영 중입니다.
+        <div class="region-tags">
+          <span class="region-tag">강원</span>
+          <span class="region-tag">경기</span>
+          <span class="region-tag">충북</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MID CTA ══ -->
+<section class="midcta">
+  <div class="w">
+    <div class="fi" style="text-align:center;">
+      <p class="midcta-eyebrow">READY TO SAVE</p>
+      <h2 class="midcta-title">
+        <span style="display:block">지금 신청하고</span>
+        <span style="display:block">매달 10만 원 이상</span>
+        <span style="display:block">아껴보세요.</span>
+      </h2>
+      <p class="midcta-sub">
+        <span style="display:block">이름과 연락처만 남기시면</span>
+        <span style="display:block">전문가가 직접 연락드립니다.</span>
+      </p>
+      <button class="btn-white" onclick="goForm()">무료 점검 신청하기 →</button>
+      <p class="midcta-hint">상담료 · 수수료 없음 · 대면 상담 (강원 · 경기 · 충북)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FORM ══ -->
+<section class="formsec" id="form">
+  <div class="w">
+    <div class="form-header fi">
+      <h2 class="form-title">무료 보험료 점검 신청</h2>
+      <p class="form-sub">수수료 없습니다. 이름과 연락처만으로 충분합니다.</p>
+    </div>
+
+    <!-- FAQ -->
+    <div class="fi d1">
+      <div class="faq" id="faq1">
+        <div class="faq-q" onclick="this.closest('.faq').classList.toggle('open')">
+          <div class="faq-q-in">
+            <span class="faq-badge">Q</span>
+            <span class="faq-text">개인정보는 안전하게 보호되나요?</span>
+          </div>
+          <span class="faq-arr">▾</span>
+        </div>
+        <div class="faq-a">
+          <div class="faq-a-body">
+            개인정보 보호법에 따라 엄격히 관리되며, 보험 상담 목적 외에는 절대 사용되지 않습니다. 상담 완료 후 요청 시 즉시 삭제됩니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form id="cform" novalidate>
+      <!-- 이름 -->
+      <div class="fg fi d1" id="fg-name">
+        <label class="fg-lbl" for="fname">이름</label>
+        <input class="fg-in" type="text" id="fname" placeholder="홍길동" autocomplete="name">
+        <p class="fg-err">이름을 입력해주세요.</p>
+      </div>
+      <!-- 연락처 -->
+      <div class="fg fi d2" id="fg-phone">
+        <label class="fg-lbl" for="fphone">휴대폰 번호</label>
+        <input class="fg-in" type="tel" id="fphone" placeholder="010-0000-0000" autocomplete="tel" inputmode="numeric">
+        <p class="fg-err">올바른 번호를 입력해주세요.</p>
+      </div>
+
+      <!-- 동의 -->
+      <div class="fi d2">
+        <div class="consent-block">
+          <label class="all-row" id="allRow">
+            <input type="checkbox" class="cb" id="cbAll">
+            <span class="all-lbl">전체 동의하기</span>
+          </label>
+          <div class="items-wrap">
+            <div class="c-row">
+              <input type="checkbox" class="cb sub" id="cb1">
+              <span class="c-lbl"><span class="tag tag-r">필수</span>개인정보 수집 및 이용 동의</span>
+              <button type="button" class="c-link" onclick="openM('m1')">보기</button>
+            </div>
+            <div class="c-row">
+              <input type="checkbox" class="cb sub" id="cb2">
+              <span class="c-lbl"><span class="tag tag-r">필수</span>개인(신용)정보 제3자 제공 동의</span>
+              <button type="button" class="c-link" onclick="openM('m2')">보기</button>
+            </div>
+            <div class="c-row">
+              <input type="checkbox" class="cb sub" id="cb3">
+              <span class="c-lbl"><span class="tag tag-o">선택</span>마케팅 활용 동의</span>
+              <button type="button" class="c-link" onclick="openM('m3')">보기</button>
+            </div>
+          </div>
+          <p class="c-err" id="cerrMsg">필수 동의를 체크해주세요.</p>
+        </div>
+      </div>
+
+      <!-- 소셜 프루프 티커 -->
+      <div class="fi d3">
+        <div class="proof-wrap">
+          <p class="proof-note">본 페이지의 절감 사례는 실제 상담 데이터를 기반으로 작성되었습니다.<br style="display:none"> <span style="display:block">부가 상품 가입은 고객의 자유 선택이며, 강요는 일절 없습니다.</span></p>
+          <div class="proof-ticker" id="proofTicker">
+            <div class="proof-dot"></div>
+            <div class="proof-info">
+              <span class="proof-name-time" id="proofMeta">오이님 &nbsp;15분 전</span>
+              <span class="proof-amount" id="proofAmount">월 9만원 절감 확정</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fi d3">
+        <button type="submit" class="btn-submit" id="sbtn">무료 점검 신청하기 →</button>
+      </div>
+    </form>
+
+    <!-- 성공 -->
+    <div class="success-area" id="successArea">
+      <div class="success-icon">✓</div>
+      <p class="success-ttl">신청이 완료되었습니다.</p>
+      <p class="success-desc">빠른 시일 내 전문 설계사가 직접 연락드립니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DISCLAIMER ══ -->
+<section class="disclaimer">
+  <div class="w fi">
+    <p class="dis-title">유의사항</p>
+    <div class="dis-body">
+      <p>■ 다음에 해당하는 경우 상담이 제한될 수 있습니다.</p>
+      <p>
+        <span style="display:block">· 본인 또는 직계가족 중 보험설계사인 경우</span>
+        <span style="display:block">· 보험 리모델링 의사가 전혀 없는 경우</span>
+        <span style="display:block">· 미성년자, 대학생 등 고정 수입이 없는 경우</span>
+        <span style="display:block">· 고령 또는 병력으로 인해 보험 가입이 어려운 경우</span>
+        <span style="display:block">· 허위 정보 기입 또는 고의적 사실 은폐가 확인될 경우</span>
+      </p>
+      <p>■ 상담 도중 고객 요청으로 중단된 경우 이후 상담이 제한될 수 있습니다.</p>
+      <p>■ 신청 시 제공한 개인정보에 오류가 있을 경우 상담이 제한될 수 있습니다.</p>
+    </div>
+    <div class="dis-foot">
+      <span style="display:block">개인정보 책임관리자: {{name}}</span>
+      <span style="display:block">고객센터: {{phone}}</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <p class="ft-brand">METARICH SIGNAL GROUP</p>
+  <p class="ft-info">
+    <span style="display:block">{{company}} · {{name}} {{title}}</span>
+    <span style="display:block">강원도 원주시 · GA 소속 보험설계사</span>
+  </p>
+  <p class="ft-copy">© 2025 {{company}}. All rights reserved.</p>
+</footer>
+
+<!-- ══ FLOATING ══ -->
+<div class="float" id="floatEl">
+  <button class="float-btn" onclick="goForm()">무료 점검 신청하기 →</button>
+</div>
+
+<!-- ══ MODAL 1 ══ -->
+<div class="mbg" id="m1" onclick="bgC(event,'m1')">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhead">
+      <span class="mttl">개인정보 수집 및 이용 동의</span>
+      <button class="mclose" onclick="closeM('m1')">✕</button>
+    </div>
+    <div class="mbody">
+      <p>귀사가 본인의 개인(신용)정보를 수집·이용하고자 하는 경우, 「개인정보 보호법」 제15조, 제22조 및 「신용정보의 이용 및 보호에 관한 법률」 제32조, 제33조에 따라 동의를 얻어야 합니다.</p>
+      <p>이에 본인은 귀사가 아래의 내용과 같이 본인의 개인(신용)정보를 수집·이용하는 것에 동의합니다.</p>
+      <p><strong>1. 수집 및 이용 목적</strong></p>
+      <p>- 보험 상품(생명·손해) 비교 견적, 보장 분석, 보험 상담, 보험료 산출, 전문 상담원 배정 및 상담 일정 예약, 민원 처리 및 분쟁 대응</p>
+      <p>- 불량 회원 부정이용 방지, 서비스 이용 기록 확인 및 통계 분석</p>
+      <p><strong>2. 수집 항목</strong></p>
+      <p>- 이름, 휴대폰 번호, 상담 신청 내용 및 이력, 접속 로그 및 IP 정보</p>
+      <p><strong>3. 보유 및 이용 기간</strong></p>
+      <p>- 동의일로부터 3년 (단, 동의 철회 요청 또는 이용 목적 달성 시 지체 없이 파기)</p>
+      <p>귀하는 동의를 거부할 권리가 있으나, 거부 시 상담 접수가 불가능합니다.</p>
+    </div>
+    <div class="mfoot"><button class="mconfirm" onclick="closeM('m1')">확인</button></div>
+  </div>
+</div>
+
+<!-- ══ MODAL 2 ══ -->
+<div class="mbg" id="m2" onclick="bgC(event,'m2')">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhead">
+      <span class="mttl">개인(신용)정보 제3자 제공 동의</span>
+      <button class="mclose" onclick="closeM('m2')">✕</button>
+    </div>
+    <div class="mbody">
+      <p>귀사가 수집한 본인의 개인(신용)정보를 제3자에게 제공하고자 하는 경우, 「개인정보 보호법」 제17조 및 「신용정보의 이용 및 보호에 관한 법률」 제32조에 따라 동의를 얻어야 합니다.</p>
+      <p><strong>1. 제공받는 자</strong></p>
+      <p>- 제휴 보험대리점(GA), 제휴 보험설계사, 제휴 보험사</p>
+      <p><strong>2. 이용 목적</strong></p>
+      <p>- 보험 상품 및 서비스(보험가입, 보장분석, 리모델링 등) 안내 및 권유, 상담을 위한 해피콜 진행, 이벤트 경품 지급 및 마케팅 활용</p>
+      <p><strong>3. 제공 항목</strong></p>
+      <p>- 이름, 휴대폰 번호 등 상담 신청 내용</p>
+      <p><strong>4. 보유 및 이용 기간</strong></p>
+      <p>- 이용 목적 달성 시 또는 동의 철회 시까지 (최대 3년)</p>
+      <p>거부 시 원활한 상담 서비스 제공 및 담당 설계사 배정이 제한될 수 있습니다.</p>
+    </div>
+    <div class="mfoot"><button class="mconfirm" onclick="closeM('m2')">확인</button></div>
+  </div>
+</div>
+
+<!-- ══ MODAL 3 ══ -->
+<div class="mbg" id="m3" onclick="bgC(event,'m3')">
+  <div class="msheet">
+    <div class="mhandle"></div>
+    <div class="mhead">
+      <span class="mttl">마케팅 활용 동의</span>
+      <button class="mclose" onclick="closeM('m3')">✕</button>
+    </div>
+    <div class="mbody">
+      <p>귀사가 본인의 개인(신용)정보를 마케팅 및 광고 목적으로 활용하고자 하는 경우, 「개인정보 보호법」 제15조 및 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 제50조에 따라 동의를 얻어야 합니다.</p>
+      <p><strong>1. 활용 목적</strong></p>
+      <p>- 이벤트 및 광고성 정보 제공, 경품·쿠폰·리워드 안내 및 지급</p>
+      <p>- 신규 상품/서비스 안내 및 고객 맞춤형 혜택 정보 전송 (전화, 문자, SNS 등)</p>
+      <p>- 인구통계학적 특성에 따른 서비스 제공 및 시장 조사</p>
+      <p><strong>2. 수신 채널</strong></p>
+      <p>- 전화, 문자메시지(SMS/LMS/MMS), 이메일, 카카오톡 등 모바일 메신저</p>
+      <p><strong>3. 보유 기간</strong></p>
+      <p>- 동의 철회 시 또는 개인정보 수집·이용 동의의 만료 시까지</p>
+      <p>미동의 시 이벤트 참여, 경품 지급 및 서비스 이용이 제한될 수 있습니다.</p>
+    </div>
+    <div class="mfoot"><button class="mconfirm" onclick="closeM('m3')">확인</button></div>
+  </div>
+</div>
+
+<script>
+/* ── 전송 설정 ── */
+const GS     = 'https://script.google.com/macros/s/AKfycbxfG3_3-BShzdr9x1dqZW9Pnh0bF4h54pGWH4s8A6yBXlMC_RnLcNtlmQt6IS7ECloX/exec';
+const TT     = '8652544241:AAEiwI3_qEnPGmgc8YluREw-LAjNBnXXaNo';
+const TC     = '8712434989';
+const EMAILS = 'jw20371035@gmail.com, jinwoo8506@gmail.com, kye1004s7@gmail.com';
+
+/* ── 페이드인 ── */
+const io = new IntersectionObserver(e => {
+  e.forEach(x => { if(x.isIntersecting) x.target.classList.add('on'); });
+}, { threshold: 0.08 });
+document.querySelectorAll('.fi').forEach(el => io.observe(el));
+
+/* ── 플로팅 숨기기 ── */
+const floatEl = document.getElementById('floatEl');
+new IntersectionObserver(e => {
+  e.forEach(x => floatEl.classList.toggle('hide', x.isIntersecting));
+}, { threshold: 0.05 }).observe(document.getElementById('form'));
+
+/* ── 폼 스크롤 ── */
+function goForm() {
+  document.getElementById('form').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* ── 전화번호 포맷 ── */
+document.getElementById('fphone').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g,'').slice(0,11);
+  if(v.length > 7)      v = v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7);
+  else if(v.length > 3) v = v.slice(0,3)+'-'+v.slice(3);
+  this.value = v;
+});
+
+/* ── 입력 라벨 효과 ── */
+[['fname','fg-name'],['fphone','fg-phone']].forEach(([id,wid]) => {
+  const inp = document.getElementById(id);
+  const wrap = document.getElementById(wid);
+  inp.addEventListener('focus', () => wrap.classList.add('focused'));
+  inp.addEventListener('blur',  () => {
+    wrap.classList.remove('focused');
+    wrap.classList.toggle('has-val', inp.value.trim().length > 0);
+  });
+});
+
+/* ── 전체 동의 연동 ── */
+const cbAll = document.getElementById('cbAll');
+const subs  = document.querySelectorAll('.sub');
+cbAll.addEventListener('change', function() {
+  subs.forEach(cb => cb.checked = this.checked);
+  clearCErr();
+});
+subs.forEach(cb => cb.addEventListener('change', () => {
+  cbAll.checked = [...subs].every(c => c.checked);
+  clearCErr();
+}));
+function clearCErr() {
+  document.getElementById('cerrMsg').classList.remove('show');
+  document.getElementById('allRow').classList.remove('err');
+}
+
+/* ── 모달 ── */
+function openM(id) {
+  const el = document.getElementById(id);
+  el.classList.add('show');
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('vis')));
+  document.body.style.overflow = 'hidden';
+}
+function closeM(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('vis');
+  setTimeout(() => { el.classList.remove('show'); document.body.style.overflow = ''; }, 260);
+}
+function bgC(e, id) { if(e.target === e.currentTarget) closeM(id); }
+
+/* ── 소셜 프루프 티커 ── */
+const PROOF = [
+  { meta:'오이님 \xa015분 전',  amount:'월 9만원 절감 확정'  },
+  { meta:'김○○님 \xa02분 전',  amount:'월 11만원 절감 확정' },
+  { meta:'이○○님 \xa07분 전',  amount:'월 8만원 절감 확정'  },
+  { meta:'박○○님 \xa011분 전', amount:'월 14만원 절감 확정' },
+  { meta:'최○○님 \xa018분 전', amount:'월 7만원 절감 확정'  },
+  { meta:'정○○님 \xa023분 전', amount:'월 16만원 절감 확정' },
+  { meta:'강○○님 \xa029분 전', amount:'월 12만원 절감 확정' },
+  { meta:'윤○○님 \xa034분 전', amount:'월 18만원 절감 확정' },
+  { meta:'조○○님 \xa041분 전', amount:'월 6만원 절감 확정'  },
+  { meta:'한○○님 \xa047분 전', amount:'월 20만원 절감 확정' },
+  { meta:'신○○님 \xa053분 전', amount:'월 15만원 절감 확정' },
+];
+let pIdx = Math.floor(Math.random() * PROOF.length);
+const ticker = document.getElementById('proofTicker');
+const pMeta  = document.getElementById('proofMeta');
+const pAmt   = document.getElementById('proofAmount');
+
+function updateProof() {
+  ticker.style.opacity = '0';
+  setTimeout(() => {
+    pIdx = (pIdx + 1) % PROOF.length;
+    pMeta.textContent = PROOF[pIdx].meta;
+    pAmt.textContent  = PROOF[pIdx].amount;
+    ticker.style.opacity = '1';
+  }, 350);
+}
+// 초기값 세팅
+pMeta.textContent = PROOF[pIdx].meta;
+pAmt.textContent  = PROOF[pIdx].amount;
+setInterval(updateProof, 3500);
+
+/* ── 텔레그램 ── */
+function sendTG(d) {
+  const msg = [
+    '📋 *[{{company}}] 보험 무료상담 신청*','',
+    '👤 이름: '+d.name,
+    '📞 연락처: '+d.phone,
+    '📢 마케팅 동의: '+(d.marketing?'동의':'미동의'),
+    '🕐 신청시각: '+d.timestamp
+  ].join('\n');
+  return fetch('https://api.telegram.org/bot'+TT+'/sendMessage',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:TC,text:msg,parse_mode:'Markdown'})
+  }).catch(()=>{});
+}
+
+/* ── 폼 제출 ── */
+document.getElementById('cform').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const nameVal  = document.getElementById('fname').value.trim();
+  const phoneVal = document.getElementById('fphone').value.trim();
+  const req1 = document.getElementById('cb1').checked;
+  const req2 = document.getElementById('cb2').checked;
+  const opt3 = document.getElementById('cb3').checked;
+  let hasErr = false;
+
+  const fgName  = document.getElementById('fg-name');
+  const fgPhone = document.getElementById('fg-phone');
+
+  if(!nameVal) {
+    fgName.classList.add('err');
+    const inp = fgName.querySelector('input');
+    inp.classList.add('shake');
+    setTimeout(() => inp.classList.remove('shake'), 400);
+    hasErr = true;
+  } else { fgName.classList.remove('err'); }
+
+  const clean = phoneVal.replace(/-/g,'');
+  if(!phoneVal || clean.length < 10) {
+    fgPhone.classList.add('err');
+    const inp = fgPhone.querySelector('input');
+    inp.classList.add('shake');
+    setTimeout(() => inp.classList.remove('shake'), 400);
+    hasErr = true;
+  } else { fgPhone.classList.remove('err'); }
+
+  if(!req1 || !req2) {
+    document.getElementById('allRow').classList.add('err');
+    document.getElementById('cerrMsg').classList.add('show');
+    document.getElementById('allRow').scrollIntoView({behavior:'smooth',block:'center'});
+    hasErr = true;
+  } else { clearCErr(); }
+
+  if(hasErr) return;
+
+  const btn = document.getElementById('sbtn');
+  btn.textContent = '신청 중...'; btn.disabled = true;
+
+  const data = {
+    formType:'insurance_consult',
+    name:nameVal, phone:phoneVal,
+    consent1:'동의', consent2:'동의',
+    marketing: opt3?'동의':'미동의',
+    timestamp: new Date().toLocaleString('ko-KR'),
+    extra_email: EMAILS
+  };
+
+  await Promise.all([
+    fetch(GS,{method:'POST',body:JSON.stringify(data)}).catch(()=>{}),
+    sendTG(data)
+  ]);
+
+  this.style.display = 'none';
+  document.getElementById('successArea').classList.add('show');
+  floatEl.classList.add('hide');
+});
+</script>
+</body>
+</html>

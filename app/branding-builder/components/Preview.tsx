@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { forwardRef, useEffect, useMemo, useState } from 'react'
 import { genCardHtml } from '../templates/card-builder'
@@ -29,8 +29,14 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
 
   const currentTemplate = LANDING_TEMPLATES.find((t) => t.id === state.landingTemplateId)
   const concept = state.landingConcept ?? 'consult'
-
-  const [extHtml, setExtHtml] = useState<string | null>(null)
+  const externalTemplateId = currentTemplate?.type === 'external' ? currentTemplate.id : null
+  const externalTemplateFile = currentTemplate?.type === 'external' ? currentTemplate.file : undefined
+  const externalLoadKey = useMemo(() => {
+    if (!externalTemplateId || !externalTemplateFile) return null
+    return JSON.stringify({ templateId: externalTemplateId, file: externalTemplateFile, agentInfo: state.agentInfo, concept })
+  }, [externalTemplateId, externalTemplateFile, state.agentInfo, concept])
+  const [extHtmlState, setExtHtmlState] = useState<{ key: string; html: string } | null>(null)
+  const extHtml = extHtmlState?.key === externalLoadKey ? extHtmlState.html : null
 
   const cardHtml = useMemo(() => {
     if (state.mode !== 'card') return null
@@ -39,73 +45,74 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
 
   const insHtml = useMemo(() => {
     if (state.mode !== 'landing' || currentTemplate?.type !== 'insurance') return null
+    // TODO: opts.font, opts.color, opts.extraSecs ?꾨떖 ??吏곸젒 愿由??뚯씪?먯꽌 泥섎━
+    const opts = { font: state.landingFont, color: state.landingColor, extraSecs: state.extraSecs, deletedSecs: state.deletedSecs }
     switch (state.landingTemplateId) {
-      case 'ins-navy':   return genNavyHtml(state.agentInfo, concept)
-      case 'ins-blue':   return genBlueHtml(state.agentInfo, concept)
-      case 'ins-purple': return genPurpleHtml(state.agentInfo, concept)
-      case 'ins-green':  return genGreenHtml(state.agentInfo, concept)
+      case 'ins-navy':   return genNavyHtml(state.agentInfo, concept, opts)
+      case 'ins-blue':   return genBlueHtml(state.agentInfo, concept, opts)
+      case 'ins-purple': return genPurpleHtml(state.agentInfo, concept, opts)
+      case 'ins-green':  return genGreenHtml(state.agentInfo, concept, opts)
       default:           return null
     }
-  }, [state.mode, state.landingTemplateId, state.agentInfo, concept, currentTemplate?.type])
-
-  // ext-* 외부 템플릿: agentInfo 치환 후 srcDoc 렌더링
+  }, [state.mode, state.landingTemplateId, state.agentInfo, concept, currentTemplate?.type, state.landingFont, state.landingColor, state.extraSecs, state.deletedSecs])
+  // ext-* external template injects agentInfo into srcDoc after loading.
   useEffect(() => {
-    if (state.mode !== 'landing' || currentTemplate?.type !== 'external' || !currentTemplate.file) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setExtHtml(null)
-      return
-    }
+    if (state.mode !== 'landing' || !externalLoadKey || !externalTemplateId || !externalTemplateFile) return
+
     let active = true
-    setExtHtml(null)
     void loadExternalTemplate({
-      templateId: state.landingTemplateId,
-      file: currentTemplate.file,
+      templateId: externalTemplateId,
+      file: externalTemplateFile,
       agentInfo: state.agentInfo,
       concept,
-    }).then((html) => { if (active) setExtHtml(html) })
-      .catch(() => { if (active) setExtHtml(null) })
+    })
+      .then((html) => {
+        if (active) setExtHtmlState({ key: externalLoadKey, html })
+      })
+      .catch(() => undefined)
+
     return () => { active = false }
-  }, [state.mode, state.landingTemplateId, currentTemplate, state.agentInfo, concept])
+  }, [state.mode, externalLoadKey, externalTemplateId, externalTemplateFile, state.agentInfo, concept])
 
   const renderContent = () => {
     if (state.mode === 'card' && cardHtml) {
       return (
         <iframe
-          key={`card-${state.cardTemplateId}-${state.cardBg}`}
+          key={`card-${state.cardTemplateId}-${state.cardBg}-${state.cardPhotoPos}-${state.cardShowBottomCta}`}
           srcDoc={cardHtml}
           className="w-full border-none block"
           style={{ height: iframeH }}
-          title="디지털 명함 미리보기"
+          title="?붿???紐낇븿 誘몃━蹂닿린"
           sandbox="allow-same-origin allow-scripts"
         />
       )
     }
-    // ext-* 외부 HTML (정보 주입 후 srcDoc, 로딩 전엔 원본 src)
-    if (currentTemplate?.type === 'external' && currentTemplate.file) {
+    // ext-* ?몃? HTML (?뺣낫 二쇱엯 ??srcDoc, 濡쒕뵫 ?꾩뿏 ?먮낯 src)
+    if (externalTemplateId && externalTemplateFile) {
       return (
         <iframe
-          key={`${state.landingTemplateId}-${concept}`}
+          key={`${state.landingTemplateId}-${concept}-${state.landingFont}-${state.landingColor}`}
           srcDoc={extHtml ?? undefined}
-          src={extHtml ? undefined : currentTemplate.file}
+          src={extHtml ? undefined : externalTemplateFile}
           className="w-full border-none block"
           style={{ height: iframeH }}
-          title="외부 템플릿 미리보기"
+          title="?몃? ?쒗뵆由?誘몃━蹂닿린"
           sandbox="allow-same-origin allow-scripts"
         />
       )
     }
-    // ins-* 컨셉 미선택 안내
+    // ins-* 而⑥뀎 誘몄꽑???덈궡
     if (currentTemplate?.type === 'insurance' && !state.landingConcept) {
       return (
         <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 bg-white p-12 text-center">
-          <span className="text-5xl">🎯</span>
+          <span className="text-5xl">◎</span>
           <p className="text-lg font-black text-slate-800">컨셉을 선택해주세요</p>
           <p className="max-w-xs text-sm leading-6 text-slate-500">
-            왼쪽 패널 <strong>② 템플릿</strong> 탭에서 페이지 목적(컨셉)을 선택하면<br />
-            헤드라인·색상·CTA가 자동으로 완성됩니다.
+            왼쪽 패널 <strong>템플릿</strong> 탭에서 페이지 목적을 선택하면<br />
+            헤드라인, 색상, CTA가 자동으로 완성됩니다.
           </p>
           <button type="button" className="mt-2 rounded-md bg-[#1A2744] px-5 py-2.5 text-sm font-bold text-white" onClick={() => onOpenTab(1)}>
-            컨셉 선택하러 가기 →
+            컨셉 선택하러 가기
           </button>
         </div>
       )
@@ -113,11 +120,11 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
     if (insHtml) {
       return (
         <iframe
-          key={`${state.landingTemplateId}-${concept}`}
+          key={`${state.landingTemplateId}-${concept}-${state.landingFont}-${state.landingColor}`}
           srcDoc={insHtml}
           className="w-full border-none block"
           style={{ height: iframeH }}
-          title="보험 전용 템플릿 미리보기"
+          title="蹂댄뿕 ?꾩슜 ?쒗뵆由?誘몃━蹂닿린"
           sandbox="allow-same-origin allow-scripts"
         />
       )
@@ -133,10 +140,10 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
     <section className="min-w-0 flex-1 overflow-y-auto p-6">
       <div className="mx-auto mb-4 flex max-w-[960px] items-center justify-between text-sm text-slate-500">
         <span>
-          {currentTemplate?.name ?? '템플릿 선택'}
-          {state.landingConcept ? ` · ${CONCEPT_LABELS[state.landingConcept]}` : ''}
+          {currentTemplate?.name ?? '?쒗뵆由??좏깮'}
+          {state.landingConcept ? ` 쨌 ${CONCEPT_LABELS[state.landingConcept]}` : ''}
         </span>
-        <span>{previewMode === 'mobile' ? '모바일 390px' : 'PC 960px'}</span>
+        <span>{previewMode === 'mobile' ? '紐⑤컮??390px' : 'PC 960px'}</span>
       </div>
       <div className={`mx-auto overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg ${widthClass}`}>
         <div className="flex h-11 items-center gap-2 border-b border-slate-200 bg-slate-50 px-4">
@@ -144,7 +151,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
           <span className="h-3 w-3 rounded-full bg-[#f59e0b]" />
           <span className="h-3 w-3 rounded-full bg-[#10b981]" />
           <span className="ml-3 text-xs font-bold text-slate-500">
-            {state.mode === 'card' ? '디지털 명함 미리보기' : '랜딩페이지 미리보기'}
+            {state.mode === 'card' ? '?붿???紐낇븿 誘몃━蹂닿린' : '?쒕뵫?섏씠吏 誘몃━蹂닿린'}
           </span>
         </div>
         {renderContent()}
@@ -168,7 +175,7 @@ function LandingPreview({ state, onDeleteSection, onOpenTab }: { state: Branding
         <section className="relative overflow-hidden px-8 py-20" style={{ background: palette.heroBg, color: palette.heroText, borderBottom: `4px solid ${state.landingColor}` }} onClick={() => onOpenTab(2)}>
           <p contentEditable suppressContentEditableWarning className="mb-4 text-sm font-bold outline-blue-500" style={{ color: palette.accent }}>{info.brand || CONCEPT_LABELS[concept]}</p>
           <h1 contentEditable suppressContentEditableWarning className="max-w-2xl whitespace-pre-line text-4xl font-black leading-tight outline-blue-500">{info.slogan || headline}</h1>
-          <p contentEditable suppressContentEditableWarning className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 outline-blue-500">{info.intro || '고객의 현재 보장과 앞으로 필요한 준비를 함께 확인합니다.'}</p>
+          <p contentEditable suppressContentEditableWarning className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 outline-blue-500">{info.intro || '怨좉컼???꾩옱 蹂댁옣怨??욎쑝濡??꾩슂??以鍮꾨? ?④퍡 ?뺤씤?⑸땲??'}</p>
           <button type="button" className="mt-8 min-h-12 rounded-md px-6 text-base font-black" style={{ background: palette.accent, color: palette.isDark ? '#fff' : '#1e293b' }} onClick={(e) => { e.stopPropagation(); onOpenTab(1) }}>{cta}</button>
         </section>
       </EditableSection>
@@ -179,12 +186,12 @@ function LandingPreview({ state, onDeleteSection, onOpenTab }: { state: Branding
             {info.profileImg
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={info.profileImg} alt={info.name} className="h-full w-full object-cover" />
-              : <span className="text-sm font-bold text-slate-400">프로필 사진</span>}
+              : <span className="text-sm font-bold text-slate-400">?꾨줈???ъ쭊</span>}
           </div>
           <div>
-            <p contentEditable suppressContentEditableWarning className="text-sm font-bold text-slate-500 outline-blue-500">{info.company || '소속 회사'} {info.branch && `· ${info.branch}`}</p>
-            <h2 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '설계사 이름'}</h2>
-            <p contentEditable suppressContentEditableWarning className="mt-2 text-lg font-bold text-[#1A2744] outline-blue-500">{info.title || '전문 직함'}</p>
+            <p contentEditable suppressContentEditableWarning className="text-sm font-bold text-slate-500 outline-blue-500">{info.company || '?뚯냽 ?뚯궗'} {info.branch && `쨌 ${info.branch}`}</p>
+            <h2 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '?ㅺ퀎???대쫫'}</h2>
+            <p contentEditable suppressContentEditableWarning className="mt-2 text-lg font-bold text-[#1A2744] outline-blue-500">{info.title || '?꾨Ц 吏곹븿'}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {info.consultFields.map((field) => (<span key={field} className="rounded-full bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700">{field}</span>))}
             </div>
@@ -223,12 +230,12 @@ function CardPreview({ state, onOpenTab }: { state: BrandingState; onOpenTab: (t
           {state.cardPhotoData || info.profileImg
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={state.cardPhotoData || info.profileImg} alt={info.name} className="h-full w-full object-cover" />
-            : <span className="text-sm font-bold opacity-70">사진 영역</span>}
+            : <span className="text-sm font-bold opacity-70">?ъ쭊 ?곸뿭</span>}
         </div>
         <div className="p-6">
-          <p contentEditable suppressContentEditableWarning className="text-sm font-bold opacity-70 outline-blue-500">{info.company || '소속 회사'}</p>
-          <h1 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '설계사 이름'}</h1>
-          <p contentEditable suppressContentEditableWarning className="mt-1 text-base font-bold opacity-80 outline-blue-500">{info.title || '전문 직함'}</p>
+          <p contentEditable suppressContentEditableWarning className="text-sm font-bold opacity-70 outline-blue-500">{info.company || '?뚯냽 ?뚯궗'}</p>
+          <h1 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '?ㅺ퀎???대쫫'}</h1>
+          <p contentEditable suppressContentEditableWarning className="mt-1 text-base font-bold opacity-80 outline-blue-500">{info.title || '?꾨Ц 吏곹븿'}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {state.cardTags.map((tag) => (<span key={tag} className="rounded-full bg-white/20 px-3 py-2 text-sm font-bold">{tag}</span>))}
           </div>
@@ -244,8 +251,8 @@ function CardPreview({ state, onOpenTab }: { state: BrandingState; onOpenTab: (t
       </div>
       {state.cardShowBottomCta && (
         <div className="fixed bottom-4 left-1/2 z-10 grid w-[350px] -translate-x-1/2 grid-cols-2 gap-2">
-          <button type="button" className="min-h-12 rounded-md bg-white text-sm font-black text-slate-900 shadow-xl">전화하기</button>
-          <button type="button" className="min-h-12 rounded-md bg-[#FEE500] text-sm font-black text-slate-900 shadow-xl">카카오톡</button>
+          <button type="button" className="min-h-12 rounded-md bg-white text-sm font-black text-slate-900 shadow-xl">?꾪솕?섍린</button>
+          <button type="button" className="min-h-12 rounded-md bg-[#FEE500] text-sm font-black text-slate-900 shadow-xl">移댁뭅?ㅽ넚</button>
         </div>
       )}
     </article>

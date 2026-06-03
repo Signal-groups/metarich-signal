@@ -62,6 +62,8 @@ function ToolIcon({ icon }: { icon: string }) {
       return <Calculator className={className} />
     case "finance":
       return <PieChart className={className} />
+    case "직원관리":
+      return <Users className={className} />
     default:
       return <Search className={className} />
   }
@@ -419,6 +421,15 @@ export default function Sidebar({
                 variant="kakao"
               />
 
+              {isMaster && (
+                <NavItem
+                  icon="직원관리"
+                  label="직원 관리"
+                  active={false}
+                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank", "noopener,noreferrer")}
+                />
+              )}
+
               {canManageStaff && (
                 <NavItem
                   icon="조직"
@@ -435,6 +446,13 @@ export default function Sidebar({
                 <p className="text-[13px] leading-relaxed text-slate-500">
                   본부, 사업부, 지점 편집은 대시보드의 조직 관리에서 진행해주세요. 이곳에서는 빠른 승인과 직급만 조정합니다.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank", "noopener,noreferrer")}
+                  className="text-[13px] font-black text-[#1a3a6e] underline underline-offset-4"
+                >
+                  상세 관리는 직원 관리 페이지에서 ↗
+                </button>
                 <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                   {staffList.map((staff) => (
                     <div key={staff.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200">

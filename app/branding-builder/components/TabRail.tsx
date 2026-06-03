@@ -3,8 +3,8 @@
 import { Brush, FileText, Layers, Lightbulb, PanelsTopLeft } from 'lucide-react'
 
 const tabs = [
-  { label: '정보', icon: FileText },
   { label: '템플릿', icon: PanelsTopLeft },
+  { label: '정보', icon: FileText },
   { label: '스타일', icon: Brush },
   { label: '섹션', icon: Layers },
   { label: '팁', icon: Lightbulb },

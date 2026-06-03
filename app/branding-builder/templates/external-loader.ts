@@ -27,6 +27,13 @@ export function injectEditorRuntime(html: string, input: ExternalTemplateRenderI
     '{{brand}}': input.agentInfo.brand,
     '{{phone}}': input.agentInfo.phone,
     '{{email}}': input.agentInfo.email,
+    '{{kakaoUrl}}': input.agentInfo.kakaoUrl,
+    '{{consultUrl}}': input.agentInfo.consultUrl,
+    '{{recruitUrl}}': input.agentInfo.recruitUrl,
+    '{{slogan}}': input.agentInfo.slogan,
+    '{{intro}}': input.agentInfo.intro,
+    '{{address}}': input.agentInfo.address,
+    '{{branch}}': input.agentInfo.branch,
   }
 
   const replaced = Object.entries(replacements).reduce(

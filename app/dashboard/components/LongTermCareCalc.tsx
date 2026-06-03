@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import { Eye, ImageIcon, X } from "lucide-react"
 
@@ -474,6 +475,11 @@ export default function LongTermCareCalc() {
           </div>
         </div>
       </div>
+      {selectedResource &&
+        createPortal(
+          <ResourceImageModal item={selectedResource} onClose={() => setSelectedResource(null)} />,
+          document.body,
+        )}
     </div>
   )
 }

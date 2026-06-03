@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보험 상담 신청 | {{company}}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
+<style>
+:root {
+  --blue:#1d4ed8; --blue-dark:#1e3a8a; --blue-light:#eff6ff;
+  --dark:#0f172a; --mid:#64748b; --border:#e2e8f0; --bg:#f8fafc;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--dark);}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,0.95);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+  padding:0 48px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:15px;font-weight:900;letter-spacing:.05em;color:var(--dark);text-decoration:none;}
+.nav-logo span{color:var(--blue);}
+.nav-links{display:flex;gap:28px;}
+.nav-links a{font-size:13px;color:var(--mid);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--dark);}
+.nav-cta{background:var(--blue);color:#fff;border:none;border-radius:6px;
+  padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;}
+
+.hero{padding-top:64px;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#1d4ed8 100%);
+  color:#fff;text-align:center;padding-bottom:72px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 25% 50%,rgba(59,130,246,.25) 0%,transparent 55%),
+             radial-gradient(circle at 75% 30%,rgba(96,165,250,.15) 0%,transparent 50%);}
+.hero-inner{position:relative;z-index:1;padding:80px 24px 40px;}
+.hero-badge{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  border-radius:100px;padding:6px 20px;font-size:11px;letter-spacing:.12em;margin-bottom:24px;}
+.hero h1{font-size:clamp(26px,4vw,44px);font-weight:900;line-height:1.25;
+  margin-bottom:14px;letter-spacing:-.02em;}
+.hero p{font-size:14px;font-weight:300;color:rgba(255,255,255,.72);line-height:1.9;max-width:440px;margin:0 auto;}
+
+.steps-bar{background:#fff;border-bottom:1px solid var(--border);}
+.steps-inner{max-width:760px;margin:0 auto;padding:28px 24px;
+  display:flex;align-items:center;justify-content:center;gap:0;}
+.step{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.step-num{width:28px;height:28px;background:var(--blue);color:#fff;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.step strong{display:block;font-size:12px;font-weight:700;}
+.step span{font-size:11px;color:var(--mid);}
+.step-arr{color:var(--border);margin:0 10px;font-size:16px;flex-shrink:0;}
+
+.wrap{max-width:700px;margin:0 auto;padding:56px 24px 80px;}
+.card{background:#fff;border-radius:16px;border:1px solid var(--border);
+  box-shadow:0 4px 24px rgba(0,0,0,.06);overflow:hidden;}
+.card-head{background:linear-gradient(135deg,var(--blue-dark),var(--blue));
+  color:#fff;padding:32px 40px;}
+.card-head h2{font-size:20px;font-weight:900;margin-bottom:6px;}
+.card-head p{font-size:13px;font-weight:300;color:rgba(255,255,255,.72);}
+.card-body{padding:40px;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.fg{margin-bottom:20px;}
+.fg label{display:block;font-size:12px;font-weight:700;margin-bottom:8px;letter-spacing:.04em;}
+.fg label .req{color:#ef4444;margin-left:3px;}
+.fg input,.fg select,.fg textarea{
+  width:100%;border:1.5px solid var(--border);border-radius:8px;
+  padding:12px 16px;font-size:14px;font-family:inherit;
+  background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,78,216,.08);}
+.fg textarea{resize:vertical;min-height:110px;}
+.privacy{background:var(--blue-light);border:1px solid #bfdbfe;border-radius:8px;
+  padding:16px;margin-bottom:24px;}
+.privacy p{font-size:11px;color:var(--mid);line-height:1.7;margin-bottom:10px;}
+.privacy label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;cursor:pointer;}
+.privacy input[type=checkbox]{width:15px;height:15px;accent-color:var(--blue);}
+.btn-submit{width:100%;background:linear-gradient(135deg,var(--blue-dark),var(--blue));
+  color:#fff;border:none;border-radius:10px;padding:16px;
+  font-size:15px;font-weight:700;cursor:pointer;
+  transition:opacity .2s,transform .1s;letter-spacing:.04em;}
+.btn-submit:hover{opacity:.9;}
+.btn-submit:active{transform:scale(.99);}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;}
+
+.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:999;align-items:center;justify-content:center;}
+.modal-wrap.show{display:flex;}
+.modal{background:#fff;border-radius:20px;padding:48px 40px;text-align:center;max-width:360px;width:90%;}
+.modal-icon{font-size:48px;margin-bottom:16px;}
+.modal h3{font-size:20px;font-weight:900;margin-bottom:12px;}
+.modal p{font-size:14px;color:var(--mid);line-height:1.8;margin-bottom:24px;}
+.modal-btn{background:var(--blue);color:#fff;border:none;border-radius:8px;
+  padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;}
+
+footer{background:#fff;border-top:1px solid var(--border);padding:40px 48px;text-align:center;}
+.ft-logo{font-size:14px;font-weight:900;letter-spacing:.06em;margin-bottom:10px;}
+.ft-logo span{color:var(--blue);}
+footer p{font-size:12px;color:var(--mid);line-height:2;}
+
+@media(max-width:600px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .card-head,.card-body{padding:24px 20px;}
+  .row2{grid-template-columns:1fr;}
+  .steps-inner{gap:4px;}
+  .step-arr{margin:0 4px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">METARICH <span>SIGNAL</span></a>
+  <div class="nav-links">
+    <a href="index.html">홈</a>
+    <a href="consult.html">보험상담</a>
+    <a href="recruit.html">채용안내</a>
+  </div>
+  <a href="consult.html" class="nav-cta">상담 신청</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-inner" data-aos="fade-up">
+    <div class="hero-badge">INSURANCE CONSULTING</div>
+    <h1>보험 분석부터 청구까지<br>전문가가 함께합니다</h1>
+    <p>국내외 33개 보험사 제휴 · 24시간 내 전문가 연락<br>정확한 분석, 신속한 청구 — {{company}}</p>
+  </div>
+</div>
+
+<div class="steps-bar">
+  <div class="steps-inner">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div><strong>신청서 작성</strong><span>아래 폼 입력</span></div>
+    </div>
+    <div class="step-arr">›</div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div><strong>전문가 배정</strong><span>담당자 확인</span></div>
+    </div>
+    <div class="step-arr">›</div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div><strong>24h 내 연락</strong><span>맞춤 상담 진행</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card" data-aos="fade-up" data-aos-delay="100">
+    <div class="card-head">
+      <h2>보험 상담 신청</h2>
+      <p>아래 정보를 입력하시면 담당 전문가가 24시간 내 연락드립니다.</p>
+    </div>
+    <div class="card-body">
+      <form id="consultForm">
+        <div class="row2">
+          <div class="fg">
+            <label>상담 유형<span class="req">*</span></label>
+            <select name="type" required>
+              <option value="">선택해주세요</option>
+              <option>보험 분석</option>
+              <option>보험금 청구</option>
+              <option>보험 리모델링</option>
+              <option>신규 가입 상담</option>
+              <option>기타 문의</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>연령대<span class="req">*</span></label>
+            <select name="age" required>
+              <option value="">선택해주세요</option>
+              <option>20대</option>
+              <option>30대</option>
+              <option>40대</option>
+              <option>50대</option>
+              <option>60대 이상</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="fg">
+            <label>성함<span class="req">*</span></label>
+            <input type="text" name="name" placeholder="홍길동" required>
+          </div>
+          <div class="fg">
+            <label>연락처<span class="req">*</span></label>
+            <input type="tel" name="phone" placeholder="010-0000-0000" required>
+          </div>
+        </div>
+        <div class="fg">
+          <label>희망 상담 지역</label>
+          <select name="region">
+            <option value="">선택해주세요</option>
+            <option>원주 본부</option>
+            <option>춘천 본부</option>
+            <option>이천 센터</option>
+            <option>온라인 상담</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>문의 내용</label>
+          <textarea name="message" placeholder="궁금하신 내용을 자유롭게 적어주세요."></textarea>
+        </div>
+        <div class="privacy">
+          <p>수집 항목: 성명, 연락처 · 수집 목적: 보험 상담 서비스 제공 · 보유 기간: 상담 종료 후 즉시 파기</p>
+          <label>
+            <input type="checkbox" id="privacy" required>
+            개인정보 수집 및 이용에 동의합니다. (필수)
+          </label>
+        </div>
+        <button type="submit" class="btn-submit">상담 신청하기</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-wrap" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <h3>신청 완료!</h3>
+    <p>상담 신청이 정상적으로 접수되었습니다.<br>담당 전문가가 <strong>24시간 내</strong> 연락드립니다.</p>
+    <button class="modal-btn" onclick="location.href='index.html'">메인으로 돌아가기</button>
+  </div>
+</div>
+
+<footer>
+  <div class="ft-logo">METARICH <span>SIGNAL GROUP</span></div>
+  <p>원주본부 : 강원특별자치도 원주시 능라동길 81, 3~6층<br>
+     이천센터 : 경기 이천시 경충대로 2723, 2~3층</p>
+</footer>
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js" onload="AOS.init({duration:700,once:false,mirror:true})"></script>
+<script>
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfG3_3-BShzdr9x1dqZW9Pnh0bF4h54pGWH4s8A6yBXlMC_RnLcNtlmQt6IS7ECloX/exec';
+const EXTRA_EMAILS = [
+  'jw20371035@gmail.com',
+  'jinwoo8506@gmail.com',
+  'kye1004s7@gmail.com'
+].join(', ');
+function formatPhone(value) {
+  let digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length > 7) return digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+  if (digits.length > 3) return digits.slice(0, 3) + '-' + digits.slice(3);
+  return digits;
+}
+document.querySelector('#consultForm [name="phone"]').addEventListener('input', function() {
+  this.value = formatPhone(this.value);
+});
+
+document.getElementById('consultForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('.btn-submit');
+  btn.textContent = '전송 중...';
+  btn.disabled = true;
+
+  const data = {
+    formType: 'consult',
+    type: this.type.value,
+    name: this.name.value,
+    phone: formatPhone(this.phone.value),
+    age: this.age.value,
+    region: this.region.value,
+    message: this.message.value,
+    timestamp: new Date().toLocaleString('ko-KR'),
+    extra_email: EXTRA_EMAILS
+  };
+
+  try {
+    await fetch(SCRIPT_URL, {method:'POST', body:JSON.stringify(data)});
+  } catch(err) {
+    console.log('전송 오류(무시):', err);
+  }
+  document.getElementById('successModal').classList.add('show');
+});
+</script>
+</body>
+</html>

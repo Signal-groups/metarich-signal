@@ -127,6 +127,7 @@ export const CONCEPT_PALETTES: Record<LandingConcept, ConceptPalette> = {
 // ── 랜딩페이지 템플릿 ──
 export type LandingTemplateId =
   | 'ins-navy' | 'ins-blue' | 'ins-purple' | 'ins-green'
+  | 'ins-consult-real' | 'ins-recruit-real' | 'ins-consult-simple' | 'ins-recruit-simple'
   | 'ext-01' | 'ext-02' | 'ext-03' | 'ext-04' | 'ext-05' | 'ext-06' | 'ext-07' | 'ext-08'
   | 'ext-09' | 'ext-10' | 'ext-11' | 'ext-12' | 'ext-13' | 'ext-14' | 'ext-15' | 'ext-16'
 
@@ -137,10 +138,16 @@ export interface LandingTemplateMeta {
 }
 
 export const LANDING_TEMPLATES: LandingTemplateMeta[] = [
+  // ── 보험 전용 (생성형) ──
   { id: 'ins-navy',   name: '다크 네이비 클래식',  category: '보험 전용', accentColor: '#0b1e5f', type: 'insurance' },
   { id: 'ins-blue',   name: '블루 프로페셔널',     category: '보험 전용', accentColor: '#2563eb', type: 'insurance' },
   { id: 'ins-purple', name: '다크 퍼플 프리미엄',  category: '보험 전용', accentColor: '#4c1d95', type: 'insurance' },
   { id: 'ins-green',  name: '그린 신뢰형',         category: '보험 전용', accentColor: '#064e3b', type: 'insurance' },
+  // ── 보험 전용 (실제 광고 기반) ──
+  { id: 'ins-consult-real',   name: '보험상담 풀버전',   category: '보험 전용', accentColor: '#2563eb', type: 'external', file: '/branding-templates/ins-consult-real.html' },
+  { id: 'ins-recruit-real',   name: '리쿠르팅 풀버전',   category: '보험 전용', accentColor: '#1a3a9f', type: 'external', file: '/branding-templates/ins-recruit-real.html' },
+  { id: 'ins-consult-simple', name: '보험상담 심플',      category: '보험 전용', accentColor: '#1d4ed8', type: 'external', file: '/branding-templates/ins-consult-simple.html' },
+  { id: 'ins-recruit-simple', name: '리쿠르팅 심플',      category: '보험 전용', accentColor: '#1e3a8a', type: 'external', file: '/branding-templates/ins-recruit-simple.html' },
   { id: 'ext-01', name: '다이닝 프리미엄형',    category: '프리미엄',    accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-01.html' },
   { id: 'ext-02', name: '다이닝 엘레강스형',    category: '프리미엄',    accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-02.html' },
   { id: 'ext-03', name: '아카데미 클린형',      category: '교육/전문',   accentColor: '#e8f0fe', type: 'external', file: '/branding-templates/template-03.html' },

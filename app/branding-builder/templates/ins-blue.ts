@@ -5,7 +5,10 @@ function esc(s: string): string {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
-export function genBlueHtml(info: AgentInfo, concept: LandingConcept): string {
+export function genBlueHtml(info: AgentInfo, concept: LandingConcept, opts?: { font?: string; color?: string; extraSecs?: { id: string; html: string }[]; deletedSecs?: string[] }): string {
+  const bodyFont = opts?.font ?? "'Pretendard Variable','Pretendard',-apple-system,sans-serif"
+  const accentClr = opts?.color ?? '#2563eb'
+  const extraSecs = (opts?.extraSecs ?? []).filter(s => !(opts?.deletedSecs ?? []).includes(s.id))
   const h  = esc(info.slogan || CONCEPT_HEADLINES[concept])
   const cta = esc(CONCEPT_CTA[concept])
   const lbl = esc(CONCEPT_LABELS[concept])
@@ -68,7 +71,7 @@ nav{background:#fff;border-bottom:3px solid #0A1628;padding:14px 24px;display:fl
 .csu{font-size:14px;color:rgba(255,255,255,.6);margin-bottom:24px;line-height:1.8}
 .cb{display:inline-block;background:#2563eb;color:#fff;padding:16px 32px;border-radius:8px;font-size:15px;font-weight:900}
 @media(max-width:480px){.sg{grid-template-columns:1fr}.hbs{flex-direction:column}.sbar{grid-template-columns:1fr}}
-</style></head><body>
+</style></head><body style="font-family:${bodyFont};--accent-color:${accentClr}">
 <nav class="sec"><button class="sctrl" onclick="this.closest('.sec').remove()">✕ 삭제</button>
 <span class="nb" contenteditable="true">${br}</span>${navCta}</nav>
 <div class="sec hero"><button class="sctrl" onclick="this.closest('.sec').remove()">✕ 삭제</button>
@@ -90,5 +93,73 @@ nav{background:#fff;border-bottom:3px solid #0A1628;padding:14px 24px;display:fl
 <div class="sec cs"><button class="sctrl" onclick="this.closest('.sec').remove()">✕ 삭제</button>
 <h2 class="ct" contenteditable="true">지금 무료로 점검받으세요</h2>
 <p class="csu" contenteditable="true">부담 없이 신청하시면 24시간 내 연락드립니다.</p>${ctaA}</div>
+${extraSecs.map(s => `<div class="sec" data-section-id="${s.id}">${s.html}</div>`).join('')}
+<script>
+(function(){
+  /* 1. Nav 스크롤 */
+  var nav = document.querySelector('nav');
+  if(nav){
+    window.addEventListener('scroll', function(){
+      if(window.scrollY > 60) nav.style.boxShadow='0 4px 24px rgba(0,0,0,.15)';
+      else nav.style.boxShadow='';
+    }, {passive:true});
+  }
+
+  /* 2. fade-up 진입 효과 */
+  var style = document.createElement('style');
+  style.textContent = '.fu{opacity:0;transform:translateY(32px);transition:opacity .65s cubic-bezier(.16,1,.3,1),transform .65s cubic-bezier(.16,1,.3,1);}.fu.on{opacity:1;transform:translateY(0);}.fu.d1{transition-delay:.1s}.fu.d2{transition-delay:.2s}.fu.d3{transition-delay:.3s}';
+  document.head.appendChild(style);
+  document.querySelectorAll('h1,h2,.hero-h,.hh,.st,.sec-title,p.hs,.profile-card,.stat-box,.field-card,.svc-box,.fc').forEach(function(el){
+    el.classList.add('fu');
+  });
+  var fuObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){e.target.classList.add('on');fuObs.unobserve(e.target);}
+    });
+  },{threshold:0.1});
+  document.querySelectorAll('.fu').forEach(function(el){fuObs.observe(el);});
+
+  /* 3. 숫자 카운트업 */
+  function animCounter(el){
+    var raw = el.textContent.replace(/[^0-9]/g,'');
+    if(!raw) return;
+    var target = parseInt(raw,10);
+    var suffix = el.textContent.replace(/[0-9,]/g,'').trim();
+    var duration = 1400;
+    var start = performance.now();
+    function tick(now){
+      var elapsed = now - start;
+      var progress = Math.min(elapsed/duration,1);
+      var eased = 1 - Math.pow(1-progress,3);
+      var value = Math.round(target * eased);
+      el.textContent = value.toLocaleString('ko-KR') + (suffix ? ' '+suffix : '');
+      if(progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  var cObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){animCounter(e.target);cObs.unobserve(e.target);}
+    });
+  },{threshold:0.4});
+  document.querySelectorAll('.stat-num,.sn,.stat-n').forEach(function(el){cObs.observe(el);});
+
+  /* 4. 모바일 스티키 CTA (하단 고정) */
+  var stickyCta = document.querySelector('.sticky,.bottom-cta');
+  if(stickyCta && window.innerWidth < 640){
+    var hero = document.querySelector('.hero,.cs');
+    if(hero){
+      window.addEventListener('scroll',function(){
+        var heroBottom = hero.getBoundingClientRect().bottom;
+        if(heroBottom < 0){
+          stickyCta.style.opacity='1';stickyCta.style.transform='translateY(0)';
+        } else {
+          stickyCta.style.opacity='0';stickyCta.style.transform='translateY(100%)';
+        }
+      },{passive:true});
+    }
+  }
+})();
+</script>
 </body></html>`
 }
