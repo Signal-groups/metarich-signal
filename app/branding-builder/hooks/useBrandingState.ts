@@ -76,23 +76,23 @@ export function useBrandingState() {
   const fillSample = useCallback(() => {
     setState((current) => ({
       ...current,
-      landingConcept: current.landingConcept ?? 'consult',
+      landingConcept: 'consult',
       agentInfo: {
         ...current.agentInfo,
-        name: current.agentInfo.name || '김민준',
-        title: current.agentInfo.title || 'AFPK 재무설계사',
-        company: current.agentInfo.company || '메타리치 시그널그룹',
-        branch: current.agentInfo.branch || '강남지점',
-        brand: current.agentInfo.brand || '보험의 기준',
-        phone: current.agentInfo.phone || '010-0000-0000',
-        email: current.agentInfo.email || 'advisor@metarich.kr',
-        slogan: current.agentInfo.slogan || '내 보험을 지금 기준으로 다시 점검합니다',
-        intro:
-          current.agentInfo.intro ||
-          '보장 공백과 중복 보험료를 함께 확인하고, 고객의 생활 흐름에 맞는 보험 구조를 제안합니다.',
-        stat1: current.agentInfo.stat1 || '1,200건',
-        stat2: current.agentInfo.stat2 || '97%',
-        stat3: current.agentInfo.stat3 || '월 25만원',
+        name: '김민준',
+        title: 'AFPK · CFP 재무설계사',
+        company: '메타리치 시그널그룹',
+        branch: '강남지점',
+        brand: '보험의 기준',
+        phone: '010-1234-5678',
+        email: 'advisor@metarich.kr',
+        slogan: '내 보험, 지금 기준으로 다시 점검합니다',
+        intro: '보장 공백과 중복 보험료를 함께 확인하고, 고객의 생활 흐름에 맞는 보험 구조를 제안합니다.',
+        qualifications: ['AFPK', 'CFP'],
+        consultFields: ['보장분석', '보험 리모델링', '실손보험 점검', '연금 상담', '암·뇌·심장 보장 점검'],
+        stat1: '1,200건+',
+        stat2: '97%',
+        stat3: '월 25만원',
       },
     }))
   }, [])

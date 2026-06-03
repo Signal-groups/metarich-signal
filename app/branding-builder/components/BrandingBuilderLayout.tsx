@@ -26,13 +26,21 @@ export default function BrandingBuilderLayout() {
   const [showDownload, setShowDownload] = useState(false)
   const [showAddSection, setShowAddSection] = useState(false)
 
-  const handleSave = () => {
-    saveLoad.saveQuick()
-  }
+  const handleSave = () => saveLoad.saveQuick()
 
   const handleSaveSlot = () => {
     const name = window.prompt('저장 이름을 입력하세요')
     if (name) saveLoad.saveToSlot(name)
+  }
+
+  const getIframeHtml = () => {
+    const iframe = previewRef.current?.querySelector('iframe')
+    if (!iframe) return null
+    try {
+      return iframe.contentDocument?.documentElement?.outerHTML ?? null
+    } catch {
+      return null
+    }
   }
 
   return (
@@ -45,10 +53,7 @@ export default function BrandingBuilderLayout() {
         onAddSection={() => setShowAddSection(true)}
         onSave={handleSave}
         onSaveSlot={handleSaveSlot}
-        onOpenSlots={() => {
-          saveLoad.loadSlots()
-          setShowSlots(true)
-        }}
+        onOpenSlots={() => { saveLoad.loadSlots(); setShowSlots(true) }}
         onFillSample={builder.fillSample}
         onReset={builder.resetState}
         onDownload={() => setShowDownload(true)}
@@ -66,7 +71,6 @@ export default function BrandingBuilderLayout() {
           onRemoveExtraSection={sections.removeExtraSection}
           onMoveExtraSection={sections.moveExtraSection}
         />
-
         <Preview
           ref={previewRef}
           state={builder.state}
@@ -87,10 +91,7 @@ export default function BrandingBuilderLayout() {
           userName={saveLoad.userName}
           onUserNameChange={saveLoad.setUserName}
           onClose={() => setShowLogin(false)}
-          onLoadLatest={() => {
-            saveLoad.loadLatest()
-            setShowLogin(false)
-          }}
+          onLoadLatest={() => { saveLoad.loadLatest(); setShowLogin(false) }}
         />
       )}
 
@@ -107,6 +108,7 @@ export default function BrandingBuilderLayout() {
         <DownloadModal
           state={builder.state}
           getPreviewRoot={() => previewRef.current}
+          getIframeHtml={getIframeHtml}
           onClose={() => setShowDownload(false)}
         />
       )}
@@ -114,10 +116,7 @@ export default function BrandingBuilderLayout() {
       {showAddSection && (
         <AddSectionModal
           onClose={() => setShowAddSection(false)}
-          onAdd={(kind) => {
-            sections.addSection(kind)
-            setShowAddSection(false)
-          }}
+          onAdd={(kind) => { sections.addSection(kind); setShowAddSection(false) }}
         />
       )}
     </main>

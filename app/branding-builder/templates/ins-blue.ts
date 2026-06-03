@@ -14,7 +14,6 @@ export function genBlueHtml(info: AgentInfo, concept: LandingConcept): string {
   const co  = esc(info.company || '소속 회사')
   const br  = esc(info.brand || lbl)
   const it  = esc(info.intro || '데이터 기반 분석으로 최적의 보험 구조를 제안합니다.')
-  const ph  = esc(info.phone)
   const kk  = esc(info.kakaoUrl)
   const cu  = esc(info.consultUrl)
   const s1  = esc(info.stat1 || '—')

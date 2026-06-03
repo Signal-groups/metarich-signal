@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useMemo, useState } from "react"
 import LongTermCareCalc from "./LongTermCareCalc"
@@ -543,6 +543,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
               <button onClick={() => setImageLevelId(null)} style={{ border: `1px solid ${C.border}`, background: "#fff", color: C.slate, width: 38, height: 38, borderRadius: 12, cursor: "pointer", fontSize: 20, fontWeight: 900 }}>×</button>
             </div>
             <div style={{ overflow: "auto", background: C.slateLight, padding: 16, minHeight: 420 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={imageLevel.image} alt={imageLevel.title} style={{ display: "block", width: "100%", maxHeight: "calc(92vh - 112px)", height: "auto", objectFit: "contain", borderRadius: 14 }} />
             </div>
           </div>
@@ -771,23 +772,26 @@ function VariableCalc() {
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: C.navy, color: C.gold }}>
-                {["월", "주가", "월적립 매입수량", "누적수량"].map((head) => <th key={head} style={{ padding: 11, textAlign: "right" }}>{head}</th>)}
+              <tr style={{ background: C.navy, color: "#fff" }}>
+                <th style={{ padding: "10px 12px", fontWeight: 900, textAlign: "center" }}>월차</th>
+                <th style={{ padding: "10px 12px", fontWeight: 900, textAlign: "right" }}>시뮬가격</th>
+                <th style={{ padding: "10px 12px", fontWeight: 900, textAlign: "right" }}>일시불 매수량</th>
+                <th style={{ padding: "10px 12px", fontWeight: 900, textAlign: "right" }}>적립식 매수량</th>
               </tr>
             </thead>
             <tbody>
-              {prices.map((price, index) => {
-                const qty = inp.monthly / price
-                const cum = prices.slice(0, index + 1).reduce((sum, p) => sum + inp.monthly / p, 0)
-                return (
-                  <tr key={index} style={{ background: index % 2 ? C.slateLight : "#fff" }}>
-                    <td style={{ padding: 10, textAlign: "right", fontWeight: 800 }}>{index + 1}개월</td>
-                    <td style={{ padding: 10, textAlign: "right" }}>{fmt(price)}원</td>
-                    <td style={{ padding: 10, textAlign: "right" }}>{qty.toFixed(2)}주</td>
-                    <td style={{ padding: 10, textAlign: "right" }}>{cum.toFixed(2)}주</td>
-                  </tr>
-                )
-              })}
+              {prices.map((price, index) => (
+                <tr key={index} style={{ borderBottom: `1px solid ${C.border}`, background: index % 2 === 0 ? "#fff" : C.slateLight }}>
+                  <td style={{ padding: "9px 12px", textAlign: "center", fontWeight: 800, color: C.slate }}>{index + 1}월차</td>
+                  <td style={{ padding: "9px 12px", textAlign: "right", color: C.text }}>{fmt(price)}원</td>
+                  <td style={{ padding: "9px 12px", textAlign: "right", color: C.blue, fontWeight: 700 }}>
+                    {(inp.lump / prices[0]).toFixed(4)}주
+                  </td>
+                  <td style={{ padding: "9px 12px", textAlign: "right", color: C.teal, fontWeight: 700 }}>
+                    {(inp.monthly / price).toFixed(4)}주
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -795,4 +799,3 @@ function VariableCalc() {
     </div>
   )
 }
-

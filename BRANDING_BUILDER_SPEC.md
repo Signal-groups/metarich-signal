@@ -607,18 +607,25 @@ Brutalist, Cyberpunk/Neon, Retro/Vintage, Scandinavian, Magazine Bento, Neumorph
 
 ---
 
-## 11. 현재 상태 (2026-06-01 기준, 최종 업데이트)
+## 11. 현재 상태 (2026-06-03 기준, 최종 업데이트)
 
 | 항목 | 상태 |
 |------|------|
-| `BrandingAIPageInner.tsx` | ✅ 작동 중 (732줄 WYSIWYG 빌더) |
-| `/branding-builder` 라우트 | ✅ 배포됨 (BrandingAIPageInner 사용) |
-| 독립 HTML 버전 | ✅ `branding-builder.html` (오프라인용) |
-| 모듈 분리 재빌드 | 🔲 미착수 |
-| `types.ts` 타입 정의 | ✅ 완료 (`app/branding-builder/templates/types.ts`) |
-| 템플릿×컨셉 매트릭스 설계 | ✅ 확정 (스펙 2단계 참조) |
-| 모바일 명함 6종 메타 정의 | ✅ 확정 (`CARD_TEMPLATES`) |
-| Supabase 저장 연동 | 🔲 미착수 (현재 localStorage) |
+| `/branding-builder` 라우트 | ✅ 배포됨 · 모듈 구조 완성 |
+| `types.ts` 폰트·팔레트 데이터 | ✅ 6종 폰트 + CONCEPT_PALETTES 완성 |
+| 전체 모듈 구조 (22개 파일) | ✅ tsc + ESLint 통과 |
+| `InfoPanel.tsx` | ✅ 직접 관리 완성 (전 필드) |
+| `TemplatePanel.tsx` | ✅ 직접 관리 완성 (2단계 선택) |
+| `ins-navy / ins-blue / ins-purple / ins-green` | ✅ 보험 전용 4종 HTML 렌더러 완성 |
+| `card-builder.ts` | ✅ SLICE 스타일 명함 HTML 생성기 완성 |
+| `Preview.tsx` | ✅ ins-* iframe srcDoc · ext-* iframe src · card iframe 분기 |
+| AI 카피 생성 (TipPanel) | ✅ 프롬프트 자동 생성 + 복사 버튼 |
+| 저장/슬롯 시스템 | ✅ saveQuick + saveToSlot · localStorage |
+| FloatingToolbar | ✅ B/I/U + 크기 + 색상 8종 |
+| 모달 4종 | ✅ Login · SaveSlots · AddSection · Download |
+| DownloadModal iframe 대응 | 🔲 진행 중 (Codex 작업 중) |
+| `FinancialCalc.tsx` truncation | 🔲 진행 중 (Codex 작업 중) |
+| Supabase 저장 연동 | 🔲 미착수 (TODO 주석 위치 확보) |
 | 서브도메인 발급 | 🔲 미착수 |
 
 ---

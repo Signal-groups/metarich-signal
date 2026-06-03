@@ -5,11 +5,12 @@
 // 스펙 3단계 2단계: 랜딩페이지/모바일명함 + 템플릿 + 컨셉
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   CARD_BG_SWATCHES,
   CARD_TEMPLATES,
   CONCEPT_LABELS,
+  CONCEPT_PALETTES,
   LANDING_TEMPLATES,
   type BrandingState,
   type BuilderMode,
@@ -112,7 +113,10 @@ export default function TemplatePanel({ state, onPatchState, onModeChange }: Tem
                         ? 'border-[#1A2744] bg-[#1A2744] text-white'
                         : 'border-slate-200 text-slate-700 hover:border-slate-400'
                     }`}
-                    onClick={() => onPatchState({ landingConcept: id })}
+                    onClick={() => onPatchState({
+                      landingConcept: id,
+                      landingColor: CONCEPT_PALETTES[id].accent,
+                    })}
                   >
                     {label}
                   </button>
@@ -232,6 +236,9 @@ export default function TemplatePanel({ state, onPatchState, onModeChange }: Tem
             />
           </div>
 
+          {/* 명함 전용 사진 업로드 */}
+          <CardPhotoUpload state={state} onPatchState={onPatchState} />
+
           {/* 하단 고정 CTA 토글 */}
           <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 p-3">
             <div>
@@ -260,6 +267,9 @@ export default function TemplatePanel({ state, onPatchState, onModeChange }: Tem
 
 // ── 서브 컴포넌트 ──
 
+
+// ── 서브 컴포넌트 ──
+
 function ModeBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
@@ -277,5 +287,70 @@ function ModeBtn({ active, onClick, children }: { active: boolean; onClick: () =
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">{children}</h3>
+  )
+}
+
+function toB64Card(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader()
+    r.onload = (e) => res(e.target?.result as string)
+    r.onerror = rej
+    r.readAsDataURL(file)
+  })
+}
+
+function CardPhotoUpload({
+  state,
+  onPatchState,
+}: {
+  state: BrandingState
+  onPatchState: (patch: Partial<BrandingState>) => void
+}) {
+  const ref = useRef<HTMLInputElement>(null)
+  const src = state.cardPhotoData || state.agentInfo.profileImg
+
+  return (
+    <div>
+      <SectionLabel>명함 사진</SectionLabel>
+      <div className="flex items-center gap-3">
+        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+          {src
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={src} alt="" className="h-full w-full object-cover" />
+            : <span className="flex h-full w-full items-center justify-center text-xl">👤</span>}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
+            onClick={() => ref.current?.click()}
+          >
+            + 명함 사진 업로드
+          </button>
+          {state.cardPhotoData && (
+            <button
+              type="button"
+              className="h-8 rounded-md border border-red-200 px-3 text-xs font-bold text-red-500 hover:bg-red-50"
+              onClick={() => onPatchState({ cardPhotoData: null })}
+            >
+              삭제
+            </button>
+          )}
+        </div>
+      </div>
+      <p className="mt-1.5 text-[10px] text-slate-400">미업로드 시 정보 탭 프로필 사진 사용</p>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (e) => {
+          if (e.target.files?.[0]) {
+            const b64 = await toB64Card(e.target.files[0])
+            onPatchState({ cardPhotoData: b64 })
+          }
+        }}
+      />
+    </div>
   )
 }

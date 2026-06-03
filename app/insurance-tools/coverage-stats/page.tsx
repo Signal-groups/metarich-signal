@@ -457,6 +457,7 @@ const tabs: GuideTab[] = [
       { title: "장기요양 등급과 본인부담", image: "/coverage-stats/longterm-care-grade-cost-2605.png" },
       { title: "레켐비 뉴스 요약", image: "/coverage-stats/leqembi-news-2605.png" },
       { title: "치매 전단계", image: "/coverage-stats/dementia-prestage-guide.png" },
+      { title: "요양병원 요양원 차이", image: "/coverage-stats/nursing-hospital-vs-nursing-home.png" },
       { title: "2024 대한민국 치매 현황", image: "/coverage-stats/dementia-status-2024.png" },
     ],
     steps: [
@@ -1342,7 +1343,8 @@ function PreviewModal({ item, onClose }: { item: CoverageStatItem; onClose: () =
             <div className="grid min-h-[420px] place-items-center rounded-2xl bg-white text-center">
               <div>
                 <ImageIcon className="mx-auto h-16 w-16 text-[#1f5597]/30" />
-                <p className="mt-4 text-lg font-black text-slate-700">{item.title}</p>
+                <p className="mt-4 text-lg font-black text-slate-700">{item.title}이미지가 준비되지 않았습니다.</p>
+                <p className="mt-2 text-sm text-slate-400">곧 업데이트될 예정입니다.</p>
               </div>
             </div>
           )}

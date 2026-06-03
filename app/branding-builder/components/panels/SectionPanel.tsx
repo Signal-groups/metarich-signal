@@ -11,9 +11,13 @@ interface SectionPanelProps {
   onMoveExtraSection: (id: string, direction: -1 | 1) => void
 }
 
-export default function SectionPanel(props: SectionPanelProps) {
-  const baseSections = ['hero', 'profile', 'stats']
+const BASE_SECTIONS = [
+  { id: 'hero',    label: '히어로 배너' },
+  { id: 'profile', label: '설계사 프로필' },
+  { id: 'stats',   label: '실적 수치' },
+]
 
+export default function SectionPanel(props: SectionPanelProps) {
   return (
     <section>
       <div className="flex items-center justify-between">
@@ -32,14 +36,14 @@ export default function SectionPanel(props: SectionPanelProps) {
       </div>
 
       <div className="mt-5 space-y-2">
-        {baseSections.map((section) => (
-          <div key={section} className="flex min-h-12 items-center justify-between rounded-md border border-slate-200 px-3">
-            <span className="text-sm font-bold text-slate-700">{section}</span>
-            {props.state.deletedSecs.includes(section) && (
+        {BASE_SECTIONS.map((section) => (
+          <div key={section.id} className="flex min-h-12 items-center justify-between rounded-md border border-slate-200 px-3">
+            <span className="text-sm font-bold text-slate-700">{section.label}</span>
+            {props.state.deletedSecs.includes(section.id) && (
               <button
                 type="button"
-                className="flex h-8 items-center gap-1 rounded border border-slate-200 px-2 text-xs font-bold"
-                onClick={() => props.onRestoreSection(section)}
+                className="flex h-8 items-center gap-1 rounded border border-slate-200 px-2 text-xs font-bold text-slate-600"
+                onClick={() => props.onRestoreSection(section.id)}
               >
                 <RotateCcw size={14} />
                 복원
@@ -52,7 +56,9 @@ export default function SectionPanel(props: SectionPanelProps) {
       <h3 className="mt-7 text-sm font-black text-slate-700">추가 섹션</h3>
       <div className="mt-3 space-y-2">
         {props.state.extraSecs.length === 0 && (
-          <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">아직 추가된 섹션이 없습니다.</p>
+          <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+            아직 추가된 섹션이 없습니다.
+          </p>
         )}
         {props.state.extraSecs.map((section) => (
           <div key={section.id} className="rounded-md border border-slate-200 p-3">
