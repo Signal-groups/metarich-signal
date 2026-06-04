@@ -2,34 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
 import { normalizeRole } from "@/lib/roles"
+import { supabase } from "@/lib/supabase"
 import BulkActions from "./components/BulkActions"
 import ResetPasswordModal from "./components/ResetPasswordModal"
 import UserFilters from "./components/UserFilters"
 import UserTable from "./components/UserTable"
-import type { StaffUser } from "./components/UserRow"
+import { enabled, getHeadquarter, getRank, type StaffUser } from "./components/UserRow"
 
 type CompanyTypeFilter = "all" | "metarich" | "external"
 type ApprovedFilter = "all" | "true" | "false"
 type SortKey = "created_at" | "name" | "headquarter"
 
-function enabled(value: unknown) {
-  return value === true || value === "true" || value === 1 || value === "1"
-}
-
 function roleLevelFor(rank: string) {
   if (rank === "headquarters") return "headquarters"
   if (rank === "leader") return "director"
   return rank
-}
-
-function getRank(user: StaffUser) {
-  return String(user.rank || user.role || user.role_level || "agent")
-}
-
-function getHeadquarter(user: StaffUser) {
-  return String(user.headquarter || user.headquarter_name || "")
 }
 
 export default function StaffManagementPage() {
@@ -47,10 +35,15 @@ export default function StaffManagementPage() {
   const [sortBy, setSortBy] = useState<SortKey>("created_at")
 
   const loadUsers = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("users")
       .select("*")
       .order("created_at", { ascending: false })
+
+    if (error) {
+      alert(`직원 목록을 불러오지 못했습니다: ${error.message}`)
+      return
+    }
 
     setUsers((data || []) as StaffUser[])
   }, [])
@@ -59,15 +52,7 @@ export default function StaffManagementPage() {
     let alive = true
 
     async function init() {
-      const { data: sessionData } = await supabase.auth.getSession()
-
-      if (!sessionData.session) {
-        router.replace("/login?redirectTo=/dashboard/users")
-        return
-      }
-
       const { data: authData, error: authError } = await supabase.auth.getUser()
-
       if (authError || !authData.user) {
         router.replace("/login?redirectTo=/dashboard/users")
         return
@@ -90,9 +75,7 @@ export default function StaffManagementPage() {
       if (alive) setLoading(false)
     }
 
-    init().catch(() => {
-      router.replace("/dashboard")
-    })
+    init().catch(() => router.replace("/dashboard"))
 
     return () => {
       alive = false
@@ -104,8 +87,8 @@ export default function StaffManagementPage() {
 
     return [...users]
       .filter((user) => {
-        const targetCompanyType = user.company_type === "external" ? "external" : "metarich"
-        const matchesCompany = companyType === "all" || targetCompanyType === companyType
+        const userCompanyType = user.company_type === "external" ? "external" : "metarich"
+        const matchesCompany = companyType === "all" || userCompanyType === companyType
         const matchesHeadquarter = !headquarter || getHeadquarter(user) === headquarter
         const matchesRank = !rank || getRank(user) === rank
         const matchesApproved = approved === "all" || String(enabled(user.is_approved)) === approved
@@ -141,15 +124,17 @@ export default function StaffManagementPage() {
   }
 
   const saveUser = async (user: StaffUser) => {
+    const isApproved = enabled(user.is_approved)
+    const nextRank = String(user.rank || "agent")
     const updatePayload = {
-      is_approved: enabled(user.is_approved),
-      role: user.rank || "agent",
-      role_level: roleLevelFor(String(user.rank || "agent")),
-      rank: user.rank || "agent",
-      crm_access: enabled(user.crm_access),
-      office_access: enabled(user.office_access),
-      claim_access: enabled(user.claim_access),
-      branding_access: enabled(user.branding_access),
+      is_approved: isApproved,
+      role: nextRank,
+      role_level: roleLevelFor(nextRank),
+      rank: nextRank,
+      crm_access: isApproved ? enabled(user.crm_access) : false,
+      office_access: isApproved ? enabled(user.office_access) : false,
+      claim_access: isApproved ? enabled(user.claim_access) : false,
+      branding_access: isApproved ? enabled(user.branding_access) : false,
     }
 
     const { error } = await supabase.from("users").update(updatePayload).eq("id", user.id)
@@ -159,25 +144,35 @@ export default function StaffManagementPage() {
     }
 
     setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, ...updatePayload } : item))
-    alert(`${user.name || user.email}님의 직원 정보가 저장되었습니다.`)
+    alert(`${user.name || user.email || "직원"} 정보가 저장되었습니다.`)
   }
 
   const bulkApprove = async (approve: boolean) => {
     const ids = Array.from(selectedIds)
-    const { error } = await supabase.from("users").update({ is_approved: approve }).in("id", ids)
-    if (error) return alert(`일괄 처리 실패: ${error.message}`)
+    const payload = approve
+      ? { is_approved: true }
+      : { is_approved: false, crm_access: false, office_access: false, claim_access: false, branding_access: false }
 
-    setUsers((prev) => prev.map((user) => selectedIds.has(user.id) ? { ...user, is_approved: approve } : user))
+    const { error } = await supabase.from("users").update(payload).in("id", ids)
+    if (error) {
+      alert(`일괄 처리 실패: ${error.message}`)
+      return
+    }
+
+    setUsers((prev) => prev.map((user) => selectedIds.has(user.id) ? { ...user, ...payload } : user))
     setSelectedIds(new Set())
   }
 
   const bulkRankChange = async (nextRank: string) => {
     const ids = Array.from(selectedIds)
-    const updatePayload = { role: nextRank, role_level: roleLevelFor(nextRank), rank: nextRank }
-    const { error } = await supabase.from("users").update(updatePayload).in("id", ids)
-    if (error) return alert(`등급 변경 실패: ${error.message}`)
+    const payload = { role: nextRank, role_level: roleLevelFor(nextRank), rank: nextRank }
+    const { error } = await supabase.from("users").update(payload).in("id", ids)
+    if (error) {
+      alert(`등급 변경 실패: ${error.message}`)
+      return
+    }
 
-    setUsers((prev) => prev.map((user) => selectedIds.has(user.id) ? { ...user, ...updatePayload } : user))
+    setUsers((prev) => prev.map((user) => selectedIds.has(user.id) ? { ...user, ...payload } : user))
     setSelectedIds(new Set())
   }
 
@@ -199,7 +194,7 @@ export default function StaffManagementPage() {
             <p className="mt-2 text-sm font-bold text-slate-500">메타리치 시그널그룹 직원 전체 관리</p>
           </div>
           <div className="rounded-2xl bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white">
-            총 직원 {users.length}명
+            총 직원 {users.length.toLocaleString()}명
           </div>
         </div>
       </header>

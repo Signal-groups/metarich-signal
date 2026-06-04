@@ -49,33 +49,35 @@ export default function UserFilters({
   totalCount,
   filteredCount,
 }: UserFiltersProps) {
-  const [localSearch, setLocalSearch] = useState(search)
+  const [draftSearch, setDraftSearch] = useState(search)
 
   useEffect(() => {
-    setLocalSearch(search)
+    setDraftSearch(search)
   }, [search])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => onSearchChange(localSearch), 300)
+    const timer = window.setTimeout(() => onSearchChange(draftSearch), 300)
     return () => window.clearTimeout(timer)
-  }, [localSearch, onSearchChange])
+  }, [draftSearch, onSearchChange])
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-widest text-[#1a3a6e]">Staff Filters</p>
-          <p className="mt-1 text-sm font-bold text-slate-500">전체 {totalCount}명 중 {filteredCount}명 표시</p>
+          <p className="text-sm font-black text-slate-900">직원 검색 및 필터</p>
+          <p className="mt-1 text-xs font-bold text-slate-400">
+            전체 {totalCount.toLocaleString()}명 중 {filteredCount.toLocaleString()}명 표시
+          </p>
         </div>
         <input
-          value={localSearch}
-          onChange={(event) => setLocalSearch(event.target.value)}
+          value={draftSearch}
+          onChange={(event) => setDraftSearch(event.target.value)}
           placeholder="이름, 이메일, 연락처 검색..."
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-[#1a3a6e] focus:bg-white lg:max-w-sm"
+          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold outline-none focus:border-[#1a3a6e] lg:w-80"
         />
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-6">
         <select value={companyType} onChange={(event) => onCompanyTypeChange(event.target.value as CompanyTypeFilter)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black text-slate-700">
           <option value="all">전체</option>
           <option value="metarich">메타리치</option>
@@ -94,7 +96,7 @@ export default function UserFilters({
           <option value="true">승인</option>
           <option value="false">미승인</option>
         </select>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 xl:col-span-2">
           {[
             { key: "created_at", label: "가입일 최신순" },
             { key: "name", label: "이름순" },
@@ -104,7 +106,7 @@ export default function UserFilters({
               key={item.key}
               type="button"
               onClick={() => onSortByChange(item.key as SortKey)}
-              className={`rounded-xl px-2 py-3 text-[12px] font-black transition ${sortBy === item.key ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+              className={`flex-1 px-3 py-3 text-xs font-black ${sortBy === item.key ? "bg-[#1a3a6e] text-white" : "text-slate-500 hover:bg-white"}`}
             >
               {item.label}
             </button>

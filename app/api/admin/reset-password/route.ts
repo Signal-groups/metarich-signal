@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-const initialPassword = "123456"
+const INITIAL_PASSWORD = "123456"
 
-function getServiceSupabase() {
+function createServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -18,14 +18,12 @@ function getServiceSupabase() {
 }
 
 export async function POST(req: NextRequest) {
-  const serviceSupabase = getServiceSupabase()
-
+  const serviceSupabase = createServiceClient()
   if (!serviceSupabase) {
-    return NextResponse.json({ error: "서버 전용 서비스 키가 설정되지 않았습니다." }, { status: 500 })
+    return NextResponse.json({ error: "서버 전용 Supabase 설정이 필요합니다." }, { status: 500 })
   }
 
-  const { targetUserId, requesterId } = await req.json()
-
+  const { targetUserId, requesterId } = await req.json().catch(() => ({}))
   if (!targetUserId || !requesterId) {
     return NextResponse.json({ error: "초기화 대상과 요청자 정보가 필요합니다." }, { status: 400 })
   }
@@ -40,15 +38,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: requesterError.message }, { status: 500 })
   }
 
-  const roleValues = [requester?.rank, requester?.role, requester?.role_level]
-    .map((value) => String(value || "").toLowerCase())
+  const role = [requester?.rank, requester?.role, requester?.role_level]
+    .map((value) => String(value || "").toLowerCase().trim())
 
-  if (!roleValues.includes("master")) {
+  if (!role.includes("master")) {
     return NextResponse.json({ error: "권한 없음" }, { status: 403 })
   }
 
   const { error: authError } = await serviceSupabase.auth.admin.updateUserById(targetUserId, {
-    password: initialPassword,
+    password: INITIAL_PASSWORD,
   })
 
   if (authError) {
@@ -65,4 +63,6 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true })
+}
+)
 }

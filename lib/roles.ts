@@ -94,39 +94,49 @@ export function canEditMainNotice(user: any): boolean {
   return role === "master" || role === "headquarters";
 }
 
-export function isApprovedUser(user: any): boolean {
-  const role = normalizeRole(user);
-  return role === "master" || role === "headquarters" || role === "leader" || role === "manager" || user?.is_approved === true || user?.is_approved === "true";
-}
-
 function enabled(value: any): boolean {
   return value === true || value === "true" || value === 1 || value === "1"
 }
 
-// 유료 기능 접근 권한 함수
-// 마스터는 항상 접근 가능 / 그 외는 직원관리에서 개별 허용한 경우만
+/**
+ * 실제 승인 여부 확인
+ * ─────────────────────────────────────────────────────────────────
+ * • master       : 항상 승인 (DB 값 무관)
+ * • 그 외 전원   : DB의 is_approved 필드가 명시적으로 true여야 함
+ *                  rank/role이 높아도 is_approved: false → 미승인
+ */
+export function isApprovedUser(user: any): boolean {
+  if (normalizeRole(user) === "master") return true;
+  return enabled(user?.is_approved);
+}
 
-/** 고객 CRM */
+// ── 유료 기능 접근 권한 ────────────────────────────────────────────
+// 규칙: master → 항상 허용
+//       그 외  → is_approved: true AND 해당 개별 권한 true 동시 충족
+// ──────────────────────────────────────────────────────────────────
+
+/** 고객 CRM — is_approved + crm_access 동시 필요 */
 export function canAccessCrm(user: any): boolean {
-  const role = normalizeRole(user);
-  return role === "master" || enabled(user?.crm_access);
+  if (normalizeRole(user) === "master") return true;
+  return isApprovedUser(user) && enabled(user?.crm_access);
 }
 
-/** 사무실 업무 탭 */
+/** 사무실 업무 탭 — is_approved + office_access 동시 필요 */
 export function canAccessOffice(user: any): boolean {
-  return isApprovedUser(user) || normalizeRole(user) === "master" || enabled(user?.office_access);
+  if (normalizeRole(user) === "master") return true;
+  return isApprovedUser(user) && enabled(user?.office_access);
 }
 
-/** AI 자동화 청구 */
+/** AI 자동화 청구 — is_approved + claim_access 동시 필요 */
 export function canAccessClaim(user: any): boolean {
-  const role = normalizeRole(user);
-  return role === "master" || enabled(user?.claim_access);
+  if (normalizeRole(user) === "master") return true;
+  return isApprovedUser(user) && enabled(user?.claim_access);
 }
 
-/** 설계사 브랜딩 AI */
+/** 설계사 브랜딩 AI — is_approved + branding_access 동시 필요 */
 export function canAccessBranding(user: any): boolean {
-  const role = normalizeRole(user);
-  return role === "master" || enabled(user?.branding_access) || enabled(user?.crm_access) || enabled(user?.paid_access);
+  if (normalizeRole(user) === "master") return true;
+  return isApprovedUser(user) && (enabled(user?.branding_access) || enabled(user?.paid_access));
 }
 
 export function canSeeUser(viewer: any, target: any): boolean {

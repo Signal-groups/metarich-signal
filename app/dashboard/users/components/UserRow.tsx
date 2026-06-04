@@ -13,7 +13,7 @@ export type StaffUser = {
   rank?: string | null
   role?: string | null
   role_level?: string | null
-  is_approved?: boolean | string | null
+  is_approved?: boolean | string | number | null
   created_at?: string | null
   company_type?: CompanyType | string | null
   company_name?: string | null
@@ -24,11 +24,11 @@ export type StaffUser = {
   team?: string | null
   branch?: string | null
   branch_name?: string | null
-  crm_access?: boolean | string | null
-  office_access?: boolean | string | null
-  claim_access?: boolean | string | null
-  branding_access?: boolean | string | null
-  must_change_password?: boolean | string | null
+  crm_access?: boolean | string | number | null
+  office_access?: boolean | string | number | null
+  claim_access?: boolean | string | number | null
+  branding_access?: boolean | string | number | null
+  must_change_password?: boolean | string | number | null
 }
 
 type EditableStaffUser = StaffUser & {
@@ -65,12 +65,12 @@ const permissionColumns = [
   { key: "branding_access", label: "브랜딩" },
 ] as const
 
-function enabled(value: unknown) {
+export function enabled(value: unknown) {
   return value === true || value === "true" || value === 1 || value === "1"
 }
 
 function toRank(user: StaffUser): AppRank {
-  const value = String(user.rank || user.role || "agent")
+  const value = String(user.rank || user.role || user.role_level || "agent")
   if (["guest", "agent", "manager", "leader", "headquarters", "master"].includes(value)) return value as AppRank
   return "agent"
 }
@@ -86,7 +86,15 @@ export function getAffiliation(user: StaffUser) {
     user.headquarter || user.headquarter_name,
     user.department || user.department_name,
     user.team || user.branch_name || user.branch,
-  ].filter(Boolean).join(" / ") || "소속 미지정"
+  ].filter(Boolean).join(" / ") || "소속 미입력"
+}
+
+export function getHeadquarter(user: StaffUser) {
+  return String(user.headquarter || user.headquarter_name || "")
+}
+
+export function getRank(user: StaffUser) {
+  return toRank(user)
 }
 
 export function formatDate(value?: string | null) {
@@ -133,12 +141,21 @@ export default function UserRow({ user, selected, onSelectChange, onSave, onRese
     <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
       {permissionColumns.map((permission) => {
         const active = draft[permission.key]
+        const disabled = !draft.is_approved
         return (
           <button
             key={permission.key}
             type="button"
-            onClick={() => setDraft((prev) => ({ ...prev, [permission.key]: !active }))}
-            className={`rounded-lg px-2 py-2 text-[12px] font-black transition ${active ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+            disabled={disabled}
+            onClick={() => !disabled && setDraft((prev) => ({ ...prev, [permission.key]: !active }))}
+            title={disabled ? "승인 후 설정할 수 있습니다." : permission.label}
+            className={`rounded-lg px-2 py-2 text-[12px] font-black transition ${
+              disabled
+                ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-40"
+                : active
+                  ? "bg-[#1a3a6e] text-white"
+                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+            }`}
           >
             {permission.label}
           </button>
@@ -210,7 +227,7 @@ export default function UserRow({ user, selected, onSelectChange, onSave, onRese
       <td className="p-4">
         <div className="flex gap-2">
           <button type="button" onClick={save} disabled={saving} className="rounded-xl bg-[#1a3a6e] px-4 py-2 text-[12px] font-black text-white disabled:opacity-50">{saving ? "저장 중" : "저장"}</button>
-          <button type="button" onClick={() => onResetPassword(user)} disabled={user.id === viewerId} className="rounded-xl bg-rose-500 px-4 py-2 text-[12px] font-black text-white disabled:cursor-not-allowed disabled:opacity-40">초기화</button>
+          <button type="button" onClick={() => onResetPassword(user)} className="rounded-xl bg-rose-500 px-4 py-2 text-[12px] font-black text-white hover:bg-rose-600">초기화</button>
         </div>
       </td>
     </tr>

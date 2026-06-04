@@ -406,7 +406,7 @@ export default function PremiumComparePage() {
                         <p className="mb-1.5 text-[12px] font-black">{cov.title}</p>
                         <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white">
                           <input type="number" min={0} step={100} value={cur}
-                            onChange={e=>{const v=Number(e.target.value)||0; setOverrides(p=>v===cov.amount[planLv]?{...p,[cov.id]:undefined}:{...p,[cov.id]:v})}}
+                            onChange={e=>{const v=Number(e.target.value)||0; setOverrides(p=>{const next={...p}; if(v===cov.amount[planLv]) delete next[cov.id]; else next[cov.id]=v; return next})}}
                             className="min-w-0 flex-1 px-2 py-2 text-[13px] font-black outline-none"/>
                           <span className="border-l px-2 py-2 text-[10px] font-black text-slate-500">{cov.unit}</span>
                         </div>

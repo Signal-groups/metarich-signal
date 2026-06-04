@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
-import { canAccessCrm, normalizeRole } from '../../lib/roles'
+import { canAccessCrm, isApprovedUser, normalizeRole } from '../../lib/roles'
 import { ensureUserProfile } from '../../lib/userProfile'
 
 type NavItem = {
@@ -84,8 +84,20 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
 
       const mergedUser = { ...authUser.user, ...userData, email: authUser.user.email }
       const effectiveRole = normalizeRole(mergedUser)
-      const canUseCrm = canAccessCrm(mergedUser)
-      if (!canUseCrm) { router.replace('/dashboard'); return }
+
+      // ── 접근 권한 체크 ─────────────────────────────────────────────
+      // 1) 미승인 상태 → 차단 화면(별도 처리, 리디렉트 없음)
+      // 2) 승인은 됐지만 crm_access 없음 → 대시보드로
+      if (!isApprovedUser(mergedUser)) {
+        setUser({ ...mergedUser, effectiveRole, _blocked: 'pending' })
+        setChecking(false)
+        return
+      }
+      if (!canAccessCrm(mergedUser)) {
+        setUser({ ...mergedUser, effectiveRole, _blocked: 'no_crm' })
+        setChecking(false)
+        return
+      }
 
       setUser({ ...mergedUser, effectiveRole })
       setChecking(false)
@@ -101,6 +113,54 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
       <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ width: 28, height: 28, border: '3px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  // ── 미승인 차단 화면 ────────────────────────────────────────────────
+  if (user?._blocked === 'pending') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ background: '#fff', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,.08)', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#1a2744', marginBottom: 8 }}>승인 대기 중입니다</div>
+          <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 24 }}>
+            관리자가 계정을 아직 승인하지 않았습니다.<br />
+            승인 후 CRM을 사용할 수 있습니다.<br />
+            담당 관리자에게 문의해 주세요.
+          </div>
+          <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontSize: 12, color: '#94a3b8' }}>
+            {user?.email || ''}
+          </div>
+          <button
+            onClick={async () => { await supabase.auth.signOut(); router.replace('/login') }}
+            style={{ background: '#1a2744', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+          >
+            로그아웃
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── CRM 권한 없음 차단 화면 ─────────────────────────────────────────
+  if (user?._blocked === 'no_crm') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ background: '#fff', borderRadius: 24, padding: '48px 40px', maxWidth: 480, width: '100%', textAlign: 'center', boxShadow: '0 8px 32px rgba(15,23,42,.08)', border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: '#1a2744', marginBottom: 8 }}>CRM 접근 권한이 없습니다</div>
+          <div style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, marginBottom: 24 }}>
+            고객 CRM 사용 권한이 설정되지 않았습니다.<br />
+            관리자에게 CRM 접근 권한 부여를 요청하세요.
+          </div>
+          <button
+            onClick={() => router.replace('/dashboard')}
+            style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 12, padding: '12px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+          >
+            대시보드로 이동
+          </button>
+        </div>
       </div>
     )
   }

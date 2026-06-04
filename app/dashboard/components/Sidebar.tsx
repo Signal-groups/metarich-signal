@@ -426,7 +426,7 @@ export default function Sidebar({
                   icon="직원관리"
                   label="직원 관리"
                   active={false}
-                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank")}
+                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank", "noopener,noreferrer")}
                 />
               )}
 
@@ -674,5 +674,5 @@ function NavItem({ icon, label, active, onClick, variant, badge }: { icon: strin
         {active && <span className="h-4 w-1 rounded-full bg-[#0ea5e9]" />}
       </span>
     </button>
-  );
+  )
 }
