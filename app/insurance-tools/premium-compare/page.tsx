@@ -1,740 +1,564 @@
 "use client"
-
 import { useMemo, useState } from "react"
-import { RotateCcw, TrendingDown, Info, Zap } from "lucide-react"
+import { TrendingDown, Zap, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
 
-// ─── 타입 정의 ─────────────────────────────────────────────
-type MainTab = "health" | "death" | "saving"
-type ViewTab = "company" | "coverage"
+// ══════════════════════════════════════════════════════════
+// 타입
+// ══════════════════════════════════════════════════════════
+type MainTab = "health" | "death" | "saving" | "dollar"
+type ViewTab = "company" | "coverage" | "cross"
 type CompanyType = "생명" | "손해"
 type CompanyFilter = "전체" | CompanyType
-type PlanId = "min" | "standard" | "max"
-type Disclosure = "325" | "335" | "355" | "standard"
-type ProductScenario = "general" | "mzHealth10" | "child" | "simpleHealth"
-type AgeBand = "30s" | "40s" | "50s" | "60s"
-type SensitivityTag = "나이" | "성별" | "유병력"
+type PlanLevel = "min" | "standard" | "full"
+type Disclosure = "standard" | "325" | "335" | "355" | "3105"
+type AgeBandKey = "20s"|"30s"|"40s"|"50s"|"60s"|"70s"|"80s"
+type JobGrade = "1"|"2"|"3"
+type DrivingStatus = "운전자"|"비운전자"
+type PayPeriod = 10|20|30
+type ScopeType = "wide"|"narrow"|""
 
-function getAgeBand(age: number): AgeBand {
-  if (age < 40) return "30s"
-  if (age < 50) return "40s"
-  if (age < 60) return "50s"
-  return "60s"
-}
+// ══════════════════════════════════════════════════════════
+// 상수
+// ══════════════════════════════════════════════════════════
+const AGE_MAP: Record<AgeBandKey,number> = { "20s":25,"30s":35,"40s":45,"50s":55,"60s":65,"70s":75,"80s":80 }
+const AGE_LABEL: Record<AgeBandKey,string> = { "20s":"20대","30s":"30대","40s":"40대","50s":"50대","60s":"60대","70s":"70대","80s":"80대" }
+const PLAN_LABEL: Record<PlanLevel,string> = { min:"⚡ 최소", standard:"✅ 표준", full:"🌟 여유" }
+const PLAN_DESC: Record<PlanLevel,string> = { min:"핵심 진단비만 (암·뇌·심장)", standard:"진단비 전체 + 수술비", full:"진단비+수술비+간병·입원 풀커버" }
+const DISC_LABEL: Record<Disclosure,string> = { standard:"표준체(일반고지)","325":"간편 3·2·5","335":"간편 3·3·5","355":"간편 3·5·5","3105":"간편 3·10·5" }
+const PAY_FACTOR: Record<number,number> = { 10:1.28, 20:1.00, 30:0.82 }
+const JOB_FACTOR: Record<JobGrade,number> = { "1":1.00,"2":1.10,"3":1.25 }
+const f = (v:number) => `${Math.round(v).toLocaleString()}원`
+const fm = (v:number) => `${v.toLocaleString()}만원`
 
-type Company = {
-  id: string
-  name: string
-  type: CompanyType
-  savingRate: number
-  refund5: number
-  refund7: number
-  refund10: number
-  uwNote: string
-  uwStrength: string[]
-}
+// ══════════════════════════════════════════════════════════
+// 보험사
+// ══════════════════════════════════════════════════════════
+type Company = { id:string; name:string; type:CompanyType; savingRate:number; refund5:number; refund7:number; refund10:number; uwNote:string }
+const COMPANIES: Company[] = [
+  { id:"meritz",   name:"메리츠화재",  type:"손해", savingRate:2.80, refund5:88, refund7:94,  refund10:101, uwNote:"간편고지 가장 유연 · 암담보 최저" },
+  { id:"kb",       name:"KB손보",      type:"손해", savingRate:2.88, refund5:89, refund7:95,  refund10:102, uwNote:"암·유사암 경쟁력 · 간편고지 적극" },
+  { id:"hyundai",  name:"현대해상",    type:"손해", savingRate:2.90, refund5:89, refund7:95,  refund10:102, uwNote:"암·뇌혈관 경쟁력 · 간편고지 유리" },
+  { id:"db",       name:"DB손보",      type:"손해", savingRate:2.82, refund5:88, refund7:94,  refund10:101, uwNote:"뇌심장 업계 최저 수준" },
+  { id:"sf",       name:"삼성화재",    type:"손해", savingRate:2.85, refund5:88, refund7:94,  refund10:101, uwNote:"수술비 계열 강세 · 표준 심사" },
+  { id:"hanwhaF",  name:"한화손보",    type:"손해", savingRate:2.86, refund5:89, refund7:95,  refund10:102, uwNote:"전담보 중간 · 간편고지 중간" },
+  { id:"heungkuk", name:"흥국화재",    type:"손해", savingRate:2.84, refund5:88, refund7:95,  refund10:102, uwNote:"N대수술비 경쟁력 · 소규모 손보" },
+  { id:"sl",       name:"삼성생명",    type:"생명", savingRate:3.05, refund5:91, refund7:97,  refund10:104, uwNote:"종신보험 최강 · 심사 엄격" },
+  { id:"hl",       name:"한화생명",    type:"생명", savingRate:3.15, refund5:92, refund7:98,  refund10:105, uwNote:"질병사망 경쟁력 · 생보 표준심사" },
+  { id:"kyobo",    name:"교보생명",    type:"생명", savingRate:3.00, refund5:90, refund7:97,  refund10:104, uwNote:"간병 강세 · 심사 엄격" },
+  { id:"shinhan",  name:"신한라이프",  type:"생명", savingRate:3.18, refund5:91, refund7:99,  refund10:106, uwNote:"간편고지 손보 수준 · 정기 경쟁력" },
+  { id:"kbLife",   name:"KB라이프",    type:"생명", savingRate:3.10, refund5:90, refund7:98,  refund10:105, uwNote:"간편고지 중간 · 간병 강세" },
+]
 
-type SavingResult = {
-  company: Company
-  futureValue: number
-  pension: number
-}
-
+// ══════════════════════════════════════════════════════════
+// 담보
+// ══════════════════════════════════════════════════════════
 type Coverage = {
-  id: string
-  title: string
-  category: "암" | "뇌심장" | "수술" | "간병" | "사망" | "저축"
-  amount: Record<PlanId, number>
-  unit: string
-  baseRate: number
-  benefit: string
-  strength: string
-  checkPoint: string
-  sensitivityTags: SensitivityTag[]
-  rankNote: string
+  id:string; title:string; scope:ScopeType
+  category:"암"|"뇌심장"|"수술"|"간병"|"사망"
+  amount:Record<PlanLevel,number>; unit:string; baseRate:number
+  checkPoint:string; rankNote:string
+  sensitivityTags:("나이"|"성별"|"유병력")[]
+  active:Record<PlanLevel,boolean>
 }
 
-// ─── 담보 × 회사 경쟁력 계수 (1.0 = 시장평균, 0.87 = 13% 저렴) ───
-const coverageCompanyFactors: Record<string, Record<string, number>> = {
-  cancer:          { sl: 1.08, hl: 1.04, kyobo: 1.12, shinhan: 1.06, kbLife: 1.10, sf: 0.98, hyundai: 0.90, db: 0.92, kb: 0.94, meritz: 0.87, hanwhaFire: 1.02, heungkukFire: 1.05 },
-  similar:         { sl: 1.07, hl: 1.05, kyobo: 1.11, shinhan: 1.04, kbLife: 1.09, sf: 0.96, hyundai: 0.91, db: 0.89, kb: 0.93, meritz: 0.86, hanwhaFire: 1.01, heungkukFire: 1.00 },
-  brain:           { sl: 1.07, hl: 1.05, kyobo: 1.12, shinhan: 1.08, kbLife: 1.10, sf: 0.96, hyundai: 0.91, db: 0.88, kb: 0.93, meritz: 0.90, hanwhaFire: 1.00, heungkukFire: 1.03 },
-  heart:           { sl: 1.06, hl: 1.07, kyobo: 1.13, shinhan: 1.09, kbLife: 1.11, sf: 0.97, hyundai: 0.92, db: 0.86, kb: 0.94, meritz: 0.89, hanwhaFire: 1.03, heungkukFire: 1.01 },
-  surgery:         { sl: 1.05, hl: 1.06, kyobo: 1.09, shinhan: 1.07, kbLife: 1.08, sf: 0.93, hyundai: 0.89, db: 0.95, kb: 0.91, meritz: 0.97, hanwhaFire: 0.99, heungkukFire: 1.02 },
-  nSurgery:        { sl: 1.04, hl: 1.05, kyobo: 1.08, shinhan: 1.06, kbLife: 1.07, sf: 0.88, hyundai: 0.90, db: 0.94, kb: 0.92, meritz: 0.96, hanwhaFire: 1.01, heungkukFire: 0.99 },
-  cancerTreatment: { sl: 1.05, hl: 1.06, kyobo: 1.10, shinhan: 1.07, kbLife: 1.08, sf: 0.96, hyundai: 0.90, db: 0.91, kb: 0.93, meritz: 0.88, hanwhaFire: 1.02, heungkukFire: 1.00 },
-  circulatory:     { sl: 1.05, hl: 1.07, kyobo: 1.10, shinhan: 1.06, kbLife: 1.08, sf: 0.95, hyundai: 0.91, db: 0.87, kb: 0.93, meritz: 0.89, hanwhaFire: 1.01, heungkukFire: 0.99 },
-  care:            { sl: 0.92, hl: 0.94, kyobo: 0.96, shinhan: 0.88, kbLife: 0.90, sf: 1.03, hyundai: 1.05, db: 1.07, kb: 1.02, meritz: 1.08, hanwhaFire: 1.09, heungkukFire: 1.11 },
-  whole:           { sl: 0.88, hl: 0.92, kyobo: 0.90, shinhan: 0.94, kbLife: 0.95, sf: 1.10, hyundai: 1.12, db: 1.14, kb: 1.11, meritz: 1.15, hanwhaFire: 1.13, heungkukFire: 1.09 },
-  term:            { sl: 0.91, hl: 0.92, kyobo: 0.93, shinhan: 0.88, kbLife: 0.90, sf: 1.08, hyundai: 1.10, db: 1.13, kb: 1.11, meritz: 1.14, hanwhaFire: 1.12, heungkukFire: 1.09 },
-  diseaseDeath:    { sl: 0.89, hl: 0.91, kyobo: 0.92, shinhan: 0.93, kbLife: 0.94, sf: 1.07, hyundai: 1.09, db: 1.12, kb: 1.10, meritz: 1.13, hanwhaFire: 1.11, heungkukFire: 1.08 },
-}
-
-// ─── 담보별 나이대 민감도 (40대 기준 = 1.00) ───────────────
-const coverageAgeBandFactors: Record<string, Record<AgeBand, number>> = {
-  cancer:          { "30s": 0.80, "40s": 1.00, "50s": 1.48, "60s": 2.30 },
-  similar:         { "30s": 0.85, "40s": 1.00, "50s": 1.30, "60s": 1.78 },
-  brain:           { "30s": 0.68, "40s": 1.00, "50s": 1.68, "60s": 2.92 },
-  heart:           { "30s": 0.65, "40s": 1.00, "50s": 1.76, "60s": 3.18 },
-  surgery:         { "30s": 0.88, "40s": 1.00, "50s": 1.24, "60s": 1.58 },
-  nSurgery:        { "30s": 0.77, "40s": 1.00, "50s": 1.43, "60s": 2.12 },
-  cancerTreatment: { "30s": 0.80, "40s": 1.00, "50s": 1.48, "60s": 2.24 },
-  circulatory:     { "30s": 0.70, "40s": 1.00, "50s": 1.62, "60s": 2.78 },
-  care:            { "30s": 0.55, "40s": 1.00, "50s": 1.90, "60s": 3.85 },
-  whole:           { "30s": 0.72, "40s": 1.00, "50s": 1.54, "60s": 2.62 },
-  term:            { "30s": 0.65, "40s": 1.00, "50s": 1.50, "60s": 2.45 },
-  diseaseDeath:    { "30s": 0.68, "40s": 1.00, "50s": 1.58, "60s": 2.58 },
-}
-
-// ─── 담보별 성별 계수 ─────────────────────────────────────
-const coverageGenderFactors: Record<string, Record<string, number>> = {
-  cancer:          { "남성": 1.06, "여성": 0.96 },
-  similar:         { "남성": 0.80, "여성": 1.28 },
-  brain:           { "남성": 1.24, "여성": 0.82 },
-  heart:           { "남성": 1.30, "여성": 0.77 },
-  surgery:         { "남성": 1.05, "여성": 0.97 },
-  nSurgery:        { "남성": 1.09, "여성": 0.93 },
-  cancerTreatment: { "남성": 1.06, "여성": 0.96 },
-  circulatory:     { "남성": 1.22, "여성": 0.84 },
-  care:            { "남성": 0.93, "여성": 1.10 },
-  whole:           { "남성": 1.20, "여성": 0.85 },
-  term:            { "남성": 1.22, "여성": 0.83 },
-  diseaseDeath:    { "남성": 1.18, "여성": 0.87 },
-}
-
-// ─── 회사별 간편고지 할증 계수 ────────────────────────────
-const companyDisclosureFactors: Record<string, Record<Disclosure, number>> = {
-  meritz:       { standard: 1.0, "325": 1.12, "335": 1.20, "355": 1.30 },
-  kb:           { standard: 1.0, "325": 1.13, "335": 1.22, "355": 1.32 },
-  hyundai:      { standard: 1.0, "325": 1.15, "335": 1.24, "355": 1.34 },
-  db:           { standard: 1.0, "325": 1.16, "335": 1.25, "355": 1.35 },
-  sf:           { standard: 1.0, "325": 1.18, "335": 1.27, "355": 1.37 },
-  hanwhaFire:   { standard: 1.0, "325": 1.17, "335": 1.26, "355": 1.36 },
-  heungkukFire: { standard: 1.0, "325": 1.19, "335": 1.28, "355": 1.38 },
-  sl:           { standard: 1.0, "325": 1.21, "335": 1.32, "355": 1.44 },
-  kyobo:        { standard: 1.0, "325": 1.23, "335": 1.34, "355": 1.46 },
-  hl:           { standard: 1.0, "325": 1.20, "335": 1.30, "355": 1.42 },
-  shinhan:      { standard: 1.0, "325": 1.16, "335": 1.26, "355": 1.37 },
-  kbLife:       { standard: 1.0, "325": 1.17, "335": 1.27, "355": 1.38 },
-}
-
-// ─── 회사 데이터 ──────────────────────────────────────────
-const companies: Company[] = [
-  { id: "sl",           name: "삼성생명",   type: "생명", savingRate: 3.05, refund5: 91, refund7: 97,  refund10: 104, uwNote: "심사 엄격 · 간편고지 할증 높음",          uwStrength: ["종신보험", "정기특약"] },
-  { id: "hl",           name: "한화생명",   type: "생명", savingRate: 3.15, refund5: 92, refund7: 98,  refund10: 105, uwNote: "생보 표준 심사 · 간편고지 중간",           uwStrength: ["질병사망", "종신보험"] },
-  { id: "kyobo",        name: "교보생명",   type: "생명", savingRate: 3.0,  refund5: 90, refund7: 97,  refund10: 104, uwNote: "심사 엄격 · 간병보험 경쟁력",             uwStrength: ["간병/재가", "종신보험"] },
-  { id: "shinhan",      name: "신한라이프", type: "생명", savingRate: 3.18, refund5: 91, refund7: 99,  refund10: 106, uwNote: "간편고지 손보 수준 · 사망보험 경쟁력",     uwStrength: ["간병/재가", "정기특약"] },
-  { id: "kbLife",       name: "KB라이프",   type: "생명", savingRate: 3.1,  refund5: 90, refund7: 98,  refund10: 105, uwNote: "간편고지 중간 · 간병 강세",               uwStrength: ["간병/재가", "정기특약"] },
-  { id: "sf",           name: "삼성화재",   type: "손해", savingRate: 2.85, refund5: 88, refund7: 94,  refund10: 101, uwNote: "표준 심사 · 수술비 계열 강세",            uwStrength: ["N대수술비", "질병수술비"] },
-  { id: "hyundai",      name: "현대해상",   type: "손해", savingRate: 2.9,  refund5: 89, refund7: 95,  refund10: 102, uwNote: "암·뇌혈관 경쟁력 · 간편고지 유리",       uwStrength: ["암진단비", "유사암진단비"] },
-  { id: "db",           name: "DB손보",     type: "손해", savingRate: 2.82, refund5: 88, refund7: 94,  refund10: 101, uwNote: "뇌심장 담보 업계 최저 수준",              uwStrength: ["뇌혈관진단비", "허혈성심장질환"] },
-  { id: "kb",           name: "KB손보",     type: "손해", savingRate: 2.88, refund5: 89, refund7: 95,  refund10: 102, uwNote: "간편고지 적극 인수 · 전 담보 중하위",    uwStrength: ["암진단비", "유사암진단비"] },
-  { id: "meritz",       name: "메리츠화재", type: "손해", savingRate: 2.8,  refund5: 88, refund7: 94,  refund10: 101, uwNote: "간편고지 가장 유연 · 암 담보 최저",       uwStrength: ["암진단비", "암주요치료비"] },
-  { id: "hanwhaFire",   name: "한화손보",   type: "손해", savingRate: 2.86, refund5: 89, refund7: 95,  refund10: 102, uwNote: "전 담보 중간 · 간편고지 중간",            uwStrength: ["질병수술비"] },
-  { id: "heungkukFire", name: "흥국화재",   type: "손해", savingRate: 2.84, refund5: 88, refund7: 95,  refund10: 102, uwNote: "소규모 손보 · N대수술비 경쟁력",          uwStrength: ["N대수술비"] },
+const HEALTH_COV: Coverage[] = [
+  { id:"cancer",      title:"암 진단비",           scope:"",       category:"암",     unit:"만원", baseRate:4.9,  active:{min:true,  standard:true,  full:true},  amount:{min:2000,standard:3000,full:5000},  sensitivityTags:["나이","유병력"], checkPoint:"면책90일·감액기간·유사암한도", rankNote:"50대↑ 급증·손보 15% 저렴·유병력 시 격차 확대" },
+  { id:"similar",     title:"유사암·소액암 진단비", scope:"",       category:"암",     unit:"만원", baseRate:2.2,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["성별"],          checkPoint:"일반암 대비 지급금액 차이",   rankNote:"여성 60%↑·성별 따라 회사 순위 달라짐" },
+  { id:"brain_wide",  title:"뇌혈관질환 진단비",    scope:"wide",   category:"뇌심장", unit:"만원", baseRate:6.1,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌출혈/뇌졸중/뇌혈관질환 구분", rankNote:"남성 51%↑·60대 40대 대비 3배·DB손보 최저" },
+  { id:"brain_narrow",title:"뇌출혈 진단비",         scope:"narrow", category:"뇌심장", unit:"만원", baseRate:3.8,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌혈관질환보다 좁은 범위",   rankNote:"광의(뇌혈관질환) 대비 30~40% 저렴" },
+  { id:"heart_wide",  title:"허혈성심장질환 진단비", scope:"wide",   category:"뇌심장", unit:"만원", baseRate:5.4,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"급성심근경색/허혈성심장질환 구분", rankNote:"성별 차이 최대 담보·남성 30%↑" },
+  { id:"heart_narrow",title:"급성심근경색 진단비",   scope:"narrow", category:"뇌심장", unit:"만원", baseRate:3.2,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"허혈성심장질환보다 좁은 범위", rankNote:"광의(허혈성) 대비 35~45% 저렴" },
+  { id:"surgery",     title:"질병수술비",            scope:"",       category:"수술",   unit:"만원", baseRate:92,   active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:30,   full:50},   sensitivityTags:["나이"],           checkPoint:"동일질병 반복지급·약관상 수술정의", rankNote:"나이 민감 낮음·현대해상·KB손보 강세" },
+  { id:"nSurgery",    title:"N대수술비",             scope:"",       category:"수술",   unit:"만원", baseRate:2.8,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"포함/제외 수술 목록 확인",   rankNote:"삼성화재 손보 최저·나이 오를수록 생보·손보 격차" },
+  { id:"cancerTreat", title:"암주요치료비",           scope:"",       category:"암",     unit:"만원", baseRate:3.7,  active:{min:false, standard:false, full:true},  amount:{min:0,   standard:0,    full:2000}, sensitivityTags:["나이","유병력"],  checkPoint:"치료인정범위·연간한도·지급횟수", rankNote:"메리츠 암 담보 전반 강세" },
+  { id:"care",        title:"간병/재가 급여",         scope:"",       category:"간병",   unit:"만원", baseRate:38,   active:{min:false, standard:false, full:true},  amount:{min:0,   standard:0,    full:100},  sensitivityTags:["나이","성별"],    checkPoint:"장기요양등급·갱신·지급기간",  rankNote:"나이 민감도 최고·60대 40대 대비 4배·생보 강세" },
+]
+const DEATH_COV: Coverage[] = [
+  { id:"whole",       title:"종신보험",              scope:"",       category:"사망",   unit:"만원", baseRate:1.65, active:{min:true, standard:true, full:true},   amount:{min:5000,standard:10000,full:20000}, sensitivityTags:["나이","성별"], checkPoint:"해약환급금·저해약구조·수익자", rankNote:"대형생보(삼성·교보·한화) 유리·손보 가입 시 20%↑" },
+  { id:"term",        title:"정기특약/정기보험",      scope:"",       category:"사망",   unit:"만원", baseRate:0.42, active:{min:true, standard:true, full:true},   amount:{min:5000,standard:10000,full:20000}, sensitivityTags:["나이","성별"], checkPoint:"만기 이후 보장 종료·갱신여부", rankNote:"신한라이프·KB라이프 정기 담보 강세" },
+  { id:"diseaseDeath",title:"질병사망",              scope:"",       category:"사망",   unit:"만원", baseRate:0.72, active:{min:false,standard:true, full:true},   amount:{min:0,   standard:5000, full:10000}, sensitivityTags:["나이","성별","유병력"], checkPoint:"재해사망 제외여부·보험기간", rankNote:"생보 강세·유병력 시 손보가 오히려 유리한 역전 현상" },
 ]
 
-// ─── 담보 데이터 ─────────────────────────────────────────
-const healthCoverages: Coverage[] = [
-  {
-    id: "cancer", title: "암진단비", category: "암",
-    amount: { min: 2000, standard: 3000, max: 5000 }, unit: "만원", baseRate: 4.9,
-    benefit: "일반암 진단 시 생활비와 치료 선택자금 확보",
-    strength: "일반암 범위, 유사암 지급비율, 소액암 분류가 중요",
-    checkPoint: "면책 90일, 감액기간, 유사암 한도 확인",
-    sensitivityTags: ["나이", "유병력"],
-    rankNote: "50대 이상 보험료 급증 · 손보사가 평균 15% 저렴하나 유병력 고지 시 회사별 격차 더 커짐",
-  },
-  {
-    id: "similar", title: "유사암진단비", category: "암",
-    amount: { min: 300, standard: 500, max: 1000 }, unit: "만원", baseRate: 2.2,
-    benefit: "갑상선암, 기타피부암, 제자리암, 경계성종양 보완",
-    strength: "소액 보장이지만 실제 청구 빈도가 높은 편",
-    checkPoint: "일반암과 지급금액 차이 확인",
-    sensitivityTags: ["성별"],
-    rankNote: "여성이 남성 대비 약 60% 더 비쌈(갑상선암 빈도 차이) · 성별에 따라 회사 순위 완전히 달라짐",
-  },
-  {
-    id: "brain", title: "뇌혈관진단비", category: "뇌심장",
-    amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 6.1,
-    benefit: "뇌출혈보다 넓은 뇌혈관질환 범위 보완",
-    strength: "보장범위가 넓을수록 실제 청구 가능성이 커짐",
-    checkPoint: "뇌출혈/뇌졸중/뇌혈관질환 구분",
-    sensitivityTags: ["나이", "성별"],
-    rankNote: "남성이 여성 대비 51% 더 비쌈 · 60대는 40대 대비 3배 가까이 상승 · DB손보 업계 최저 수준",
-  },
-  {
-    id: "heart", title: "허혈성심장질환", category: "뇌심장",
-    amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 5.4,
-    benefit: "급성심근경색보다 넓은 심장질환 범위 보완",
-    strength: "협심증까지 보는지 확인하면 비교가 쉬움",
-    checkPoint: "급성심근경색/허혈성심장질환 구분",
-    sensitivityTags: ["나이", "성별"],
-    rankNote: "성별 차이가 가장 큰 담보 · 남성 30% 이상 비쌈 · 60대 남성은 40대 남성 대비 3.5배 이상",
-  },
-  {
-    id: "surgery", title: "질병수술비", category: "수술",
-    amount: { min: 10, standard: 30, max: 50 }, unit: "만원", baseRate: 92,
-    benefit: "진단비 외 실제 수술 발생 시 반복 보완",
-    strength: "넓게 반복 지급되는 구조가 실무적으로 유리",
-    checkPoint: "동일질병 반복 지급, 약관상 수술 정의 확인",
-    sensitivityTags: ["나이"],
-    rankNote: "나이 민감도가 상대적으로 낮은 담보 · 현대해상·KB손보가 경쟁력 높음",
-  },
-  {
-    id: "nSurgery", title: "N대수술비", category: "수술",
-    amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 2.8,
-    benefit: "암, 뇌, 심장 등 고액 수술 집중 보완",
-    strength: "특정 수술 목록이 넓고 명확한 회사가 유리",
-    checkPoint: "목록형 담보라 포함/제외 수술 확인",
-    sensitivityTags: ["나이", "성별"],
-    rankNote: "삼성화재가 손보 중 최저 수준 · 나이 오를수록 생보·손보 간 격차 더 커짐",
-  },
-  {
-    id: "cancerTreatment", title: "암주요치료비", category: "암",
-    amount: { min: 1000, standard: 2000, max: 3000 }, unit: "만원", baseRate: 3.7,
-    benefit: "항암, 방사선, 표적·면역 치료 선택지 보완",
-    strength: "진단비는 생활비, 주요치료비는 치료비로 분리",
-    checkPoint: "치료 인정 범위, 연간 한도, 지급 횟수 확인",
-    sensitivityTags: ["나이", "유병력"],
-    rankNote: "메리츠화재가 암 관련 담보 전반 강세 · 유병력 고지 시 손보·생보 가격차 확대",
-  },
-  {
-    id: "circulatory", title: "순환계주요치료비", category: "뇌심장",
-    amount: { min: 500, standard: 1000, max: 2000 }, unit: "만원", baseRate: 3.2,
-    benefit: "시술, 수술, 중환자실, 재활 비용 보완",
-    strength: "진단 후 치료 과정까지 설명하기 좋음",
-    checkPoint: "보장 질병명과 치료 항목 확인",
-    sensitivityTags: ["나이", "성별"],
-    rankNote: "DB손보·메리츠 강세 · 남성 60대는 여성 40대 대비 보험료 4배 이상 차이 가능",
-  },
-  {
-    id: "care", title: "간병/재가", category: "간병",
-    amount: { min: 50, standard: 100, max: 150 }, unit: "만원", baseRate: 38,
-    benefit: "장기요양, 가족 소득공백, 돌봄 비용 보완",
-    strength: "간병보험과 재가보험 사용 장소를 구분",
-    checkPoint: "장기요양 등급, 갱신, 지급기간 확인",
-    sensitivityTags: ["나이", "성별"],
-    rankNote: "나이 민감도 최고 담보 · 60대 가입은 40대 대비 약 4배 · 생보(신한·KB라이프) 강세",
-  },
-]
-
-const deathCoverages: Coverage[] = [
-  {
-    id: "whole", title: "종신보험", category: "사망",
-    amount: { min: 5000, standard: 10000, max: 20000 }, unit: "만원", baseRate: 1.65,
-    benefit: "평생 사망보장과 상속·유족 생활비 재원",
-    strength: "장기 유지와 자산 이전 목적에 적합",
-    checkPoint: "해약환급금, 저해약 구조, 수익자 확인",
-    sensitivityTags: ["나이", "성별"],
-    rankNote: "대형 생보사(삼성·교보·한화)가 압도적 유리 · 손보 가입 시 20% 이상 비쌀 수 있음",
-  },
-  {
-    id: "term", title: "정기특약/정기보험", category: "사망",
-    amount: { min: 5000, standard: 10000, max: 20000 }, unit: "만원", baseRate: 0.42,
-    benefit: "자녀 독립 전까지 큰 사망보장을 저렴하게 준비",
-    strength: "같은 사망보험금 기준 보험료 효율이 높음",
-    checkPoint: "만기 이후 보장 종료, 갱신 여부 확인",
-    sensitivityTags: ["나이", "성별"],
-    rankNote: "신한라이프·KB라이프 정기 담보 강세 · 유병력 시 생보 가입 자체가 제한될 수 있음",
-  },
-  {
-    id: "diseaseDeath", title: "질병사망", category: "사망",
-    amount: { min: 3000, standard: 5000, max: 10000 }, unit: "만원", baseRate: 0.72,
-    benefit: "질병으로 인한 사망보장 별도 보완",
-    strength: "종신보다 기간형 보완으로 쓰기 좋음",
-    checkPoint: "재해사망 제외 여부와 보험기간 확인",
-    sensitivityTags: ["나이", "성별", "유병력"],
-    rankNote: "생보 강세이지만 유병력 시 손보가 오히려 유리해지는 역전 현상 발생",
-  },
-]
-
-// ─── 레이블/상수 ─────────────────────────────────────────
-const planLabels: Record<PlanId, string> = { min: "1안 최소", standard: "2안 표준", max: "3안 최대" }
-const disclosureLabels: Record<Disclosure, string> = { standard: "일반고지", "325": "간편 3·2·5", "335": "간편 3·3·5", "355": "간편 3·5·5" }
-const productScenarioLabels: Record<ProductScenario, string> = {
-  general: "일반 종합",
-  mzHealth10: "MZ 건강고지 10년",
-  child: "자녀 종합",
-  simpleHealth: "간편 건강",
+// ══════════════════════════════════════════════════════════
+// 계수 테이블
+// ══════════════════════════════════════════════════════════
+const COV_CO: Record<string,Record<string,number>> = {
+  cancer:       {sl:1.08,hl:1.04,kyobo:1.12,shinhan:1.06,kbLife:1.10,sf:0.98,hyundai:0.90,db:0.92,kb:0.94,meritz:0.87,hanwhaF:1.02,heungkuk:1.05},
+  similar:      {sl:1.07,hl:1.05,kyobo:1.11,shinhan:1.04,kbLife:1.09,sf:0.96,hyundai:0.91,db:0.89,kb:0.93,meritz:0.86,hanwhaF:1.01,heungkuk:1.00},
+  brain_wide:   {sl:1.07,hl:1.05,kyobo:1.12,shinhan:1.08,kbLife:1.10,sf:0.96,hyundai:0.91,db:0.88,kb:0.93,meritz:0.90,hanwhaF:1.00,heungkuk:1.03},
+  brain_narrow: {sl:1.08,hl:1.06,kyobo:1.13,shinhan:1.09,kbLife:1.11,sf:0.94,hyundai:0.89,db:0.86,kb:0.91,meritz:0.88,hanwhaF:0.99,heungkuk:1.02},
+  heart_wide:   {sl:1.06,hl:1.07,kyobo:1.13,shinhan:1.09,kbLife:1.11,sf:0.97,hyundai:0.92,db:0.86,kb:0.94,meritz:0.89,hanwhaF:1.03,heungkuk:1.01},
+  heart_narrow: {sl:1.07,hl:1.08,kyobo:1.14,shinhan:1.10,kbLife:1.12,sf:0.95,hyundai:0.90,db:0.84,kb:0.92,meritz:0.87,hanwhaF:1.01,heungkuk:0.99},
+  surgery:      {sl:1.05,hl:1.06,kyobo:1.09,shinhan:1.07,kbLife:1.08,sf:0.93,hyundai:0.89,db:0.95,kb:0.91,meritz:0.97,hanwhaF:0.99,heungkuk:1.02},
+  nSurgery:     {sl:1.04,hl:1.05,kyobo:1.08,shinhan:1.06,kbLife:1.07,sf:0.88,hyundai:0.90,db:0.94,kb:0.92,meritz:0.96,hanwhaF:1.01,heungkuk:0.99},
+  cancerTreat:  {sl:1.05,hl:1.06,kyobo:1.10,shinhan:1.07,kbLife:1.08,sf:0.96,hyundai:0.90,db:0.91,kb:0.93,meritz:0.88,hanwhaF:1.02,heungkuk:1.00},
+  care:         {sl:0.92,hl:0.94,kyobo:0.96,shinhan:0.88,kbLife:0.90,sf:1.03,hyundai:1.05,db:1.07,kb:1.02,meritz:1.08,hanwhaF:1.09,heungkuk:1.11},
+  whole:        {sl:0.88,hl:0.92,kyobo:0.90,shinhan:0.94,kbLife:0.95,sf:1.10,hyundai:1.12,db:1.14,kb:1.11,meritz:1.15,hanwhaF:1.13,heungkuk:1.09},
+  term:         {sl:0.91,hl:0.92,kyobo:0.93,shinhan:0.88,kbLife:0.90,sf:1.08,hyundai:1.10,db:1.13,kb:1.11,meritz:1.14,hanwhaF:1.12,heungkuk:1.09},
+  diseaseDeath: {sl:0.89,hl:0.91,kyobo:0.92,shinhan:0.93,kbLife:0.94,sf:1.07,hyundai:1.09,db:1.12,kb:1.10,meritz:1.13,hanwhaF:1.11,heungkuk:1.08},
 }
-const productScenarioFactors: Record<ProductScenario, Partial<Record<string, number>>> = {
-  general: {},
-  mzHealth10: { cancer: 0.96, similar: 0.94, brain: 0.98, heart: 0.98, surgery: 0.92, nSurgery: 0.94, cancerTreatment: 1.08, circulatory: 1.05, care: 0.88 },
-  child: { cancer: 0.72, similar: 0.78, brain: 0.62, heart: 0.60, surgery: 0.70, nSurgery: 0.68, cancerTreatment: 0.74, circulatory: 0.66, care: 0.58, whole: 0.55, term: 0.52, diseaseDeath: 0.50 },
-  simpleHealth: { cancer: 1.12, similar: 1.10, brain: 1.18, heart: 1.20, surgery: 1.12, nSurgery: 1.15, cancerTreatment: 1.14, circulatory: 1.18, care: 1.22, whole: 1.10, term: 1.08, diseaseDeath: 1.12 },
+const AGE_F: Record<string,Record<AgeBandKey,number>> = {
+  cancer:       {"20s":0.60,"30s":0.80,"40s":1.00,"50s":1.48,"60s":2.30,"70s":3.40,"80s":4.20},
+  similar:      {"20s":0.65,"30s":0.85,"40s":1.00,"50s":1.30,"60s":1.78,"70s":2.30,"80s":2.80},
+  brain_wide:   {"20s":0.45,"30s":0.68,"40s":1.00,"50s":1.68,"60s":2.92,"70s":4.50,"80s":5.80},
+  brain_narrow: {"20s":0.42,"30s":0.65,"40s":1.00,"50s":1.58,"60s":2.70,"70s":4.10,"80s":5.30},
+  heart_wide:   {"20s":0.40,"30s":0.65,"40s":1.00,"50s":1.76,"60s":3.18,"70s":5.10,"80s":6.80},
+  heart_narrow: {"20s":0.38,"30s":0.62,"40s":1.00,"50s":1.65,"60s":2.95,"70s":4.70,"80s":6.20},
+  surgery:      {"20s":0.75,"30s":0.88,"40s":1.00,"50s":1.24,"60s":1.58,"70s":2.00,"80s":2.50},
+  nSurgery:     {"20s":0.55,"30s":0.77,"40s":1.00,"50s":1.43,"60s":2.12,"70s":3.20,"80s":4.20},
+  cancerTreat:  {"20s":0.60,"30s":0.80,"40s":1.00,"50s":1.48,"60s":2.24,"70s":3.30,"80s":4.10},
+  care:         {"20s":0.35,"30s":0.55,"40s":1.00,"50s":1.90,"60s":3.85,"70s":6.50,"80s":9.00},
+  whole:        {"20s":0.55,"30s":0.72,"40s":1.00,"50s":1.54,"60s":2.62,"70s":4.00,"80s":5.50},
+  term:         {"20s":0.48,"30s":0.65,"40s":1.00,"50s":1.50,"60s":2.45,"70s":3.80,"80s":5.20},
+  diseaseDeath: {"20s":0.50,"30s":0.68,"40s":1.00,"50s":1.58,"60s":2.58,"70s":4.00,"80s":5.40},
 }
-const refundYears = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40]
-
-const formatWon = (value: number) => `${Math.round(value).toLocaleString()}원`
-const formatMan = (value: number) => `${value.toLocaleString()}만원`
-
-// ─── 보험료 계산 (담보×회사 개별 계수 적용) ─────────────
-function premiumFor(company: Company, coverage: Coverage, plan: PlanId, age: number, gender: string, disclosure: Disclosure, delayYears = 0, amountOverride?: number, productScenario: ProductScenario = "general") {
-  const amount = amountOverride ?? coverage.amount[plan]
-  const targetAge = age + delayYears
-
-  // 나이대별 계수 + 구간 내 보간
-  const bands: AgeBand[] = ["30s", "40s", "50s", "60s"]
-  const bandStarts = [25, 35, 45, 55, 70]
-  const ageBand = getAgeBand(targetAge)
-  const bandIdx = bands.indexOf(ageBand)
-  const t = Math.max(0, Math.min(1, (targetAge - bandStarts[bandIdx]) / (bandStarts[bandIdx + 1] - bandStarts[bandIdx])))
-  const thisBandFactor = coverageAgeBandFactors[coverage.id]?.[ageBand] ?? 1.0
-  const nextBand = bands[Math.min(bandIdx + 1, bands.length - 1)]
-  const nextBandFactor = coverageAgeBandFactors[coverage.id]?.[nextBand] ?? thisBandFactor
-  const ageFactor = thisBandFactor + (nextBandFactor - thisBandFactor) * t
-
-  const genderFactor = coverageGenderFactors[coverage.id]?.[gender] ?? 1.0
-  const disclosureFactor = companyDisclosureFactors[company.id]?.[disclosure] ?? 1.0
-  const covCompFactor = coverageCompanyFactors[coverage.id]?.[company.id] ?? 1.0
-  const productFactor = productScenarioFactors[productScenario]?.[coverage.id] ?? 1.0
-
-  return Math.round(amount * coverage.baseRate * ageFactor * genderFactor * disclosureFactor * covCompFactor * productFactor)
+const GENDER_F: Record<string,Record<string,number>> = {
+  cancer:{남성:1.06,여성:0.96}, similar:{남성:0.80,여성:1.28},
+  brain_wide:{남성:1.24,여성:0.82}, brain_narrow:{남성:1.22,여성:0.83},
+  heart_wide:{남성:1.30,여성:0.77}, heart_narrow:{남성:1.28,여성:0.79},
+  surgery:{남성:1.05,여성:0.97}, nSurgery:{남성:1.09,여성:0.93},
+  cancerTreat:{남성:1.06,여성:0.96}, care:{남성:0.93,여성:1.10},
+  whole:{남성:1.20,여성:0.85}, term:{남성:1.22,여성:0.83}, diseaseDeath:{남성:1.18,여성:0.87},
+}
+const DISC_F: Record<string,Record<Disclosure,number>> = {
+  meritz:  {standard:1.0,"325":1.12,"335":1.20,"355":1.30,"3105":1.22},
+  kb:      {standard:1.0,"325":1.13,"335":1.22,"355":1.32,"3105":1.24},
+  hyundai: {standard:1.0,"325":1.15,"335":1.24,"355":1.34,"3105":1.26},
+  db:      {standard:1.0,"325":1.16,"335":1.25,"355":1.35,"3105":1.27},
+  sf:      {standard:1.0,"325":1.18,"335":1.27,"355":1.37,"3105":1.29},
+  hanwhaF: {standard:1.0,"325":1.17,"335":1.26,"355":1.36,"3105":1.28},
+  heungkuk:{standard:1.0,"325":1.19,"335":1.28,"355":1.38,"3105":1.30},
+  sl:      {standard:1.0,"325":1.21,"335":1.32,"355":1.44,"3105":1.35},
+  hl:      {standard:1.0,"325":1.20,"335":1.30,"355":1.42,"3105":1.33},
+  kyobo:   {standard:1.0,"325":1.23,"335":1.34,"355":1.46,"3105":1.37},
+  shinhan: {standard:1.0,"325":1.16,"335":1.26,"355":1.37,"3105":1.28},
+  kbLife:  {standard:1.0,"325":1.17,"335":1.27,"355":1.38,"3105":1.29},
 }
 
-function refundRateFor(company: Company, year: number, payYears: number) {
-  if (year <= 1) return Math.max(0, 18 + company.refund5 * 0.06)
-  if (year <= 5) return Math.max(0, company.refund5 * (year / 5))
-  if (year <= 7) return company.refund5 + ((company.refund7 - company.refund5) * (year - 5)) / 2
-  if (year <= 10) return company.refund7 + ((company.refund10 - company.refund7) * (year - 7)) / 3
-  const longBonus = Math.min(65, (year - 10) * (company.savingRate * 0.72))
-  const payBonus = payYears <= 10 ? 8 : payYears <= 20 ? 4 : 2
-  return company.refund10 + longBonus + payBonus
+// ══════════════════════════════════════════════════════════
+// 보험료 계산
+// ══════════════════════════════════════════════════════════
+function calcPrem(co:Company, cov:Coverage, ab:AgeBandKey, gender:string, disc:Disclosure, job:JobGrade, pay:PayPeriod, amt?:number):number {
+  const amount = amt ?? cov.amount["standard"]
+  if (amount <= 0) return 0
+  const af = AGE_F[cov.id]?.[ab] ?? 1.0
+  const gf = GENDER_F[cov.id]?.[gender] ?? 1.0
+  const df = DISC_F[co.id]?.[disc] ?? 1.0
+  const cf = COV_CO[cov.id]?.[co.id] ?? 1.0
+  const jf = JOB_FACTOR[job]
+  const pf = PAY_FACTOR[pay] ?? 1.0
+  return Math.round(amount * cov.baseRate * af * gf * df * cf * jf * pf)
+}
+function coTotal(co:Company, covs:Coverage[], pl:PlanLevel, overrides:Record<string,number>, ab:AgeBandKey, gender:string, disc:Disclosure, job:JobGrade, pay:PayPeriod):number {
+  return covs.filter(c=>c.active[pl]).reduce((s,c)=>s+calcPrem(co,c,ab,gender,disc,job,pay,overrides[c.id]??c.amount[pl]),0)
+}
+function crossTotal2(c1:Company, c2:Company, covs:Coverage[], pl:PlanLevel, overrides:Record<string,number>, ab:AgeBandKey, gender:string, disc:Disclosure, job:JobGrade, pay:PayPeriod):number {
+  return covs.filter(c=>c.active[pl]).reduce((s,c)=>{
+    const amt = overrides[c.id]??c.amount[pl]; if(amt<=0) return s
+    return s+Math.min(calcPrem(c1,c,ab,gender,disc,job,pay,amt), calcPrem(c2,c,ab,gender,disc,job,pay,amt))
+  },0)
+}
+function refundRate(co:Company, yr:number, payYrs:number):number {
+  if(yr<=1) return Math.max(0, 18+co.refund5*0.06)
+  if(yr<=5) return Math.max(0, co.refund5*(yr/5))
+  if(yr<=7) return co.refund5+((co.refund7-co.refund5)*(yr-5))/2
+  if(yr<=10) return co.refund7+((co.refund10-co.refund7)*(yr-7))/3
+  return co.refund10+Math.min(65,(yr-10)*(co.savingRate*0.72))+(payYrs<=10?8:payYrs<=20?4:2)
 }
 
-function refundAmountFor(company: Company, year: number, monthlySaving: number, payYears: number) {
-  const paidMonths = Math.min(year, payYears) * 12
-  const paid = monthlySaving * paidMonths
-  return paid * (refundRateFor(company, year, payYears) / 100)
-}
-
-// ─── 메인 컴포넌트 ────────────────────────────────────────
-type AppliedConditions = {
-  age: number; gender: string; disclosure: Disclosure
-  companyFilter: CompanyFilter; plan: PlanId; productScenario: ProductScenario
-  payYears: number; delayYears: number; monthlySaving: number
-}
-
-type CoverageRow = {
-  coverage: Coverage
-  amount: number
-  premiums: { company: Company; premium: number; later: number }[]
-  best: { company: Company; premium: number; later: number }
-  worst: { company: Company; premium: number; later: number }
-  sorted: { company: Company; premium: number; later: number }[]
-}
-
-const DEFAULT_CONDITIONS: AppliedConditions = {
-  age: 41, gender: "남성", disclosure: "standard",
-  companyFilter: "전체", plan: "standard", productScenario: "general",
-  payYears: 20, delayYears: 1, monthlySaving: 300000,
-}
-
+// ══════════════════════════════════════════════════════════
+// 메인 컴포넌트
+// ══════════════════════════════════════════════════════════
 export default function PremiumComparePage() {
-  const [mainTab, setMainTab] = useState<MainTab>("health")
-  const [viewTab, setViewTab] = useState<ViewTab>("company")
+  const [mainTab, setMainTab]     = useState<MainTab>("health")
+  const [viewTab, setViewTab]     = useState<ViewTab>("company")
+  const [ageBand, setAgeBand]     = useState<AgeBandKey>("40s")
+  const [gender,  setGender]      = useState("남성")
+  const [driving, setDriving]     = useState<DrivingStatus>("운전자")
+  const [jobGrade,setJobGrade]    = useState<JobGrade>("1")
+  const [disc,    setDisc]        = useState<Disclosure>("standard")
+  const [planLv,  setPlanLv]      = useState<PlanLevel>("standard")
+  const [coFilter,setCoFilter]    = useState<CompanyFilter>("전체")
+  const [payPeriod,setPayPeriod]  = useState<PayPeriod>(20)
+  const [maturity,setMaturity]    = useState(90)
+  const [monthlySav,setMonthlySav]= useState(300000)
+  const [overrides,setOverrides]  = useState<Record<string,number>>({})
+  const [amtOpen, setAmtOpen]     = useState(false)
 
-  // 입력값 (조회 전 편집용)
-  const [age, setAge] = useState(41)
-  const [gender, setGender] = useState("남성")
-  const [disclosure, setDisclosure] = useState<Disclosure>("standard")
-  const [productScenario, setProductScenario] = useState<ProductScenario>("general")
-  const [companyFilter, setCompanyFilter] = useState<CompanyFilter>("전체")
-  const [plan, setPlan] = useState<PlanId>("standard")
-  const [payYears, setPayYears] = useState(20)
-  const [delayYears, setDelayYears] = useState(1)
-  const [monthlySaving, setMonthlySaving] = useState(300000)
-  const [coverageAmounts, setCoverageAmounts] = useState<Record<string, number>>({})
+  const coverages = mainTab==="death" ? DEATH_COV : HEALTH_COV
+  const visibleCos = useMemo(()=>COMPANIES.filter(c=>coFilter==="전체"||c.type===coFilter),[coFilter])
+  const amt = (cov:Coverage)=>overrides[cov.id]??cov.amount[planLv]
 
-  const applied = useMemo<AppliedConditions>(() => ({
-    age,
-    gender,
-    disclosure,
-    productScenario,
-    companyFilter,
-    plan,
-    payYears,
-    delayYears,
-    monthlySaving,
-  }), [age, gender, disclosure, productScenario, companyFilter, plan, payYears, delayYears, monthlySaving])
+  const handlePlan = (lv:PlanLevel)=>{ setPlanLv(lv); setOverrides({}) }
 
-  const handleReset = () => {
-    setAge(41); setGender("남성"); setDisclosure("standard")
-    setProductScenario("general")
-    setPlan("standard"); setDelayYears(1); setPayYears(20)
-    setCompanyFilter("전체"); setMonthlySaving(300000)
-    setCoverageAmounts({})
-  }
+  // 담보 행 계산
+  const rows = useMemo(()=>coverages.map(cov=>{
+    const active = cov.active[planLv]
+    const a = amt(cov)
+    const prems = visibleCos.map(co=>({ co, prem: active&&a>0 ? calcPrem(co,cov,ageBand,gender,disc,jobGrade,payPeriod,a) : 0 }))
+    const valid = prems.filter(p=>p.prem>0).sort((a,b)=>a.prem-b.prem)
+    return { cov, active, amount:a, prems, best:valid[0], worst:valid[valid.length-1], sorted:valid }
+  }),[coverages,planLv,overrides,visibleCos,ageBand,gender,disc,jobGrade,payPeriod])
 
-  const coverages = mainTab === "death" ? deathCoverages : healthCoverages
-  const amountFor = (coverage: Coverage) => coverageAmounts[coverage.id] ?? coverage.amount[applied.plan]
-  const visibleCompanies = useMemo(
-    () => companies.filter((c) => applied.companyFilter === "전체" || c.type === applied.companyFilter),
-    [applied]
-  )
+  // 회사별 합계
+  const coTotals = useMemo(()=>visibleCos.map(co=>({
+    co, total:coTotal(co,coverages,planLv,overrides,ageBand,gender,disc,jobGrade,payPeriod)
+  })).sort((a,b)=>a.total-b.total),[visibleCos,coverages,planLv,overrides,ageBand,gender,disc,jobGrade,payPeriod])
 
-  const rows = useMemo(() => {
-    return coverages.map((coverage) => {
-      const amount = amountFor(coverage)
-      const premiums = visibleCompanies.map((company) => ({
-        company,
-        premium: premiumFor(company, coverage, applied.plan, applied.age, applied.gender, applied.disclosure, 0, amount, applied.productScenario),
-        later: premiumFor(company, coverage, applied.plan, applied.age, applied.gender, applied.disclosure, applied.delayYears, amount, applied.productScenario),
-      }))
-      const sorted = [...premiums].sort((a, b) => a.premium - b.premium)
-      return { coverage, amount, premiums, best: sorted[0], worst: sorted[sorted.length - 1], sorted }
+  // 교차설계 (전사 최저)
+  const crossBest = rows.reduce((s,r)=>s+(r.best?.prem??0),0)
+  const bestSingle = coTotals[0]
+
+  // 경우의 수
+  const cases = useMemo(()=>{
+    const arr:{ label:string; sublabel:string; total:number; color:string }[]=[]
+    // 단독
+    coTotals.forEach((ct,i)=>{
+      if(ct.total>0) arr.push({ label:`${ct.co.name} 단독`, sublabel:ct.co.type, total:ct.total,
+        color:["#1d4ed8","#15803d","#c2410c","#6d28d9","#0e7490","#92400e","#1f2937"][i]||"#374151" })
     })
-  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
+    // 2사 교차
+    for(let i=0;i<Math.min(visibleCos.length,3);i++){
+      for(let j=i+1;j<Math.min(visibleCos.length,3);j++){
+        const t = crossTotal2(visibleCos[i],visibleCos[j],coverages,planLv,overrides,ageBand,gender,disc,jobGrade,payPeriod)
+        if(t>0) arr.push({ label:`${visibleCos[i].name} + ${visibleCos[j].name}`, sublabel:"2사 교차", total:t, color:"#7c3aed" })
+      }
+    }
+    // 전사 교차
+    if(crossBest>0) arr.push({ label:"전사 최적 교차설계", sublabel:`${visibleCos.length}개사 담보별 최저 조합`, total:crossBest, color:"#047857" })
+    return arr.sort((a,b)=>a.total-b.total)
+  },[coTotals,visibleCos,coverages,planLv,overrides,ageBand,gender,disc,jobGrade,payPeriod,crossBest])
 
-  const companyResults = useMemo(() => {
-    return visibleCompanies.map((company) => {
-      const total = coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, applied.age, applied.gender, applied.disclosure, 0, amountFor(cov), applied.productScenario), 0)
-      const later = coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, applied.age, applied.gender, applied.disclosure, applied.delayYears, amountFor(cov), applied.productScenario), 0)
-      return { company, total, later }
-    }).sort((a, b) => a.total - b.total)
-  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
+  const maxCase = cases.length ? Math.max(...cases.map(c=>c.total)) : 1
+  const saving = bestSingle ? Math.max(bestSingle.total-crossBest,0) : 0
 
-  const crossTotal = rows.reduce((sum, row) => sum + row.best.premium, 0)
-  const crossLater = rows.reduce((sum, row) => sum + row.best.later, 0)
-  const bestSingle = companyResults[0]
-  const months = applied.payYears * 12
+  // 납입기간 비교
+  const payRows = useMemo(()=>([10,20,30] as PayPeriod[]).map(pp=>({
+    period:pp,
+    total:visibleCos.reduce((mn,co)=>{
+      const t=coTotal(co,coverages,planLv,overrides,ageBand,gender,disc,jobGrade,pp)
+      return t>0?Math.min(mn,t):mn
+    },Infinity)
+  })).filter(r=>r.total!==Infinity),[visibleCos,coverages,planLv,overrides,ageBand,gender,disc,jobGrade])
 
-  const ageDisclosureRows = useMemo(() => {
-    const ageTargets = [applied.age, applied.age + 5, applied.age + 10].filter((v, i, arr) => v > 0 && arr.indexOf(v) === i)
-    return ageTargets.map((targetAge) => {
-      const values = (["standard", "325", "335", "355"] as Disclosure[]).map((disc) => {
-        const best = visibleCompanies.map((company) => ({
-          company,
-          total: coverages.reduce((sum, cov) => sum + premiumFor(company, cov, applied.plan, targetAge, applied.gender, disc, 0, amountFor(cov), applied.productScenario), 0),
-        })).sort((a, b) => a.total - b.total)[0]
-        return { disclosure: disc, best }
-      })
-      return { age: targetAge, values }
-    })
-  }, [applied, coverages, mainTab, visibleCompanies, coverageAmounts])
-
-  const savingResults = useMemo(() => {
-    return companies.map((company) => {
-      const monthlyRate = company.savingRate / 100 / 12
-      const futureValue = applied.monthlySaving * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
-      const pension = futureValue / 240
-      return { company, futureValue, pension }
-    }).sort((a, b) => b.futureValue - a.futureValue)
-  }, [applied, months])
+  // 저축
+  const savResults = useMemo(()=>COMPANIES.filter(c=>c.type==="생명").map(co=>{
+    const r=co.savingRate/100/12, m=payPeriod*12
+    const fv=monthlySav*((Math.pow(1+r,m)-1)/r)
+    return {co, fv, pension:fv/240}
+  }).sort((a,b)=>b.fv-a.fv),[monthlySav,payPeriod])
 
   return (
-    <main className="min-h-screen bg-[#eef3fb] text-slate-900">
-      <div className="mx-auto max-w-[1500px] px-5 py-6 md:px-8">
-
-        {/* 헤더 */}
-        <header className="mb-5 rounded-2xl bg-[#1f5597] text-white shadow-lg">
-          <div className="flex flex-col gap-4 px-6 py-6 md:flex-row md:items-end md:justify-between">
+    <div className="min-h-screen bg-[#eef3fb]">
+      {/* ── RP 가이드 배너 (상단 sticky) ── */}
+      <div className="sticky top-0 z-50 bg-[#0d1f3c] shadow-lg">
+        <div className="mx-auto flex max-w-[1500px] items-stretch">
+          {/* 로고 */}
+          <div className="flex items-center gap-3 border-r border-white/10 px-5 py-2.5">
             <div>
-              <p className="text-[12px] font-black tracking-[0.2em] text-blue-100">PREMIUM COMPARISON</p>
-              <h1 className="mt-2 text-3xl font-black">보험료 비교</h1>
-              <p className="mt-3 max-w-4xl text-[14px] font-bold leading-7 text-white/80">
-                나이·성별·유병력에 따라 보험사별 요율과 인수 기준이 달라집니다. 조건을 바꿔가며 최적 설계 방향을 확인하세요.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => window.open("/dashboard", "_self")} className="rounded-xl bg-white/10 px-5 py-3 text-[13px] font-black hover:bg-white/20">대시보드</button>
-              <button onClick={() => window.close()} className="rounded-xl bg-white px-5 py-3 text-[13px] font-black text-[#1f5597]">창 닫기</button>
+              <p className="text-[14px] font-black text-white">🛡 보험료 비교</p>
+              <p className="text-[10px] text-blue-300">교차설계 시스템</p>
             </div>
           </div>
-          <div className="grid grid-cols-3 border-t border-white/15">
-            {[{ id: "health", label: "건강보험" }, { id: "death", label: "종신/사망" }, { id: "saving", label: "저축성" }].map((tab) => (
-              <button key={tab.id} onClick={() => setMainTab(tab.id as MainTab)}
-                className={`py-4 text-[15px] font-black ${mainTab === tab.id ? "bg-white text-[#1f5597]" : "bg-[#1f5597] text-white/75 hover:bg-white/10"}`}>
-                {tab.label}
+          {/* 보장수준 탭 */}
+          {(mainTab==="health"||mainTab==="death") && (
+            <div className="flex flex-1 items-stretch">
+              {(["min","standard","full"] as PlanLevel[]).map(lv=>(
+                <button key={lv} onClick={()=>handlePlan(lv)}
+                  className={`flex flex-1 flex-col items-center justify-center border-r border-white/10 py-2 text-center transition-all ${
+                    planLv===lv?"border-b-2 border-b-amber-400 bg-white/12 text-white":"text-white/50 hover:bg-white/8 hover:text-white/80"
+                  }`}>
+                  <p className="text-[13px] font-black">{PLAN_LABEL[lv]}</p>
+                  <p className="text-[9px] opacity-75">{PLAN_DESC[lv]}</p>
+                </button>
+              ))}
+              <button onClick={()=>{setPlanLv("standard")}}
+                className="flex flex-col items-center justify-center border-r border-white/10 px-4 py-2 text-center text-white/40 hover:text-white/70">
+                <p className="text-[12px] font-black">✏️ 수동</p>
+                <p className="text-[9px]">직접 조정</p>
+              </button>
+            </div>
+          )}
+          {/* 액션 버튼 */}
+          <div className="flex items-center gap-2 px-4">
+            <button onClick={()=>window.open("/dashboard","_self")} className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20">대시보드</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[1500px] px-4 py-4 md:px-6">
+        {/* ── 메인 탭 ── */}
+        <div className="mb-4 flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          {([{id:"health",l:"🏥 건강보험"},{id:"death",l:"🛡 종신·사망"},{id:"saving",l:"💰 단기납·저축"},{id:"dollar",l:"💵 달러종신·연금"}] as {id:MainTab;l:string}[]).map(t=>(
+            <button key={t.id} onClick={()=>setMainTab(t.id)}
+              className={`flex-1 py-3 text-[13px] font-black transition-all ${mainTab===t.id?"bg-[#1f5597] text-white":"text-slate-500 hover:bg-slate-50"}`}>
+              {t.l}
+            </button>
+          ))}
+        </div>
+
+        {/* ── 고객 조건 입력 ── */}
+        <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-3 text-[10px] font-black tracking-wider text-slate-400">고객 조건</p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+            {/* 나이대 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">나이대</p>
+              <select value={ageBand} onChange={e=>setAgeBand(e.target.value as AgeBandKey)}
+                className="h-9 w-full rounded-xl border border-slate-200 px-2 text-[12px] font-bold outline-none focus:border-blue-500">
+                {(Object.keys(AGE_LABEL) as AgeBandKey[]).map(k=>(
+                  <option key={k} value={k}>{AGE_LABEL[k]}({AGE_MAP[k]}세)</option>
+                ))}
+              </select>
+            </div>
+            {/* 성별 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">성별</p>
+              <div className="flex h-9 gap-1">
+                {["남성","여성"].map(g=>(
+                  <button key={g} onClick={()=>setGender(g)}
+                    className={`flex-1 rounded-xl border-2 text-[12px] font-black transition-all ${gender===g?"border-blue-600 bg-blue-600 text-white":"border-slate-200 text-slate-600"}`}>{g}</button>
+                ))}
+              </div>
+            </div>
+            {/* 운전여부 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">운전여부</p>
+              <div className="flex h-9 gap-1">
+                {(["운전자","비운전자"] as DrivingStatus[]).map(d=>(
+                  <button key={d} onClick={()=>setDriving(d)}
+                    className={`flex-1 rounded-xl border-2 text-[11px] font-black transition-all ${driving===d?"border-slate-700 bg-slate-700 text-white":"border-slate-200 text-slate-600"}`}>{d}</button>
+                ))}
+              </div>
+            </div>
+            {/* 직업급수 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">직업급수</p>
+              <div className="flex h-9 gap-1">
+                {(["1","2","3"] as JobGrade[]).map(g=>(
+                  <button key={g} onClick={()=>setJobGrade(g)}
+                    className={`flex-1 rounded-xl border-2 text-[12px] font-black transition-all ${jobGrade===g?"border-indigo-600 bg-indigo-600 text-white":"border-slate-200 text-slate-600"}`}>{g}급</button>
+                ))}
+              </div>
+            </div>
+            {/* 고지유형 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">고지유형</p>
+              <select value={disc} onChange={e=>setDisc(e.target.value as Disclosure)}
+                className="h-9 w-full rounded-xl border border-slate-200 px-2 text-[11px] font-bold outline-none focus:border-blue-500">
+                {(Object.keys(DISC_LABEL) as Disclosure[]).map(d=>(
+                  <option key={d} value={d}>{DISC_LABEL[d]}</option>
+                ))}
+              </select>
+            </div>
+            {/* 보험사 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">보험사 기준</p>
+              <div className="flex h-9 gap-1">
+                {(["전체","손해","생명"] as CompanyFilter[]).map(f=>(
+                  <button key={f} onClick={()=>setCoFilter(f)}
+                    className={`flex-1 rounded-xl border-2 text-[11px] font-black transition-all ${coFilter===f?"border-orange-600 bg-orange-600 text-white":"border-slate-200 text-slate-600"}`}>{f}</button>
+                ))}
+              </div>
+            </div>
+            {/* 납입기간 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">납입기간</p>
+              <div className="flex h-9 gap-1">
+                {([10,20,30] as PayPeriod[]).map(p=>(
+                  <button key={p} onClick={()=>setPayPeriod(p)}
+                    className={`flex-1 rounded-xl border-2 text-[11px] font-black transition-all ${payPeriod===p?"border-purple-600 bg-purple-600 text-white":"border-slate-200 text-slate-600"}`}>{p}년</button>
+                ))}
+              </div>
+            </div>
+            {/* 만기나이 */}
+            <div>
+              <p className="mb-1 text-[10px] font-black text-slate-500">만기나이</p>
+              <select value={maturity} onChange={e=>setMaturity(Number(e.target.value))}
+                className="h-9 w-full rounded-xl border border-slate-200 px-2 text-[12px] font-bold outline-none focus:border-blue-500">
+                {[80,90,100,110].map(a=><option key={a} value={a}>{a}세</option>)}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 건강/사망 탭 ── */}
+        {(mainTab==="health"||mainTab==="death") && (<>
+
+          {/* 담보금액 조정 */}
+          <section className="mb-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <button onClick={()=>setAmtOpen(!amtOpen)}
+              className="flex w-full items-center justify-between px-5 py-3 text-[12px] font-black text-slate-700">
+              <span>💊 담보금액 개별 조정 <span className="text-[10px] font-bold text-slate-400">({PLAN_LABEL[planLv]} 기준 자동적용)</span></span>
+              {amtOpen ? <ChevronUp size={15}/> : <ChevronDown size={15}/>}
+            </button>
+            {amtOpen && (
+              <div className="border-t px-5 pb-4">
+                <div className="flex justify-end py-2">
+                  <button onClick={()=>setOverrides({})} className="rounded-lg border px-3 py-1 text-[11px] font-black text-slate-600 hover:bg-slate-50">기본값 초기화</button>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-4">
+                  {coverages.filter(c=>c.active[planLv]).map(cov=>{
+                    const cur=overrides[cov.id]??cov.amount[planLv]
+                    const changed=cur!==cov.amount[planLv]
+                    return (
+                      <label key={cov.id} className={`rounded-xl border p-3 ${changed?"border-blue-300 bg-blue-50/50":"border-slate-100 bg-slate-50"}`}>
+                        <p className="mb-1.5 text-[12px] font-black">{cov.title}</p>
+                        <div className="flex overflow-hidden rounded-lg border border-slate-200 bg-white">
+                          <input type="number" min={0} step={100} value={cur}
+                            onChange={e=>{const v=Number(e.target.value)||0; setOverrides(p=>v===cov.amount[planLv]?{...p,[cov.id]:undefined}:{...p,[cov.id]:v})}}
+                            className="min-w-0 flex-1 px-2 py-2 text-[13px] font-black outline-none"/>
+                          <span className="border-l px-2 py-2 text-[10px] font-black text-slate-500">{cov.unit}</span>
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* 납입기간 비교 */}
+          {payRows.length>0 && (
+            <section className="mb-4 rounded-2xl border border-purple-200 bg-white p-4 shadow-sm">
+              <p className="mb-2.5 text-[11px] font-black text-purple-700">⏱ 납입기간별 월 보험료 비교 (최저 회사 기준)</p>
+              <div className="grid grid-cols-3 gap-3">
+                {payRows.map(r=>{
+                  const pct=Math.round(r.total/Math.max(...payRows.map(x=>x.total))*100)
+                  const isCur=r.period===payPeriod
+                  return (
+                    <button key={r.period} onClick={()=>setPayPeriod(r.period)}
+                      className={`rounded-xl border-2 p-3 text-left transition-all ${isCur?"border-purple-600 bg-purple-50":"border-slate-200 hover:border-purple-300"}`}>
+                      <p className={`mb-1 text-[12px] font-black ${isCur?"text-purple-700":"text-slate-700"}`}>{r.period}년납</p>
+                      <div className="mb-1.5 h-1.5 rounded-full bg-slate-100">
+                        <div className="h-full rounded-full bg-purple-400" style={{width:`${pct}%`}}/>
+                      </div>
+                      <p className={`text-[14px] font-black ${isCur?"text-purple-700":"text-slate-900"}`}>{f(r.total)}<span className="text-[10px] font-bold opacity-50">/월</span></p>
+                      <p className="text-[10px] text-slate-400">총 납입 {f(r.total*r.period*12)}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* 교차설계 절감 배너 */}
+          {bestSingle && saving>0 && (
+            <section className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a2f5c] to-[#1f5597] text-white shadow-lg">
+              <div className="px-5 pt-4 pb-2 flex items-center gap-2">
+                <Zap size={14} className="text-yellow-300"/>
+                <p className="text-[11px] font-black text-blue-200">
+                  {AGE_LABEL[ageBand]} · {gender} · {DISC_LABEL[disc]} · {payPeriod}년납
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-0 px-3 pb-4">
+                <div className="rounded-2xl bg-white/10 p-4 mx-1.5">
+                  <p className="text-[10px] font-black text-blue-200 mb-1">단일회사 최저</p>
+                  <p className="text-xl font-black">{f(bestSingle.total)}<span className="text-[10px] opacity-60">/월</span></p>
+                  <p className="mt-0.5 text-[11px] text-blue-200">{bestSingle.co.name}</p>
+                  <p className="mt-1 text-[9px] text-white/50">총 납입 {f(bestSingle.total*payPeriod*12)}</p>
+                </div>
+                <div className="rounded-2xl bg-yellow-400/20 border border-yellow-300/30 p-4 mx-1.5 flex flex-col items-center justify-center text-center">
+                  <TrendingDown size={16} className="text-yellow-300 mb-1"/>
+                  <p className="text-[10px] font-black text-yellow-200 mb-0.5">교차설계 절감</p>
+                  <p className="text-2xl font-black text-yellow-300">{f(saving)}<span className="text-[11px] opacity-70">/월</span></p>
+                  <p className="mt-1 text-[10px] text-yellow-200">{payPeriod*12}개월 총 {f(saving*payPeriod*12)}</p>
+                  <div className="mt-1.5 flex items-center gap-1 rounded-lg bg-red-500/20 px-2 py-0.5">
+                    <AlertCircle size={9}/>
+                    <p className="text-[9px] font-black text-red-200">사람이 직접 계산 불가능</p>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-emerald-400/15 border border-emerald-300/30 p-4 mx-1.5">
+                  <p className="text-[10px] font-black text-emerald-300 mb-1">담보별 교차설계</p>
+                  <p className="text-xl font-black">{f(crossBest)}<span className="text-[10px] opacity-60">/월</span></p>
+                  <p className="mt-0.5 text-[11px] text-emerald-300">담보별 최저회사 자동 조합</p>
+                  <p className="mt-1 text-[9px] text-white/50">총 납입 {f(crossBest*payPeriod*12)}</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* 보기 전환 탭 */}
+          <div className="mb-4 grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+            {([["company","📊 회사별 비교"],["coverage","📋 담보별 범위"],["cross","🔀 경우의 수"]] as [ViewTab,string][]).map(([v,l])=>(
+              <button key={v} onClick={()=>setViewTab(v)}
+                className={`rounded-xl py-2.5 text-[13px] font-black transition-all ${viewTab===v?"bg-[#1f5597] text-white":"text-slate-500 hover:bg-slate-50"}`}>
+                {l}
               </button>
             ))}
           </div>
-        </header>
 
-        {/* 조건 입력 */}
-        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="mb-3 text-[12px] font-black text-slate-400 tracking-wider">고객 조건 입력</p>
-          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-9">
-            <Input label="나이" value={age} onChange={(v) => setAge(Number(v) || 0)} />
-            <Select label="성별" value={gender} onChange={setGender} options={["남성", "여성"]} />
-            <Select label="유병력 고지" value={disclosure} onChange={(v) => setDisclosure(v as Disclosure)} options={["standard", "325", "335", "355"]} labels={disclosureLabels} />
-            <Select label="상품유형" value={productScenario} onChange={(v) => setProductScenario(v as ProductScenario)} options={["general", "mzHealth10", "child", "simpleHealth"]} labels={productScenarioLabels} />
-            <Select label="보험사 기준" value={companyFilter} onChange={(v) => setCompanyFilter(v as CompanyFilter)} options={["전체", "생명", "손해"]} />
-            <Select label="가입안" value={plan} onChange={(v) => setPlan(v as PlanId)} options={["min", "standard", "max"]} labels={planLabels} />
-            <Input label="납입기간" value={payYears} onChange={(v) => setPayYears(Number(v) || 20)} />
-            <Input label="몇 년 뒤 가입" value={delayYears} onChange={(v) => setDelayYears(Number(v) || 0)} />
-            {mainTab === "saving" && <Input label="월 납입액" value={monthlySaving} onChange={(v) => setMonthlySaving(Number(v) || 0)} />}
-            <button
-              onClick={handleReset}
-              className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-100 text-[13px] font-black text-slate-600 hover:bg-slate-200">
-              <RotateCcw size={16} /> 초기화
-            </button>
-          </div>
-        </section>
+          {viewTab==="company" && <CompanyView totals={coTotals} rows={rows} months={payPeriod*12} crossBest={crossBest}/>}
+          {viewTab==="coverage" && <CoverageView rows={rows}/>}
+          {viewTab==="cross" && <CasesView cases={cases} maxVal={maxCase} crossBest={crossBest} bestSingle={bestSingle?.total??0} rows={rows} payPeriod={payPeriod}/>}
+        </>)}
 
-        {mainTab !== "saving" && (
-          <>
-            <CoverageAmountPanel
-              coverages={coverages}
-              plan={applied.plan}
-              amounts={coverageAmounts}
-              onReset={() => setCoverageAmounts({})}
-              onChange={(coverage, nextAmount) => {
-                setCoverageAmounts((prev) => {
-                  const next = { ...prev }
-                  if (!nextAmount || nextAmount === coverage.amount[applied.plan]) delete next[coverage.id]
-                  else next[coverage.id] = nextAmount
-                  return next
-                })
-              }}
-            />
+        {/* ── 저축 탭 ── */}
+        {mainTab==="saving" && <SavingView results={savResults} monthly={monthlySav} payYrs={payPeriod}/>}
 
-            {/* 핵심 비교 배너 */}
-            <CrossDesignBanner
-              bestSingle={bestSingle}
-              crossTotal={crossTotal}
-              crossLater={crossLater}
-              delayYears={applied.delayYears}
-              months={months}
-              age={applied.age}
-              gender={applied.gender}
-              disclosure={applied.disclosure}
-            />
+        {/* ── 달러 탭 ── */}
+        {mainTab==="dollar" && <DollarView ageBand={ageBand} gender={gender} payPeriod={payPeriod}/>}
 
-            {/* 나이·고지 변동 패널 */}
-            <AgeDisclosurePanel rows={ageDisclosureRows} />
-
-            {/* 조건 민감도 안내 */}
-            <ConditionInsightPanel coverages={coverages} rows={rows} gender={applied.gender} disclosure={applied.disclosure} age={applied.age} />
-          </>
-        )}
-
-        {mainTab === "saving" ? (
-          <SavingView results={savingResults} monthlySaving={applied.monthlySaving} payYears={applied.payYears} />
-        ) : (
-          <>
-            <section className="mb-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
-              <button onClick={() => setViewTab("company")} className={`rounded-xl py-3 text-[14px] font-black ${viewTab === "company" ? "bg-[#1f5597] text-white" : "text-slate-500 hover:bg-slate-50"}`}>회사별 비교</button>
-              <button onClick={() => setViewTab("coverage")} className={`rounded-xl py-3 text-[14px] font-black ${viewTab === "coverage" ? "bg-[#1f5597] text-white" : "text-slate-500 hover:bg-slate-50"}`}>담보별 비교</button>
-            </section>
-
-            {viewTab === "company" ? (
-              <CompanyView results={companyResults} rows={rows} months={months} crossTotal={crossTotal} />
-            ) : (
-              <CoverageView rows={rows} />
-            )}
-          </>
-        )}
-
-        {/* 안내 문구 */}
-        <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] font-bold leading-6 text-amber-900">
-          이 화면의 보험료는 회사별 요율 경향과 실무 경험을 바탕으로 한 <strong>방향성 안내용 예시</strong>입니다. 실제 보험료는 보험사 산출일·직업·심사 결과·약관 개정에 따라 달라집니다. "어느 회사가 무조건 좋다"가 아니라 "조건에 따라 유리한 회사와 설계 방향이 달라진다"는 점을 설명하기 위한 상담 보조 도구입니다.
-        </section>
+        <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-900">
+          ※ 이 화면의 보험료는 회사별 요율 경향·실무 경험 기반의 <strong>방향성 예시</strong>입니다. 실제 보험료는 산출일·심사결과·약관개정에 따라 달라집니다.
+          &ldquo;담보별 최적 조합(교차설계)은 사람이 직접 계산하기 불가능하다&rdquo;는 점을 전달하는 상담 보조 도구입니다.
+        </p>
       </div>
-    </main>
+    </div>
   )
 }
 
-function CoverageAmountPanel({
-  coverages, plan, amounts, onChange, onReset,
-}: {
-  coverages: Coverage[]
-  plan: PlanId
-  amounts: Record<string, number>
-  onChange: (coverage: Coverage, amount: number) => void
-  onReset: () => void
+// ══════════════════════════════════════════════════════════
+// 회사별 비교
+// ══════════════════════════════════════════════════════════
+function CompanyView({ totals, rows, months, crossBest }: {
+  totals:{co:Company;total:number}[]
+  rows:{cov:Coverage;best?:{co:Company;prem:number};worst?:{co:Company;prem:number}}[]
+  months:number; crossBest:number
 }) {
+  const low = totals[0]?.total??0
   return (
-    <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-[12px] font-black tracking-wider text-slate-400">가입안 기준 담보금액 조정</p>
-          <h2 className="mt-1 text-lg font-black text-[#153968]">같은 보장금액으로 회사별 예상 보험료를 비교합니다</h2>
-          <p className="mt-1 text-[13px] font-bold leading-6 text-slate-500">
-            금액을 바꾸면 회사별 총액, 담보별 1위, 교차설계 절감액이 즉시 다시 계산됩니다. 실제 설계 시에는 직업, 고지, 심사 결과에 따라 달라질 수 있습니다.
-          </p>
-        </div>
-        <button
-          onClick={onReset}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-[13px] font-black text-slate-600 hover:bg-slate-100"
-        >
-          가입안 금액으로 초기화
-        </button>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {coverages.map((coverage) => {
-          const currentAmount = amounts[coverage.id] ?? coverage.amount[plan]
-          const changed = currentAmount !== coverage.amount[plan]
-          return (
-            <label key={coverage.id} className={`rounded-2xl border p-4 ${changed ? "border-blue-300 bg-blue-50/60" : "border-slate-200 bg-slate-50/70"}`}>
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[14px] font-black text-slate-900">{coverage.title}</p>
-                  <p className="mt-1 text-[11px] font-bold text-slate-500">{coverage.category} · 기준 {formatMan(coverage.amount[plan])}</p>
-                </div>
-                {changed && <span className="shrink-0 rounded-full bg-blue-600 px-2 py-1 text-[10px] font-black text-white">변경</span>}
-              </div>
-              <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-400">
-                <input
-                  type="number"
-                  min={0}
-                  step={coverage.unit === "만원" ? 10 : 1}
-                  value={currentAmount}
-                  onChange={(event) => onChange(coverage, Number(event.target.value) || 0)}
-                  className="min-w-0 flex-1 px-3 py-3 text-[15px] font-black outline-none"
-                />
-                <span className="shrink-0 border-l border-slate-100 px-3 text-[12px] font-black text-slate-500">{coverage.unit}</span>
-              </div>
-            </label>
-          )
-        })}
-      </div>
-    </section>
-  )
-}
-
-// ─── 교차설계 vs 단일최저 핵심 배너 ──────────────────────
-function CrossDesignBanner({
-  bestSingle, crossTotal, crossLater, delayYears, months, age, gender, disclosure
-}: {
-  bestSingle: { company: Company; total: number; later: number }
-  crossTotal: number; crossLater: number; delayYears: number; months: number
-  age: number; gender: string; disclosure: string
-}) {
-  const saving = Math.max(bestSingle.total - crossTotal, 0)
-  const totalSaving = saving * months
-  const laterDiff = Math.max(crossLater - crossTotal, 0) * months
-  const disclosureText: Record<string, string> = { standard: "일반고지", "325": "간편 3·2·5", "335": "간편 3·3·5", "355": "간편 3·5·5" }
-
-  return (
-    <section className="mb-5 overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-[#1a2f5c] to-[#1f5597] text-white shadow-lg">
-      <div className="px-6 pt-5 pb-2">
-        <div className="flex items-center gap-2 mb-1">
-          <Zap size={15} className="text-yellow-300" />
-          <p className="text-[12px] font-black tracking-wider text-blue-200">현재 조건 : {age}세 · {gender} · {disclosureText[disclosure]}</p>
-        </div>
-        <p className="text-lg font-black text-white/90">한 회사 vs 교차설계 — 지금 바로 비교</p>
-      </div>
-      <div className="grid grid-cols-1 gap-0 md:grid-cols-3 px-4 pb-5 mt-3">
-        {/* 단일 최저 */}
-        <div className="rounded-2xl bg-white/10 p-5 mx-2 mb-2 md:mb-0">
-          <p className="text-[11px] font-black text-blue-200 tracking-wider mb-2">단일회사 최저</p>
-          <p className="text-2xl font-black text-white">{formatWon(bestSingle.total)}<span className="text-[13px] text-white/70 ml-1">/월</span></p>
-          <p className="mt-1 text-[13px] font-bold text-blue-200">{bestSingle.company.name}</p>
-          <p className="mt-2 text-[11px] text-white/60">총 납입 {formatWon(bestSingle.total * months)}</p>
-        </div>
-        {/* 절감 */}
-        <div className="rounded-2xl bg-yellow-400/20 border border-yellow-300/30 p-5 mx-2 mb-2 md:mb-0 flex flex-col justify-center items-center text-center">
-          <TrendingDown size={22} className="text-yellow-300 mb-2" />
-          <p className="text-[12px] font-black text-yellow-200 mb-1">교차설계 절감</p>
-          <p className="text-3xl font-black text-yellow-300">{formatWon(saving)}<span className="text-[14px] text-yellow-200/80 ml-1">/월</span></p>
-          <p className="mt-2 text-[12px] font-bold text-yellow-200">{months}개월 총 {formatWon(totalSaving)} 절감</p>
-          {laterDiff > 0 && (
-            <p className="mt-1 text-[11px] text-yellow-300/80">{delayYears}년 뒤 가입 시 추가 손실 {formatWon(laterDiff)}</p>
-          )}
-        </div>
-        {/* 교차설계 */}
-        <div className="rounded-2xl bg-emerald-400/15 border border-emerald-300/30 p-5 mx-2">
-          <p className="text-[11px] font-black text-emerald-300 tracking-wider mb-2">담보별 교차설계</p>
-          <p className="text-2xl font-black text-white">{formatWon(crossTotal)}<span className="text-[13px] text-white/70 ml-1">/월</span></p>
-          <p className="mt-1 text-[13px] font-bold text-emerald-300">담보별 최저 회사 조합</p>
-          <p className="mt-2 text-[11px] text-white/60">총 납입 {formatWon(crossTotal * months)}</p>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ─── 조건 민감도 안내 패널 ────────────────────────────────
-function ConditionInsightPanel({ coverages, rows, gender, disclosure, age }: {
-  coverages: Coverage[]
-  rows: { coverage: Coverage; sorted: { company: Company; premium: number }[] }[]
-  gender: string; disclosure: string; age: number
-}) {
-  const ageBand = getAgeBand(age)
-  const ageBandLabel: Record<AgeBand, string> = { "30s": "30대", "40s": "40대", "50s": "50대", "60s": "60대" }
-
-  // 성별 민감 담보 추출
-  const genderSensitive = coverages.filter((c) => c.sensitivityTags.includes("성별"))
-  // 나이 민감 담보 추출
-  const ageSensitive = coverages.filter((c) => c.sensitivityTags.includes("나이"))
-  // 유병력 민감
-  const uwSensitive = coverages.filter((c) => c.sensitivityTags.includes("유병력"))
-
-  const insights: { icon: string; color: string; text: string }[] = []
-
-  if (gender === "남성") {
-    insights.push({ icon: "⚡", color: "text-orange-700 bg-orange-50 border-orange-200", text: `남성은 뇌혈관·심장 담보 보험료가 여성 대비 24~30% 높습니다. ${ageBandLabel[ageBand]} 기준 이 담보의 회사 순위가 중요합니다.` })
-  } else {
-    insights.push({ icon: "📌", color: "text-pink-700 bg-pink-50 border-pink-200", text: "여성은 유사암진단비 보험료가 남성 대비 약 60% 높습니다. 간병 담보는 반대로 여성이 더 비쌉니다." })
-  }
-
-  if (ageBand === "50s" || ageBand === "60s") {
-    insights.push({ icon: "🕐", color: "text-red-700 bg-red-50 border-red-200", text: `${ageBandLabel[ageBand]} 이상은 뇌혈관·심장·간병 담보 보험료가 40대 대비 1.7~4배 수준입니다. 지금 가입하는 것이 유리합니다.` })
-  }
-
-  if (disclosure !== "standard") {
-    insights.push({ icon: "🏥", color: "text-purple-700 bg-purple-50 border-purple-200", text: `간편고지 시 회사별 할증률이 다릅니다. 손보사(메리츠·KB손보)가 생보사 대비 15~20%포인트 낮은 할증 적용 경향이 있습니다.` })
-  }
-
-  if (rows.length > 0) {
-    const topCovRow = rows.reduce((prev, cur) => {
-      const prevRange = prev.sorted[prev.sorted.length - 1].premium - prev.sorted[0].premium
-      const curRange = cur.sorted[cur.sorted.length - 1].premium - cur.sorted[0].premium
-      return curRange > prevRange ? cur : prev
-    })
-    const range = topCovRow.sorted[topCovRow.sorted.length - 1].premium - topCovRow.sorted[0].premium
-    insights.push({ icon: "💡", color: "text-blue-700 bg-blue-50 border-blue-200", text: `현재 조건에서 회사 간 가격 차이가 가장 큰 담보는 [${topCovRow.coverage.title}]입니다. 최저·최고 회사 간 월 ${formatWon(range)} 차이 발생합니다.` })
-  }
-
-  return (
-    <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <Info size={16} className="text-[#1f5597]" />
-        <h2 className="text-[14px] font-black text-[#153968]">이 조건에서 주목할 포인트</h2>
-      </div>
-      <div className="grid gap-2 md:grid-cols-2">
-        {insights.map((ins, i) => (
-          <div key={i} className={`rounded-xl border px-4 py-3 text-[13px] font-bold leading-6 ${ins.color}`}>
-            <span className="mr-2">{ins.icon}</span>{ins.text}
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-// ─── 나이·고지 변동 패널 ──────────────────────────────────
-function AgeDisclosurePanel({ rows }: { rows: { age: number; values: { disclosure: Disclosure; best: { company: Company; total: number } }[] }[] }) {
-  return (
-    <section className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="bg-slate-50 px-5 py-4">
-        <h2 className="text-[15px] font-black text-[#153968]">나이·고지 기준 변경 시 최저 회사와 보험료</h2>
-        <p className="mt-1 text-[13px] font-bold text-slate-500">조건이 바뀌면 가장 유리한 회사가 달라집니다.</p>
+    <section className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="bg-[#163f76] px-5 py-3 text-white">
+        <h2 className="text-[14px] font-black">회사별 총 보험료 순위</h2>
+        <p className="text-[10px] text-blue-200">현재 조건 기준 · 선택 담보 합산</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[880px] w-full border-collapse text-[13px]">
-          <thead className="bg-[#172334] text-white">
+        <table className="min-w-[800px] w-full border-collapse text-[12px]">
+          <thead className="bg-slate-100 text-[10px]">
             <tr>
-              <th className="p-4 text-left">나이</th>
-              {(["standard", "325", "335", "355"] as Disclosure[]).map((d) => (
-                <th key={d} className="p-4">{disclosureLabels[d]}</th>
-              ))}
+              <th className="p-3 w-10">순위</th><th className="p-3 text-left">보험사</th>
+              <th className="p-3">구분</th><th className="p-3">월 보험료</th>
+              <th className="p-3">총 납입</th><th className="p-3">교차 대비</th>
+              <th className="p-3 text-left">인수 특성</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, ri) => (
-              <tr key={row.age} className={`border-b border-slate-100 ${ri === 0 ? "bg-blue-50/40" : ""}`}>
-                <td className="bg-slate-50 p-4 font-black">{row.age}세 {ri === 0 && <span className="ml-1 text-[11px] text-blue-600 font-bold">현재</span>}</td>
-                {row.values.map((val, vi) => (
-                  <td key={val.disclosure} className="p-4 text-center">
-                    <p className="font-black text-[#2563eb]">{formatWon(val.best.total)}</p>
-                    <p className="mt-1 text-[12px] font-bold text-slate-500">{val.best.company.name}</p>
-                    {ri === 0 && vi === 0 && <span className="mt-1 block text-[10px] text-emerald-600 font-black">최적조건</span>}
+            {totals.map((item,i)=>{
+              const strong=rows.filter(r=>r.best?.co.id===item.co.id).map(r=>r.cov.title)
+              return (
+                <tr key={item.co.id} className={`border-b border-slate-100 ${item.total===low?"bg-blue-50/30":""}`}>
+                  <td className="p-3 text-center">
+                    <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black ${i===0?"bg-yellow-100 text-yellow-700":i===1?"bg-slate-100 text-slate-500":i===2?"bg-amber-100 text-amber-600":"bg-slate-50 text-slate-400"}`}>{i+1}</span>
                   </td>
-                ))}
-              </tr>
-            ))}
+                  <td className="p-3 font-black">{item.co.name}</td>
+                  <td className="p-3 text-center"><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${item.co.type==="생명"?"bg-blue-100 text-blue-700":"bg-orange-100 text-orange-700"}`}>{item.co.type}</span></td>
+                  <td className={`p-3 text-center text-[14px] font-black ${item.total===low?"text-blue-600":""}`}>{f(item.total)}</td>
+                  <td className="p-3 text-center font-black">{f(item.total*months)}</td>
+                  <td className="p-3 text-center font-bold">{item.total>crossBest?<span className="text-orange-600">+{f(item.total-crossBest)}</span>:<span className="text-emerald-600">교차동일</span>}</td>
+                  <td className="p-3 text-[10px] text-slate-500 max-w-[200px]">{strong.slice(0,2).join(" · ")||item.co.uwNote}</td>
+                </tr>
+              )
+            })}
+            <tr className="border-t-2 border-purple-200 bg-purple-50/40">
+              <td className="p-3 text-center"><span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-purple-100 text-[12px] text-purple-700">★</span></td>
+              <td className="p-3 font-black text-purple-700">🔀 교차설계</td>
+              <td className="p-3 text-center"><span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-black text-purple-700">최적</span></td>
+              <td className="p-3 text-center text-[14px] font-black text-purple-700">{f(crossBest)}</td>
+              <td className="p-3 text-center font-black text-purple-700">{f(crossBest*months)}</td>
+              <td className="p-3 text-center font-black text-emerald-600">기준</td>
+              <td className="p-3 text-[10px] font-bold text-purple-600" colSpan={1}>담보별 최저회사 자동 조합 — 사람이 직접 불가능</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -742,74 +566,79 @@ function AgeDisclosurePanel({ rows }: { rows: { age: number; values: { disclosur
   )
 }
 
-// ─── 회사별 비교 ─────────────────────────────────────────
-function CompanyView({ results, rows, months, crossTotal }: {
-  results: { company: Company; total: number; later: number }[]
-  rows: { coverage: Coverage; best: { company: Company; premium: number }; worst: { company: Company; premium: number } }[]
-  months: number; crossTotal: number
+// ══════════════════════════════════════════════════════════
+// 담보별 범위
+// ══════════════════════════════════════════════════════════
+function CoverageView({ rows }: {
+  rows:{cov:Coverage;active:boolean;amount:number;best?:{co:Company;prem:number};worst?:{co:Company;prem:number};sorted:{co:Company;prem:number}[]}[]
 }) {
-  const lowest = results[0].total
-  const highest = results[results.length - 1].total
-
+  const [exp,setExp]=useState<string|null>(null)
+  const catColor:Record<string,string>={ 암:"bg-blue-100 text-blue-800", 뇌심장:"bg-purple-100 text-purple-800", 수술:"bg-green-100 text-green-800", 간병:"bg-amber-100 text-amber-800", 사망:"bg-red-100 text-red-800" }
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="bg-[#163f76] px-5 py-4 text-white flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-black">회사별 총 보험료 비교</h2>
-          <p className="mt-1 text-[12px] text-blue-200 font-bold">현재 조건 기준 · 담보 전체 합산</p>
-        </div>
+    <section className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="bg-[#163f76] px-5 py-3 text-white">
+        <h2 className="text-[14px] font-black">담보별 최저·최고 범위 · 광의/협의 비교</h2>
+        <p className="text-[10px] text-blue-200">담보명 클릭 시 전사 순위 · 광의(넓은 보장)는 더 비쌈</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[1100px] w-full border-collapse text-[13px]">
-          <thead className="bg-slate-100">
+        <table className="min-w-[900px] w-full border-collapse text-[11px]">
+          <thead className="bg-slate-100 text-[10px]">
             <tr>
-              <th className="p-4 text-left w-8">순위</th>
-              <th className="p-4 text-left">보험사</th>
-              <th className="p-4">구분</th>
-              <th className="p-4">월 보험료</th>
-              <th className="p-4">총 납입</th>
-              <th className="p-4">교차설계 대비</th>
-              <th className="p-4 text-left">강점 담보</th>
-              <th className="p-4 text-left">인수 특성</th>
+              <th className="p-2.5 text-left">담보명</th><th className="p-2.5">가입금액</th>
+              <th className="p-2.5">최저</th><th className="p-2.5">최고</th>
+              <th className="p-2.5">범위차이</th><th className="p-2.5 min-w-[120px]">범위 바</th>
+              <th className="p-2.5 text-left">순위 특성</th>
             </tr>
           </thead>
           <tbody>
-            {results.map((item, idx) => {
-              const strongCoverages = rows.filter((row) => row.best.company.id === item.company.id).map((row) => row.coverage.title)
-              const isLow = item.total === lowest
-              const isHigh = item.total === highest
-              const rankColors = ["text-yellow-600 bg-yellow-50", "text-slate-500 bg-slate-50", "text-amber-600 bg-amber-50"]
-              const rankLabel = idx === 0 ? "1위" : idx === 1 ? "2위" : idx === 2 ? "3위" : `${idx + 1}`
-              return (
-                <tr key={item.company.id} className={`border-b border-slate-100 ${isLow ? "bg-blue-50/30" : ""}`}>
-                  <td className="p-4">
-                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-[12px] font-black ${idx < 3 ? rankColors[idx] : "text-slate-400 bg-slate-50"}`}>
-                      {rankLabel}
-                    </span>
+            {rows.map(row=>{
+              if(!row.active) return null
+              const diff=(row.worst?.prem??0)-(row.best?.prem??0)
+              const pctLow=row.best&&row.worst&&row.worst.prem>0?Math.round(row.best.prem/row.worst.prem*100):50
+              const isExp=exp===row.cov.id
+              return (<>
+                <tr key={row.cov.id} onClick={()=>setExp(isExp?null:row.cov.id)}
+                  className="cursor-pointer border-b border-slate-100 hover:bg-slate-50">
+                  <td className="p-2.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-black text-[12px]">{row.cov.title}</span>
+                      <span className={`rounded px-1.5 py-0.5 text-[9px] font-black ${catColor[row.cov.category]||""}`}>{row.cov.category}</span>
+                      <span className="text-slate-300 text-[10px]">{isExp?"▲":"▼"}</span>
+                    </div>
+                    <div className="flex gap-1 mt-0.5">
+                      {row.cov.sensitivityTags.map(t=><span key={t} className={`text-[8px] px-1 py-0.5 rounded font-black ${t==="나이"?"bg-orange-100 text-orange-700":t==="성별"?"bg-pink-100 text-pink-700":"bg-purple-100 text-purple-700"}`}>{t}민감</span>)}
+                    </div>
                   </td>
-                  <td className="p-4 font-black">{item.company.name}</td>
-                  <td className="p-4 text-center">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-black ${item.company.type === "생명" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
-                      {item.company.type}
-                    </span>
+                  <td className="p-2.5 text-center font-black text-blue-600">{fm(row.amount)}</td>
+                  <td className="p-2.5 text-center font-black text-emerald-600">{f(row.best?.prem??0)}</td>
+                  <td className="p-2.5 text-center font-black text-red-500">{f(row.worst?.prem??0)}</td>
+                  <td className="p-2.5 text-center font-black text-orange-600">+{f(diff)}</td>
+                  <td className="p-2.5">
+                    <div className="relative h-3 rounded-full bg-slate-100">
+                      <div className="absolute left-0 top-0 h-full rounded-l-full bg-emerald-400" style={{width:`${pctLow}%`}}/>
+                      <div className="absolute top-0 h-full rounded-r-full bg-red-400" style={{left:`${pctLow}%`,right:0}}/>
+                    </div>
+                    <p className="mt-0.5 text-center text-[8px] text-slate-400">최저↔최고</p>
                   </td>
-                  <td className={`p-4 text-center text-lg font-black ${isLow ? "text-blue-600" : isHigh ? "text-red-500" : "text-slate-900"}`}>
-                    {formatWon(item.total)}
-                  </td>
-                  <td className="p-4 text-center font-black">{formatWon(item.total * months)}</td>
-                  <td className="p-4 text-center font-bold text-slate-600">
-                    {item.total > crossTotal ? (
-                      <span className="text-orange-600">+{formatWon(item.total - crossTotal)}</span>
-                    ) : (
-                      <span className="text-emerald-600">교차와 동일</span>
-                    )}
-                  </td>
-                  <td className="p-4 text-[12px] font-bold text-blue-700">
-                    {strongCoverages.length ? strongCoverages.join(" · ") : <span className="text-slate-400">—</span>}
-                  </td>
-                  <td className="p-4 text-[12px] font-bold text-slate-500">{item.company.uwNote}</td>
+                  <td className="p-2.5 text-[10px] text-slate-500 max-w-[200px] leading-4">{row.cov.rankNote}</td>
                 </tr>
-              )
+                {isExp && (
+                  <tr key={`${row.cov.id}-exp`} className="border-b border-slate-200 bg-slate-50">
+                    <td colSpan={7} className="px-4 py-3">
+                      <p className="mb-2 text-[9px] font-black text-slate-400 tracking-wider">전 회사 순위</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {row.sorted.map((item,i)=>(
+                          <div key={item.co.id} className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold ${i===0?"bg-blue-50 border-blue-200":i===row.sorted.length-1?"bg-red-50 border-red-200":"bg-white border-slate-200"}`}>
+                            <span className={`text-[10px] font-black ${i===0?"text-blue-600":i===row.sorted.length-1?"text-red-500":"text-slate-400"}`}>{i+1}위</span>
+                            <span className="font-black text-slate-700">{item.co.name}</span>
+                            <span className={i===0?"text-blue-600":i===row.sorted.length-1?"text-red-500":"text-slate-600"}>{f(item.prem)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>)
             })}
           </tbody>
         </table>
@@ -818,194 +647,150 @@ function CompanyView({ results, rows, months, crossTotal }: {
   )
 }
 
-// ─── 담보별 비교 ─────────────────────────────────────────
-const tagConfig: Record<SensitivityTag, { label: string; color: string }> = {
-  "나이": { label: "나이민감", color: "bg-orange-100 text-orange-700" },
-  "성별": { label: "성별민감", color: "bg-pink-100 text-pink-700" },
-  "유병력": { label: "유병력민감", color: "bg-purple-100 text-purple-700" },
-}
-
-function CoverageView({ rows }: {
-  rows: CoverageRow[]
+// ══════════════════════════════════════════════════════════
+// 경우의 수 + 교차설계 상세
+// ══════════════════════════════════════════════════════════
+function CasesView({ cases, maxVal, crossBest, bestSingle, rows, payPeriod }: {
+  cases:{label:string;sublabel:string;total:number;color:string}[]
+  maxVal:number; crossBest:number; bestSingle:number; payPeriod:number
+  rows:{cov:Coverage;active:boolean;best?:{co:Company;prem:number}}[]
 }) {
-  const [expanded, setExpanded] = useState<string | null>(null)
-
+  const minVal = cases.length?cases[0].total:0
+  const crossRows = rows.filter(r=>r.active&&(r.best?.prem??0)>0)
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="bg-[#163f76] px-5 py-4 text-white">
-        <h2 className="text-lg font-black">담보별 회사 순위 비교</h2>
-        <p className="mt-1 text-[12px] text-blue-200 font-bold">담보명 클릭 시 전 회사 순위 확인 가능</p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-[1250px] w-full border-collapse text-[13px]">
-          <thead className="bg-slate-100">
-            <tr>
-              <th className="p-4 text-left">담보</th>
-              <th className="p-4">가입금액</th>
-              <th className="p-4">1위 회사</th>
-              <th className="p-4">최저 보험료</th>
-              <th className="p-4">최고 회사</th>
-              <th className="p-4">최고 보험료</th>
-              <th className="p-4 text-left">순위 변동 이유</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <>
-                <tr
-                  key={row.coverage.id}
-                  className="border-b border-slate-100 align-top cursor-pointer hover:bg-slate-50"
-                  onClick={() => setExpanded(expanded === row.coverage.id ? null : row.coverage.id)}
-                >
-                  <td className="p-4">
-                    <p className="font-black flex items-center gap-1">
-                      {row.coverage.title}
-                      <span className="text-slate-300 text-[11px]">{expanded === row.coverage.id ? "▲" : "▼"}</span>
-                    </p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {row.coverage.sensitivityTags.map((tag) => (
-                        <span key={tag} className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-black ${tagConfig[tag].color}`}>
-                          {tagConfig[tag].label}
-                        </span>
-                      ))}
+    <div className="mb-4 space-y-4">
+      {/* 경우의 수 카드 */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p className="mb-3 text-[12px] font-black text-slate-700">🔀 경우의 수 비교 — 낮은 보험료 순</p>
+        <div className={`grid gap-3 ${cases.length<=3?"grid-cols-3":cases.length<=4?"grid-cols-4":"grid-cols-3 md:grid-cols-4"}`}>
+          {cases.map((c,i)=>{
+            const pct=maxVal>0?Math.round(c.total/maxVal*100):0
+            const isBest=i===0
+            const saveAmt=c.total-minVal
+            return (
+              <div key={c.label} className="overflow-hidden rounded-2xl shadow-sm border border-slate-100">
+                <div className="p-3" style={{background:c.color}}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-[10px] font-black text-white/80">{c.sublabel}{isBest&&" 🏆"}</p>
+                      <p className="text-[11px] font-black text-white mt-0.5 leading-4">{c.label}</p>
                     </div>
-                  </td>
-                  <td className="p-4 text-center font-black text-[#2563eb]">{formatMan(row.amount)}</td>
-                  <td className="p-4 text-center font-black text-blue-600">{row.best.company.name}</td>
-                  <td className="p-4 text-center font-black text-blue-600">{formatWon(row.best.premium)}</td>
-                  <td className="p-4 text-center font-bold text-red-500">{row.worst.company.name}</td>
-                  <td className="p-4 text-center font-black text-red-500">{formatWon(row.worst.premium)}</td>
-                  <td className="p-4 text-[12px] font-bold text-slate-600 max-w-[280px] leading-5">{row.coverage.rankNote}</td>
+                  </div>
+                  <p className="mt-2 text-[18px] font-black text-white">{f(c.total)}</p>
+                  <p className="text-[9px] text-white/60">/월 · 총 {f(c.total*payPeriod*12)}</p>
+                </div>
+                <div className="bg-white p-2.5">
+                  <div className="mb-1.5 h-2 rounded-full bg-slate-100">
+                    <div className="h-full rounded-full transition-all" style={{width:`${pct}%`,background:c.color}}/>
+                  </div>
+                  {isBest
+                    ? <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">✔ 최저 보험료</span>
+                    : saveAmt>0
+                      ? <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-black text-red-600">최저보다 +{f(saveAmt)}</span>
+                      : null}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* 교차설계 담보별 상세 */}
+      {crossRows.length>0 && (
+        <section className="overflow-hidden rounded-2xl border border-purple-200 bg-white shadow-sm">
+          <div className="bg-[#4c1d95] px-5 py-3 text-white">
+            <h2 className="text-[14px] font-black">🔀 교차설계 담보별 상세 — 전사 최적 조합</h2>
+            <p className="text-[10px] text-purple-200">각 담보마다 가장 저렴한 회사를 자동 선택한 결과</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-[600px] w-full border-collapse text-[11px]">
+              <thead className="bg-purple-50 text-[10px]">
+                <tr>
+                  <th className="p-3 text-left">담보명</th>
+                  <th className="p-3">가입금액</th>
+                  <th className="p-3 text-purple-700">선택 회사</th>
+                  <th className="p-3 text-purple-700">보험료</th>
                 </tr>
-                {expanded === row.coverage.id && (
-                  <tr key={`${row.coverage.id}-expanded`} className="border-b border-slate-200 bg-slate-50">
-                    <td colSpan={7} className="px-6 py-4">
-                      <p className="text-[12px] font-black text-slate-400 mb-3 tracking-wider">전 회사 순위 (현재 조건 기준)</p>
-                      <div className="flex flex-wrap gap-2">
-                        {row.sorted.map((item, idx) => (
-                          <div key={item.company.id} className={`flex items-center gap-2 rounded-xl px-3 py-2 border text-[12px] font-bold ${idx === 0 ? "bg-blue-50 border-blue-200" : idx === row.sorted.length - 1 ? "bg-red-50 border-red-200" : "bg-white border-slate-200"}`}>
-                            <span className={`font-black text-[11px] ${idx === 0 ? "text-blue-600" : idx === row.sorted.length - 1 ? "text-red-500" : "text-slate-400"}`}>{idx + 1}위</span>
-                            <span className="font-black text-slate-700">{item.company.name}</span>
-                            <span className={idx === 0 ? "text-blue-600" : idx === row.sorted.length - 1 ? "text-red-500" : "text-slate-600"}>{formatWon(item.premium)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </td>
+              </thead>
+              <tbody>
+                {crossRows.map(row=>(
+                  <tr key={row.cov.id} className="border-b border-slate-100">
+                    <td className="p-3 font-black">{row.cov.title}</td>
+                    <td className="p-3 text-center font-bold text-blue-600">{fm(row.cov.amount["standard"])}</td>
+                    <td className="p-3 text-center font-black text-purple-700">{row.best?.co.name}</td>
+                    <td className="p-3 text-center font-black text-emerald-600">{f(row.best?.prem??0)}</td>
                   </tr>
-                )}
-              </>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+                ))}
+                <tr className="border-t-2 border-purple-300 bg-purple-50">
+                  <td colSpan={3} className="p-3 text-right font-black text-purple-700">교차설계 합계</td>
+                  <td className="p-3 text-center text-[15px] font-black text-purple-700">{f(crossBest)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+    </div>
   )
 }
 
-// ─── 저축성 뷰 ───────────────────────────────────────────
-function SavingView({ results, monthlySaving, payYears }: { results: SavingResult[]; monthlySaving: number; payYears: number }) {
-  const lifeResults = results.filter((r) => r.company.type === "생명")
-  const refundMatrix = refundYears.map((year) => {
-    const cells = lifeResults.map((r) => ({
-      company: r.company,
-      amount: refundAmountFor(r.company, year, monthlySaving, payYears),
-      rate: refundRateFor(r.company, year, payYears),
-    }))
-    const valid = cells.filter((c) => c.amount > 0)
-    const min = Math.min(...valid.map((c) => c.amount))
-    const max = Math.max(...valid.map((c) => c.amount))
-    return { year, cells, min, max }
+// ══════════════════════════════════════════════════════════
+// 저축성
+// ══════════════════════════════════════════════════════════
+function SavingView({ results, monthly, payYrs }: {results:{co:Company;fv:number;pension:number}[];monthly:number;payYrs:number}) {
+  const months=payYrs*12
+  const yrs=[1,2,3,5,7,10,15,20,25,30]
+  const matrix=yrs.map(yr=>{
+    const cells=results.map(r=>({co:r.co,amount:monthly*Math.min(yr,payYrs)*12*(refundRate(r.co,yr,payYrs)/100),rate:refundRate(r.co,yr,payYrs)}))
+    const valid=cells.filter(c=>c.amount>0)
+    return {yr,cells,min:Math.min(...valid.map(c=>c.amount)),max:Math.max(...valid.map(c=>c.amount))}
   })
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 mb-4">
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="bg-[#163f76] px-5 py-4 text-white">
-          <h2 className="text-lg font-black">저축성 환급률 및 예상 연금 비교</h2>
-          <p className="mt-1 text-[12px] text-blue-200 font-bold">공시이율은 시장 금리에 따라 변동됩니다. 비교 참고용입니다.</p>
-        </div>
+        <div className="bg-[#163f76] px-5 py-3 text-white"><h2 className="text-[14px] font-black">단기납 종신·저축성 환급률 비교</h2></div>
         <div className="overflow-x-auto">
-          <table className="min-w-[1000px] w-full border-collapse text-[13px]">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="p-4 text-left">보험사</th>
-                <th className="p-4">구분</th>
-                <th className="p-4">예시이율</th>
-                <th className="p-4">5년 환급률</th>
-                <th className="p-4">7년 환급률</th>
-                <th className="p-4">10년 환급률</th>
-                <th className="p-4">총 납입액</th>
-                <th className="p-4">예상 적립액</th>
-                <th className="p-4">월 연금 예상</th>
-              </tr>
+          <table className="min-w-[800px] w-full border-collapse text-[11px]">
+            <thead className="bg-slate-100 text-[10px]">
+              <tr><th className="p-3 text-left">보험사</th><th className="p-3">예시이율</th><th className="p-3">5년</th><th className="p-3">7년</th><th className="p-3">10년</th><th className="p-3">총납입</th><th className="p-3">적립액</th><th className="p-3">월연금</th></tr>
             </thead>
             <tbody>
-              {results.map((row, index) => (
-                <tr key={row.company.id} className="border-b border-slate-100">
-                  <td className="p-4 font-black">{row.company.name}</td>
-                  <td className="p-4 text-center">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-black ${row.company.type === "생명" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
-                      {row.company.type}
-                    </span>
-                  </td>
-                  <td className="p-4 text-center font-black text-[#2563eb]">{row.company.savingRate}%</td>
-                  <td className="p-4 text-center font-bold">{row.company.refund5}%</td>
-                  <td className="p-4 text-center font-bold">{row.company.refund7}%</td>
-                  <td className="p-4 text-center font-bold">{row.company.refund10}%</td>
-                  <td className="p-4 text-center font-bold">{formatWon(monthlySaving * payYears * 12)}</td>
-                  <td className={`p-4 text-center font-black ${index === 0 ? "text-blue-600" : "text-slate-900"}`}>{formatWon(row.futureValue)}</td>
-                  <td className="p-4 text-center font-black text-emerald-600">{formatWon(row.pension)}</td>
+              {results.map((r,i)=>(
+                <tr key={r.co.id} className="border-b border-slate-100">
+                  <td className="p-3 font-black">{r.co.name}</td>
+                  <td className="p-3 text-center font-black text-blue-600">{r.co.savingRate}%</td>
+                  <td className="p-3 text-center">{r.co.refund5}%</td>
+                  <td className="p-3 text-center">{r.co.refund7}%</td>
+                  <td className="p-3 text-center">{r.co.refund10}%</td>
+                  <td className="p-3 text-center font-bold">{f(monthly*months)}</td>
+                  <td className={`p-3 text-center font-black ${i===0?"text-blue-600":""}`}>{f(r.fv)}</td>
+                  <td className="p-3 text-center font-black text-emerald-600">{f(r.pension)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
-
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="bg-[#163f76] px-5 py-4 text-white">
-          <h2 className="text-lg font-black">생명보험 연차별 해약환급금 비교</h2>
-          <p className="mt-1 text-[12px] font-bold text-blue-100">월 납입액과 납입기간을 기준으로 연차별 예상 환급금을 비교합니다.</p>
-        </div>
+        <div className="bg-[#163f76] px-5 py-3 text-white"><h2 className="text-[14px] font-black">연차별 해약환급금 비교</h2></div>
         <div className="overflow-x-auto">
-          <table className="min-w-[1200px] w-full border-collapse text-[13px]">
+          <table className="min-w-[900px] w-full border-collapse text-[11px]">
             <thead>
-              <tr className="bg-slate-100">
-                <th className="sticky left-0 z-10 bg-slate-100 p-4 text-left">연차</th>
-                {lifeResults.map((r) => (
-                  <th key={r.company.id} className="min-w-[150px] p-4">
-                    <p className="font-black">{r.company.name}</p>
-                    <p className="mt-1 text-[11px] text-slate-500">기준 {r.company.refund10}%</p>
-                  </th>
-                ))}
+              <tr className="bg-slate-100 text-[10px]">
+                <th className="sticky left-0 z-10 bg-slate-100 p-3 text-left">연차</th>
+                {results.map(r=><th key={r.co.id} className="p-3 min-w-[120px]"><p className="font-black">{r.co.name}</p><p className="text-[9px] text-slate-400">{r.co.refund10}%</p></th>)}
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-slate-200">
-                <td className="sticky left-0 z-10 bg-white p-4 font-black">월 보험료</td>
-                {lifeResults.map((r) => (
-                  <td key={r.company.id} className="p-4 text-center font-black">{formatWon(monthlySaving)}</td>
-                ))}
-              </tr>
-              <tr className="border-b-2 border-slate-900">
-                <td className="sticky left-0 z-10 bg-white p-4 font-black">총 납입액</td>
-                {lifeResults.map((r) => (
-                  <td key={r.company.id} className="p-4 text-center font-black">{formatWon(monthlySaving * payYears * 12)}</td>
-                ))}
-              </tr>
-              {refundMatrix.map((row) => (
-                <tr key={row.year} className={`border-b border-slate-100 ${row.year === 5 || row.year === 10 || row.year === 20 ? "bg-slate-100" : ""}`}>
-                  <td className="sticky left-0 z-10 bg-inherit p-4 font-black">{row.year}년</td>
-                  {row.cells.map((cell) => {
-                    const isMin = cell.amount === row.min
-                    const isMax = cell.amount === row.max
-                    return (
-                      <td key={cell.company.id} className={`p-4 text-center font-black ${isMin ? "text-blue-600" : isMax ? "text-red-500" : "text-slate-900"}`}>
-                        <p>{formatWon(cell.amount)}</p>
-                        <p className="mt-1 text-[12px]">({cell.rate.toFixed(1)}%)</p>
-                      </td>
-                    )
-                  })}
+              {matrix.map(row=>(
+                <tr key={row.yr} className={`border-b border-slate-100 ${[5,10,20].includes(row.yr)?"bg-slate-50":""}`}>
+                  <td className="sticky left-0 z-10 bg-inherit p-3 font-black">{row.yr}년</td>
+                  {row.cells.map(cell=>(
+                    <td key={cell.co.id} className={`p-3 text-center font-black ${cell.amount===row.max?"text-blue-600":cell.amount===row.min?"text-red-500":""}`}>
+                      <p>{f(cell.amount)}</p>
+                      <p className="text-[9px]">({cell.rate.toFixed(1)}%)</p>
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -1016,23 +801,61 @@ function SavingView({ results, monthlySaving, payYears }: { results: SavingResul
   )
 }
 
-// ─── 공통 소형 컴포넌트 ───────────────────────────────────
-function Input({ label, value, onChange }: { label: string; value: number; onChange: (value: string) => void }) {
+// ══════════════════════════════════════════════════════════
+// 달러 상품
+// ══════════════════════════════════════════════════════════
+type DollarProd={id:string;name:string;company:string;type:string;base:Record<AgeBandKey,Record<"남성"|"여성",number>>;r10:number;r20:number;r30:number;pension:number;note:string}
+const DOLLAR_PRODS:DollarProd[]=[
+  {id:"sl_w",name:"삼성 달러종신",company:"삼성생명",type:"달러종신",base:{"20s":{"남성":48000,"여성":41000},"30s":{"남성":62000,"여성":53000},"40s":{"남성":88000,"여성":74000},"50s":{"남성":138000,"여성":114000},"60s":{"남성":220000,"여성":178000},"70s":{"남성":0,"여성":0},"80s":{"남성":0,"여성":0}},r10:82,r20:104,r30:138,pension:380,note:"삼성생명 공시이율 달러종신"},
+  {id:"hl_w",name:"한화 달러종신",company:"한화생명",type:"달러종신",base:{"20s":{"남성":46000,"여성":39000},"30s":{"남성":60000,"여성":51000},"40s":{"남성":85000,"여성":72000},"50s":{"남성":134000,"여성":110000},"60s":{"남성":214000,"여성":172000},"70s":{"남성":0,"여성":0},"80s":{"남성":0,"여성":0}},r10:83,r20:106,r30:142,pension:390,note:"환급률 경쟁력"},
+  {id:"kyobo_w",name:"교보 달러종신",company:"교보생명",type:"달러종신",base:{"20s":{"남성":47000,"여성":40000},"30s":{"남성":61000,"여성":52000},"40s":{"남성":86000,"여성":73000},"50s":{"남성":136000,"여성":112000},"60s":{"남성":216000,"여성":174000},"70s":{"남성":0,"여성":0},"80s":{"남성":0,"여성":0}},r10:81,r20:103,r30:136,pension:375,note:"교보생명 브랜드"},
+  {id:"sl_a",name:"삼성 달러연금",company:"삼성생명",type:"달러연금",base:{"20s":{"남성":45000,"여성":44000},"30s":{"남성":58000,"여성":57000},"40s":{"남성":82000,"여성":80000},"50s":{"남성":128000,"여성":125000},"60s":{"남성":0,"여성":0},"70s":{"남성":0,"여성":0},"80s":{"남성":0,"여성":0}},r10:88,r20:112,r30:155,pension:420,note:"장수리스크 대비 연금전환"},
+  {id:"hl_a",name:"한화 달러연금",company:"한화생명",type:"달러연금",base:{"20s":{"남성":44000,"여성":43000},"30s":{"남성":57000,"여성":56000},"40s":{"남성":80000,"여성":78000},"50s":{"남성":125000,"여성":122000},"60s":{"남성":0,"여성":0},"70s":{"남성":0,"여성":0},"80s":{"남성":0,"여성":0}},r10:89,r20:114,r30:158,pension:430,note:"환급률 최상위"},
+]
+function DollarView({ageBand,gender,payPeriod}:{ageBand:AgeBandKey;gender:string;payPeriod:PayPeriod}) {
+  const pf=PAY_FACTOR[payPeriod]??1
+  const eligible=DOLLAR_PRODS.filter(p=>p.base[ageBand][(gender as "남성"|"여성")]>0)
   return (
-    <label>
-      <span className="mb-2 block text-[12px] font-black text-slate-500">{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-[14px] font-bold outline-none focus:border-[#2563eb]" />
-    </label>
-  )
-}
-
-function Select({ label, value, onChange, options, labels }: { label: string; value: string; onChange: (value: string) => void; options: string[]; labels?: Record<string, string> }) {
-  return (
-    <label>
-      <span className="mb-2 block text-[12px] font-black text-slate-500">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-[14px] font-bold outline-none focus:border-[#2563eb]">
-        {options.map((opt) => <option key={opt} value={opt}>{labels?.[opt] || opt}</option>)}
-      </select>
-    </label>
+    <div className="mb-4 space-y-4">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="bg-[#163f76] px-5 py-3 text-white">
+          <h2 className="text-[14px] font-black">💵 달러종신 · 달러연금 비교</h2>
+          <p className="text-[10px] text-blue-200">기준: 1만달러 · {AGE_LABEL[ageBand]} · {gender} · {payPeriod}년납 · 환율 1,350원</p>
+        </div>
+        {eligible.length===0
+          ? <p className="p-8 text-center text-[13px] font-bold text-slate-400">선택한 나이대({AGE_LABEL[ageBand]})는 가입 불가. 다른 나이대를 선택하세요.</p>
+          : (
+            <div className="overflow-x-auto">
+              <table className="min-w-[800px] w-full border-collapse text-[11px]">
+                <thead className="bg-slate-100 text-[10px]">
+                  <tr><th className="p-3 text-left">상품</th><th className="p-3">보험사</th><th className="p-3">유형</th><th className="p-3">월보험료(원)</th><th className="p-3">10년환급</th><th className="p-3">20년환급</th><th className="p-3">30년환급</th><th className="p-3">월연금($)</th><th className="p-3 text-left">특성</th></tr>
+                </thead>
+                <tbody>
+                  {eligible.map((p,i)=>{
+                    const base=p.base[ageBand][(gender as "남성"|"여성")]
+                    const monthly=Math.round(base*pf)
+                    return (
+                      <tr key={p.id} className={`border-b border-slate-100 ${i===0?"bg-blue-50/20":""}`}>
+                        <td className="p-3 font-black">{p.name}</td>
+                        <td className="p-3 text-center font-bold">{p.company}</td>
+                        <td className="p-3 text-center"><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${p.type==="달러종신"?"bg-blue-100 text-blue-700":"bg-emerald-100 text-emerald-700"}`}>{p.type}</span></td>
+                        <td className="p-3 text-center text-[14px] font-black text-blue-700">{f(monthly)}</td>
+                        <td className="p-3 text-center">{p.r10}%</td>
+                        <td className="p-3 text-center font-bold text-blue-600">{p.r20}%</td>
+                        <td className="p-3 text-center font-bold text-emerald-600">{p.r30}%</td>
+                        <td className="p-3 text-center font-black text-purple-700">${p.pension}/월</td>
+                        <td className="p-3 text-[10px] text-slate-500">{p.note}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </section>
+      <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-900">
+        💡 달러 상품은 환율 변동에 따라 원화 환산액이 달라집니다. 장기 자산 분산·달러 헤지 목적. 실제 산출액은 보험사 시스템을 통해 확인하세요.
+      </p>
+    </div>
   )
 }
