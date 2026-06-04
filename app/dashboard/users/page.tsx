@@ -59,10 +59,17 @@ export default function StaffManagementPage() {
     let alive = true
 
     async function init() {
+      const { data: sessionData } = await supabase.auth.getSession()
+
+      if (!sessionData.session) {
+        router.replace("/login?redirectTo=/dashboard/users")
+        return
+      }
+
       const { data: authData, error: authError } = await supabase.auth.getUser()
 
       if (authError || !authData.user) {
-        router.replace("/login")
+        router.replace("/login?redirectTo=/dashboard/users")
         return
       }
 

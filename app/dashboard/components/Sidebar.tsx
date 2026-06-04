@@ -426,7 +426,7 @@ export default function Sidebar({
                   icon="직원관리"
                   label="직원 관리"
                   active={false}
-                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank", "noopener,noreferrer")}
+                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank")}
                 />
               )}
 
@@ -448,7 +448,7 @@ export default function Sidebar({
                 </p>
                 <button
                   type="button"
-                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank", "noopener,noreferrer")}
+                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank")}
                   className="text-[13px] font-black text-[#1a3a6e] underline underline-offset-4"
                 >
                   상세 관리는 직원 관리 페이지에서 ↗
