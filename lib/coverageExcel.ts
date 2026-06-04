@@ -50,6 +50,8 @@ export const COVERAGE_STRUCTURE = [
   { b: null, c: null, d: '교통상해입원일당' },
   { b: null, c: null, d: '상해간병지원금' },
   { b: null, c: null, d: '질병간병지원금' },
+  { b: '치매', c: null, d: '중증치매 진단비' },
+  { b: null, c: null, d: '경증치매 진단비' },
   { b: '운전자', c: null, d: '교통사고처리지원금' },
   { b: null, c: null, d: '교통사고벌금' },
   { b: null, c: null, d: '변호사선임비용' },
@@ -105,6 +107,8 @@ export function findCoverageRowIndex(normalizedName: string): number {
     { idx: 40, keywords: ['교통상해입원', '교통입원'] },
     { idx: 41, keywords: ['상해간병', '재해간병'] },
     { idx: 42, keywords: ['질병간병'] },
+    { idx: 51, keywords: ['중증치매', '치매진단', '치매'] },
+    { idx: 52, keywords: ['경증치매', '초기치매'] },
     { idx: 43, keywords: ['교통사고처리지원금', '교통사고처리', '대인배상'] },
     { idx: 44, keywords: ['교통사고벌금', '벌금'] },
     { idx: 45, keywords: ['변호사선임', '법률비용'] },
@@ -256,7 +260,7 @@ export function buildStyledSheet(data: any, sheetName: string): any {
   let lastB = ''; let lastC = ''
   let bStartRow = -1; let cStartRow = -1
 
-  const amountGrid: number[][] = Array.from({ length: 51 }, () => Array(11).fill(0))
+  const amountGrid: number[][] = Array.from({ length: 53 }, () => Array(11).fill(0))
   policies.slice(0, 11).forEach((pol: any, pi: number) => {
     const coverages: any[] = Array.isArray(pol.coverages) ? pol.coverages : []
     coverages.forEach((cov: any) => {
@@ -264,7 +268,7 @@ export function buildStyledSheet(data: any, sheetName: string): any {
       const amount = toManwon(Number(cov.amount || cov.coverage_amount || 0))
       if (!amount) return
       const ri = findCoverageRowIndex(name)
-      if (ri >= 0 && ri < 51) amountGrid[ri][pi] += amount
+      if (ri >= 0 && ri < 53) amountGrid[ri][pi] += amount
     })
   })
 
@@ -321,13 +325,213 @@ export function buildStyledSheet(data: any, sheetName: string): any {
   if (bStartRow >= 0) merge(bStartRow, 1, lastRow, 1)
   if (cStartRow >= 0) merge(cStartRow, 2, lastRow, 2)
 
-  ws['!cols'] = [{ wch: 2 }, { wch: 10 }, { wch: 9 }, { wch: 14 }, { wch: 8 }, ...Array(11).fill({ wch: 9 })]
+  // ─── 오른쪽 요약 섹션 ──────────────────────────────────────────────────────
+  // Col 16(Q): 자동 간격, Col 17(R): 항목, Col 18(S): 금액, Col 19(T): 비고
+  const SC = 17 // 시작 열 인덱스
+  const colLabel = SC
+  const colAmt   = SC + 1
+  const colNote  = SC + 2
+
+  // 집계값 (만원 단위)
+  const sumRow = (ri: number) => amountGrid[ri].reduce((s, v) => s + v, 0)
+
+  const cancerDiag    = sumRow(3)   // 일반암 진단비
+  const similarCancer = sumRow(4)   // 유사암/소액암
+  const chemo         = sumRow(6)   // 항암(방사선/약물) - 각 해당 금액
+  const targeted      = sumRow(7)   // 표적항암치료
+  const majorCancer   = sumRow(9)   // 암주요치료비
+
+  // 뇌혈관 개별 (색상 구분)
+  const brainVascular = sumRow(10)  // 뇌혈관질환 (일반)
+  const brainStroke   = sumRow(11)  // 뇌졸중 → 노란색
+  const brainBleed    = sumRow(12)  // 뇌출혈 → 빨간색
+  const brainDiag     = Math.max(brainVascular, brainStroke, brainBleed)
+
+  // 심혈관 개별 (색상 구분)
+  const heartMI       = sumRow(13)  // 급성심근경색 → 빨간색
+  const heartIschemic = sumRow(14)  // 허혈성심장질환 → 기본
+  const heartVascular = sumRow(15)  // 심혈관질환(부정맥 등) → 파란색
+  const heartDiag     = Math.max(heartMI, heartIschemic, heartVascular)
+
+  const brainSurgery  = sumRow(16)  // 뇌혈관수술비
+  const heartSurgery  = sumRow(17)  // 심혈관수술비
+  const major2        = sumRow(18)  // 2대주요치료비
+
+  const diseaseSurgery = sumRow(32) // 질병수술비
+  const diseaseHospD   = sumRow(38) // 질병 입원일당
+  const injuryHospD    = sumRow(39) // 상해 입원일당
+  const nursingD       = sumRow(42) // 질병간병지원금
+  const nursingI       = sumRow(41) // 상해간병지원금
+
+  // 오른쪽 전용 스타일
+  const R_RED   = 'C0392B'
+  const R_GOLD  = 'B45309'
+  const R_BLUE  = '1A5276'
+  const R_GREEN = '1E6B3C'
+  const R_YTOT  = 'FFF9C4' // 합계 배경
+  const R_YTRAT = 'FFF3E0' // 치료비 배경
+  const R_YGRN  = 'E8F5E9' // 의료 배경
+
+  const rHdr = (bg: string): CellStyle => ({
+    font: { bold: true, sz: 9, color: { rgb: TEXT_W } },
+    fill: { fgColor: { rgb: bg } },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    border: allMed,
+  })
+  const rSub = (bg: string): CellStyle => ({
+    font: { bold: true, sz: 8, color: { rgb: NAVY } },
+    fill: { fgColor: { rgb: bg } },
+    alignment: { horizontal: 'left', vertical: 'center' },
+    border: allThin,
+  })
+  const rLbl = (bg = WHITE): CellStyle => ({
+    font: { sz: 8, color: { rgb: TEXT_D } },
+    fill: { fgColor: { rgb: bg } },
+    alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+    border: allThin,
+  })
+  const rAmt = (bg = WHITE): CellStyle => ({
+    font: { sz: 8, color: { rgb: NAVY } },
+    fill: { fgColor: { rgb: bg } },
+    alignment: { horizontal: 'center', vertical: 'center' },
+    border: allThin,
+  })
+  const rNote = (bg = WHITE): CellStyle => ({
+    font: { sz: 7, color: { rgb: '666666' } },
+    fill: { fgColor: { rgb: bg } },
+    alignment: { horizontal: 'left', vertical: 'center', wrapText: true },
+    border: allThin,
+  })
+  const rTotal = (): CellStyle => ({
+    font: { bold: true, sz: 9, color: { rgb: R_RED } },
+    fill: { fgColor: { rgb: R_YTOT } },
+    alignment: { horizontal: 'center', vertical: 'center' },
+    border: allMed,
+  })
+  const rTotalLbl = (): CellStyle => ({
+    font: { bold: true, sz: 8, color: { rgb: R_RED } },
+    fill: { fgColor: { rgb: R_YTOT } },
+    alignment: { horizontal: 'left', vertical: 'center' },
+    border: allMed,
+  })
+
+
+  const setR = (row: number, lval: any, lStyle: CellStyle, aVal: number | null, aStyle: CellStyle, noteVal: string, nStyle: CellStyle) => {
+    setCell(row, colLabel, lval, lStyle)
+    setCell(row, colAmt, aVal, aStyle)
+    setCell(row, colNote, noteVal, nStyle)
+  }
+  const mergeR = (row: number) => merge(row, colLabel, row, colNote)
+
+  const rAmtColor = (fontColor: string, bg = WHITE): CellStyle => ({
+    font: { bold: true, sz: 8, color: { rgb: fontColor } },
+    fill: { fgColor: { rgb: bg } },
+    alignment: { horizontal: 'center', vertical: 'center' },
+    border: allThin,
+  })
+
+  let rr = 3
+
+  // 메인 헤더
+  setCell(rr, colLabel, '보장금액 요약', rHdr(TEAL))
+  setCell(rr, colAmt,   '금액(만원)',    rHdr(TEAL))
+  setCell(rr, colNote,  '비고',          rHdr(TEAL))
+  rr++
+
+  // 섹션 1: 진단비
+  setCell(rr, colLabel, '■ 진단비 (1회성 지급)', rSub(BG_HEADER)); mergeR(rr); rr++
+  setR(rr, '암 진단비 (일반암)',      rLbl(), cancerDiag    || null, rAmt(), cancerDiag    > 0 ? '진단 시 1회' : '', rNote()); rr++
+  setR(rr, '암 진단비 (소액/유사암)', rLbl(), similarCancer || null, rAmt(), similarCancer > 0 ? '진단 시 1회' : '', rNote()); rr++
+  setR(rr, '뇌혈관질환 진단비',       rLbl(),         brainVascular || null, rAmt(),                         brainVascular > 0 ? '진단 시 1회'   : '', rNote()); rr++
+  setR(rr, '뇌졸중 진단비 [노란]',    rLbl('FFFDE7'), brainStroke   || null, rAmtColor('B8860B', 'FFFDE7'), brainStroke   > 0 ? '진단 1회 노란' : '', rNote('FFFDE7')); rr++
+  setR(rr, '뇌출혈 진단비 [빨간]',    rLbl('FDECEA'), brainBleed    || null, rAmtColor(R_RED,    'FDECEA'), brainBleed    > 0 ? '진단 1회 빨간' : '', rNote('FDECEA')); rr++
+  setR(rr, '급성심근경색 [빨간]',     rLbl('FDECEA'), heartMI       || null, rAmtColor(R_RED,    'FDECEA'), heartMI       > 0 ? '진단 1회 빨간' : '', rNote('FDECEA')); rr++
+  setR(rr, '허혈성심장질환 진단비',   rLbl(),         heartIschemic || null, rAmt(),                        heartIschemic > 0 ? '진단 시 1회'   : '', rNote()); rr++
+  setR(rr, '심혈관질환 [파란]',       rLbl('EBF4FE'), heartVascular || null, rAmtColor(R_BLUE,  'EBF4FE'), heartVascular > 0 ? '진단 1회 파란' : '', rNote('EBF4FE')); rr++
+
+  // 섹션 2: 치료·수술비
+  setCell(rr, colLabel, '■ 치료·수술비 (매년 지급)', rSub(R_YTRAT)); mergeR(rr); rr++
+  setR(rr, '항암 약물치료비',             rLbl('FFFDE7'), chemo       || null, rAmt('FFFDE7'),              chemo       > 0 ? '매년 1회'   : '', rNote('FFFDE7')); rr++
+  setR(rr, '항암 방사선치료비',           rLbl('FFFDE7'), chemo       || null, rAmt('FFFDE7'),              chemo       > 0 ? '매년 1회'   : '', rNote('FFFDE7')); rr++
+  setR(rr, '표적/면역 항암치료 [별도]',  rLbl('FFF3E0'), targeted    || null, rAmtColor(R_GOLD, 'FFF3E0'), targeted    > 0 ? '비급여·매년' : '', rNote('FFF3E0')); rr++
+  setR(rr, '암 주요치료비 [별도]',        rLbl('FFF3E0'), majorCancer || null, rAmtColor(R_GOLD, 'FFF3E0'), majorCancer > 0 ? '비급여·매년' : '', rNote('FFF3E0')); rr++
+  setR(rr, '뇌혈관 수술비',  rLbl('FFFDE7'), brainSurgery   || null, rAmt('FFFDE7'), brainSurgery   > 0 ? '매년' : '', rNote('FFFDE7')); rr++
+  setR(rr, '심혈관 수술비',  rLbl('FFFDE7'), heartSurgery   || null, rAmt('FFFDE7'), heartSurgery   > 0 ? '매년' : '', rNote('FFFDE7')); rr++
+  setR(rr, '2대 주요치료비', rLbl('FFFDE7'), major2         || null, rAmt('FFFDE7'), major2         > 0 ? '매년' : '', rNote('FFFDE7')); rr++
+  setR(rr, '질병 수술비',    rLbl('FFFDE7'), diseaseSurgery || null, rAmt('FFFDE7'), diseaseSurgery > 0 ? '매년' : '', rNote('FFFDE7')); rr++
+
+  // 섹션 3: 일당·간병
+  setCell(rr, colLabel, '■ 입원일당·간병 (1일 단위)', rSub(R_YGRN)); mergeR(rr); rr++
+  setR(rr, '질병 입원일당',   rLbl('F1F8F2'), diseaseHospD || null, rAmt('F1F8F2'), diseaseHospD > 0 ? '만원/일' : '', rNote('F1F8F2')); rr++
+  setR(rr, '상해 입원일당',   rLbl('F1F8F2'), injuryHospD  || null, rAmt('F1F8F2'), injuryHospD  > 0 ? '만원/일' : '', rNote('F1F8F2')); rr++
+  setR(rr, '질병 간병지원금', rLbl('F1F8F2'), nursingD     || null, rAmt('F1F8F2'), nursingD     > 0 ? '만원/일' : '', rNote('F1F8F2')); rr++
+  setR(rr, '상해 간병지원금', rLbl('F1F8F2'), nursingI     || null, rAmt('F1F8F2'), nursingI     > 0 ? '만원/일' : '', rNote('F1F8F2')); rr++
+
+  rr++ // 빈 행
+
+  // 섹션 4: 암 치료 예시
+  setCell(rr, colLabel, '★ 암 치료시 예상 수령액', rHdr(R_GOLD)); mergeR(rr); rr++
+  setCell(rr, colLabel, '[일반암] 항암+표적치료 시나리오', rSub(BG_HEADER)); mergeR(rr); rr++
+  setR(rr, '① 암 진단비',            rLbl(), cancerDiag              || null, rAmt(), cancerDiag              > 0 ? '1회성'    : '', rNote()); rr++
+  setR(rr, '② 항암 약물치료',        rLbl(), chemo                   || null, rAmt(), chemo                   > 0 ? '매년 1회' : '', rNote()); rr++
+  setR(rr, '③ 항암 방사선치료',      rLbl(), chemo                   || null, rAmt(), chemo                   > 0 ? '매년 1회' : '', rNote()); rr++
+  setR(rr, '④ 표적/면역/로봇 치료', rLbl(), (targeted + majorCancer) || null, rAmt(), (targeted + majorCancer) > 0 ? '매년 1회' : '', rNote()); rr++
+  if (diseaseHospD > 0) { setR(rr, '⑤ 입원일당 30일', rLbl(), diseaseHospD * 30, rAmt(), diseaseHospD + '만원 x 30일', rNote()); rr++ }
+  const c1total = cancerDiag + chemo * 2 + targeted + majorCancer + diseaseHospD * 30
+  setCell(rr, colLabel, '★ 일반암 최종 합계', rTotalLbl()); setCell(rr, colAmt, c1total || null, rTotal()); setCell(rr, colNote, '초년도 기준', rNote(R_YTOT)); rr++; rr++
+
+  setCell(rr, colLabel, '[소액암] 항암치료 시나리오', rSub(BG_HEADER)); mergeR(rr); rr++
+  setR(rr, '① 소액암 진단비',   rLbl(), similarCancer || null, rAmt(), similarCancer > 0 ? '1회성'    : '', rNote()); rr++
+  setR(rr, '② 항암 약물치료',   rLbl(), chemo         || null, rAmt(), chemo         > 0 ? '매년 1회' : '', rNote()); rr++
+  setR(rr, '③ 항암 방사선치료', rLbl(), chemo         || null, rAmt(), chemo         > 0 ? '매년 1회' : '', rNote()); rr++
+  const c2total = similarCancer + chemo * 2
+  setCell(rr, colLabel, '★ 소액암 최종 합계', rTotalLbl()); setCell(rr, colAmt, c2total || null, rTotal()); setCell(rr, colNote, '초년도 기준', rNote(R_YTOT)); rr++; rr++
+
+  // 섹션 5: 뇌·심장 예시
+  setCell(rr, colLabel, '★ 뇌·심장 치료시 예상 수령액', rHdr(R_BLUE)); mergeR(rr); rr++
+  setCell(rr, colLabel, '[뇌혈관] 수술+중환자실 시나리오', rSub(BG_HEADER)); mergeR(rr); rr++
+  setR(rr, '① 뇌혈관 진단비',  rLbl(), brainDiag    || null, rAmt(), brainDiag    > 0 ? '1회성' : '', rNote()); rr++
+  setR(rr, '② 뇌혈관 수술비',  rLbl(), brainSurgery || null, rAmt(), brainSurgery > 0 ? '매년'  : '', rNote()); rr++
+  setR(rr, '③ 2대 주요치료비', rLbl(), major2       || null, rAmt(), major2       > 0 ? '매년'  : '', rNote()); rr++
+  if (diseaseHospD > 0) { setR(rr, '④ 입원일당 30일', rLbl(), diseaseHospD * 30, rAmt(), diseaseHospD + '만원 x 30일', rNote()); rr++ }
+  const b1total = brainDiag + brainSurgery + major2 + diseaseHospD * 30
+  setCell(rr, colLabel, '★ 뇌혈관 최종 합계', rTotalLbl()); setCell(rr, colAmt, b1total || null, rTotal()); setCell(rr, colNote, '수술 1회 기준', rNote(R_YTOT)); rr++; rr++
+
+  setCell(rr, colLabel, '[심혈관] 수술+중환자실 시나리오', rSub(BG_HEADER)); mergeR(rr); rr++
+  setR(rr, '① 심혈관 진단비',  rLbl(), heartDiag    || null, rAmt(), heartDiag    > 0 ? '1회성' : '', rNote()); rr++
+  setR(rr, '② 심혈관 수술비',  rLbl(), heartSurgery || null, rAmt(), heartSurgery > 0 ? '매년'  : '', rNote()); rr++
+  setR(rr, '③ 2대 주요치료비', rLbl(), major2       || null, rAmt(), major2       > 0 ? '매년'  : '', rNote()); rr++
+  if (diseaseHospD > 0) { setR(rr, '④ 입원일당 30일', rLbl(), diseaseHospD * 30, rAmt(), diseaseHospD + '만원 x 30일', rNote()); rr++ }
+  const h1total = heartDiag + heartSurgery + major2 + diseaseHospD * 30
+  setCell(rr, colLabel, '★ 심혈관 최종 합계', rTotalLbl()); setCell(rr, colAmt, h1total || null, rTotal()); setCell(rr, colNote, '수술 1회 기준', rNote(R_YTOT)); rr++; rr++
+
+  // 섹션 6: 입원·간병 추가
+  if (diseaseHospD > 0 || nursingD > 0 || diseaseSurgery > 0) {
+    setCell(rr, colLabel, '★ 입원·수술·간병 추가 수령', rHdr(R_GREEN)); mergeR(rr); rr++
+    if (diseaseSurgery > 0) { setR(rr, '질병수술비 (1회)', rLbl(R_YGRN), diseaseSurgery, rAmt(R_YGRN), '매년', rNote(R_YGRN)); rr++ }
+    if (diseaseHospD > 0)   { setR(rr, '입원일당 30일',   rLbl(R_YGRN), diseaseHospD * 30, rAmt(R_YGRN), diseaseHospD + '만원/일 x 30', rNote(R_YGRN)); rr++ }
+    if (nursingD > 0)        { setR(rr, '간병지원금 10일', rLbl(R_YGRN), nursingD * 10,    rAmt(R_YGRN), nursingD + '만원/일 x 10',    rNote(R_YGRN)); rr++ }
+    if (nursingI > 0)        { setR(rr, '상해간병 10일',   rLbl(R_YGRN), nursingI * 10,    rAmt(R_YGRN), nursingI + '만원/일 x 10',    rNote(R_YGRN)); rr++ }
+    const addTotal = diseaseSurgery + diseaseHospD * 30 + nursingD * 10 + nursingI * 10
+    setCell(rr, colLabel, '★ 추가 합계 (30일 입원 기준)', rTotalLbl()); setCell(rr, colAmt, addTotal || null, rTotal()); setCell(rr, colNote, '30일 입원+간병 10일', rNote(R_YTOT)); rr++
+  }
+
+  // 열 너비 / 행 높이 / 영역 / 가로 출력
+  ws['!cols'] = [
+    { wch: 2 }, { wch: 10 }, { wch: 9 }, { wch: 14 }, { wch: 8 },
+    ...Array(11).fill({ wch: 9 }),
+    { wch: 2 },  // Q 간격
+    { wch: 18 }, // R 항목
+    { wch: 9 },  // S 금액
+    { wch: 14 }, // T 비고
+  ]
   ws['!rows'] = [
     { hpt: 8 }, { hpt: 22 }, { hpt: 8 }, { hpt: 18 }, { hpt: 16 },
     { hpt: 16 }, { hpt: 14 }, { hpt: 20 }, { hpt: 16 }, ...Array(51).fill({ hpt: 14 }),
   ]
-  ws['!ref'] = `A1:${colLetter(15)}${9 + COVERAGE_STRUCTURE.length + 1}`
+  ws['!ref'] = 'A1:' + colLetter(colNote) + Math.max(lastRow + 2, rr + 1)
   ws['!merges'] = merges
+  ws['!pageSetup'] = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
   return ws
 }
 
@@ -338,9 +542,7 @@ export function buildStyledSheet(data: any, sheetName: string): any {
  * @returns { customerName, structuredAnalysis }
  */
 export function parseBojangtableSheet(sheet: any): { customerName: string; structuredAnalysis: any } | null {
-  // 헬퍼: 셀 값 읽기
   function cellVal(col: number, row: number): any {
-    // row, col은 0-based
     const key = `${colLetter(col)}${row + 1}`
     const cell = sheet[key]
     return cell ? cell.v : null
@@ -355,15 +557,11 @@ export function parseBojangtableSheet(sheet: any): { customerName: string; struc
     return Number.isFinite(n) ? n : 0
   }
 
-  // 보장분석표 감지: F2셀(1,5)에 "보장분석표" 포함 여부
   const titleCell = cellStr(5, 1)
   if (!titleCell.includes('보장분석표')) return null
 
-  // 고객명: B2 (row=1, col=1)
   const customerName = cellStr(1, 1).trim() || '고객'
 
-  // 보험사 정보: 열 F(5)부터 P(15), 행 5~9 (0-based: 4~8)
-  // row4=보험사, row5=상품명, row6=계약일, row7=납입기간, row8=납입보험료
   const policies: any[] = []
   for (let pi = 0; pi < 11; pi++) {
     const col = 5 + pi
@@ -375,17 +573,13 @@ export function parseBojangtableSheet(sheet: any): { customerName: string; struc
     const premRaw = cellNum(col, 8)
     const monthly_premium = premRaw > 0 ? (premRaw < 100000 ? premRaw * 10000 : premRaw) : 0
 
-    // 담보 행: rows 10~60 (0-based: 9~59)
     const coverages: any[] = []
     for (let ri = 0; ri < COVERAGE_STRUCTURE.length; ri++) {
       const rowDef = COVERAGE_STRUCTURE[ri]
       const amount = cellNum(col, 9 + ri)
       if (!amount) continue
-
-      // 담보명: D열(col=3)에서 읽거나 rowDef.d 사용
       const coverageName = cellStr(3, 9 + ri) || rowDef.d
-      const amountWon = amount < 100000 ? amount * 10000 : amount // 만원 → 원 변환
-
+      const amountWon = amount < 100000 ? amount * 10000 : amount
       coverages.push({
         coverage_name: coverageName,
         amount: amountWon,
@@ -408,7 +602,7 @@ export function parseBojangtableSheet(sheet: any): { customerName: string; struc
   const totalPremium = policies.reduce((s, p) => s + (p.monthly_premium || 0), 0)
 
   const structuredAnalysis = {
-    version: 'bojangtable_v1',   // 원 단위 직접 저장 (만원×10000 변환 없음)
+    version: 'bojangtable_v1',
     amount_unit: '원',
     customer: { name: customerName },
     policies,
@@ -421,17 +615,14 @@ export function parseBojangtableSheet(sheet: any): { customerName: string; struc
 
 /**
  * 엑셀 날짜 문자열 정규화
- * "13.03.26" → "2013-03-26", "2025-10-23" 유지
  */
 function normalizeExcelDate(str: string): string {
   if (!str) return ''
-  // YY.MM.DD
   if (/^\d{2}\.\d{2}\.\d{2}$/.test(str)) {
     const [yy, mm, dd] = str.split('.')
     const year = parseInt(yy) >= 50 ? `19${yy}` : `20${yy}`
     return `${year}-${mm}-${dd}`
   }
-  // YYYY-MM-DD already
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
   return str
 }
