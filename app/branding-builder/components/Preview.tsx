@@ -20,6 +20,17 @@ interface PreviewProps {
   onOpenTab: (tab: number) => void
 }
 
+const templateNameFallback: Record<string, string> = {
+  'ins-navy': '다크 네이비 클래식',
+  'ins-blue': '블루 프로페셔널',
+  'ins-purple': '다크 퍼플 프리미엄',
+  'ins-green': '그린 신뢰형',
+  'ins-consult-real': '보험상담 풀버전',
+  'ins-recruit-real': '리쿠르팅 풀버전',
+  'ins-consult-simple': '보험상담 심플',
+  'ins-recruit-simple': '리쿠르팅 심플',
+}
+
 const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
   { state, previewMode, onDeleteSection, onOpenTab },
   ref,
@@ -28,13 +39,14 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
   const iframeH = previewMode === 'mobile' ? '750px' : 'calc(100vh - 140px)'
 
   const currentTemplate = LANDING_TEMPLATES.find((t) => t.id === state.landingTemplateId)
+  const currentTemplateName = templateNameFallback[state.landingTemplateId] ?? currentTemplate?.name ?? '템플릿 선택'
   const concept = state.landingConcept ?? 'consult'
   const externalTemplateId = currentTemplate?.type === 'external' ? currentTemplate.id : null
   const externalTemplateFile = currentTemplate?.type === 'external' ? currentTemplate.file : undefined
   const externalLoadKey = useMemo(() => {
     if (!externalTemplateId || !externalTemplateFile) return null
-    return JSON.stringify({ templateId: externalTemplateId, file: externalTemplateFile, agentInfo: state.agentInfo, concept })
-  }, [externalTemplateId, externalTemplateFile, state.agentInfo, concept])
+    return JSON.stringify({ templateId: externalTemplateId, file: externalTemplateFile, agentInfo: state.agentInfo, concept, deletedSecs: state.deletedSecs })
+  }, [externalTemplateId, externalTemplateFile, state.agentInfo, concept, state.deletedSecs])
   const [extHtmlState, setExtHtmlState] = useState<{ key: string; html: string } | null>(null)
   const extHtml = extHtmlState?.key === externalLoadKey ? extHtmlState.html : null
 
@@ -45,7 +57,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
 
   const insHtml = useMemo(() => {
     if (state.mode !== 'landing' || currentTemplate?.type !== 'insurance') return null
-    // TODO: opts.font, opts.color, opts.extraSecs ?꾨떖 ??吏곸젒 愿由??뚯씪?먯꽌 泥섎━
+    // TODO: opts.font, opts.color, opts.extraSecs 전달은 직접 관리 파일에서 처리
     const opts = { font: state.landingFont, color: state.landingColor, extraSecs: state.extraSecs, deletedSecs: state.deletedSecs }
     switch (state.landingTemplateId) {
       case 'ins-navy':   return genNavyHtml(state.agentInfo, concept, opts)
@@ -65,6 +77,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
       file: externalTemplateFile,
       agentInfo: state.agentInfo,
       concept,
+      deletedSecs: state.deletedSecs,
     })
       .then((html) => {
         if (active) setExtHtmlState({ key: externalLoadKey, html })
@@ -72,7 +85,16 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
       .catch(() => undefined)
 
     return () => { active = false }
-  }, [state.mode, externalLoadKey, externalTemplateId, externalTemplateFile, state.agentInfo, concept])
+  }, [state.mode, externalLoadKey, externalTemplateId, externalTemplateFile, state.agentInfo, concept, state.deletedSecs])
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type !== '__BAI_CHANGE__' || typeof event.data.html !== 'string' || !externalLoadKey) return
+      setExtHtmlState({ key: externalLoadKey, html: event.data.html })
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [externalLoadKey])
 
   const renderContent = () => {
     if (state.mode === 'card' && cardHtml) {
@@ -82,12 +104,12 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
           srcDoc={cardHtml}
           className="w-full border-none block"
           style={{ height: iframeH }}
-          title="?붿???紐낇븿 誘몃━蹂닿린"
+          title="디지털 명함 미리보기"
           sandbox="allow-same-origin allow-scripts"
         />
       )
     }
-    // ext-* ?몃? HTML (?뺣낫 二쇱엯 ??srcDoc, 濡쒕뵫 ?꾩뿏 ?먮낯 src)
+    // ext-* 외부 HTML은 정보 주입 후 srcDoc으로 렌더링하고, 로딩 전에는 원본 src로 표시한다.
     if (externalTemplateId && externalTemplateFile) {
       return (
         <iframe
@@ -96,12 +118,12 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
           src={extHtml ? undefined : externalTemplateFile}
           className="w-full border-none block"
           style={{ height: iframeH }}
-          title="?몃? ?쒗뵆由?誘몃━蹂닿린"
+          title="외부 템플릿 미리보기"
           sandbox="allow-same-origin allow-scripts"
         />
       )
     }
-    // ins-* 而⑥뀎 誘몄꽑???덈궡
+    // ins-* 템플릿은 컨셉 선택 후 표시한다.
     if (currentTemplate?.type === 'insurance' && !state.landingConcept) {
       return (
         <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 bg-white p-12 text-center">
@@ -124,7 +146,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
           srcDoc={insHtml}
           className="w-full border-none block"
           style={{ height: iframeH }}
-          title="蹂댄뿕 ?꾩슜 ?쒗뵆由?誘몃━蹂닿린"
+          title="보험 전용 템플릿 미리보기"
           sandbox="allow-same-origin allow-scripts"
         />
       )
@@ -140,10 +162,10 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
     <section className="min-w-0 flex-1 overflow-y-auto p-6">
       <div className="mx-auto mb-4 flex max-w-[960px] items-center justify-between text-sm text-slate-500">
         <span>
-          {currentTemplate?.name ?? '?쒗뵆由??좏깮'}
-          {state.landingConcept ? ` 쨌 ${CONCEPT_LABELS[state.landingConcept]}` : ''}
+          {currentTemplateName}
+          {state.landingConcept ? ` · ${CONCEPT_LABELS[state.landingConcept]}` : ''}
         </span>
-        <span>{previewMode === 'mobile' ? '紐⑤컮??390px' : 'PC 960px'}</span>
+        <span>{previewMode === 'mobile' ? '모바일 390px' : 'PC 960px'}</span>
       </div>
       <div className={`mx-auto overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg ${widthClass}`}>
         <div className="flex h-11 items-center gap-2 border-b border-slate-200 bg-slate-50 px-4">
@@ -151,7 +173,7 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
           <span className="h-3 w-3 rounded-full bg-[#f59e0b]" />
           <span className="h-3 w-3 rounded-full bg-[#10b981]" />
           <span className="ml-3 text-xs font-bold text-slate-500">
-            {state.mode === 'card' ? '?붿???紐낇븿 誘몃━蹂닿린' : '?쒕뵫?섏씠吏 誘몃━蹂닿린'}
+            {state.mode === 'card' ? '디지털 명함 미리보기' : '랜딩페이지 미리보기'}
           </span>
         </div>
         {renderContent()}
@@ -175,7 +197,7 @@ function LandingPreview({ state, onDeleteSection, onOpenTab }: { state: Branding
         <section className="relative overflow-hidden px-8 py-20" style={{ background: palette.heroBg, color: palette.heroText, borderBottom: `4px solid ${state.landingColor}` }} onClick={() => onOpenTab(2)}>
           <p contentEditable suppressContentEditableWarning className="mb-4 text-sm font-bold outline-blue-500" style={{ color: palette.accent }}>{info.brand || CONCEPT_LABELS[concept]}</p>
           <h1 contentEditable suppressContentEditableWarning className="max-w-2xl whitespace-pre-line text-4xl font-black leading-tight outline-blue-500">{info.slogan || headline}</h1>
-          <p contentEditable suppressContentEditableWarning className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 outline-blue-500">{info.intro || '怨좉컼???꾩옱 蹂댁옣怨??욎쑝濡??꾩슂??以鍮꾨? ?④퍡 ?뺤씤?⑸땲??'}</p>
+          <p contentEditable suppressContentEditableWarning className="mt-6 max-w-2xl text-lg leading-8 text-slate-200 outline-blue-500">{info.intro || '고객의 현재 보장과 앞으로 필요한 준비를 함께 확인합니다.'}</p>
           <button type="button" className="mt-8 min-h-12 rounded-md px-6 text-base font-black" style={{ background: palette.accent, color: palette.isDark ? '#fff' : '#1e293b' }} onClick={(e) => { e.stopPropagation(); onOpenTab(1) }}>{cta}</button>
         </section>
       </EditableSection>
@@ -186,12 +208,12 @@ function LandingPreview({ state, onDeleteSection, onOpenTab }: { state: Branding
             {info.profileImg
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={info.profileImg} alt={info.name} className="h-full w-full object-cover" />
-              : <span className="text-sm font-bold text-slate-400">?꾨줈???ъ쭊</span>}
+              : <span className="text-sm font-bold text-slate-400">프로필 사진</span>}
           </div>
           <div>
-            <p contentEditable suppressContentEditableWarning className="text-sm font-bold text-slate-500 outline-blue-500">{info.company || '?뚯냽 ?뚯궗'} {info.branch && `쨌 ${info.branch}`}</p>
-            <h2 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '?ㅺ퀎???대쫫'}</h2>
-            <p contentEditable suppressContentEditableWarning className="mt-2 text-lg font-bold text-[#1A2744] outline-blue-500">{info.title || '?꾨Ц 吏곹븿'}</p>
+            <p contentEditable suppressContentEditableWarning className="text-sm font-bold text-slate-500 outline-blue-500">{info.company || '소속 회사'} {info.branch && `· ${info.branch}`}</p>
+            <h2 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '설계사 이름'}</h2>
+            <p contentEditable suppressContentEditableWarning className="mt-2 text-lg font-bold text-[#1A2744] outline-blue-500">{info.title || '전문 직함'}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {info.consultFields.map((field) => (<span key={field} className="rounded-full bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700">{field}</span>))}
             </div>
@@ -230,12 +252,12 @@ function CardPreview({ state, onOpenTab }: { state: BrandingState; onOpenTab: (t
           {state.cardPhotoData || info.profileImg
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={state.cardPhotoData || info.profileImg} alt={info.name} className="h-full w-full object-cover" />
-            : <span className="text-sm font-bold opacity-70">?ъ쭊 ?곸뿭</span>}
+            : <span className="text-sm font-bold opacity-70">사진 영역</span>}
         </div>
         <div className="p-6">
-          <p contentEditable suppressContentEditableWarning className="text-sm font-bold opacity-70 outline-blue-500">{info.company || '?뚯냽 ?뚯궗'}</p>
-          <h1 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '?ㅺ퀎???대쫫'}</h1>
-          <p contentEditable suppressContentEditableWarning className="mt-1 text-base font-bold opacity-80 outline-blue-500">{info.title || '?꾨Ц 吏곹븿'}</p>
+          <p contentEditable suppressContentEditableWarning className="text-sm font-bold opacity-70 outline-blue-500">{info.company || '소속 회사'}</p>
+          <h1 contentEditable suppressContentEditableWarning className="mt-2 text-3xl font-black outline-blue-500">{info.name || '설계사 이름'}</h1>
+          <p contentEditable suppressContentEditableWarning className="mt-1 text-base font-bold opacity-80 outline-blue-500">{info.title || '전문 직함'}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {state.cardTags.map((tag) => (<span key={tag} className="rounded-full bg-white/20 px-3 py-2 text-sm font-bold">{tag}</span>))}
           </div>
@@ -251,8 +273,8 @@ function CardPreview({ state, onOpenTab }: { state: BrandingState; onOpenTab: (t
       </div>
       {state.cardShowBottomCta && (
         <div className="fixed bottom-4 left-1/2 z-10 grid w-[350px] -translate-x-1/2 grid-cols-2 gap-2">
-          <button type="button" className="min-h-12 rounded-md bg-white text-sm font-black text-slate-900 shadow-xl">?꾪솕?섍린</button>
-          <button type="button" className="min-h-12 rounded-md bg-[#FEE500] text-sm font-black text-slate-900 shadow-xl">移댁뭅?ㅽ넚</button>
+          <button type="button" className="min-h-12 rounded-md bg-white text-sm font-black text-slate-900 shadow-xl">전화하기</button>
+          <button type="button" className="min-h-12 rounded-md bg-[#FEE500] text-sm font-black text-slate-900 shadow-xl">카카오톡</button>
         </div>
       )}
     </article>

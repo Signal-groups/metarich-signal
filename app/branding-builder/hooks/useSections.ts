@@ -6,7 +6,7 @@ import type { BrandingState } from '../templates/types'
 type SetBrandingState = React.Dispatch<React.SetStateAction<BrandingState>>
 
 const SECTION_HTML: Record<string, string> = {
-  faq: '<section data-section-id="extra-faq"><h2>자주 묻는 질문</h2><p>상담 전 많이 궁금해하는 내용을 정리해보세요.</p></section>',
+  faq: '<section data-section-id="extra-faq"><h2>자주 묻는 질문</h2><p>상담 전에 많이 궁금해하는 내용을 정리해보세요.</p></section>',
   review: '<section data-section-id="extra-review"><h2>고객 후기</h2><p>상담 후기를 짧고 신뢰감 있게 배치할 수 있습니다.</p></section>',
   form: '<section data-section-id="extra-form"><h2>상담 신청</h2><p>이름, 연락처, 문의 내용을 받을 수 있는 영역입니다.</p></section>',
   banner: '<section data-section-id="extra-banner"><h2>안내 배너</h2><p>이번 달 상담 안내나 주요 공지를 넣어보세요.</p></section>',

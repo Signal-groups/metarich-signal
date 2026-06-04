@@ -12,9 +12,9 @@ interface SectionPanelProps {
 }
 
 const BASE_SECTIONS = [
-  { id: 'hero',    label: '히어로 배너' },
+  { id: 'hero', label: '히어로 배너' },
   { id: 'profile', label: '설계사 프로필' },
-  { id: 'stats',   label: '실적 수치' },
+  { id: 'stats', label: '실적 수치' },
 ]
 
 export default function SectionPanel(props: SectionPanelProps) {
@@ -23,7 +23,7 @@ export default function SectionPanel(props: SectionPanelProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-black text-slate-900">섹션 관리</h2>
-          <p className="mt-1 text-sm text-slate-500">삭제된 섹션은 다시 살릴 수 있습니다.</p>
+          <p className="mt-1 text-sm text-slate-500">삭제한 기본 섹션은 다시 복원할 수 있습니다.</p>
         </div>
         <button
           type="button"
@@ -57,7 +57,7 @@ export default function SectionPanel(props: SectionPanelProps) {
       <div className="mt-3 space-y-2">
         {props.state.extraSecs.length === 0 && (
           <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-            아직 추가된 섹션이 없습니다.
+            아직 추가한 섹션이 없습니다.
           </p>
         )}
         {props.state.extraSecs.map((section) => (
