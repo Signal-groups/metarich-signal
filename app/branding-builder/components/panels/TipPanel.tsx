@@ -24,16 +24,23 @@ interface TipPanelProps {
   onApplyCopy: (copy: BrandingCopyJson, sections: GeneratedSection[]) => void
 }
 
-const jsonExample = `{
-  "slogan": "내 보험, 지금 기준으로 다시 점검합니다",
-  "intro": "보장 공백과 중복 보험료를 함께 확인하고 고객의 생활 흐름에 맞는 보험 구조를 제안합니다.",
-  "heroHeadline": "내 보험,\\n지금 기준으로 다시 점검해보셨나요?",
-  "painPoints": ["갱신형 보험이 많아 부담되는 분", "보험료는 큰데 보장이 불안한 분"],
-  "serviceDescs": { "보장분석": "현재 보험 증권 기반으로 보장 공백과 중복을 확인합니다." },
-  "ctaText": "무료 상담 신청하기",
-  "faq": [{ "q": "비용이 드나요?", "a": "상담은 무료로 진행됩니다." }],
-  "reviews": [{ "text": "보험을 이해하기 쉽게 정리해줘서 좋았습니다.", "author": "30대 주부" }]
-}`
+const jsonExample = JSON.stringify(
+  {
+    slogan: '내 보험, 지금 기준으로 다시 점검합니다',
+    intro: '보장 공백과 중복 보험료를 함께 확인하고 고객의 생활 흐름에 맞는 보험 구조를 제안합니다.',
+    heroHeadline: '내 보험,\n지금 기준으로 다시 점검해보셨나요?',
+    painPoints: ['갱신형 보험이 많아 부담되는 분', '보험료는 내고 있지만 보장 내용이 불안한 분'],
+    serviceDescs: {
+      보장분석: '현재 보험 증권 기반으로 보장 공백과 중복을 확인합니다.',
+      '보험 리모델링': '불필요한 보험료는 줄이고 필요한 보장은 남기는 방향을 제안합니다.',
+    },
+    ctaText: '무료 상담 신청하기',
+    faq: [{ q: '비용이 드나요?', a: '상담은 무료로 진행됩니다.' }],
+    reviews: [{ text: '보험을 이해하기 쉽게 정리해줘서 좋았습니다.', author: '30대 고객' }],
+  },
+  null,
+  2,
+)
 
 function escapeHtml(value: string) {
   return value
@@ -49,12 +56,12 @@ function buildPrompt(state: BrandingState) {
   const concept = state.landingConcept ?? 'consult'
   const conceptLabel = CONCEPT_LABELS[concept as LandingConcept]
 
-  return `보험 설계사 브랜딩 랜딩페이지 문구를 작성해주세요.
+  return `보험 설계사 랜딩페이지 문구를 작성해주세요.
 
 진행 방식:
-1. 먼저 아래 설계사 정보와 페이지 목적을 기준으로 작성합니다.
-2. 보험 상담, 보험 청구, 리쿠르팅, 연금/노후 등 선택된 컨셉에 맞춰 톤을 잡습니다.
-3. 최근 보험 이슈나 제도 표현이 필요한 경우 웹에서 한 번 더 교차 확인한 뒤, 과장 없이 제안합니다.
+1. 아래 설계사 정보와 페이지 목적을 기준으로 작성합니다.
+2. 보험 상담, 보험 청구, 리쿠르팅, 연금/은퇴 등 선택한 컨셉에 맞춰 문구를 구성합니다.
+3. 최근 보험 이슈나 제도 표현이 필요한 경우 웹에서 한 번 더 교차 확인하되, 과장 없이 제안합니다.
 4. 최종 답변은 설명 없이 JSON만 출력합니다.
 
 설계사 정보:
@@ -73,11 +80,11 @@ ${jsonExample}
 
 작성 기준:
 - 한국 보험 소비자가 이해하기 쉬운 표현을 사용합니다.
-- 불안 조장, 수익 보장, 과장 광고 표현은 피합니다.
+- 불안 조장, 허위 보장, 과장 광고 표현은 피합니다.
 - heroHeadline은 줄바꿈을 \\n으로 넣습니다.
 - painPoints는 4개를 권장합니다.
 - faq는 3~5개를 권장합니다.
-- reviews는 실제 후기처럼 보이는 자연스러운 예시로 작성하되, 허위 실명은 쓰지 않습니다.`
+- reviews는 실제 후기처럼 보이되, 허위 설명은 쓰지 말고 예시 톤으로 작성합니다.`
 }
 
 function buildPainPointHtml(items: string[]) {
@@ -150,6 +157,25 @@ function parseJson(text: string): BrandingCopyJson {
   return JSON.parse(match[0]) as BrandingCopyJson
 }
 
+async function copyToClipboard(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', 'true')
+    textarea.style.position = 'fixed'
+    textarea.style.left = '-9999px'
+    textarea.style.top = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return copied
+  }
+}
+
 export default function TipPanel({ state, onApplyCopy }: TipPanelProps) {
   const [copied, setCopied] = useState(false)
   const [jsonText, setJsonText] = useState('')
@@ -157,8 +183,9 @@ export default function TipPanel({ state, onApplyCopy }: TipPanelProps) {
   const prompt = useMemo(() => buildPrompt(state), [state])
 
   const handleCopyPrompt = async () => {
-    await navigator.clipboard.writeText(prompt)
-    setCopied(true)
+    const ok = await copyToClipboard(prompt)
+    setCopied(ok)
+    setMessage(ok ? '프롬프트를 복사했습니다.' : '복사에 실패했습니다. 미리보기 문구를 직접 선택해 복사해주세요.')
     window.setTimeout(() => setCopied(false), 1800)
   }
 
@@ -178,7 +205,7 @@ export default function TipPanel({ state, onApplyCopy }: TipPanelProps) {
       <div>
         <h2 className="text-lg font-black text-slate-900">AI 문구 생성</h2>
         <p className="mt-1 text-sm leading-6 text-slate-500">
-          정보를 입력한 뒤 프롬프트를 복사하고, GPTs 또는 Claude의 JSON 답변을 붙여넣으면 페이지 문구와 섹션이 자동 반영됩니다.
+          정보를 입력한 뒤 프롬프트를 복사하고, GPTs 또는 Claude에서 받은 JSON을 붙여넣으면 페이지 문구와 섹션이 자동 반영됩니다.
         </p>
       </div>
 
@@ -227,7 +254,7 @@ export default function TipPanel({ state, onApplyCopy }: TipPanelProps) {
         <ol className="mt-3 space-y-2 text-xs leading-5 text-slate-600">
           <li>1. 정보 탭에서 이름, 소속, 상담 분야를 입력합니다.</li>
           <li>2. 프롬프트를 복사해 GPTs/Claude에 붙여넣습니다.</li>
-          <li>3. JSON 답변을 이 패널에 붙여넣습니다.</li>
+          <li>3. JSON 답변을 아래 입력칸에 붙여넣습니다.</li>
           <li>4. 자동 반영 후 마음에 안 드는 부분만 미리보기에서 수정합니다.</li>
           <li>5. 완성된 랜딩페이지 또는 명함 HTML을 다운로드합니다.</li>
         </ol>

@@ -129,49 +129,82 @@ export default function DashboardPage() {
   const [isConsultEditMode, setIsConsultEditMode] = useState(false);
 
   const init = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return router.replace("/login");
-
-    const { data: authUser, error: authError } = await supabase.auth.getUser();
-    if (authError || !authUser.user) {
-      await supabase.auth.signOut().catch(() => {});
-      return router.replace("/login");
-    }
-
-    let { data: userInfo } = await supabase.from("users").select("*").eq("id", authUser.user.id).maybeSingle();
-    if (!userInfo) {
-      try {
-        userInfo = await ensureUserProfile(supabase, authUser.user);
-      } catch {
-        userInfo = null;
+    try {
+      // 1. 세션 확인 — null이면 refresh 1회 시도 후 재확인
+      let { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        session = refreshed.session;
       }
+      if (!session) return router.replace("/login");
+
+      // 2. 서버 측 사용자 검증 — 네트워크 오류 시 session 정보로 폴백
+      let userId: string | null = null;
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      if (authError || !authUser.user) {
+        // 토큰 갱신 타이밍 오류: session은 있으나 getUser 실패 → session.user로 폴백
+        if (session.user?.id) {
+          userId = session.user.id;
+        } else {
+          await supabase.auth.signOut().catch(() => {});
+          return router.replace("/login");
+        }
+      } else {
+        userId = authUser.user.id;
+      }
+
+      // 3. DB 사용자 정보 조회
+      let { data: userInfo } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
+      if (!userInfo) {
+        try {
+          const fallbackUser = authUser?.user ?? session.user;
+          userInfo = await ensureUserProfile(supabase, fallbackUser);
+        } catch {
+          userInfo = null;
+        }
+      }
+      if (!userInfo) return router.replace("/login");
+
+      const { data: settings } = await supabase.from("team_settings").select("key, value");
+      const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };
+
+      const effectiveRole = normalizeRole(userInfo);
+      const hydratedUser = { ...userInfo, effectiveRole };
+      setMenuStatus(statusMap);
+      setUser(hydratedUser);
+
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
+      if (urlParams.get("tab") === "branding" && canAccessBranding(hydratedUser)) {
+        setActiveTab("branding");
+        setViewMode("consulting");
+      }
+
+      if (effectiveRole !== 'guest' && isApprovedUser(userInfo) && urlParams.get('mode') === 'office') {
+        setViewMode('office');
+      }
+
+      setLoading(false);
+    } catch {
+      // 네트워크 오류 등 예외 상황 — 로딩만 해제, 로그인 redirect 안 함
+      setLoading(false);
     }
-    if (!userInfo) return router.replace("/login");
-
-    const { data: settings } = await supabase.from("team_settings").select("key, value");
-    const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };
-
-    const effectiveRole = normalizeRole(userInfo);
-    const hydratedUser = { ...userInfo, effectiveRole };
-    setMenuStatus(statusMap);
-    setUser(hydratedUser);
-
-    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
-    if (urlParams.get("tab") === "branding" && canAccessBranding(hydratedUser)) {
-      setActiveTab("branding");
-      setViewMode("consulting");
-    }
-
-    if (effectiveRole !== 'guest' && isApprovedUser(userInfo) && urlParams.get('mode') === 'office') {
-      setViewMode('office');
-    }
-
-    setLoading(false);
   }, [router]);
 
   useEffect(() => {
     init();
-  }, [init]);
+
+    // 토큰 갱신 이벤트 감지 — 세션 복원 시 자동 재초기화
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+        init();
+      }
+      if (event === "SIGNED_OUT") {
+        router.replace("/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [init, router]);
 
   // ✅ [네비게이션 통합 핸들러] 모든 도구는 새 창으로 열리도록 일치화
   const toggleMenu = async (key: string) => {
@@ -317,7 +350,7 @@ export default function DashboardPage() {
                               menu={menu}
                               onClick={handleNavigation}
                               isEditMode={isConsultEditMode}
-                              checked={menu.fixed || menuStatus[menu.id] !== false}
+              checked={menuStatus[menu.id] !== false}
                               onToggle={toggleMenu}
                             />
                           ))}
@@ -332,27 +365,5 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
-  );
-}
-
-function HeaderBar({ title, icon, onBack }: any) {
-  return (
-    <div className="mb-8 flex justify-between items-center bg-white p-5 rounded-3xl shadow-sm border border-white">
-      <div className="flex items-center gap-4 ml-2">
-        <div className="w-12 h-12 bg-[#eff6ff] rounded-2xl flex items-center justify-center text-2xl shadow-inner">
-          {icon}
-        </div>
-        <div>
-          <h2 className="text-xl font-black text-[#1a3a6e] tracking-tight leading-none uppercase">{title}</h2>
-          <p className="text-[11px] text-[#94a3b8] font-bold mt-1 tracking-widest">상담 지원 도구</p>
-        </div>
-      </div>
-      <button 
-        onClick={onBack} 
-        className="w-10 h-10 flex items-center justify-center bg-[#f1f5f9] text-[#475569] rounded-full hover:bg-[#e2e8f0] active:scale-95 transition-all text-xl font-bold"
-      >
-        ×
-      </button>
-    </div>
-  );
+  )
 }

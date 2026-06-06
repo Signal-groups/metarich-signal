@@ -42,6 +42,7 @@ const COMPANIES: Company[] = [
   { id:"sf",       name:"삼성화재",    type:"손해", savingRate:2.85, refund5:88, refund7:94,  refund10:101, uwNote:"수술비 계열 강세 · 표준 심사" },
   { id:"hanwhaF",  name:"한화손보",    type:"손해", savingRate:2.86, refund5:89, refund7:95,  refund10:102, uwNote:"전담보 중간 · 간편고지 중간" },
   { id:"heungkuk", name:"흥국화재",    type:"손해", savingRate:2.84, refund5:88, refund7:95,  refund10:102, uwNote:"N대수술비 경쟁력 · 소규모 손보" },
+  { id:"nonghyup", name:"농협손해보험", type:"손해", savingRate:2.87, refund5:88, refund7:95,  refund10:102, uwNote:"30대 건강담보 경쟁력 · 지역 네트워크 강세" },
   { id:"sl",       name:"삼성생명",    type:"생명", savingRate:3.05, refund5:91, refund7:97,  refund10:104, uwNote:"종신보험 최강 · 심사 엄격" },
   { id:"hl",       name:"한화생명",    type:"생명", savingRate:3.15, refund5:92, refund7:98,  refund10:105, uwNote:"질병사망 경쟁력 · 생보 표준심사" },
   { id:"kyobo",    name:"교보생명",    type:"생명", savingRate:3.00, refund5:90, refund7:97,  refund10:104, uwNote:"간병 강세 · 심사 엄격" },
@@ -62,16 +63,16 @@ type Coverage = {
 }
 
 const HEALTH_COV: Coverage[] = [
-  { id:"cancer",      title:"암 진단비",           scope:"",       category:"암",     unit:"만원", baseRate:4.9,  active:{min:true,  standard:true,  full:true},  amount:{min:2000,standard:3000,full:5000},  sensitivityTags:["나이","유병력"], checkPoint:"면책90일·감액기간·유사암한도", rankNote:"50대↑ 급증·손보 15% 저렴·유병력 시 격차 확대" },
-  { id:"similar",     title:"유사암·소액암 진단비", scope:"",       category:"암",     unit:"만원", baseRate:2.2,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["성별"],          checkPoint:"일반암 대비 지급금액 차이",   rankNote:"여성 60%↑·성별 따라 회사 순위 달라짐" },
-  { id:"brain_wide",  title:"뇌혈관질환 진단비",    scope:"wide",   category:"뇌심장", unit:"만원", baseRate:6.1,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌출혈/뇌졸중/뇌혈관질환 구분", rankNote:"남성 51%↑·60대 40대 대비 3배·DB손보 최저" },
-  { id:"brain_narrow",title:"뇌출혈 진단비",         scope:"narrow", category:"뇌심장", unit:"만원", baseRate:3.8,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌혈관질환보다 좁은 범위",   rankNote:"광의(뇌혈관질환) 대비 30~40% 저렴" },
-  { id:"heart_wide",  title:"허혈성심장질환 진단비", scope:"wide",   category:"뇌심장", unit:"만원", baseRate:5.4,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"급성심근경색/허혈성심장질환 구분", rankNote:"성별 차이 최대 담보·남성 30%↑" },
-  { id:"heart_narrow",title:"급성심근경색 진단비",   scope:"narrow", category:"뇌심장", unit:"만원", baseRate:3.2,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"허혈성심장질환보다 좁은 범위", rankNote:"광의(허혈성) 대비 35~45% 저렴" },
-  { id:"surgery",     title:"질병수술비",            scope:"",       category:"수술",   unit:"만원", baseRate:92,   active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:30,   full:50},   sensitivityTags:["나이"],           checkPoint:"동일질병 반복지급·약관상 수술정의", rankNote:"나이 민감 낮음·현대해상·KB손보 강세" },
-  { id:"nSurgery",    title:"N대수술비",             scope:"",       category:"수술",   unit:"만원", baseRate:2.8,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"포함/제외 수술 목록 확인",   rankNote:"삼성화재 손보 최저·나이 오를수록 생보·손보 격차" },
-  { id:"cancerTreat", title:"암주요치료비",           scope:"",       category:"암",     unit:"만원", baseRate:3.7,  active:{min:false, standard:false, full:true},  amount:{min:0,   standard:0,    full:2000}, sensitivityTags:["나이","유병력"],  checkPoint:"치료인정범위·연간한도·지급횟수", rankNote:"메리츠 암 담보 전반 강세" },
-  { id:"care",        title:"간병/재가 급여",         scope:"",       category:"간병",   unit:"만원", baseRate:38,   active:{min:false, standard:false, full:true},  amount:{min:0,   standard:0,    full:100},  sensitivityTags:["나이","성별"],    checkPoint:"장기요양등급·갱신·지급기간",  rankNote:"나이 민감도 최고·60대 40대 대비 4배·생보 강세" },
+  { id:"cancer",      title:"암 진단비",           scope:"",       category:"암",     unit:"만원", baseRate:7.84,  active:{min:true,  standard:true,  full:true},  amount:{min:2000,standard:3000,full:5000},  sensitivityTags:["나이","유병력"], checkPoint:"면책90일·감액기간·유사암한도", rankNote:"50대↑ 급증·손보 15% 저렴·유병력 시 격차 확대" },
+  { id:"similar",     title:"유사암·소액암 진단비", scope:"",       category:"암",     unit:"만원", baseRate:3.61,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["성별"],          checkPoint:"일반암 대비 지급금액 차이",   rankNote:"여성 60%↑·성별 따라 회사 순위 달라짐" },
+  { id:"brain_wide",  title:"뇌혈관질환 진단비",    scope:"wide",   category:"뇌심장", unit:"만원", baseRate:9.76,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌출혈/뇌졸중/뇌혈관질환 구분", rankNote:"남성 51%↑·60대 40대 대비 3배·DB손보 최저" },
+  { id:"brain_narrow",title:"뇌출혈 진단비",         scope:"narrow", category:"뇌심장", unit:"만원", baseRate:6.24,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌혈관질환보다 좁은 범위",   rankNote:"광의(뇌혈관질환) 대비 30~40% 저렴" },
+  { id:"heart_wide",  title:"허혈성심장질환 진단비", scope:"wide",   category:"뇌심장", unit:"만원", baseRate:8.64,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"급성심근경색/허혈성심장질환 구분", rankNote:"성별 차이 최대 담보·남성 30%↑" },
+  { id:"heart_narrow",title:"급성심근경색 진단비",   scope:"narrow", category:"뇌심장", unit:"만원", baseRate:5.25,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"허혈성심장질환보다 좁은 범위", rankNote:"광의(허혈성) 대비 35~45% 저렴" },
+  { id:"surgery",     title:"질병수술비",            scope:"",       category:"수술",   unit:"만원", baseRate:150.96,active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:30,   full:50},   sensitivityTags:["나이"],           checkPoint:"동일질병 반복지급·약관상 수술정의", rankNote:"나이 민감 낮음·현대해상·KB손보 강세" },
+  { id:"nSurgery",    title:"N대수술비",             scope:"",       category:"수술",   unit:"만원", baseRate:4.59,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"포함/제외 수술 목록 확인",   rankNote:"삼성화재 손보 최저·나이 오를수록 생보·손보 격차" },
+  { id:"cancerTreat", title:"암주요치료비",           scope:"",       category:"암",     unit:"만원", baseRate:7.93,  active:{min:false, standard:false, full:true},  amount:{min:0,   standard:0,    full:2000}, sensitivityTags:["나이","유병력"],  checkPoint:"치료인정범위·연간한도·지급횟수", rankNote:"메리츠 암 담보 전반 강세" },
+  { id:"care",        title:"간병/재가 급여",         scope:"",       category:"간병",   unit:"만원", baseRate:81.42, active:{min:false, standard:false, full:true},  amount:{min:0,   standard:0,    full:100},  sensitivityTags:["나이","성별"],    checkPoint:"장기요양등급·갱신·지급기간",  rankNote:"나이 민감도 최고·60대 40대 대비 4배·생보 강세" },
 ]
 const DEATH_COV: Coverage[] = [
   { id:"whole",       title:"종신보험",              scope:"",       category:"사망",   unit:"만원", baseRate:1.65, active:{min:true, standard:true, full:true},   amount:{min:5000,standard:10000,full:20000}, sensitivityTags:["나이","성별"], checkPoint:"해약환급금·저해약구조·수익자", rankNote:"대형생보(삼성·교보·한화) 유리·손보 가입 시 20%↑" },
@@ -82,20 +83,22 @@ const DEATH_COV: Coverage[] = [
 // ══════════════════════════════════════════════════════════
 // 계수 테이블
 // ══════════════════════════════════════════════════════════
+// 담보별 회사 경쟁력 계수 (나이 관계없이 담보 특성으로 결정)
+// 각 담보별로 어느 회사가 강한지 반영 - CO_AGE와 곱해져 나이별 최저회사 결정
 const COV_CO: Record<string,Record<string,number>> = {
-  cancer:       {sl:1.08,hl:1.04,kyobo:1.12,shinhan:1.06,kbLife:1.10,sf:0.98,hyundai:0.90,db:0.92,kb:0.94,meritz:0.87,hanwhaF:1.02,heungkuk:1.05},
-  similar:      {sl:1.07,hl:1.05,kyobo:1.11,shinhan:1.04,kbLife:1.09,sf:0.96,hyundai:0.91,db:0.89,kb:0.93,meritz:0.86,hanwhaF:1.01,heungkuk:1.00},
-  brain_wide:   {sl:1.07,hl:1.05,kyobo:1.12,shinhan:1.08,kbLife:1.10,sf:0.96,hyundai:0.91,db:0.88,kb:0.93,meritz:0.90,hanwhaF:1.00,heungkuk:1.03},
-  brain_narrow: {sl:1.08,hl:1.06,kyobo:1.13,shinhan:1.09,kbLife:1.11,sf:0.94,hyundai:0.89,db:0.86,kb:0.91,meritz:0.88,hanwhaF:0.99,heungkuk:1.02},
-  heart_wide:   {sl:1.06,hl:1.07,kyobo:1.13,shinhan:1.09,kbLife:1.11,sf:0.97,hyundai:0.92,db:0.86,kb:0.94,meritz:0.89,hanwhaF:1.03,heungkuk:1.01},
-  heart_narrow: {sl:1.07,hl:1.08,kyobo:1.14,shinhan:1.10,kbLife:1.12,sf:0.95,hyundai:0.90,db:0.84,kb:0.92,meritz:0.87,hanwhaF:1.01,heungkuk:0.99},
-  surgery:      {sl:1.05,hl:1.06,kyobo:1.09,shinhan:1.07,kbLife:1.08,sf:0.93,hyundai:0.89,db:0.95,kb:0.91,meritz:0.97,hanwhaF:0.99,heungkuk:1.02},
-  nSurgery:     {sl:1.04,hl:1.05,kyobo:1.08,shinhan:1.06,kbLife:1.07,sf:0.88,hyundai:0.90,db:0.94,kb:0.92,meritz:0.96,hanwhaF:1.01,heungkuk:0.99},
-  cancerTreat:  {sl:1.05,hl:1.06,kyobo:1.10,shinhan:1.07,kbLife:1.08,sf:0.96,hyundai:0.90,db:0.91,kb:0.93,meritz:0.88,hanwhaF:1.02,heungkuk:1.00},
-  care:         {sl:0.92,hl:0.94,kyobo:0.96,shinhan:0.88,kbLife:0.90,sf:1.03,hyundai:1.05,db:1.07,kb:1.02,meritz:1.08,hanwhaF:1.09,heungkuk:1.11},
-  whole:        {sl:0.88,hl:0.92,kyobo:0.90,shinhan:0.94,kbLife:0.95,sf:1.10,hyundai:1.12,db:1.14,kb:1.11,meritz:1.15,hanwhaF:1.13,heungkuk:1.09},
-  term:         {sl:0.91,hl:0.92,kyobo:0.93,shinhan:0.88,kbLife:0.90,sf:1.08,hyundai:1.10,db:1.13,kb:1.11,meritz:1.14,hanwhaF:1.12,heungkuk:1.09},
-  diseaseDeath: {sl:0.89,hl:0.91,kyobo:0.92,shinhan:0.93,kbLife:0.94,sf:1.07,hyundai:1.09,db:1.12,kb:1.10,meritz:1.13,hanwhaF:1.11,heungkuk:1.08},
+  cancer:       {sl:1.12,hl:1.06,kyobo:1.18,shinhan:1.10,kbLife:1.14,sf:0.96,hyundai:0.88,db:0.90,kb:0.92,meritz:0.84,hanwhaF:1.00,heungkuk:1.04,nonghyup:0.90},
+  similar:      {sl:1.10,hl:1.07,kyobo:1.16,shinhan:1.06,kbLife:1.12,sf:0.94,hyundai:0.88,db:0.86,kb:0.90,meritz:0.83,hanwhaF:0.98,heungkuk:0.96,nonghyup:0.88},
+  brain_wide:   {sl:1.10,hl:1.08,kyobo:1.16,shinhan:1.12,kbLife:1.14,sf:0.94,hyundai:0.89,db:0.84,kb:0.91,meritz:0.92,hanwhaF:0.98,heungkuk:1.02,nonghyup:0.87},
+  brain_narrow: {sl:1.12,hl:1.09,kyobo:1.18,shinhan:1.12,kbLife:1.15,sf:0.92,hyundai:0.87,db:0.82,kb:0.89,meritz:0.90,hanwhaF:0.97,heungkuk:1.00,nonghyup:0.86},
+  heart_wide:   {sl:1.08,hl:1.10,kyobo:1.16,shinhan:1.12,kbLife:1.14,sf:0.95,hyundai:0.90,db:0.84,kb:0.93,meritz:0.88,hanwhaF:1.02,heungkuk:1.00,nonghyup:0.89},
+  heart_narrow: {sl:1.10,hl:1.12,kyobo:1.18,shinhan:1.14,kbLife:1.16,sf:0.93,hyundai:0.88,db:0.82,kb:0.91,meritz:0.86,hanwhaF:1.00,heungkuk:0.98,nonghyup:0.87},
+  surgery:      {sl:1.08,hl:1.08,kyobo:1.12,shinhan:1.10,kbLife:1.10,sf:0.90,hyundai:0.86,db:0.93,kb:0.88,meritz:0.95,hanwhaF:0.97,heungkuk:0.92,nonghyup:0.90},
+  nSurgery:     {sl:1.06,hl:1.07,kyobo:1.12,shinhan:1.08,kbLife:1.09,sf:0.84,hyundai:0.88,db:0.92,kb:0.90,meritz:0.94,hanwhaF:0.99,heungkuk:0.96,nonghyup:0.91},
+  cancerTreat:  {sl:1.07,hl:1.08,kyobo:1.13,shinhan:1.09,kbLife:1.10,sf:0.94,hyundai:0.88,db:0.89,kb:0.91,meritz:0.86,hanwhaF:1.00,heungkuk:0.98,nonghyup:0.90},
+  care:         {sl:0.88,hl:0.90,kyobo:0.92,shinhan:0.84,kbLife:0.86,sf:1.04,hyundai:1.06,db:1.08,kb:1.02,meritz:1.10,hanwhaF:1.12,heungkuk:1.14,nonghyup:1.00},
+  whole:        {sl:0.84,hl:0.88,kyobo:0.86,shinhan:0.90,kbLife:0.91,sf:1.12,hyundai:1.14,db:1.16,kb:1.13,meritz:1.18,hanwhaF:1.16,heungkuk:1.12,nonghyup:1.08},
+  term:         {sl:0.87,hl:0.88,kyobo:0.89,shinhan:0.84,kbLife:0.86,sf:1.10,hyundai:1.12,db:1.15,kb:1.13,meritz:1.16,hanwhaF:1.14,heungkuk:1.11,nonghyup:1.06},
+  diseaseDeath: {sl:0.85,hl:0.87,kyobo:0.88,shinhan:0.89,kbLife:0.90,sf:1.09,hyundai:1.11,db:1.14,kb:1.12,meritz:1.15,hanwhaF:1.13,heungkuk:1.10,nonghyup:1.05},
 }
 const AGE_F: Record<string,Record<AgeBandKey,number>> = {
   cancer:       {"20s":0.60,"30s":0.80,"40s":1.00,"50s":1.48,"60s":2.30,"70s":3.40,"80s":4.20},
@@ -120,19 +123,22 @@ const GENDER_F: Record<string,Record<string,number>> = {
   cancerTreat:{남성:1.06,여성:0.96}, care:{남성:0.93,여성:1.10},
   whole:{남성:1.20,여성:0.85}, term:{남성:1.22,여성:0.83}, diseaseDeath:{남성:1.18,여성:0.87},
 }
+// 3·2·5 가장 비쌈(간편고지 가장 느슨) → 표준체 가장 저렴
+// 순서: 3·2·5 > 3·3·5 > 3·5·5 > 3·10·5 > 표준체
 const DISC_F: Record<string,Record<Disclosure,number>> = {
-  meritz:  {standard:1.0,"325":1.12,"335":1.20,"355":1.30,"3105":1.22},
-  kb:      {standard:1.0,"325":1.13,"335":1.22,"355":1.32,"3105":1.24},
-  hyundai: {standard:1.0,"325":1.15,"335":1.24,"355":1.34,"3105":1.26},
-  db:      {standard:1.0,"325":1.16,"335":1.25,"355":1.35,"3105":1.27},
-  sf:      {standard:1.0,"325":1.18,"335":1.27,"355":1.37,"3105":1.29},
-  hanwhaF: {standard:1.0,"325":1.17,"335":1.26,"355":1.36,"3105":1.28},
-  heungkuk:{standard:1.0,"325":1.19,"335":1.28,"355":1.38,"3105":1.30},
-  sl:      {standard:1.0,"325":1.21,"335":1.32,"355":1.44,"3105":1.35},
-  hl:      {standard:1.0,"325":1.20,"335":1.30,"355":1.42,"3105":1.33},
-  kyobo:   {standard:1.0,"325":1.23,"335":1.34,"355":1.46,"3105":1.37},
-  shinhan: {standard:1.0,"325":1.16,"335":1.26,"355":1.37,"3105":1.28},
-  kbLife:  {standard:1.0,"325":1.17,"335":1.27,"355":1.38,"3105":1.29},
+  meritz:  {standard:1.00,"325":1.38,"335":1.28,"355":1.20,"3105":1.12},
+  kb:      {standard:1.00,"325":1.40,"335":1.30,"355":1.22,"3105":1.14},
+  hyundai: {standard:1.00,"325":1.42,"335":1.32,"355":1.24,"3105":1.16},
+  db:      {standard:1.00,"325":1.42,"335":1.32,"355":1.24,"3105":1.16},
+  sf:      {standard:1.00,"325":1.44,"335":1.34,"355":1.26,"3105":1.18},
+  hanwhaF: {standard:1.00,"325":1.44,"335":1.34,"355":1.26,"3105":1.18},
+  heungkuk:{standard:1.00,"325":1.46,"335":1.36,"355":1.28,"3105":1.20},
+  nonghyup:{standard:1.00,"325":1.40,"335":1.30,"355":1.22,"3105":1.14},
+  sl:      {standard:1.00,"325":1.50,"335":1.40,"355":1.30,"3105":1.20},
+  hl:      {standard:1.00,"325":1.48,"335":1.38,"355":1.28,"3105":1.18},
+  kyobo:   {standard:1.00,"325":1.52,"335":1.42,"355":1.32,"3105":1.22},
+  shinhan: {standard:1.00,"325":1.46,"335":1.36,"355":1.26,"3105":1.16},
+  kbLife:  {standard:1.00,"325":1.48,"335":1.38,"355":1.28,"3105":1.18},
 }
 
 // ══════════════════════════════════════════════════════════
