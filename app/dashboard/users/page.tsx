@@ -55,29 +55,18 @@ export default function StaffManagementPage() {
 
   const init = useCallback(async () => {
     try {
-      let { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        const { data: refreshed } = await supabase.auth.refreshSession()
-        session = refreshed.session
-      }
-      if (!session) return router.replace("/login?redirectTo=/dashboard/users")
+      // refreshSession() 호출 금지 — SIGNED_OUT 오발화 원인
+      // 세션 확인은 INITIAL_SESSION 이벤트에서만 하고, 여기서는 DB 조회만
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return  // INITIAL_SESSION/SIGNED_OUT 핸들러가 리다이렉트 처리
 
-      let userId: string | null = null
-      const { data: authUser, error: authError } = await supabase.auth.getUser()
-      if (authError || !authUser.user) {
-        if (session.user?.id) { userId = session.user.id }
-        else {
-          await supabase.auth.signOut().catch(() => {})
-          return router.replace("/login?redirectTo=/dashboard/users")
-        }
-      } else {
-        userId = authUser.user.id
-      }
+      const userId = session.user?.id
+      if (!userId) return
 
       const { data: profile } = await supabase
         .from("users")
         .select("*")
-        .eq("id", userId!)
+        .eq("id", userId)
         .maybeSingle()
 
       if (!profile || normalizeRole(profile) !== "master") {
@@ -93,14 +82,24 @@ export default function StaffManagementPage() {
   }, [loadUsers, router])
 
   useEffect(() => {
-    queueMicrotask(() => { void init() })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") init()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") {
+        // 새 창 오픈 시 최초 세션 확인 — 없으면 로그인으로
+        if (!session) {
+          router.replace("/login?redirectTo=/dashboard/users")
+          return
+        }
+        void init()
+      }
+      // 토큰 갱신/재로그인 시 프로필 재조회
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+        void init()
+      }
       if (event === "SIGNED_OUT") {
-        // 새 창 오픈 시 토큰 갱신으로 인한 SIGNED_OUT 오발화 방지
+        // 다른 탭 토큰 갱신으로 인한 오발화 대응 — 실제 세션 없을 때만 이동
         setTimeout(async () => {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (!session) router.replace("/login?redirectTo=/dashboard/users")
+          const { data: { session: s } } = await supabase.auth.getSession()
+          if (!s) router.replace("/login?redirectTo=/dashboard/users")
         }, 800)
       }
     })
