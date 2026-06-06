@@ -41,13 +41,14 @@ const COMPANIES: Company[] = [
   { id:"db",       name:"DB손보",      type:"손해", savingRate:2.82, refund5:88, refund7:94,  refund10:101, uwNote:"뇌심장 업계 최저 수준" },
   { id:"sf",       name:"삼성화재",    type:"손해", savingRate:2.85, refund5:88, refund7:94,  refund10:101, uwNote:"수술비 계열 강세 · 표준 심사" },
   { id:"hanwhaF",  name:"한화손보",    type:"손해", savingRate:2.86, refund5:89, refund7:95,  refund10:102, uwNote:"전담보 중간 · 간편고지 중간" },
-  { id:"heungkuk", name:"흥국화재",    type:"손해", savingRate:2.84, refund5:88, refund7:95,  refund10:102, uwNote:"N대수술비 경쟁력 · 소규모 손보" },
+  { id:"heungkuk", name:"흥국생명",    type:"생명", savingRate:3.08, refund5:90, refund7:97,  refund10:104, uwNote:"뇌·심장 진단비 생보 최저 수준 · 간편고지 적극" },
   { id:"nonghyup", name:"농협손해보험", type:"손해", savingRate:2.87, refund5:88, refund7:95,  refund10:102, uwNote:"30대 건강담보 경쟁력 · 지역 네트워크 강세" },
   { id:"sl",       name:"삼성생명",    type:"생명", savingRate:3.05, refund5:91, refund7:97,  refund10:104, uwNote:"종신보험 최강 · 심사 엄격" },
   { id:"hl",       name:"한화생명",    type:"생명", savingRate:3.15, refund5:92, refund7:98,  refund10:105, uwNote:"질병사망 경쟁력 · 생보 표준심사" },
   { id:"kyobo",    name:"교보생명",    type:"생명", savingRate:3.00, refund5:90, refund7:97,  refund10:104, uwNote:"간병 강세 · 심사 엄격" },
-  { id:"shinhan",  name:"신한라이프",  type:"생명", savingRate:3.18, refund5:91, refund7:99,  refund10:106, uwNote:"간편고지 손보 수준 · 정기 경쟁력" },
-  { id:"kbLife",   name:"KB라이프",    type:"생명", savingRate:3.10, refund5:90, refund7:98,  refund10:105, uwNote:"간편고지 중간 · 간병 강세" },
+  { id:"shinhan",  name:"신한라이프",  type:"생명", savingRate:3.18, refund5:91, refund7:99,  refund10:106, uwNote:"암진단비 경쟁력 · 간편고지 손보 수준" },
+  { id:"kbLife",   name:"KB라이프",    type:"생명", savingRate:3.10, refund5:90, refund7:98,  refund10:105, uwNote:"뇌·심장·암 진단비 저렴 · 간편고지 적극" },
+  { id:"mirae",    name:"미래에셋생명", type:"생명", savingRate:3.12, refund5:90, refund7:98,  refund10:105, uwNote:"암진단비 최저 수준 · 간편고지 유연" },
 ]
 
 // ══════════════════════════════════════════════════════════
@@ -63,11 +64,11 @@ type Coverage = {
 }
 
 const HEALTH_COV: Coverage[] = [
-  { id:"cancer",      title:"암 진단비",           scope:"",       category:"암",     unit:"만원", baseRate:7.84,  active:{min:true,  standard:true,  full:true},  amount:{min:2000,standard:3000,full:5000},  sensitivityTags:["나이","유병력"], checkPoint:"면책90일·감액기간·유사암한도", rankNote:"50대↑ 급증·손보 15% 저렴·유병력 시 격차 확대" },
+  { id:"cancer",      title:"암 진단비",           scope:"",       category:"암",     unit:"만원", baseRate:7.84,  active:{min:true,  standard:true,  full:true},  amount:{min:2000,standard:3000,full:5000},  sensitivityTags:["나이","유병력"], checkPoint:"면책90일·감액기간·유사암한도", rankNote:"40대: 미래에셋·신한·KB라이프 최저 / 50대↑: 생보가 손보 역전 / 유병력 시 격차 더 확대" },
   { id:"similar",     title:"유사암·소액암 진단비", scope:"",       category:"암",     unit:"만원", baseRate:3.61,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["성별"],          checkPoint:"일반암 대비 지급금액 차이",   rankNote:"여성 60%↑·성별 따라 회사 순위 달라짐" },
-  { id:"brain_wide",  title:"뇌혈관질환 진단비",    scope:"wide",   category:"뇌심장", unit:"만원", baseRate:9.76,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌출혈/뇌졸중/뇌혈관질환 구분", rankNote:"남성 51%↑·60대 40대 대비 3배·DB손보 최저" },
+  { id:"brain_wide",  title:"뇌혈관질환 진단비",    scope:"wide",   category:"뇌심장", unit:"만원", baseRate:9.76,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌출혈/뇌졸중/뇌혈관질환 구분", rankNote:"KB라이프·흥국생명 전 연령 최저 / 50대↑: DB손보 대비 격차 더 벌어짐 / 남성 50%↑" },
   { id:"brain_narrow",title:"뇌출혈 진단비",         scope:"narrow", category:"뇌심장", unit:"만원", baseRate:6.24,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"뇌혈관질환보다 좁은 범위",   rankNote:"광의(뇌혈관질환) 대비 30~40% 저렴" },
-  { id:"heart_wide",  title:"허혈성심장질환 진단비", scope:"wide",   category:"뇌심장", unit:"만원", baseRate:8.64,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"급성심근경색/허혈성심장질환 구분", rankNote:"성별 차이 최대 담보·남성 30%↑" },
+  { id:"heart_wide",  title:"허혈성심장질환 진단비", scope:"wide",   category:"뇌심장", unit:"만원", baseRate:8.64,  active:{min:true,  standard:true,  full:true},  amount:{min:1000,standard:1000,full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"급성심근경색/허혈성심장질환 구분", rankNote:"KB라이프·흥국생명 전 연령 최저 / 50대↑: 손보와 격차 확대 / 남성 30%↑ 성별 차이 최대" },
   { id:"heart_narrow",title:"급성심근경색 진단비",   scope:"narrow", category:"뇌심장", unit:"만원", baseRate:5.25,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:1000}, sensitivityTags:["나이","성별"],    checkPoint:"허혈성심장질환보다 좁은 범위", rankNote:"광의(허혈성) 대비 35~45% 저렴" },
   { id:"surgery",     title:"질병수술비",            scope:"",       category:"수술",   unit:"만원", baseRate:150.96,active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:30,   full:50},   sensitivityTags:["나이"],           checkPoint:"동일질병 반복지급·약관상 수술정의", rankNote:"나이 민감 낮음·현대해상·KB손보 강세" },
   { id:"nSurgery",    title:"N대수술비",             scope:"",       category:"수술",   unit:"만원", baseRate:4.59,  active:{min:false, standard:true,  full:true},  amount:{min:0,   standard:1000, full:2000}, sensitivityTags:["나이","성별"],    checkPoint:"포함/제외 수술 목록 확인",   rankNote:"삼성화재 손보 최저·나이 오를수록 생보·손보 격차" },
@@ -86,19 +87,25 @@ const DEATH_COV: Coverage[] = [
 // 담보별 회사 경쟁력 계수 (나이 관계없이 담보 특성으로 결정)
 // 각 담보별로 어느 회사가 강한지 반영 - CO_AGE와 곱해져 나이별 최저회사 결정
 const COV_CO: Record<string,Record<string,number>> = {
-  cancer:       {sl:1.12,hl:1.06,kyobo:1.18,shinhan:1.10,kbLife:1.14,sf:0.96,hyundai:0.88,db:0.90,kb:0.92,meritz:0.84,hanwhaF:1.00,heungkuk:1.04,nonghyup:0.90},
-  similar:      {sl:1.10,hl:1.07,kyobo:1.16,shinhan:1.06,kbLife:1.12,sf:0.94,hyundai:0.88,db:0.86,kb:0.90,meritz:0.83,hanwhaF:0.98,heungkuk:0.96,nonghyup:0.88},
-  brain_wide:   {sl:1.10,hl:1.08,kyobo:1.16,shinhan:1.12,kbLife:1.14,sf:0.94,hyundai:0.89,db:0.84,kb:0.91,meritz:0.92,hanwhaF:0.98,heungkuk:1.02,nonghyup:0.87},
-  brain_narrow: {sl:1.12,hl:1.09,kyobo:1.18,shinhan:1.12,kbLife:1.15,sf:0.92,hyundai:0.87,db:0.82,kb:0.89,meritz:0.90,hanwhaF:0.97,heungkuk:1.00,nonghyup:0.86},
-  heart_wide:   {sl:1.08,hl:1.10,kyobo:1.16,shinhan:1.12,kbLife:1.14,sf:0.95,hyundai:0.90,db:0.84,kb:0.93,meritz:0.88,hanwhaF:1.02,heungkuk:1.00,nonghyup:0.89},
-  heart_narrow: {sl:1.10,hl:1.12,kyobo:1.18,shinhan:1.14,kbLife:1.16,sf:0.93,hyundai:0.88,db:0.82,kb:0.91,meritz:0.86,hanwhaF:1.00,heungkuk:0.98,nonghyup:0.87},
-  surgery:      {sl:1.08,hl:1.08,kyobo:1.12,shinhan:1.10,kbLife:1.10,sf:0.90,hyundai:0.86,db:0.93,kb:0.88,meritz:0.95,hanwhaF:0.97,heungkuk:0.92,nonghyup:0.90},
-  nSurgery:     {sl:1.06,hl:1.07,kyobo:1.12,shinhan:1.08,kbLife:1.09,sf:0.84,hyundai:0.88,db:0.92,kb:0.90,meritz:0.94,hanwhaF:0.99,heungkuk:0.96,nonghyup:0.91},
-  cancerTreat:  {sl:1.07,hl:1.08,kyobo:1.13,shinhan:1.09,kbLife:1.10,sf:0.94,hyundai:0.88,db:0.89,kb:0.91,meritz:0.86,hanwhaF:1.00,heungkuk:0.98,nonghyup:0.90},
-  care:         {sl:0.88,hl:0.90,kyobo:0.92,shinhan:0.84,kbLife:0.86,sf:1.04,hyundai:1.06,db:1.08,kb:1.02,meritz:1.10,hanwhaF:1.12,heungkuk:1.14,nonghyup:1.00},
-  whole:        {sl:0.84,hl:0.88,kyobo:0.86,shinhan:0.90,kbLife:0.91,sf:1.12,hyundai:1.14,db:1.16,kb:1.13,meritz:1.18,hanwhaF:1.16,heungkuk:1.12,nonghyup:1.08},
-  term:         {sl:0.87,hl:0.88,kyobo:0.89,shinhan:0.84,kbLife:0.86,sf:1.10,hyundai:1.12,db:1.15,kb:1.13,meritz:1.16,hanwhaF:1.14,heungkuk:1.11,nonghyup:1.06},
-  diseaseDeath: {sl:0.85,hl:0.87,kyobo:0.88,shinhan:0.89,kbLife:0.90,sf:1.09,hyundai:1.11,db:1.14,kb:1.12,meritz:1.15,hanwhaF:1.13,heungkuk:1.10,nonghyup:1.05},
+  // 암진단비: 미래에셋/신한/KB라이프 저렴 → 손보 중간 → 교보/삼성생명 고가
+  cancer:       {mirae:0.78,shinhan:0.80,kbLife:0.82,meritz:0.88,db:0.92,hyundai:0.94,kb:0.94,nonghyup:0.96,hanwhaF:0.99,sf:1.01,heungkuk:1.06,hl:1.08,sl:1.12,kyobo:1.18},
+  similar:      {mirae:0.82,meritz:0.84,db:0.86,kb:0.88,hyundai:0.90,nonghyup:0.92,sf:0.94,hanwhaF:0.96,heungkuk:0.98,kbLife:1.00,shinhan:1.04,hl:1.08,sl:1.10,kyobo:1.16},
+  // 뇌혈관: KB라이프/흥국생명 저렴 → DB손보 중간 → 교보/삼성 고가
+  brain_wide:   {kbLife:0.78,heungkuk:0.80,db:0.87,nonghyup:0.90,hyundai:0.92,kb:0.93,meritz:0.96,sf:0.98,hanwhaF:1.01,mirae:1.04,shinhan:1.08,hl:1.10,sl:1.12,kyobo:1.20},
+  brain_narrow: {kbLife:0.78,heungkuk:0.80,db:0.85,nonghyup:0.88,hyundai:0.90,kb:0.92,meritz:0.94,sf:0.96,hanwhaF:0.99,mirae:1.04,shinhan:1.08,hl:1.10,sl:1.12,kyobo:1.20},
+  // 허혈성심장: KB라이프/흥국생명 저렴
+  heart_wide:   {kbLife:0.78,heungkuk:0.80,db:0.86,nonghyup:0.88,meritz:0.91,kb:0.93,hyundai:0.95,sf:0.97,hanwhaF:1.01,mirae:1.02,shinhan:1.08,hl:1.10,sl:1.12,kyobo:1.20},
+  heart_narrow: {kbLife:0.78,heungkuk:0.80,db:0.84,nonghyup:0.87,meritz:0.89,kb:0.91,hyundai:0.93,sf:0.95,hanwhaF:0.99,mirae:1.02,shinhan:1.08,hl:1.10,sl:1.12,kyobo:1.20},
+  // 수술비: 손보 저렴 → 생보 고가
+  surgery:      {hyundai:0.78,kb:0.80,sf:0.82,db:0.84,meritz:0.87,nonghyup:0.89,hanwhaF:0.91,heungkuk:0.93,kbLife:1.08,mirae:1.10,shinhan:1.10,sl:1.14,hl:1.14,kyobo:1.18},
+  nSurgery:     {sf:0.80,db:0.83,kb:0.85,hyundai:0.87,meritz:0.90,nonghyup:0.92,hanwhaF:0.94,heungkuk:0.96,kbLife:1.04,shinhan:1.06,mirae:1.08,sl:1.10,hl:1.12,kyobo:1.14},
+  // 암치료비: 메리츠/신한/KB라이프 강세
+  cancerTreat:  {meritz:0.80,kbLife:0.83,shinhan:0.85,mirae:0.87,db:0.90,hyundai:0.92,kb:0.93,nonghyup:0.96,sf:0.98,hanwhaF:1.00,heungkuk:1.02,sl:1.06,hl:1.08,kyobo:1.12},
+  // 간병: 생보 강세(교보/한화생명)
+  care:         {kyobo:0.82,hl:0.84,sl:0.86,kbLife:0.88,shinhan:0.90,mirae:0.92,heungkuk:0.95,nonghyup:0.97,hanwhaF:1.04,sf:1.06,db:1.08,kb:1.10,hyundai:1.12,meritz:1.14},
+  whole:        {sl:0.84,hl:0.86,kyobo:0.88,shinhan:0.90,kbLife:0.91,mirae:0.92,heungkuk:0.96,nonghyup:1.04,sf:1.10,hanwhaF:1.12,hyundai:1.14,db:1.16,kb:1.13,meritz:1.18},
+  term:         {shinhan:0.82,kbLife:0.84,sl:0.86,hl:0.88,kyobo:0.90,mirae:0.92,heungkuk:0.96,nonghyup:1.02,sf:1.08,hanwhaF:1.12,hyundai:1.14,db:1.15,kb:1.13,meritz:1.16},
+  diseaseDeath: {sl:0.84,hl:0.86,kyobo:0.88,shinhan:0.89,kbLife:0.90,mirae:0.91,heungkuk:0.96,nonghyup:1.00,sf:1.08,hanwhaF:1.12,hyundai:1.12,db:1.14,kb:1.12,meritz:1.15},
 }
 const AGE_F: Record<string,Record<AgeBandKey,number>> = {
   cancer:       {"20s":0.60,"30s":0.80,"40s":1.00,"50s":1.48,"60s":2.30,"70s":3.40,"80s":4.20},
@@ -139,6 +146,51 @@ const DISC_F: Record<string,Record<Disclosure,number>> = {
   kyobo:   {standard:1.00,"325":1.52,"335":1.42,"355":1.32,"3105":1.22},
   shinhan: {standard:1.00,"325":1.46,"335":1.36,"355":1.26,"3105":1.16},
   kbLife:  {standard:1.00,"325":1.48,"335":1.38,"355":1.28,"3105":1.18},
+  mirae:   {standard:1.00,"325":1.46,"335":1.36,"355":1.28,"3105":1.18},
+}
+
+// ══════════════════════════════════════════════════════════
+// 나이대별 회사 경쟁력 조정 (나이에 따라 회사 순위가 달라지는 핵심)
+// 1.0=유지, 0.9=10%저렴, 1.1=10%비쌈 — COV_CO에 곱해짐
+// ══════════════════════════════════════════════════════════
+const CO_AGE_ADJ: Partial<Record<string,Partial<Record<string,Partial<Record<AgeBandKey,number>>>>>> = {
+  // 뇌심장: KB라이프·흥국생명 → 고령일수록 큰 강점 / DB손보 → 고령일수록 불리
+  brain_wide: {
+    kbLife:   {"20s":1.18,"30s":1.10,"40s":1.00,"50s":0.88,"60s":0.80,"70s":0.76,"80s":0.74},
+    heungkuk: {"20s":1.14,"30s":1.08,"40s":1.00,"50s":0.90,"60s":0.82,"70s":0.78,"80s":0.76},
+    db:       {"20s":0.92,"30s":0.95,"40s":1.00,"50s":1.06,"60s":1.12,"70s":1.16,"80s":1.20},
+    sf:       {"20s":0.94,"30s":0.97,"40s":1.00,"50s":1.05,"60s":1.10,"70s":1.13,"80s":1.16},
+    hyundai:  {"20s":0.93,"30s":0.96,"40s":1.00,"50s":1.05,"60s":1.11,"70s":1.15,"80s":1.18},
+  },
+  brain_narrow: {
+    kbLife:   {"20s":1.16,"30s":1.08,"40s":1.00,"50s":0.89,"60s":0.82,"70s":0.78,"80s":0.76},
+    heungkuk: {"20s":1.12,"30s":1.06,"40s":1.00,"50s":0.91,"60s":0.83,"70s":0.80,"80s":0.78},
+    db:       {"20s":0.93,"30s":0.96,"40s":1.00,"50s":1.05,"60s":1.10,"70s":1.14,"80s":1.18},
+  },
+  heart_wide: {
+    kbLife:   {"20s":1.18,"30s":1.10,"40s":1.00,"50s":0.88,"60s":0.80,"70s":0.76,"80s":0.74},
+    heungkuk: {"20s":1.14,"30s":1.08,"40s":1.00,"50s":0.90,"60s":0.82,"70s":0.78,"80s":0.76},
+    db:       {"20s":0.92,"30s":0.95,"40s":1.00,"50s":1.06,"60s":1.12,"70s":1.16,"80s":1.20},
+  },
+  heart_narrow: {
+    kbLife:   {"20s":1.16,"30s":1.08,"40s":1.00,"50s":0.89,"60s":0.82,"70s":0.78,"80s":0.76},
+    heungkuk: {"20s":1.12,"30s":1.06,"40s":1.00,"50s":0.91,"60s":0.83,"70s":0.80,"80s":0.78},
+  },
+  // 암진단비: 신한·미래에셋·KB라이프 → 50대↑ 큰 강점 / 손보 → 고령 불리
+  cancer: {
+    shinhan:  {"20s":1.18,"30s":1.10,"40s":1.00,"50s":0.89,"60s":0.82,"70s":0.79,"80s":0.78},
+    mirae:    {"20s":1.16,"30s":1.08,"40s":1.00,"50s":0.90,"60s":0.83,"70s":0.80,"80s":0.79},
+    kbLife:   {"20s":1.14,"30s":1.06,"40s":1.00,"50s":0.91,"60s":0.84,"70s":0.81,"80s":0.80},
+    meritz:   {"20s":0.93,"30s":0.96,"40s":1.00,"50s":1.06,"60s":1.12,"70s":1.16,"80s":1.20},
+    hyundai:  {"20s":0.92,"30s":0.95,"40s":1.00,"50s":1.07,"60s":1.14,"70s":1.18,"80s":1.22},
+    db:       {"20s":0.93,"30s":0.96,"40s":1.00,"50s":1.06,"60s":1.11,"70s":1.15,"80s":1.19},
+  },
+  // 수술비: 손보 전 연령 강세, 고령에서 현대해상·KB손보 더 유리
+  surgery: {
+    hyundai:  {"20s":1.00,"30s":0.98,"40s":1.00,"50s":0.96,"60s":0.92,"70s":0.90,"80s":0.89},
+    kb:       {"20s":0.99,"30s":0.98,"40s":1.00,"50s":0.97,"60s":0.93,"70s":0.91,"80s":0.90},
+    kyobo:    {"20s":0.96,"30s":0.98,"40s":1.00,"50s":1.03,"60s":1.06,"70s":1.08,"80s":1.10},
+  },
 }
 
 // ══════════════════════════════════════════════════════════
@@ -151,9 +203,10 @@ function calcPrem(co:Company, cov:Coverage, ab:AgeBandKey, gender:string, disc:D
   const gf = GENDER_F[cov.id]?.[gender] ?? 1.0
   const df = DISC_F[co.id]?.[disc] ?? 1.0
   const cf = COV_CO[cov.id]?.[co.id] ?? 1.0
+  const acf = CO_AGE_ADJ[cov.id]?.[co.id]?.[ab] ?? 1.0
   const jf = JOB_FACTOR[job]
   const pf = PAY_FACTOR[pay] ?? 1.0
-  return Math.round(amount * cov.baseRate * af * gf * df * cf * jf * pf)
+  return Math.round(amount * cov.baseRate * af * gf * df * cf * acf * jf * pf)
 }
 function coTotal(co:Company, covs:Coverage[], pl:PlanLevel, overrides:Record<string,number>, ab:AgeBandKey, gender:string, disc:Disclosure, job:JobGrade, pay:PayPeriod):number {
   return covs.filter(c=>c.active[pl]).reduce((s,c)=>s+calcPrem(co,c,ab,gender,disc,job,pay,overrides[c.id]??c.amount[pl]),0)
@@ -506,8 +559,8 @@ export default function PremiumComparePage() {
         {mainTab==="dollar" && <DollarView ageBand={ageBand} gender={gender} payPeriod={payPeriod}/>}
 
         <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-900">
-          ※ 이 화면의 보험료는 회사별 요율 경향·실무 경험 기반의 <strong>방향성 예시</strong>입니다. 실제 보험료는 산출일·심사결과·약관개정에 따라 달라집니다.
-          &ldquo;담보별 최적 조합(교차설계)은 사람이 직접 계산하기 불가능하다&rdquo;는 점을 전달하는 상담 보조 도구입니다.
+          ※ 위 보험료 비교는 나이·성별·인수기준 기반의 <strong>방향성 예시</strong>입니다. 개인의 직업·성별·병력에 따라 실제 설계 결과와 다를 수 있습니다.
+          실제 보험료는 산출일·심사결과·약관개정에 따라 달라지며, 이 도구는 담보별 최적 회사 조합을 시각화하는 <strong>상담 보조 도구</strong>입니다.
         </p>
       </div>
     </div>
@@ -863,5 +916,139 @@ function DollarView({ageBand,gender,payPeriod}:{ageBand:AgeBandKey;gender:string
         💡 달러 상품은 환율 변동에 따라 원화 환산액이 달라집니다. 장기 자산 분산·달러 헤지 목적. 실제 산출액은 보험사 시스템을 통해 확인하세요.
       </p>
     </div>
+  )
+}
+
+function SavingView({ results, monthlySaving, payYears }: { results: SavingResult[]; monthlySaving: number; payYears: number }) {
+  const lifeResults = results.filter((r) => r.company.type === "생명")
+  const refundMatrix = refundYears.map((year) => {
+    const cells = lifeResults.map((r) => ({
+      company: r.company,
+      amount: refundAmountFor(r.company, year, monthlySaving, payYears),
+      rate: refundRateFor(r.company, year, payYears),
+    }))
+    const valid = cells.filter((c) => c.amount > 0)
+    const min = Math.min(...valid.map((c) => c.amount))
+    const max = Math.max(...valid.map((c) => c.amount))
+    return { year, cells, min, max }
+  })
+
+  return (
+    <div className="space-y-5">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="bg-[#163f76] px-5 py-4 text-white">
+          <h2 className="text-lg font-black">저축성 환급률 및 예상 연금 비교</h2>
+          <p className="mt-1 text-[12px] text-blue-200 font-bold">공시이율은 시장 금리에 따라 변동됩니다. 비교 참고용입니다.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-[1000px] w-full border-collapse text-[13px]">
+            <thead className="bg-slate-100">
+              <tr>
+                <th className="p-4 text-left">보험사</th>
+                <th className="p-4">구분</th>
+                <th className="p-4">예시이율</th>
+                <th className="p-4">5년 환급률</th>
+                <th className="p-4">7년 환급률</th>
+                <th className="p-4">10년 환급률</th>
+                <th className="p-4">총 납입액</th>
+                <th className="p-4">예상 적립액</th>
+                <th className="p-4">월 연금 예상</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((row, index) => (
+                <tr key={row.company.id} className="border-b border-slate-100">
+                  <td className="p-4 font-black">{row.company.name}</td>
+                  <td className="p-4 text-center">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-black ${row.company.type === "생명" ? "bg-blue-100 text-blue-700" : "bg-orange-100 text-orange-700"}`}>
+                      {row.company.type}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center font-black text-[#2563eb]">{row.company.savingRate}%</td>
+                  <td className="p-4 text-center font-bold">{row.company.refund5}%</td>
+                  <td className="p-4 text-center font-bold">{row.company.refund7}%</td>
+                  <td className="p-4 text-center font-bold">{row.company.refund10}%</td>
+                  <td className="p-4 text-center font-bold">{formatWon(monthlySaving * payYears * 12)}</td>
+                  <td className={`p-4 text-center font-black ${index === 0 ? "text-blue-600" : "text-slate-900"}`}>{formatWon(row.futureValue)}</td>
+                  <td className="p-4 text-center font-black text-emerald-600">{formatWon(row.pension)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="bg-[#163f76] px-5 py-4 text-white">
+          <h2 className="text-lg font-black">생명보험 연차별 해약환급금 비교</h2>
+          <p className="mt-1 text-[12px] font-bold text-blue-100">월 납입액과 납입기간을 기준으로 연차별 예상 환급금을 비교합니다.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-[1200px] w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="sticky left-0 z-10 bg-slate-100 p-4 text-left">연차</th>
+                {lifeResults.map((r) => (
+                  <th key={r.company.id} className="min-w-[150px] p-4">
+                    <p className="font-black">{r.company.name}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">기준 {r.company.refund10}%</p>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-slate-200">
+                <td className="sticky left-0 z-10 bg-white p-4 font-black">월 보험료</td>
+                {lifeResults.map((r) => (
+                  <td key={r.company.id} className="p-4 text-center font-black">{formatWon(monthlySaving)}</td>
+                ))}
+              </tr>
+              <tr className="border-b-2 border-slate-900">
+                <td className="sticky left-0 z-10 bg-white p-4 font-black">총 납입액</td>
+                {lifeResults.map((r) => (
+                  <td key={r.company.id} className="p-4 text-center font-black">{formatWon(monthlySaving * payYears * 12)}</td>
+                ))}
+              </tr>
+              {refundMatrix.map((row) => (
+                <tr key={row.year} className={`border-b border-slate-100 ${row.year === 5 || row.year === 10 || row.year === 20 ? "bg-slate-100" : ""}`}>
+                  <td className="sticky left-0 z-10 bg-inherit p-4 font-black">{row.year}년</td>
+                  {row.cells.map((cell) => {
+                    const isMin = cell.amount === row.min
+                    const isMax = cell.amount === row.max
+                    return (
+                      <td key={cell.company.id} className={`p-4 text-center font-black ${isMin ? "text-blue-600" : isMax ? "text-red-500" : "text-slate-900"}`}>
+                        <p>{formatWon(cell.amount)}</p>
+                        <p className="mt-1 text-[12px]">({cell.rate.toFixed(1)}%)</p>
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+// ─── 공통 소형 컴포넌트 ───────────────────────────────────
+function Input({ label, value, onChange }: { label: string; value: number; onChange: (value: string) => void }) {
+  return (
+    <label>
+      <span className="mb-2 block text-[12px] font-black text-slate-500">{label}</span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-[14px] font-bold outline-none focus:border-[#2563eb]" />
+    </label>
+  )
+}
+
+function Select({ label, value, onChange, options, labels }: { label: string; value: string; onChange: (value: string) => void; options: string[]; labels?: Record<string, string> }) {
+  return (
+    <label>
+      <span className="mb-2 block text-[12px] font-black text-slate-500">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-11 w-full rounded-xl border border-slate-200 px-3 text-[14px] font-bold outline-none focus:border-[#2563eb]">
+        {options.map((opt) => <option key={opt} value={opt}>{labels?.[opt] || opt}</option>)}
+      </select>
+    </label>
   )
 }

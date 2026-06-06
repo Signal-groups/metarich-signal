@@ -199,7 +199,12 @@ export default function DashboardPage() {
         init();
       }
       if (event === "SIGNED_OUT") {
-        router.replace("/login");
+        // ⚠️ 팝업창(DM, 브랜딩 등)의 토큰 갱신 시 부모창에도 SIGNED_OUT 이벤트가
+        // 잠깐 발화될 수 있음. 실제 세션 여부를 확인한 뒤 로그인으로 이동.
+        setTimeout(async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) router.replace("/login");
+        }, 800);
       }
     });
 
@@ -259,7 +264,19 @@ export default function DashboardPage() {
   const highlightTools = visibleConsultingTools.filter((tool) => tool.highlight);
 
   const renderOfficeView = () => {
-    if (isGuest || !isApproved) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
+    if (isGuest || !isApproved) return (
+      <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
+        <div className="text-5xl">{isGuest ? '🪪' : '⏳'}</div>
+        <p className="text-xl font-black text-slate-700">
+          {isGuest ? '타사 게스트 계정은 사무실 업무를 이용할 수 없습니다' : '관리자 승인 후 이용 가능합니다'}
+        </p>
+        <p className="text-sm font-bold text-slate-400 max-w-xs leading-relaxed">
+          {isGuest
+            ? '사무실 업무는 메타리치 시그널그룹 소속 직원 전용입니다.'
+            : '담당 관리자에게 계정 승인을 요청해 주세요.'}
+        </p>
+      </div>
+    );
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
     
     if (isMaster || isHeadquarters) return <MasterView {...props} />;
@@ -292,10 +309,35 @@ export default function DashboardPage() {
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
       viewMode === 'office' ? renderOfficeView() : (
               <div className="mx-auto max-w-5xl min-w-0 py-6 md:py-8">
+
+                {/* ── 미승인 / 게스트 안내 배너 ───────────────────────────── */}
+                {!isApproved && (
+                  <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 px-7 py-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 text-3xl">{isGuest ? '🪪' : '⏳'}</div>
+                      <div>
+                        <p className="font-black text-amber-800 text-base">
+                          {isGuest ? '타사 게스트 계정입니다' : '관리자 승인 대기 중입니다'}
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-amber-700 leading-relaxed">
+                          {isGuest
+                            ? '기본 공개 도구(아래)만 이용 가능합니다. 추가 기능은 시그널그룹 소속 가입 후 승인을 받아야 합니다.'
+                            : '승인 후 사무실 업무·전체 상담 도구를 이용할 수 있습니다. 관리자에게 승인을 요청하세요.'}
+                        </p>
+                        <p className="mt-2 text-xs font-bold text-amber-500">
+                          현재 이용 가능 : 숨은보험금 찾기 · 진료기록 확인 · 약학정보원 (공개 도구 3종)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                   <div>
                     <h1 className="text-3xl font-black text-[#1a3a6e] tracking-tight">고객 상담 도구</h1>
-                    <p className="text-[#94a3b8] font-bold text-sm mt-1 tracking-widest">{isApproved ? "승인된 상담 도구를 사용할 수 있습니다" : "게스트 모드로 이용 중입니다"}</p>
+                    <p className="text-[#94a3b8] font-bold text-sm mt-1 tracking-widest">
+                      {isApproved ? '승인된 상담 도구를 사용할 수 있습니다' : '공개 도구만 이용 가능합니다'}
+                    </p>
                   </div>
                   <div className="flex gap-2">
                     {isMaster && (

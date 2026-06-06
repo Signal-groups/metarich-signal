@@ -11,17 +11,26 @@ export default function DmLayout({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+    const checkSession = async () => {
+      try {
+        let { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          // 팝업창 오픈 직후 localStorage 동기화 지연이 있을 수 있으므로 1회 갱신 시도
+          const { data: refreshed } = await supabase.auth.refreshSession()
+          session = refreshed.session
+        }
+        if (!session) {
+          const redirectTo = encodeURIComponent(pathname || '/dm')
+          router.replace(`/login?redirectTo=${redirectTo}`)
+          return
+        }
+        setChecking(false)
+      } catch {
         const redirectTo = encodeURIComponent(pathname || '/dm')
         router.replace(`/login?redirectTo=${redirectTo}`)
-        return
       }
-      setChecking(false)
-    }).catch(() => {
-      const redirectTo = encodeURIComponent(pathname || '/dm')
-      router.replace(`/login?redirectTo=${redirectTo}`)
-    })
+    }
+    checkSession()
   }, [pathname, router])
 
   const closeWindow = () => {

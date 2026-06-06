@@ -62,51 +62,54 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const checkAndLoad = async () => {
       const redirectTo = encodeURIComponent(pathname || '/crm')
-      if (!session) { router.replace(`/login?redirectTo=${redirectTo}`); return }
-      const { data: authUser, error: authError } = await supabase.auth.getUser()
-      if (authError || !authUser.user) {
-        await supabase.auth.signOut().catch(() => {})
-        router.replace(`/login?redirectTo=${redirectTo}`)
-        return
-      }
-      let { data: userData } = await supabase
-        .from('users').select('*').eq('id', authUser.user.id).maybeSingle()
-      if (!userData) {
-        try {
-          userData = await ensureUserProfile(supabase, authUser.user)
-        } catch {
-          userData = null
+      try {
+        let { data: { session } } = await supabase.auth.getSession()
+        // 세션이 없으면 갱신 1회 시도 (팝업 or 탭 간 토큰 동기화 지연 대응)
+        if (!session) {
+          const { data: refreshed } = await supabase.auth.refreshSession()
+          session = refreshed.session
         }
-      }
-      if (!userData) { router.replace(`/login?redirectTo=${redirectTo}`); return }
+        if (!session) { router.replace(`/login?redirectTo=${redirectTo}`); return }
 
-      const mergedUser = { ...authUser.user, ...userData, email: authUser.user.email }
-      const effectiveRole = normalizeRole(mergedUser)
+        const { data: authUser, error: authError } = await supabase.auth.getUser()
+        if (authError || !authUser.user) {
+          await supabase.auth.signOut().catch(() => {})
+          router.replace(`/login?redirectTo=${redirectTo}`)
+          return
+        }
+        let { data: userData } = await supabase
+          .from('users').select('*').eq('id', authUser.user.id).maybeSingle()
+        if (!userData) {
+          try { userData = await ensureUserProfile(supabase, authUser.user) }
+          catch { userData = null }
+        }
+        if (!userData) { router.replace(`/login?redirectTo=${redirectTo}`); return }
 
-      // ── 접근 권한 체크 ─────────────────────────────────────────────
-      // 1) 미승인 상태 → 차단 화면(별도 처리, 리디렉트 없음)
-      // 2) 승인은 됐지만 crm_access 없음 → 대시보드로
-      if (!isApprovedUser(mergedUser)) {
-        setUser({ ...mergedUser, effectiveRole, _blocked: 'pending' })
+        const mergedUser = { ...authUser.user, ...userData, email: authUser.user.email }
+        const effectiveRole = normalizeRole(mergedUser)
+
+        if (!isApprovedUser(mergedUser)) {
+          setUser({ ...mergedUser, effectiveRole, _blocked: 'pending' })
+          setChecking(false)
+          return
+        }
+        if (!canAccessCrm(mergedUser)) {
+          setUser({ ...mergedUser, effectiveRole, _blocked: 'no_crm' })
+          setChecking(false)
+          return
+        }
+        setUser({ ...mergedUser, effectiveRole })
         setChecking(false)
-        return
+      } catch {
+        router.replace(`/login?redirectTo=${redirectTo}`)
       }
-      if (!canAccessCrm(mergedUser)) {
-        setUser({ ...mergedUser, effectiveRole, _blocked: 'no_crm' })
-        setChecking(false)
-        return
-      }
-
-      setUser({ ...mergedUser, effectiveRole })
-      setChecking(false)
-    }).catch(async () => {
-      await supabase.auth.signOut().catch(() => {})
-      const redirectTo = encodeURIComponent(pathname || '/crm')
-      router.replace(`/login?redirectTo=${redirectTo}`)
-    })
+    }
+    checkAndLoad()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, router])
+
 
   if (checking) {
     return (
