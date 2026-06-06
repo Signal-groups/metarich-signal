@@ -7,7 +7,8 @@ interface UserTableProps {
   selectedIds: Set<string>
   onSelectChange: (id: string, checked: boolean) => void
   onSelectAll: (checked: boolean) => void
-  onSave: (user: StaffUser) => Promise<void>
+  onDraftChange: (user: StaffUser) => void
+  onSave: (user: StaffUser) => Promise<boolean>
   onResetPassword: (user: StaffUser) => void
   viewerId: string
 }
@@ -17,6 +18,7 @@ export default function UserTable({
   selectedIds,
   onSelectChange,
   onSelectAll,
+  onDraftChange,
   onSave,
   onResetPassword,
   viewerId,
@@ -41,6 +43,7 @@ export default function UserTable({
             user={user}
             selected={selectedIds.has(user.id)}
             onSelectChange={onSelectChange}
+            onDraftChange={onDraftChange}
             onSave={onSave}
             onResetPassword={onResetPassword}
             viewerId={viewerId}
@@ -73,6 +76,7 @@ export default function UserTable({
                 user={user}
                 selected={selectedIds.has(user.id)}
                 onSelectChange={onSelectChange}
+                onDraftChange={onDraftChange}
                 onSave={onSave}
                 onResetPassword={onResetPassword}
                 viewerId={viewerId}

@@ -8,7 +8,7 @@ import BulkActions from "./components/BulkActions"
 import ResetPasswordModal from "./components/ResetPasswordModal"
 import UserFilters from "./components/UserFilters"
 import UserTable from "./components/UserTable"
-import { enabled, getHeadquarter, getRank, type StaffUser } from "./components/UserRow"
+import { enabled, getCompanyName, getCompanyType, getHeadquarter, getRank, type StaffUser } from "./components/UserRow"
 
 type CompanyTypeFilter = "all" | "metarich" | "external"
 type ApprovedFilter = "all" | "true" | "false"
@@ -33,6 +33,7 @@ export default function StaffManagementPage() {
   const [rank, setRank] = useState("")
   const [approved, setApproved] = useState<ApprovedFilter>("all")
   const [sortBy, setSortBy] = useState<SortKey>("created_at")
+  const [savingAll, setSavingAll] = useState(false)
 
   const loadUsers = useCallback(async () => {
     const { data, error } = await supabase
@@ -45,7 +46,11 @@ export default function StaffManagementPage() {
       return
     }
 
-    setUsers((data || []) as StaffUser[])
+    setUsers(((data || []) as StaffUser[]).map((user) => ({
+      ...user,
+      company_type: getCompanyType(user),
+      company_name: getCompanyName(user),
+    })))
   }, [])
 
   const init = useCallback(async () => {
@@ -101,7 +106,7 @@ export default function StaffManagementPage() {
 
     return [...users]
       .filter((user) => {
-        const userCompanyType = user.company_type === "external" ? "external" : "metarich"
+        const userCompanyType = getCompanyType(user)
         const matchesCompany = companyType === "all" || userCompanyType === companyType
         const matchesHeadquarter = !headquarter || getHeadquarter(user) === headquarter
         const matchesRank = !rank || getRank(user) === rank
@@ -137,14 +142,30 @@ export default function StaffManagementPage() {
     })
   }
 
-  const saveUser = async (user: StaffUser) => {
+  const saveUser = async (user: StaffUser, silent = false) => {
     const isApproved = enabled(user.is_approved)
     const nextRank = String(user.rank || "agent")
+    const company = getCompanyType(user)
+    const companyName = getCompanyName(user).trim()
+
+    if (company === "external" && !companyName) {
+      alert(`${user.name || user.email || "직원"}의 회사명을 입력해주세요.`)
+      return false
+    }
+
     const updatePayload = {
       is_approved: isApproved,
       role: nextRank,
       role_level: roleLevelFor(nextRank),
       rank: nextRank,
+      company_type: company,
+      company_name: company === "external" ? companyName : "메타리치 시그널그룹",
+      headquarter: company === "external" ? "대외" : user.headquarter || "",
+      headquarter_name: company === "external" ? "대외" : user.headquarter_name || user.headquarter || "",
+      department: company === "external" ? companyName : user.department || "",
+      department_name: company === "external" ? companyName : user.department_name || user.department || "",
+      team: user.team || "",
+      branch_name: user.branch_name || user.team || "",
       crm_access: isApproved ? enabled(user.crm_access) : false,
       office_access: isApproved ? enabled(user.office_access) : false,
       claim_access: isApproved ? enabled(user.claim_access) : false,
@@ -154,11 +175,31 @@ export default function StaffManagementPage() {
     const { error } = await supabase.from("users").update(updatePayload).eq("id", user.id)
     if (error) {
       alert(`저장 실패: ${error.message}`)
-      return
+      return false
     }
 
     setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, ...updatePayload } : item))
-    alert(`${user.name || user.email || "직원"} 정보가 저장되었습니다.`)
+    if (!silent) alert(`${user.name || user.email || "직원"} 정보가 저장되었습니다.`)
+    return true
+  }
+
+  const saveAllVisibleUsers = async () => {
+    if (filteredUsers.length === 0) return
+    if (!confirm(`현재 표시된 직원 ${filteredUsers.length.toLocaleString()}명의 승인과 권한 설정을 일괄 저장합니다.`)) return
+
+    setSavingAll(true)
+    let saved = 0
+    for (const user of filteredUsers) {
+      const ok = await saveUser(user, true)
+      if (!ok) {
+        setSavingAll(false)
+        alert(`${saved.toLocaleString()}명 저장 후 중단되었습니다.`)
+        return
+      }
+      saved += 1
+    }
+    setSavingAll(false)
+    alert(`${saved.toLocaleString()}명의 직원 설정이 일괄 저장되었습니다.`)
   }
 
   const bulkApprove = async (approve: boolean) => {
@@ -240,11 +281,25 @@ export default function StaffManagementPage() {
           filteredCount={filteredUsers.length}
         />
         <BulkActions selectedIds={selectedIds} onBulkApprove={bulkApprove} onBulkRankChange={bulkRankChange} />
+        <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+          <p className="text-sm font-bold text-slate-500">
+            대외 인원은 타사로 표시되며, 회사명 기준으로 저장됩니다.
+          </p>
+          <button
+            type="button"
+            onClick={saveAllVisibleUsers}
+            disabled={savingAll || filteredUsers.length === 0}
+            className="rounded-xl bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white transition hover:bg-[#2563eb] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {savingAll ? "일괄 저장 중..." : `현재 목록 일괄 저장 (${filteredUsers.length.toLocaleString()}명)`}
+          </button>
+        </section>
         <UserTable
           users={filteredUsers}
           selectedIds={selectedIds}
           onSelectChange={onSelectChange}
           onSelectAll={onSelectAll}
+          onDraftChange={(user) => setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, ...user } : item))}
           onSave={saveUser}
           onResetPassword={setResetUser}
           viewerId={viewer?.id ?? ""}

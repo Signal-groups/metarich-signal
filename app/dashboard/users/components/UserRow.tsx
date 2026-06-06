@@ -34,6 +34,8 @@ export type StaffUser = {
 type EditableStaffUser = StaffUser & {
   rank: AppRank
   is_approved: boolean
+  company_type: CompanyType
+  company_name: string
   crm_access: boolean
   office_access: boolean
   claim_access: boolean
@@ -44,7 +46,8 @@ interface UserRowProps {
   user: StaffUser
   selected: boolean
   onSelectChange: (id: string, checked: boolean) => void
-  onSave: (user: StaffUser) => Promise<void>
+  onDraftChange: (user: StaffUser) => void
+  onSave: (user: StaffUser) => Promise<boolean>
   onResetPassword: (user: StaffUser) => void
   viewerId: string
   compact?: boolean
@@ -76,11 +79,22 @@ function toRank(user: StaffUser): AppRank {
 }
 
 export function getCompanyLabel(user: StaffUser) {
-  return user.company_type === "external" ? "타사" : "메타리치"
+  return getCompanyType(user) === "external" ? "타사" : "메타리치"
+}
+
+export function getCompanyType(user: StaffUser): CompanyType {
+  if (user.company_type === "external") return "external"
+  if (user.company_type === "metarich") return "metarich"
+  if ((user.headquarter || user.headquarter_name) === "대외") return "external"
+  return "metarich"
+}
+
+export function getCompanyName(user: StaffUser) {
+  return user.company_name || (getCompanyType(user) === "external" ? user.department || "" : "메타리치 시그널그룹")
 }
 
 export function getAffiliation(user: StaffUser) {
-  if (user.company_type === "external") return user.company_name || user.department || "회사 미입력"
+  if (getCompanyType(user) === "external") return getCompanyName(user) || "회사 미입력"
 
   return [
     user.headquarter || user.headquarter_name,
@@ -104,11 +118,13 @@ export function formatDate(value?: string | null) {
   return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "")
 }
 
-export default function UserRow({ user, selected, onSelectChange, onSave, onResetPassword, viewerId, compact = false }: UserRowProps) {
+export default function UserRow({ user, selected, onSelectChange, onDraftChange, onSave, onResetPassword, viewerId, compact = false }: UserRowProps) {
   const [draft, setDraft] = useState<EditableStaffUser>(() => ({
     ...user,
     rank: toRank(user),
     is_approved: enabled(user.is_approved),
+    company_type: getCompanyType(user),
+    company_name: getCompanyName(user),
     crm_access: enabled(user.crm_access),
     office_access: enabled(user.office_access),
     claim_access: enabled(user.claim_access),
@@ -121,6 +137,8 @@ export default function UserRow({ user, selected, onSelectChange, onSave, onRese
       ...user,
       rank: toRank(user),
       is_approved: enabled(user.is_approved),
+      company_type: getCompanyType(user),
+      company_name: getCompanyName(user),
       crm_access: enabled(user.crm_access),
       office_access: enabled(user.office_access),
       claim_access: enabled(user.claim_access),
@@ -137,6 +155,14 @@ export default function UserRow({ user, selected, onSelectChange, onSave, onRese
     }
   }
 
+  const patchDraft = (patch: Partial<EditableStaffUser>) => {
+    setDraft((prev) => {
+      const next = { ...prev, ...patch }
+      onDraftChange(next)
+      return next
+    })
+  }
+
   const permissionButtons = (
     <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
       {permissionColumns.map((permission) => {
@@ -147,7 +173,7 @@ export default function UserRow({ user, selected, onSelectChange, onSave, onRese
             key={permission.key}
             type="button"
             disabled={disabled}
-            onClick={() => !disabled && setDraft((prev) => ({ ...prev, [permission.key]: !active }))}
+            onClick={() => !disabled && patchDraft({ [permission.key]: !active } as Partial<EditableStaffUser>)}
             title={disabled ? "승인 후 설정할 수 있습니다." : permission.label}
             className={`rounded-lg px-2 py-2 text-[12px] font-black transition ${
               disabled
@@ -186,11 +212,36 @@ export default function UserRow({ user, selected, onSelectChange, onSave, onRese
         </dl>
 
         <div className="mt-4 grid gap-3">
-          <select value={draft.rank} onChange={(event) => setDraft((prev) => ({ ...prev, rank: event.target.value as AppRank }))} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-900">
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={draft.company_type}
+              onChange={(event) => {
+                const nextType = event.target.value as CompanyType
+                patchDraft({
+                  company_type: nextType,
+                  company_name: nextType === "metarich" ? "메타리치 시그널그룹" : draft.company_name,
+                  headquarter: nextType === "external" ? "대외" : "",
+                  department: nextType === "external" ? draft.company_name : "",
+                })
+              }}
+              className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-900"
+            >
+              <option value="metarich">메타리치</option>
+              <option value="external">타사</option>
+            </select>
+            <input
+              value={draft.company_name}
+              readOnly={draft.company_type === "metarich"}
+              onChange={(event) => patchDraft({ company_name: event.target.value, department: event.target.value })}
+              placeholder="회사명"
+              className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-900 outline-none read-only:bg-slate-100 read-only:text-slate-500"
+            />
+          </div>
+          <select value={draft.rank} onChange={(event) => patchDraft({ rank: event.target.value as AppRank })} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-900">
             {rankOptions.map((rank) => <option key={rank.value} value={rank.value}>{rank.label}</option>)}
           </select>
           {permissionButtons}
-          <button type="button" onClick={() => setDraft((prev) => ({ ...prev, is_approved: !prev.is_approved }))} className={`rounded-xl px-4 py-3 text-sm font-black ${draft.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+          <button type="button" onClick={() => patchDraft({ is_approved: !draft.is_approved })} className={`rounded-xl px-4 py-3 text-sm font-black ${draft.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
             {draft.is_approved ? "승인 완료" : "승인 대기"}
           </button>
           <div className="grid grid-cols-2 gap-2">
@@ -210,16 +261,42 @@ export default function UserRow({ user, selected, onSelectChange, onSave, onRese
         <p className="mt-1 text-xs font-bold text-slate-400">{user.email || "-"}</p>
         <p className="mt-1 text-xs font-bold text-slate-400">{user.phone || "-"}</p>
       </td>
-      <td className="p-4 text-sm font-black text-slate-700">{getCompanyLabel(user)}</td>
-      <td className="max-w-[260px] p-4 text-sm font-bold text-slate-600">{getAffiliation(user)}</td>
       <td className="p-4">
-        <select value={draft.rank} onChange={(event) => setDraft((prev) => ({ ...prev, rank: event.target.value as AppRank }))} className="rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900">
+        <div className="grid min-w-[210px] gap-2">
+          <select
+            value={draft.company_type}
+            onChange={(event) => {
+              const nextType = event.target.value as CompanyType
+              patchDraft({
+                company_type: nextType,
+                company_name: nextType === "metarich" ? "메타리치 시그널그룹" : draft.company_name,
+                headquarter: nextType === "external" ? "대외" : "",
+                department: nextType === "external" ? draft.company_name : "",
+              })
+            }}
+            className="rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900"
+          >
+            <option value="metarich">메타리치</option>
+            <option value="external">타사</option>
+          </select>
+          <input
+            value={draft.company_name}
+            readOnly={draft.company_type === "metarich"}
+            onChange={(event) => patchDraft({ company_name: event.target.value, department: event.target.value })}
+            placeholder="회사명"
+            className="rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900 outline-none read-only:bg-slate-100 read-only:text-slate-500"
+          />
+        </div>
+      </td>
+      <td className="max-w-[260px] p-4 text-sm font-bold text-slate-600">{getAffiliation(draft)}</td>
+      <td className="p-4">
+        <select value={draft.rank} onChange={(event) => patchDraft({ rank: event.target.value as AppRank })} className="rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900">
           {rankOptions.map((rank) => <option key={rank.value} value={rank.value}>{rank.label}</option>)}
         </select>
       </td>
       <td className="p-4">{permissionButtons}</td>
       <td className="p-4">
-        <button type="button" onClick={() => setDraft((prev) => ({ ...prev, is_approved: !prev.is_approved }))} className={`rounded-xl px-3 py-2 text-[12px] font-black ${draft.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+        <button type="button" onClick={() => patchDraft({ is_approved: !draft.is_approved })} className={`rounded-xl px-3 py-2 text-[12px] font-black ${draft.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
           {draft.is_approved ? "승인" : "미승인"}
         </button>
       </td>
