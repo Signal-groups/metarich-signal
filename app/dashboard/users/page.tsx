@@ -48,39 +48,53 @@ export default function StaffManagementPage() {
     setUsers((data || []) as StaffUser[])
   }, [])
 
-  useEffect(() => {
-    let alive = true
+  const init = useCallback(async () => {
+    try {
+      let { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        const { data: refreshed } = await supabase.auth.refreshSession()
+        session = refreshed.session
+      }
+      if (!session) return router.replace("/login?redirectTo=/dashboard/users")
 
-    async function init() {
-      const { data: authData, error: authError } = await supabase.auth.getUser()
-      if (authError || !authData.user) {
-        router.replace("/login?redirectTo=/dashboard/users")
-        return
+      let userId: string | null = null
+      const { data: authUser, error: authError } = await supabase.auth.getUser()
+      if (authError || !authUser.user) {
+        if (session.user?.id) { userId = session.user.id }
+        else {
+          await supabase.auth.signOut().catch(() => {})
+          return router.replace("/login?redirectTo=/dashboard/users")
+        }
+      } else {
+        userId = authUser.user.id
       }
 
       const { data: profile } = await supabase
         .from("users")
         .select("*")
-        .eq("id", authData.user.id)
+        .eq("id", userId!)
         .maybeSingle()
 
       if (!profile || normalizeRole(profile) !== "master") {
-        router.replace("/dashboard")
-        return
+        return router.replace("/dashboard")
       }
 
-      if (!alive) return
       setViewer(profile as StaffUser)
       await loadUsers()
-      if (alive) setLoading(false)
-    }
-
-    init().catch(() => router.replace("/dashboard"))
-
-    return () => {
-      alive = false
+      setLoading(false)
+    } catch {
+      setLoading(false)
     }
   }, [loadUsers, router])
+
+  useEffect(() => {
+    queueMicrotask(() => { void init() })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") init()
+      if (event === "SIGNED_OUT") router.replace("/login?redirectTo=/dashboard/users")
+    })
+    return () => subscription.unsubscribe()
+  }, [init, router])
 
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase()
@@ -189,6 +203,12 @@ export default function StaffManagementPage() {
       <header className="border-b border-white/80 bg-white/90 px-4 py-5 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="mb-3 flex items-center gap-1.5 text-xs font-bold text-[#1a3a6e] hover:underline"
+            >
+              ← 대시보드
+            </button>
             <p className="text-xs font-black uppercase tracking-[0.25em] text-[#1a3a6e]">Metarich Staff</p>
             <h1 className="mt-2 text-3xl font-black text-slate-950">직원 관리</h1>
             <p className="mt-2 text-sm font-bold text-slate-500">메타리치 시그널그룹 직원 전체 관리</p>
@@ -227,19 +247,17 @@ export default function StaffManagementPage() {
           onSelectAll={onSelectAll}
           onSave={saveUser}
           onResetPassword={setResetUser}
-          viewerId={viewer?.id || ""}
+          viewerId={viewer?.id ?? ""}
         />
+        {resetUser && (
+          <ResetPasswordModal
+            user={resetUser}
+            requesterId={viewer?.id ?? ""}
+            onSuccess={() => setResetUser(null)}
+            onClose={() => setResetUser(null)}
+          />
+        )}
       </main>
-
-      <ResetPasswordModal
-        user={resetUser}
-        requesterId={viewer?.id || ""}
-        onClose={() => setResetUser(null)}
-        onSuccess={() => {
-          setResetUser(null)
-          loadUsers()
-        }}
-      />
     </div>
   )
 }

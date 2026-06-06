@@ -75,9 +75,9 @@ const HEALTH_COV: Coverage[] = [
   { id:"care",        title:"간병/재가 급여",         scope:"",       category:"간병",   unit:"만원", baseRate:81.42, active:{min:false, standard:false, full:true},  amount:{min:0,   standard:0,    full:100},  sensitivityTags:["나이","성별"],    checkPoint:"장기요양등급·갱신·지급기간",  rankNote:"나이 민감도 최고·60대 40대 대비 4배·생보 강세" },
 ]
 const DEATH_COV: Coverage[] = [
-  { id:"whole",       title:"종신보험",              scope:"",       category:"사망",   unit:"만원", baseRate:1.65, active:{min:true, standard:true, full:true},   amount:{min:5000,standard:10000,full:20000}, sensitivityTags:["나이","성별"], checkPoint:"해약환급금·저해약구조·수익자", rankNote:"대형생보(삼성·교보·한화) 유리·손보 가입 시 20%↑" },
-  { id:"term",        title:"정기특약/정기보험",      scope:"",       category:"사망",   unit:"만원", baseRate:0.42, active:{min:true, standard:true, full:true},   amount:{min:5000,standard:10000,full:20000}, sensitivityTags:["나이","성별"], checkPoint:"만기 이후 보장 종료·갱신여부", rankNote:"신한라이프·KB라이프 정기 담보 강세" },
-  { id:"diseaseDeath",title:"질병사망",              scope:"",       category:"사망",   unit:"만원", baseRate:0.72, active:{min:false,standard:true, full:true},   amount:{min:0,   standard:5000, full:10000}, sensitivityTags:["나이","성별","유병력"], checkPoint:"재해사망 제외여부·보험기간", rankNote:"생보 강세·유병력 시 손보가 오히려 유리한 역전 현상" },
+  { id:"whole",       title:"종신보험",              scope:"",       category:"사망",   unit:"만원", baseRate:1.65, active:{min:false,standard:false,full:false},  amount:{min:5000,standard:10000,full:20000}, sensitivityTags:["나이","성별"], checkPoint:"해약환급금·저해약구조·수익자", rankNote:"대형생보(삼성·교보·한화) 유리·손보 가입 시 20%↑" },
+  { id:"term",        title:"정기특약/정기보험",      scope:"",       category:"사망",   unit:"만원", baseRate:0.42, active:{min:false,standard:false,full:false},  amount:{min:5000,standard:10000,full:20000}, sensitivityTags:["나이","성별"], checkPoint:"만기 이후 보장 종료·갱신여부", rankNote:"신한라이프·KB라이프 정기 담보 강세" },
+  { id:"diseaseDeath",title:"질병사망",              scope:"",       category:"사망",   unit:"만원", baseRate:0.72, active:{min:false,standard:false,full:false},  amount:{min:0,   standard:5000, full:10000}, sensitivityTags:["나이","성별","유병력"], checkPoint:"재해사망 제외여부·보험기간", rankNote:"생보 강세·유병력 시 손보가 오히려 유리한 역전 현상" },
 ]
 
 // ══════════════════════════════════════════════════════════

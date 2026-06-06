@@ -2,8 +2,8 @@
 <html lang="ko"><head><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='14' fill='%230a0a0a'/&gt;&lt;path d='M38 4 L14 36 L28 36 L24 60 L50 26 L34 26 Z' fill='%23FFEB00' stroke='%23FFEB00' stroke-width='1' stroke-linejoin='round'/&gt;&lt;/svg&gt;">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>??? ?? ? ?? ??? ? ?? ??? ????</title>
-<meta name="description" content="PAIR — 등록 튜터 28,000명. 평균 성적 +24점 향상. AI 매칭으로 24시간 안에 3명을 추천해드립니다. 매칭료 무료, 첫 수업 무료 교체.">
+<title>설계사 매칭 · 맞는 전문가 한 명이 보험을 바꿉니다</title>
+<meta name="description" content="설계사 매칭 · 맞는 전문가 한 명이 보험을 바꿉니다">
 
 <!-- ============================================
      의존성
@@ -388,7 +388,7 @@ button { font-family:inherit; cursor:pointer; border:none; background:none; colo
   opacity:0.95;
 }
 
-/* 플로팅 매칭 카드 1 - 튜터 추천 */
+/* 플로팅 매칭 카드 1 - 전문가 추천 */
 .match-card {
   position:absolute;
   background:#fff;
@@ -746,7 +746,7 @@ button { font-family:inherit; cursor:pointer; border:none; background:none; colo
 }
 
 /* ============================================
-   9. SECTION 5 - 튜터 풀 (4개 카드)
+   9. SECTION 5 - 전문가 풀 (4개 카드)
    ============================================ */
 .pool {
   padding:var(--section-py) 0;
@@ -1694,7 +1694,55 @@ footer {
   .nav-inner { padding:0 20px; }
 }
 </style>
-</head>
+<style id="dp-force-reveal-style">
+      .reveal, .day-row, .fade-in, .fade-up, .scroll-reveal, [data-aos], [data-reveal], .scroll-trigger, .animate-on-scroll {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style><style id="dp-edit-hide-style">
+      body.dp-editing .dp-sec-del,
+      body.dp-editing .dp-bg-btn { opacity: 0.15 !important; transition: opacity .15s; }
+      body.dp-editing .dp-sec-del:hover,
+      body.dp-editing .dp-bg-btn:hover { opacity: 1 !important; }
+    </style><style id="dp-bg-style">
+      [data-dp-bg-bound]:hover > .dp-bg-btn{opacity:1 !important;transform:translateY(0)}
+      [data-dp-bg-bound]:hover{outline:3px dashed #03c75a !important;outline-offset:-3px}
+      .dp-bg-btn{
+        position:absolute;top:64px;right:14px;z-index:9998;
+        background:rgba(0,0,0,.92);color:#FFEB00;border:2px solid #FFEB00;
+        padding:8px 12px;border-radius:10px;cursor:pointer;
+        font-family:'Pretendard',sans-serif;font-weight:800;font-size:12px;
+        opacity:0.65;transition:all .2s;
+        box-shadow:0 6px 20px rgba(0,0,0,.6),0 0 0 2px rgba(255,235,0,0.2);
+        display:inline-flex;align-items:center;gap:6px;
+        max-width:calc(100% - 28px);white-space:nowrap;
+      }
+      .dp-bg-btn:hover{background:#FFEB00;color:#000;transform:scale(1.05)}
+      .dp-bg-broken{outline:4px dashed #FFEB00 !important;outline-offset:-4px;animation:dpBgPulse 1.5s ease-in-out infinite}
+      .dp-bg-broken > .dp-bg-btn{opacity:1 !important;background:#ff3030 !important;border-color:#fff !important;color:#fff !important}
+      @keyframes dpBgPulse{0%,100%{box-shadow:inset 0 0 0 0 rgba(255,235,0,0.3)}50%{box-shadow:inset 0 0 100px 0 rgba(255,235,0,0.15)}}
+    </style><style id="dp-link-style">
+      [data-dp-btn-bound]{position:relative}
+      .dp-link-btn{
+        position:absolute;top:-12px;right:-8px;z-index:9998;
+        background:#03c75a;color:#fff;border:2px solid #fff;
+        padding:4px 9px;border-radius:14px;cursor:pointer;
+        font-family:'Pretendard',sans-serif;font-weight:900;font-size:11px;
+        box-shadow:0 4px 12px rgba(0,0,0,.5);white-space:nowrap;
+        opacity:0.95;transition:all .15s;
+        line-height:1;
+      }
+      .dp-link-btn:hover{background:#fff;color:#03c75a;transform:scale(1.1);opacity:1}
+      [data-dp-btn-bound][data-dp-has-link="1"]{
+        box-shadow: inset 0 0 0 2px rgba(3,199,90,0.6);
+      }
+      [data-dp-btn-bound][data-dp-has-link="1"] > .dp-link-btn{
+        background:#0d9e4a;
+      }
+      [data-dp-btn-bound][data-dp-has-link="1"] > .dp-link-btn::before{
+        content:'✓ ';
+      }
+    </style></head>
 <body>
 
 <!-- ============================================
@@ -1702,18 +1750,18 @@ footer {
      ============================================ -->
 <nav class="nav scrolled" id="nav">
   <div class="nav-inner">
-    <a href="#hero" class="nav-logo">
+    <a href="#hero" class="nav-logo" data-dp-btn-bound="1" data-dp-has-link="1">
       <span class="nav-logo-mark">SIGNAL MATCH</span>
-      ????
+      상담분야
     </a>
     <ul class="nav-menu">
-      <li><a href="#subjects">과목</a></li>
-      <li><a href="#process">매칭 과정</a></li>
-      <li><a href="#pool">튜터 풀</a></li>
-      <li><a href="#cases">합격 사례</a></li>
-      <li><a href="#faq">?? ??</a></li>
+      <li><a href="#subjects" data-dp-btn-bound="1" data-dp-has-link="1">매칭 과정</a></li>
+      <li><a href="#process" data-dp-btn-bound="1" data-dp-has-link="1">전문가 풀</a></li>
+      <li><a href="#pool" data-dp-btn-bound="1" data-dp-has-link="1">상담 사례</a></li>
+      <li><a href="#cases" data-dp-btn-bound="1" data-dp-has-link="1">FAQ</a></li>
+      <li><a href="#faq" data-dp-btn-bound="1" data-dp-has-link="1">무료 매칭 신청</a></li>
     </ul>
-    <a href="#final-cta" class="nav-cta">무료 매칭 신청</a>
+    <a href="#final-cta" class="nav-cta" data-dp-btn-bound="1" data-dp-has-link="1">매칭료 0원 · 첫 상담 무료</a>
   </div>
 </nav>
 
@@ -1724,25 +1772,25 @@ footer {
   <div class="container">
     <div class="hero-grid">
       <div class="hero-text">
-        <span class="check-pill">??? ?</span>
+        <span class="check-pill">맞는 전문가 한 명이</span>
         <h1>
-          맞는 선생님 한 명이<br>
-          <em>점수를 바꿉니다.</em>
+          보험 이해를 바꿉니다.<br>
+          <em>상담 목적·지역·연령대까지 확인해 가장 적합한 보험 전문가를 연결합니다. 상담료 없음, 부담 없는 첫 점검부터 시작하세요.</em>
         </h1>
         <p class="hero-sub">
-          ?? ??
+          상담 사례 보기
         </p>
         <div class="hero-cta-row">
-          <a href="#final-cta" class="btn btn-primary">
-            무료 매칭 신청
+          <a href="#final-cta" class="btn btn-primary" data-dp-btn-bound="1" data-dp-has-link="1">
+            등록 전문가 280명
             <span>→</span>
           </a>
-          <a href="#cases" class="btn btn-line">합격 사례 보기</a>
+          <a href="#cases" class="btn btn-line" data-dp-btn-bound="1" data-dp-has-link="1">평균 월 15만원 절감</a>
         </div>
         <div class="hero-trust">
-          <span class="check-pill">FAQ</span>
-          <span class="check-pill">?? ?? ??</span>
-          <span class="check-pill">??? 0? ? ? ?? ??</span>
+          <span class="check-pill">24시간 안에 연락</span>
+          <span class="check-pill">매칭 추천 1순위</span>
+          <span class="check-pill">보장분석 전문</span>
         </div>
       </div>
 
@@ -1754,21 +1802,21 @@ footer {
 
         <!-- 플로팅 카드 1 -->
         <div class="match-card match-card-1">
-          <div class="match-card-avatar">서</div>
+          <div class="match-card-avatar">★ 4.9 · 6년차</div>
           <div>
-            <div class="label">?? ??? ? ??</div>
-            <div class="name">서울대 수학과</div>
-            <div class="meta">?? ??? ????.</div>
+            <div class="label">매칭 추천 2순위</div>
+            <div class="name">보험금 청구 도움</div>
+            <div class="meta">★ 4.8 · 4년차</div>
           </div>
         </div>
 
         <!-- 플로팅 카드 2 -->
         <div class="match-card match-card-2">
-          <div class="match-card-avatar">?? ??????????? ??? ?? ??? ?? ???? ?????. ??? ??, ?? ?? ? ???? ?????.</div>
+          <div class="match-card-avatar">평균 결과</div>
           <div>
-            <div class="label">?? ?? ??</div>
-            <div class="name">?? ??? 280?</div>
-            <div class="meta">?? ? 15?? ??</div>
+            <div class="label">15만원</div>
+            <div class="name">월 절감 사례</div>
+            <div class="meta">02 · BY NUMBERS</div>
           </div>
         </div>
 
@@ -1776,9 +1824,9 @@ footer {
         <div class="match-card match-card-3">
           <div class="match-card-avatar">↑</div>
           <div>
-            <div class="label">평균 결과</div>
-            <div class="name">24?? ?? ??</div>
-            <div class="meta">?? ?? 1??</div>
+            <div class="label">숫자로 증명하는</div>
+            <div class="name">상담 매칭의 정확성</div>
+            <div class="meta">누적 상담 데이터와 고객 피드백을 바탕으로 목적에 맞는 전문가를 추천합니다.</div>
           </div>
         </div>
       </div>
@@ -1792,10 +1840,10 @@ footer {
 <section class="stats">
   <div class="container">
     <div class="stats-head">
-      <span class="eyebrow">???? ??</span>
-      <h2 class="section-h2">숫자로 증명하는 <em>매칭의 정확성</em></h2>
+      <span class="eyebrow">👨‍💼</span>
+      <h2 class="section-h2">280 <em>등록 전문가</em></h2>
       <p class="section-sub">
-        ? 4.9 ? 6??
+        매월 신규 합류
       </p>
     </div>
 
@@ -1803,40 +1851,40 @@ footer {
     <div class="stats-main">
       <div class="stat-cell fade-in visible show active aos-animate is-visible in-view in">
         <div class="stat-icon">👨‍🏫</div>
-        <div class="stat-num" data-target="28000">?? ?? 2??<span class="unit">명</span></div>
-        <div class="stat-label">등록 튜터</div>
-        <div class="stat-detail">??? ?? ??</div>
+        <div class="stat-num" data-target="28000">21,573<span class="unit">누적 상담</span></div>
+        <div class="stat-label">METARICH SIGNAL GROUP</div>
+        <div class="stat-detail">정확한 분석, 신속한 청구</div>
       </div>
       <div class="stat-cell fade-in visible show active aos-animate is-visible in-view in">
         <div class="stat-icon">🎯</div>
-        <div class="stat-num" data-target="142000">? 4.8 ? 4??<span class="unit">건</span></div>
-        <div class="stat-label">누적 매칭</div>
-        <div class="stat-detail">?? ??</div>
+        <div class="stat-num" data-target="142000">보험 상담<span class="unit">보장 분석</span></div>
+        <div class="stat-label">보험금 청구</div>
+        <div class="stat-detail">리모델링</div>
       </div>
       <div class="stat-cell fade-in visible show active aos-animate is-visible in-view in">
         <div class="stat-icon">📈</div>
-        <div class="stat-num">15??<span class="unit">점</span></div>
-        <div class="stat-label">평균 성적 향상</div>
-        <div class="stat-detail">? ?? ??</div>
+        <div class="stat-num">연금 설계<span class="unit">상담 신청</span></div>
+        <div class="stat-label">무료 점검 신청하기</div>
+        <div class="stat-detail">카카오톡으로 문의하기</div>
       </div>
       <div class="stat-cell fade-in visible show active aos-animate is-visible in-view in">
         <div class="stat-icon">⭐</div>
-        <div class="stat-num">02 ? BY NUMBERS<span class="unit">??? ????</span></div>
-        <div class="stat-label">평균 만족도</div>
-        <div class="stat-detail">?? ??? ???</div>
+        <div class="stat-num">전화 상담 예약<span class="unit">전문가에게 바로 묻기</span></div>
+        <div class="stat-label">내 보험 현황 확인</div>
+        <div class="stat-detail">상담 가능 지역 확인</div>
       </div>
     </div>
 
     <!-- 보조 8개 -->
     <div class="stats-sub">
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">?? ?? ???? ?? ???? ???? ??? ?? ???? ?????.</div><div class="stat-sub-label">과목 카테고리</div></div>
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">?????</div><div class="stat-sub-label">매칭 성사율</div></div>
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">280</div><div class="stat-sub-label">평균 회신 시간</div></div>
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">?? ???</div><div class="stat-sub-label">재이용 의향률</div></div>
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">?? ?? ??</div><div class="stat-sub-label">튜터 검증 시스템</div></div>
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">21,573</div><div class="stat-sub-label">?? ??</div></div>
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">METARICH SIGNAL GROUP</div><div class="stat-sub-label">파트너 학교</div></div>
-      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">??? ??, ??? ??</div><div class="stat-sub-label">서비스 시작</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">국내 30여개 보험사 비교</div><div class="stat-sub-label">누적 상담 21,573건</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">24시간 내 전문가 연락</div><div class="stat-sub-label">상담료 0원</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">개인정보 안전 관리</div><div class="stat-sub-label">1:1 맞춤 분석</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">보장 공백 확인</div><div class="stat-sub-label">중복 보험료 점검</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">갱신형 보험료 확인</div><div class="stat-sub-label">실손보험 세대 점검</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">암·뇌·심장 진단비 확인</div><div class="stat-sub-label">수술비 보장 확인</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">보험료는 줄이고 필요한 보장은 남깁니다</div><div class="stat-sub-label">고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다</div></div>
+      <div class="stat-sub-cell fade-in visible show active aos-animate is-visible in-view in"><div class="stat-sub-num">가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다</div><div class="stat-sub-label">복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</div></div>
     </div>
   </div>
 </section>
@@ -1847,92 +1895,92 @@ footer {
 <section class="subjects" id="subjects">
   <div class="container">
     <div class="subjects-head">
-      <span class="eyebrow">?? ??</span>
-      <h2 class="section-h2">?? ?? <em>모든 과목</em></h2>
+      <span class="eyebrow">보험 분석은 판매가 아니라 정리에서 시작합니다</span>
+      <h2 class="section-h2">상담 후 원치 않으면 언제든 중단하셔도 됩니다 <em>이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다</em></h2>
       <p class="section-sub">
-        ??? ??
+        현재 보유 보험 증권을 기준으로 객관적으로 확인합니다
       </p>
     </div>
 
     <div class="subj-grid">
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">📖</div>
-        <h3>국어</h3>
-        <div class="subj-en">????</div>
-        <p>비문학·문학·문법·고전. 수능 국어부터 논술까지 분야별 전문 튜터.</p>
+        <h3>강원 · 경기 · 충북 지역 대면 상담 가능</h3>
+        <div class="subj-en">온라인 상담도 가능합니다</div>
+        <p>상담 신청서 작성</p>
         <div class="subj-meta">
-          <div class="subj-count">?? ??</div>
-          <div class="subj-count-label">?? ??</div>
+          <div class="subj-count">전문가 배정</div>
+          <div class="subj-count-label">보장 분석 리포트 전달</div>
         </div>
       </div>
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">🌐</div>
-        <h3>영어</h3>
-        <div class="subj-en">?? ?? ????</div>
-        <p>?????? ????</p>
+        <h3>후속 관리 안내</h3>
+        <div class="subj-en">보험은 많지만 내게 맞는 보험은 따로 있습니다</div>
+        <p>보험료가 부담된다면 먼저 구조를 확인해보세요</p>
         <div class="subj-meta">
-          <div class="subj-count">?? ?? ??</div>
-          <div class="subj-count-label">????? ?? ??</div>
+          <div class="subj-count">청구하지 못한 보험금이 있는지 함께 확인합니다</div>
+          <div class="subj-count-label">메타리치 시그널그룹 전문가가 직접 분석합니다</div>
         </div>
       </div>
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">📐</div>
-        <h3>수학</h3>
-        <div class="subj-en">? ?? ?? ??</div>
-        <p>기초·심화·킬러문제·올림피아드. 학년별 단계별 맞춤 진행.</p>
+        <h3>보험을 어렵게 설명하지 않습니다</h3>
+        <div class="subj-en">고객이 이해할 때까지 쉽게 안내합니다</div>
+        <p>김민준 재무설계사</p>
         <div class="subj-meta">
-          <div class="subj-count">?? ?? ?? ??</div>
-          <div class="subj-count-label">?? 30?? ??? ??</div>
+          <div class="subj-count">AFPK · CFP 재무설계사</div>
+          <div class="subj-count-label">메타리치 시그널그룹</div>
         </div>
       </div>
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">🔬</div>
-        <h3>과학</h3>
-        <div class="subj-en">?? ?? 21,573?</div>
-        <p>물리·화학·생명과학·지구과학. 과탐 선택과목별 전문 튜터 풀.</p>
+        <h3>010-1234-5678</h3>
+        <div class="subj-en">advisor@metarich.kr</div>
+        <p>설계사 매칭 · 맞는 전문가 한 명이 보험을 바꿉니다</p>
         <div class="subj-meta">
-          <div class="subj-count">24?? ? ??? ??</div>
-          <div class="subj-count-label">??? 0?</div>
+          <div class="subj-count">SIGNAL MATCH</div>
+          <div class="subj-count-label">상담분야</div>
         </div>
       </div>
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">🌏</div>
-        <h3>사회</h3>
-        <div class="subj-en">???? ?? ??</div>
-        <p>한국사·세계사·경제·정치·사회문화. 사탐 모든 과목 대응.</p>
+        <h3>매칭 과정</h3>
+        <div class="subj-en">전문가 풀</div>
+        <p>상담 사례</p>
         <div class="subj-meta">
-          <div class="subj-count">1:1 ?? ??</div>
-          <div class="subj-count-label">?? ?? ??</div>
+          <div class="subj-count">FAQ</div>
+          <div class="subj-count-label">무료 매칭 신청</div>
         </div>
       </div>
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">✏️</div>
-        <h3>논술</h3>
-        <div class="subj-en">?? ??? ??</div>
-        <p>대학별 출제 경향 분석. 첨삭 횟수 무제한, 모의 논술 진행.</p>
+        <h3>매칭료 0원 · 첫 상담 무료</h3>
+        <div class="subj-en">맞는 전문가 한 명이</div>
+        <p>보험 이해를 바꿉니다.</p>
         <div class="subj-meta">
-          <div class="subj-count">??? ??? ??</div>
-          <div class="subj-count-label">???? ?? ??</div>
+          <div class="subj-count">상담 목적·지역·연령대까지 확인해 가장 적합한 보험 전문가를 연결합니다. 상담료 없음, 부담 없는 첫 점검부터 시작하세요.</div>
+          <div class="subj-count-label">상담 사례 보기</div>
         </div>
       </div>
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">💻</div>
-        <h3>코딩</h3>
-        <div class="subj-en">?????? ??? ??</div>
-        <p>파이썬·자바·알고리즘·정보올림피아드. 입시 연계 코딩까지.</p>
+        <h3>등록 전문가 280명</h3>
+        <div class="subj-en">평균 월 15만원 절감</div>
+        <p>24시간 안에 연락</p>
         <div class="subj-meta">
-          <div class="subj-count">??? ?? ??</div>
-          <div class="subj-count-label">???? ??? ??? ??? ????</div>
+          <div class="subj-count">매칭 추천 1순위</div>
+          <div class="subj-count-label">보장분석 전문</div>
         </div>
       </div>
       <div class="subj-card fade-in visible show active aos-animate is-visible in-view in">
         <div class="subj-icon">🎨</div>
-        <h3>예체능</h3>
-        <div class="subj-en">??? ?? ??? ?? ?? ??? ?? ?????</div>
-        <p>미술·음악·체육 입시. 실기 지도부터 입학사정관제 컨설팅까지.</p>
+        <h3>★ 4.9 · 6년차</h3>
+        <div class="subj-en">매칭 추천 2순위</div>
+        <p>보험금 청구 도움</p>
         <div class="subj-meta">
-          <div class="subj-count">???? ??? ?? ?? ? ??? ??? ????? ???? ????</div>
-          <div class="subj-count-label">??? ??? ?? ??? ???? ?? ???????</div>
+          <div class="subj-count">★ 4.8 · 4년차</div>
+          <div class="subj-count-label">평균 결과</div>
         </div>
       </div>
     </div>
@@ -1945,64 +1993,64 @@ footer {
 <section class="process" id="process">
   <div class="container">
     <div class="process-head">
-      <span class="eyebrow">?? ??? ??? ??? ???? ?????</span>
-      <h2 class="section-h2">신청부터 첫 수업까지 <em>?? ? ?? ??? ??? ????? ???</em></h2>
+      <span class="eyebrow">15만원</span>
+      <h2 class="section-h2">월 절감 사례 <em>02 · BY NUMBERS</em></h2>
       <p class="section-sub">
-        ??? ???? ???? ?? ???? ?? ??????
+        숫자로 증명하는
       </p>
     </div>
 
     <div class="process-grid">
       <div class="process-step fade-in visible show active aos-animate is-visible in-view in">
-        <div class="process-num">?? ?? ?? ??? ???? ????? ?????</div>
-        <h4>매칭 신청</h4>
-        <p>?? ? ?? ? ?? ?? ?? ?? ??</p>
-        <span class="process-time">??? ??? ?????</span>
+        <div class="process-num">상담 매칭의 정확성</div>
+        <h4>누적 상담 데이터와 고객 피드백을 바탕으로 목적에 맞는 전문가를 추천합니다.</h4>
+        <p>👨‍💼</p>
+        <span class="process-time">280</span>
       </div>
       <div class="process-step fade-in visible show active aos-animate is-visible in-view in">
-        <div class="process-num">?? ??? ??</div>
-        <h4>자동 매칭</h4>
-        <p>??? ??</p>
-        <span class="process-time">?? ?? ??? ??</span>
+        <div class="process-num">등록 전문가</div>
+        <h4>매월 신규 합류</h4>
+        <p>21,573</p>
+        <span class="process-time">누적 상담</span>
       </div>
       <div class="process-step fade-in visible show active aos-animate is-visible in-view in">
-        <div class="process-num">?? ?? ??</div>
-        <h4>??? ??? ?? ?? ??? ?? ????</h4>
-        <p>???? ????? ?? ??? ??????</p>
-        <span class="process-time">???? ?? ???? ??? ?? ?????</span>
+        <div class="process-num">METARICH SIGNAL GROUP</div>
+        <h4>정확한 분석, 신속한 청구</h4>
+        <p>보험 상담</p>
+        <span class="process-time">보장 분석</span>
       </div>
       <div class="process-step fade-in visible show active aos-animate is-visible in-view in">
-        <div class="process-num">???? ????? ???? ?? ?????</div>
-        <h4>사전 상담</h4>
-        <p>??? ??? ???? ????</p>
-        <span class="process-time">??? ??? ??? ?? ?????</span>
+        <div class="process-num">보험금 청구</div>
+        <h4>리모델링</h4>
+        <p>연금 설계</p>
+        <span class="process-time">상담 신청</span>
       </div>
       <div class="process-step fade-in visible show active aos-animate is-visible in-view in">
-        <div class="process-num">?? ?? ????</div>
-        <h4>첫 수업</h4>
-        <p>희망 일정에 맞춰 첫 수업 진행. 만족 안 하면 교체.</p>
-        <span class="process-time">?? ??</span>
+        <div class="process-num">무료 점검 신청하기</div>
+        <h4>카카오톡으로 문의하기</h4>
+        <p>전화 상담 예약</p>
+        <span class="process-time">전문가에게 바로 묻기</span>
       </div>
       <div class="process-step fade-in visible show active aos-animate is-visible in-view in">
-        <div class="process-num">???? ??</div>
-        <h4>피드백 · 관리</h4>
-        <p>주간 학습 리포트 + 매월 정기 상담으로 지속 관리.</p>
-        <span class="process-time">정기</span>
+        <div class="process-num">내 보험 현황 확인</div>
+        <h4>상담 가능 지역 확인</h4>
+        <p>국내 30여개 보험사 비교</p>
+        <span class="process-time">누적 상담 21,573건</span>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ============================================
-     SECTION 5 - 튜터 풀 (4개 카드)
+     SECTION 5 - 전문가 풀 (4개 카드)
      ============================================ -->
 <section class="pool" id="pool">
   <div class="container">
     <div class="pool-head">
-      <span class="eyebrow">?? ??</span>
-      <h2 class="section-h2">? ?? ???? <em>??? ?? ??</em></h2>
+      <span class="eyebrow">24시간 내 전문가 연락</span>
+      <h2 class="section-h2">상담료 0원 <em>개인정보 안전 관리</em></h2>
       <p class="section-sub">
-        ?? ??? ??
+        1:1 맞춤 분석
       </p>
     </div>
 
@@ -2012,35 +2060,35 @@ footer {
         <div class="pool-card-head">
           <div class="pool-card-icon">🎓</div>
           <div>
-            <h3>학력 분포</h3>
-            <div class="pool-card-sub">?? ?? ???</div>
+            <h3>보장 공백 확인</h3>
+            <div class="pool-card-sub">중복 보험료 점검</div>
           </div>
         </div>
         <div class="distribution">
           <div class="dist-row">
-            <div class="dist-label">?? ?? ? ?? ??</div>
+            <div class="dist-label">갱신형 보험료 확인</div>
             <div class="dist-bar"><div class="dist-fill" data-width="32" style="width: 32%;"></div></div>
-            <div class="dist-percent">?? ??? ?? ??</div>
+            <div class="dist-percent">실손보험 세대 점검</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">??? ??? ??? ??? ?????</div>
+            <div class="dist-label">암·뇌·심장 진단비 확인</div>
             <div class="dist-bar"><div class="dist-fill blue" data-width="20" style="width: 20%;"></div></div>
-            <div class="dist-percent">??? ?? ???? ?? ?? ?? ??? ?????</div>
+            <div class="dist-percent">수술비 보장 확인</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">국립대</div>
+            <div class="dist-label">보험료는 줄이고 필요한 보장은 남깁니다</div>
             <div class="dist-bar"><div class="dist-fill orange" data-width="24" style="width: 24%;"></div></div>
-            <div class="dist-percent">??? ???? ?? ?? ?????</div>
+            <div class="dist-percent">고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">????? ?? ?? ? ???? ????</div>
+            <div class="dist-label">가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다</div>
             <div class="dist-bar"><div class="dist-fill" data-width="18" style="width: 18%;"></div></div>
-            <div class="dist-percent">??? ?????</div>
+            <div class="dist-percent">복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">해외 대학</div>
+            <div class="dist-label">보험 분석은 판매가 아니라 정리에서 시작합니다</div>
             <div class="dist-bar"><div class="dist-fill blue" data-width="6" style="width: 6%;"></div></div>
-            <div class="dist-percent">AFPK ? CFP ?????</div>
+            <div class="dist-percent">상담 후 원치 않으면 언제든 중단하셔도 됩니다</div>
           </div>
         </div>
       </div>
@@ -2050,34 +2098,34 @@ footer {
         <div class="pool-card-head">
           <div class="pool-card-icon">💰</div>
           <div>
-            <h3>과목별 평균 시급</h3>
-            <div class="pool-card-sub">???? ?????</div>
+            <h3>이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다</h3>
+            <div class="pool-card-sub">현재 보유 보험 증권을 기준으로 객관적으로 확인합니다</div>
           </div>
         </div>
         <div class="hourly-chart">
           <div class="chart-bar">
             <div class="chart-bar-fill" data-height="60" data-value="3.5만" style="height: 60%;"></div>
-            <div class="chart-bar-label">국어</div>
+            <div class="chart-bar-label">강원 · 경기 · 충북 지역 대면 상담 가능</div>
           </div>
           <div class="chart-bar">
             <div class="chart-bar-fill" data-height="75" data-value="4만" style="height: 75%;"></div>
-            <div class="chart-bar-label">영어</div>
+            <div class="chart-bar-label">온라인 상담도 가능합니다</div>
           </div>
           <div class="chart-bar">
             <div class="chart-bar-fill" data-height="100" data-value="5만" style="height: 100%;"></div>
-            <div class="chart-bar-label">수학</div>
+            <div class="chart-bar-label">상담 신청서 작성</div>
           </div>
           <div class="chart-bar">
             <div class="chart-bar-fill" data-height="85" data-value="4.5만" style="height: 85%;"></div>
-            <div class="chart-bar-label">과학</div>
+            <div class="chart-bar-label">전문가 배정</div>
           </div>
           <div class="chart-bar">
             <div class="chart-bar-fill" data-height="50" data-value="3만" style="height: 50%;"></div>
-            <div class="chart-bar-label">사회</div>
+            <div class="chart-bar-label">보장 분석 리포트 전달</div>
           </div>
           <div class="chart-bar">
             <div class="chart-bar-fill" data-height="90" data-value="4.8만" style="height: 90%;"></div>
-            <div class="chart-bar-label">코딩</div>
+            <div class="chart-bar-label">후속 관리 안내</div>
           </div>
         </div>
       </div>
@@ -2087,35 +2135,35 @@ footer {
         <div class="pool-card-head">
           <div class="pool-card-icon">📚</div>
           <div>
-            <h3>전공 분포</h3>
-            <div class="pool-card-sub">010-1234-5678</div>
+            <h3>보험은 많지만 내게 맞는 보험은 따로 있습니다</h3>
+            <div class="pool-card-sub">보험료가 부담된다면 먼저 구조를 확인해보세요</div>
           </div>
         </div>
         <div class="distribution">
           <div class="dist-row">
-            <div class="dist-label">자연과학</div>
+            <div class="dist-label">청구하지 못한 보험금이 있는지 함께 확인합니다</div>
             <div class="dist-bar"><div class="dist-fill" data-width="28" style="width: 0px;"></div></div>
-            <div class="dist-percent">advisor@metarich.kr</div>
+            <div class="dist-percent">메타리치 시그널그룹 전문가가 직접 분석합니다</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">공학</div>
+            <div class="dist-label">보험을 어렵게 설명하지 않습니다</div>
             <div class="dist-bar"><div class="dist-fill blue" data-width="24" style="width: 0px;"></div></div>
-            <div class="dist-percent">??? ?? ? ?? ??? ? ?? ??? ????</div>
+            <div class="dist-percent">고객이 이해할 때까지 쉽게 안내합니다</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">인문학</div>
+            <div class="dist-label">김민준 재무설계사</div>
             <div class="dist-bar"><div class="dist-fill orange" data-width="22" style="width: 0px;"></div></div>
-            <div class="dist-percent">SIGNAL MATCH</div>
+            <div class="dist-percent">AFPK · CFP 재무설계사</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">사회과학</div>
+            <div class="dist-label">메타리치 시그널그룹</div>
             <div class="dist-bar"><div class="dist-fill" data-width="14" style="width: 0px;"></div></div>
-            <div class="dist-percent">????</div>
+            <div class="dist-percent">010-1234-5678</div>
           </div>
           <div class="dist-row">
-            <div class="dist-label">교육학·기타</div>
+            <div class="dist-label">advisor@metarich.kr</div>
             <div class="dist-bar"><div class="dist-fill blue" data-width="12" style="width: 0px;"></div></div>
-            <div class="dist-percent">?? ??</div>
+            <div class="dist-percent">설계사 매칭 · 맞는 전문가 한 명이 보험을 바꿉니다</div>
           </div>
         </div>
       </div>
@@ -2125,35 +2173,35 @@ footer {
         <div class="pool-card-head">
           <div class="pool-card-icon">🛡️</div>
           <div>
-            <h3>??? ?</h3>
-            <div class="pool-card-sub">?? ??</div>
+            <h3>SIGNAL MATCH</h3>
+            <div class="pool-card-sub">상담분야</div>
           </div>
         </div>
         <div class="verify-list">
           <div class="verify-item">
-            <div class="verify-num">FAQ</div>
-            <div class="verify-text">서류 심사<small>학위·재학증명서·신분증</small></div>
-            <div class="verify-pass">?? ?? ??</div>
+            <div class="verify-num">매칭 과정</div>
+            <div class="verify-text">전문가 풀<small>상담 사례</small></div>
+            <div class="verify-pass">FAQ</div>
           </div>
           <div class="verify-item">
-            <div class="verify-num">??? 0? ? ? ?? ??</div>
-            <div class="verify-text">신원 조회<small>경찰청 범죄경력</small></div>
-            <div class="verify-pass">?? ??? ? ??</div>
+            <div class="verify-num">무료 매칭 신청</div>
+            <div class="verify-text">매칭료 0원 · 첫 상담 무료<small>맞는 전문가 한 명이</small></div>
+            <div class="verify-pass">보험 이해를 바꿉니다.</div>
           </div>
           <div class="verify-item">
-            <div class="verify-num">?? ??? ????.</div>
-            <div class="verify-text">전공 시험<small>?? ??????????? ??? ?? ??? ?? ???? ?????. ??? ??, ?? ?? ? ???? ?????.</small></div>
-            <div class="verify-pass">?? ?? ??</div>
+            <div class="verify-num">상담 목적·지역·연령대까지 확인해 가장 적합한 보험 전문가를 연결합니다. 상담료 없음, 부담 없는 첫 점검부터 시작하세요.</div>
+            <div class="verify-text">상담 사례 보기<small>등록 전문가 280명</small></div>
+            <div class="verify-pass">평균 월 15만원 절감</div>
           </div>
           <div class="verify-item">
-            <div class="verify-num">?? ??? 280?</div>
-            <div class="verify-text">실습 평가<small>모의 수업 + 멘토 평가</small></div>
-            <div class="verify-pass">?? ? 15?? ??</div>
+            <div class="verify-num">24시간 안에 연락</div>
+            <div class="verify-text">매칭 추천 1순위<small>보장분석 전문</small></div>
+            <div class="verify-pass">★ 4.9 · 6년차</div>
           </div>
           <div class="verify-item">
-            <div class="verify-num">24?? ?? ??</div>
-            <div class="verify-text">정식 등록<small>분기별 재교육 의무</small></div>
-            <div class="verify-pass">?? ?? 1??</div>
+            <div class="verify-num">매칭 추천 2순위</div>
+            <div class="verify-text">보험금 청구 도움<small>★ 4.8 · 4년차</small></div>
+            <div class="verify-pass">평균 결과</div>
           </div>
         </div>
       </div>
@@ -2167,67 +2215,67 @@ footer {
 <section class="lms">
   <div class="container">
     <div class="lms-head">
-      <span class="eyebrow">???? ??</span>
-      <h2 class="section-h2">수업이 끝난 후에도 <em>관리는 계속됩니다</em></h2>
+      <span class="eyebrow">15만원</span>
+      <h2 class="section-h2">월 절감 사례 <em>02 · BY NUMBERS</em></h2>
       <p class="section-sub">
-        학생의 출석부터 학부모님의 알림까지. 자체 개발 학습 관리 시스템으로 진행 상황을 투명하게 공유합니다.
+        숫자로 증명하는
       </p>
     </div>
 
     <div class="lms-grid">
       <div class="lms-card fade-in visible show active aos-animate is-visible in-view">
         <div class="lms-icon">📅</div>
-        <h3>출석 관리</h3>
-        <p>? 4.9 ? 6??</p>
+        <h3>상담 매칭의 정확성</h3>
+        <p>누적 상담 데이터와 고객 피드백을 바탕으로 목적에 맞는 전문가를 추천합니다.</p>
         <div class="lms-notif">
           <div class="lms-notif-icon">✓</div>
           <div class="lms-notif-body">
-            <div class="lms-notif-title">출석 완료</div>
-            <div class="lms-notif-text">?? ?? 2??</div>
+            <div class="lms-notif-title">👨‍💼</div>
+            <div class="lms-notif-text">280</div>
           </div>
-          <div class="lms-notif-time">??? ?? ??</div>
+          <div class="lms-notif-time">등록 전문가</div>
         </div>
       </div>
 
       <div class="lms-card fade-in visible show active aos-animate is-visible in-view">
         <div class="lms-icon">📊</div>
-        <h3>진도 트래킹</h3>
-        <p>매 수업마다 진행한 단원·문제집을 자동 기록. 학습 흐름 가시화.</p>
+        <h3>매월 신규 합류</h3>
+        <p>21,573</p>
         <div class="lms-notif">
           <div class="lms-notif-icon">→</div>
           <div class="lms-notif-body">
-            <div class="lms-notif-title">진도 업데이트</div>
-            <div class="lms-notif-text">? 4.8 ? 4??</div>
+            <div class="lms-notif-title">누적 상담</div>
+            <div class="lms-notif-text">METARICH SIGNAL GROUP</div>
           </div>
-          <div class="lms-notif-time">?? ??</div>
+          <div class="lms-notif-time">정확한 분석, 신속한 청구</div>
         </div>
       </div>
 
       <div class="lms-card fade-in visible show active aos-animate is-visible in-view">
         <div class="lms-icon">📈</div>
-        <h3>주간 리포트</h3>
-        <p>매주 일요일 학습 시간·정확도·취약 단원 종합 리포트 자동 발송.</p>
+        <h3>보험 상담</h3>
+        <p>보장 분석</p>
         <div class="lms-notif">
           <div class="lms-notif-icon">!</div>
           <div class="lms-notif-body">
-            <div class="lms-notif-title">주간 리포트 도착</div>
-            <div class="lms-notif-text">15??</div>
+            <div class="lms-notif-title">보험금 청구</div>
+            <div class="lms-notif-text">리모델링</div>
           </div>
-          <div class="lms-notif-time">? ?? ??</div>
+          <div class="lms-notif-time">연금 설계</div>
         </div>
       </div>
 
       <div class="lms-card fade-in visible show active aos-animate is-visible in-view">
         <div class="lms-icon">💬</div>
-        <h3>학부모 알림톡</h3>
-        <p>출결·과제·시험 결과 모두 카카오톡으로 학부모님께 자동 발송.</p>
+        <h3>상담 신청</h3>
+        <p>무료 점검 신청하기</p>
         <div class="lms-notif">
           <div class="lms-notif-icon">★</div>
           <div class="lms-notif-body">
-            <div class="lms-notif-title">시험 결과</div>
-            <div class="lms-notif-text">02 ? BY NUMBERS</div>
+            <div class="lms-notif-title">카카오톡으로 문의하기</div>
+            <div class="lms-notif-text">전화 상담 예약</div>
           </div>
-          <div class="lms-notif-time">방금</div>
+          <div class="lms-notif-time">전문가에게 바로 묻기</div>
         </div>
       </div>
     </div>
@@ -2240,106 +2288,106 @@ footer {
 <section class="cases" id="cases">
   <div class="container">
     <div class="cases-head">
-      <span class="eyebrow">??? ????</span>
-      <h2 class="section-h2">실제 점수가 <em>이렇게 바뀌었습니다</em></h2>
+      <span class="eyebrow">내 보험 현황 확인</span>
+      <h2 class="section-h2">상담 가능 지역 확인 <em>국내 30여개 보험사 비교</em></h2>
       <p class="section-sub">
-        ?? ??? ???
+        누적 상담 21,573건
       </p>
     </div>
 
     <div class="cases-grid">
       <div class="case-card fade-in visible show active aos-animate is-visible in-view">
         <div class="case-meta">
-          <span>?? ?? ???? ?? ???? ???? ??? ?? ???? ?????.</span>
-          <span class="blue">수학 (미적분)</span>
-          <span class="blue">?????</span>
+          <span>24시간 내 전문가 연락</span>
+          <span class="blue">상담료 0원</span>
+          <span class="blue">개인정보 안전 관리</span>
         </div>
-        <h3>"문제만 봐도 막막했던 미적분, 이제는 가장 자신 있는 과목"</h3>
-        <p>280</p>
+        <h3>1:1 맞춤 분석</h3>
+        <p>보장 공백 확인</p>
         <div class="score-change">
           <div class="score-block">
-            <div class="score-label">?? ???</div>
-            <div class="score-num">?? ?? ??</div>
+            <div class="score-label">중복 보험료 점검</div>
+            <div class="score-num">갱신형 보험료 확인</div>
           </div>
           <div class="score-arrow">
             <div class="score-arrow-icon">↑</div>
-            <div class="score-diff">21,573</div>
+            <div class="score-diff">실손보험 세대 점검</div>
           </div>
           <div class="score-block after">
-            <div class="score-label">?? ??</div>
-            <div class="score-num">METARICH SIGNAL GROUP</div>
+            <div class="score-label">암·뇌·심장 진단비 확인</div>
+            <div class="score-num">수술비 보장 확인</div>
           </div>
         </div>
       </div>
 
       <div class="case-card fade-in visible show active aos-animate is-visible in-view">
         <div class="case-meta">
-          <span>??? ??, ??? ??</span>
-          <span class="blue">영어</span>
-          <span class="blue">?? ??</span>
+          <span>보험료는 줄이고 필요한 보장은 남깁니다</span>
+          <span class="blue">고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다</span>
+          <span class="blue">가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다</span>
         </div>
-        <h3>"내신만 잘했던 영어, 수능 영어 패턴까지 완벽 정복"</h3>
-        <p>?? ??</p>
+        <h3>복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</h3>
+        <p>보험 분석은 판매가 아니라 정리에서 시작합니다</p>
         <div class="score-change">
           <div class="score-block">
-            <div class="score-label">??? ??</div>
-            <div class="score-num">????</div>
+            <div class="score-label">상담 후 원치 않으면 언제든 중단하셔도 됩니다</div>
+            <div class="score-num">이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다</div>
           </div>
           <div class="score-arrow">
             <div class="score-arrow-icon">↑</div>
-            <div class="score-diff">?? ??</div>
+            <div class="score-diff">현재 보유 보험 증권을 기준으로 객관적으로 확인합니다</div>
           </div>
           <div class="score-block after">
-            <div class="score-label">?? ??</div>
-            <div class="score-num">?? ?? ????</div>
+            <div class="score-label">강원 · 경기 · 충북 지역 대면 상담 가능</div>
+            <div class="score-num">온라인 상담도 가능합니다</div>
           </div>
         </div>
       </div>
 
       <div class="case-card fade-in visible show active aos-animate is-visible in-view">
         <div class="case-meta">
-          <span>?????? ????</span>
-          <span class="blue">화학Ⅱ</span>
-          <span class="blue">?? ?? ??</span>
+          <span>상담 신청서 작성</span>
+          <span class="blue">전문가 배정</span>
+          <span class="blue">보장 분석 리포트 전달</span>
         </div>
-        <h3>"의대 지원의 마지막 약점, 화학Ⅱ를 단기간에 극복"</h3>
-        <p>????? ?? ??</p>
+        <h3>후속 관리 안내</h3>
+        <p>보험은 많지만 내게 맞는 보험은 따로 있습니다</p>
         <div class="score-change">
           <div class="score-block">
-            <div class="score-label">? ?? ?? ??</div>
-            <div class="score-num">?? ?? ?? ??</div>
+            <div class="score-label">보험료가 부담된다면 먼저 구조를 확인해보세요</div>
+            <div class="score-num">청구하지 못한 보험금이 있는지 함께 확인합니다</div>
           </div>
           <div class="score-arrow">
             <div class="score-arrow-icon">↑</div>
-            <div class="score-diff">?? 30?? ??? ??</div>
+            <div class="score-diff">메타리치 시그널그룹 전문가가 직접 분석합니다</div>
           </div>
           <div class="score-block after">
-            <div class="score-label">?? ?? 21,573?</div>
-            <div class="score-num">24?? ? ??? ??</div>
+            <div class="score-label">보험을 어렵게 설명하지 않습니다</div>
+            <div class="score-num">고객이 이해할 때까지 쉽게 안내합니다</div>
           </div>
         </div>
       </div>
 
       <div class="case-card fade-in visible show active aos-animate is-visible in-view">
         <div class="case-meta">
-          <span>??? 0?</span>
-          <span class="blue">국어</span>
-          <span class="blue">???? ?? ??</span>
+          <span>김민준 재무설계사</span>
+          <span class="blue">AFPK · CFP 재무설계사</span>
+          <span class="blue">메타리치 시그널그룹</span>
         </div>
-        <h3>1:1 ?? ??</h3>
-        <p>?? ?? ??</p>
+        <h3>010-1234-5678</h3>
+        <p>advisor@metarich.kr</p>
         <div class="score-change">
           <div class="score-block">
-            <div class="score-label">?? ??? ??</div>
-            <div class="score-num">??? ??? ??</div>
+            <div class="score-label">설계사 매칭 · 맞는 전문가 한 명이 보험을 바꿉니다</div>
+            <div class="score-num">SIGNAL MATCH</div>
           </div>
           <div class="score-arrow">
             <div class="score-arrow-icon">↑</div>
-            <div class="score-diff">???? ?? ??</div>
+            <div class="score-diff">상담분야</div>
           </div>
           <div class="score-block after">
-            <div class="score-label">?????? ??? ??</div>
-            <div class="score-num">??? ?? ??</div>
+            <div class="score-label">매칭 과정</div>
+            <div class="score-num">전문가 풀</div>
           </div>
         </div>
       </div>
@@ -2353,10 +2401,10 @@ footer {
 <section class="reviews">
   <div class="container">
     <div class="reviews-head">
-      <span class="eyebrow">???? ??? ??? ??? ????</span>
-      <h2 class="section-h2">학부모와 학생의 <em>실제 후기</em></h2>
+      <span class="eyebrow">상담 사례</span>
+      <h2 class="section-h2">FAQ <em>무료 매칭 신청</em></h2>
       <p class="section-sub">
-        ??? ?? ??? ?? ?? ??? ?? ?????
+        매칭료 0원 · 첫 상담 무료
       </p>
     </div>
 
@@ -2364,76 +2412,76 @@ footer {
       <div class="review-card fade-in visible show active aos-animate is-visible in-view">
         <div class="review-stars">★★★★★</div>
         <div class="review-meta-top">
-          <span>학부모 후기</span>
-          <span class="blue">???? ??? ?? ?? ? ??? ??? ????? ???? ????</span>
+          <span>맞는 전문가 한 명이</span>
+          <span class="blue">보험 이해를 바꿉니다.</span>
         </div>
         <p class="review-text">
-          ??? ??? ?? ??? ???? ?? ???????
+          상담 목적·지역·연령대까지 확인해 가장 적합한 보험 전문가를 연결합니다. 상담료 없음, 부담 없는 첫 점검부터 시작하세요.
         </p>
         <div class="review-author">
-          <div class="review-avatar">?? ??? ??? ??? ???? ?????</div>
+          <div class="review-avatar">상담 사례 보기</div>
           <div>
-            <div class="review-name">?? ? ?? ??? ??? ????? ???</div>
-            <div class="review-info">??? ???? ???? ?? ???? ?? ??????</div>
+            <div class="review-name">등록 전문가 280명</div>
+            <div class="review-info">평균 월 15만원 절감</div>
           </div>
-          <div class="review-date">?? ?? ?? ??? ???? ????? ?????</div>
+          <div class="review-date">24시간 안에 연락</div>
         </div>
       </div>
 
       <div class="review-card fade-in visible show active aos-animate is-visible in-view">
         <div class="review-stars">★★★★★</div>
         <div class="review-meta-top">
-          <span>학생 후기</span>
-          <span class="blue">?? ? ?? ? ?? ?? ?? ?? ??</span>
+          <span>매칭 추천 1순위</span>
+          <span class="blue">보장분석 전문</span>
         </div>
         <p class="review-text">
-          ??? ??? ?????
+          ★ 4.9 · 6년차
         </p>
         <div class="review-author">
-          <div class="review-avatar">?? ??? ??</div>
+          <div class="review-avatar">매칭 추천 2순위</div>
           <div>
-            <div class="review-name">??? ??</div>
-            <div class="review-info">?? ?? ??? ??</div>
+            <div class="review-name">보험금 청구 도움</div>
+            <div class="review-info">★ 4.8 · 4년차</div>
           </div>
-          <div class="review-date">?? ?? ??</div>
+          <div class="review-date">평균 결과</div>
         </div>
       </div>
 
       <div class="review-card fade-in visible show active aos-animate is-visible in-view">
         <div class="review-stars">★★★★★</div>
         <div class="review-meta-top">
-          <span>학부모 후기</span>
-          <span class="blue">??? ??? ?? ?? ??? ?? ????</span>
+          <span>15만원</span>
+          <span class="blue">월 절감 사례</span>
         </div>
         <p class="review-text">
-          ???? ????? ?? ??? ??????
+          02 · BY NUMBERS
         </p>
         <div class="review-author">
-          <div class="review-avatar">???? ?? ???? ??? ?? ?????</div>
+          <div class="review-avatar">숫자로 증명하는</div>
           <div>
-            <div class="review-name">???? ????? ???? ?? ?????</div>
-            <div class="review-info">??? ??? ???? ????</div>
+            <div class="review-name">상담 매칭의 정확성</div>
+            <div class="review-info">누적 상담 데이터와 고객 피드백을 바탕으로 목적에 맞는 전문가를 추천합니다.</div>
           </div>
-          <div class="review-date">??? ??? ??? ?? ?????</div>
+          <div class="review-date">👨‍💼</div>
         </div>
       </div>
 
       <div class="review-card fade-in visible show active aos-animate is-visible in-view">
         <div class="review-stars">★★★★★</div>
         <div class="review-meta-top">
-          <span>학생 후기</span>
-          <span class="blue">?? ?? ????</span>
+          <span>280</span>
+          <span class="blue">등록 전문가</span>
         </div>
         <p class="review-text">
-          ?? ??
+          매월 신규 합류
         </p>
         <div class="review-author">
-          <div class="review-avatar">???? ??</div>
+          <div class="review-avatar">21,573</div>
           <div>
-            <div class="review-name">?? ??</div>
-            <div class="review-info">? ?? ????</div>
+            <div class="review-name">누적 상담</div>
+            <div class="review-info">METARICH SIGNAL GROUP</div>
           </div>
-          <div class="review-date">??? ?? ??</div>
+          <div class="review-date">정확한 분석, 신속한 청구</div>
         </div>
       </div>
     </div>
@@ -2446,81 +2494,81 @@ footer {
 <section class="faq" id="faq">
   <div class="container">
     <div class="faq-head">
-      <span class="eyebrow">?? ??? ??</span>
-      <h2 class="section-h2">자주 <em>묻는 질문</em></h2>
+      <span class="eyebrow">보험 상담</span>
+      <h2 class="section-h2">보장 분석 <em>보험금 청구</em></h2>
       <p class="section-sub">
-        ?? ?? ???
+        리모델링
       </p>
     </div>
 
     <div class="faq-list">
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)">
-          <span><span class="faq-q-num">?? ?? ? ?? ??</span>?? ??? ?? ??</span>
+          <span><span class="faq-q-num">연금 설계</span>상담 신청</span>
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a">
-          ??? ??? ??? ??? ?????
+          무료 점검 신청하기
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)">
-          <span><span class="faq-q-num">??? ?? ???? ?? ?? ?? ??? ?????</span>??? ???? ?? ?? ?????</span>
+          <span><span class="faq-q-num">카카오톡으로 문의하기</span>전화 상담 예약</span>
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a">
-          ????? ?? ?? ? ???? ????
+          전문가에게 바로 묻기
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)">
-          <span><span class="faq-q-num">??? ?????</span>AFPK ? CFP ?????</span>
+          <span><span class="faq-q-num">내 보험 현황 확인</span>상담 가능 지역 확인</span>
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a">
-          ???? ?????
+          국내 30여개 보험사 비교
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)">
-          <span><span class="faq-q-num">010-1234-5678</span>advisor@metarich.kr</span>
+          <span><span class="faq-q-num">누적 상담 21,573건</span>24시간 내 전문가 연락</span>
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a">
-          ??? ?? ? ?? ??? ? ?? ??? ????
+          상담료 0원
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)">
-          <span><span class="faq-q-num">SIGNAL MATCH</span>????</span>
+          <span><span class="faq-q-num">개인정보 안전 관리</span>1:1 맞춤 분석</span>
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a">
-          ?? ??
+          보장 공백 확인
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)">
-          <span><span class="faq-q-num">??? ?</span>?? ??</span>
+          <span><span class="faq-q-num">중복 보험료 점검</span>갱신형 보험료 확인</span>
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a">
-          FAQ
+          실손보험 세대 점검
         </div>
       </div>
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFAQ(this)">
-          <span><span class="faq-q-num">?? ?? ??</span>??? 0? ? ? ?? ??</span>
+          <span><span class="faq-q-num">암·뇌·심장 진단비 확인</span>수술비 보장 확인</span>
           <span class="faq-icon">+</span>
         </button>
         <div class="faq-a">
-          ?? ??? ? ??
+          보험료는 줄이고 필요한 보장은 남깁니다
         </div>
       </div>
     </div>
@@ -2534,50 +2582,50 @@ footer {
   <div class="container">
     <div class="final-cta-grid">
       <div class="final-cta-text">
-        <span class="check-pill">?? ??? ????.</span>
-        <h2>지금 신청 →<br>?? ??????????? ??? ?? ??? ?? ???? ?????. ??? ??, ?? ?? ? ???? ?????.</h2>
+        <span class="check-pill">고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다</span>
+        <h2>가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다<br>복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</h2>
         <p>
-          과목·지역·예산만 입력하시면 끝.<br>
-          ?? ?? ??
+          보험 분석은 판매가 아니라 정리에서 시작합니다<br>
+          상담 후 원치 않으면 언제든 중단하셔도 됩니다
         </p>
 
         <div class="final-cta-buttons">
-          <a href="#" class="cta-btn-white" onclick="document.querySelector('.match-form input').focus(); return false;">
-            무료 매칭 신청
+          <a href="#" class="cta-btn-white" onclick="document.querySelector('.match-form input').focus(); return false;" data-dp-btn-bound="1">
+            이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다
             <span>→</span>
           </a>
-          <a href="#" class="cta-btn-line-w" onclick="alert('튜터 검색 페이지로 이동합니다.'); return false;">
-            튜터 검색
+          <a href="#" class="cta-btn-line-w" onclick="alert('보험 전문가 상담 페이지로 이동합니다.'); return false;" data-dp-btn-bound="1">
+            현재 보유 보험 증권을 기준으로 객관적으로 확인합니다
           </a>
         </div>
 
         <div class="final-cta-trust">
-          <span>?? ??? 280?</span>
-          <span>무료 교체 보장</span>
-          <span>?? ? 15?? ??</span>
+          <span>강원 · 경기 · 충북 지역 대면 상담 가능</span>
+          <span>온라인 상담도 가능합니다</span>
+          <span>상담 신청서 작성</span>
         </div>
       </div>
 
       <!-- 매칭 신청 폼 (요청 명시) -->
-      <form class="match-form"><h3>24?? ?? ??</h3>
+      <form class="match-form"><h3>전문가 배정</h3>
 <div class="dp-cta-fields" style="display:flex;flex-direction:column;gap:14px;margin-top:16px;width:100%">
   <div>
-    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">성함 <span style="color:#e85d5d;margin-left:2px">*</span></label>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">보장 분석 리포트 전달 <span style="color:#e85d5d;margin-left:2px">*</span></label>
     <input type="text" name="name" required="" placeholder="홍길동" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none">
   </div>
   <div>
-    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">연락처 <span style="color:#e85d5d;margin-left:2px">*</span></label>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">후속 관리 안내 <span style="color:#e85d5d;margin-left:2px">*</span></label>
     <input type="tel" name="phone" required="" placeholder="010-0000-0000" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none">
   </div>
   <div>
-    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">이메일</label>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">보험은 많지만 내게 맞는 보험은 따로 있습니다</label>
     <input type="email" name="email" placeholder="email@example.com" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none">
   </div>
   <div>
-    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">요청사항·문의</label>
+    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:14px;font-family:inherit;color:inherit;opacity:.85">보험료가 부담된다면 먼저 구조를 확인해보세요</label>
     <textarea name="message" rows="4" placeholder="문의 내용을 자유롭게 입력해 주세요" style="width:100%;padding:12px 14px;border:1px solid rgba(128,128,128,0.35);border-radius:8px;font-size:15px;font-family:inherit;background:rgba(255,255,255,0.04);color:inherit;box-sizing:border-box;outline:none;resize:vertical;min-height:90px"></textarea>
   </div>
-  <button type="submit" class="form-submit">무료 매칭 신청 →</button>
+  <button type="submit" class="form-submit">청구하지 못한 보험금이 있는지 함께 확인합니다</button>
 </div></form>
     </div>
   </div>
@@ -2588,50 +2636,50 @@ footer {
   <div class="container">
     <div class="foot-grid">
       <div class="foot-brand">
-        <a href="#hero" class="nav-logo">
-          <span class="nav-logo-mark">?? ?? 1??</span>
-          ???? ??
+        <a href="#hero" class="nav-logo" data-dp-btn-bound="1" data-dp-has-link="1">
+          <span class="nav-logo-mark">메타리치 시그널그룹 전문가가 직접 분석합니다</span>
+          보험을 어렵게 설명하지 않습니다
         </a>
         <p class="foot-tag">
-          맞는 선생님 한 명이 점수를 바꿉니다.<br>
-          ? 4.9 ? 6??
+          고객이 이해할 때까지 쉽게 안내합니다<br>
+          김민준 재무설계사
         </p>
         <div class="foot-trust-row">
-          <span class="check-pill">학원법 등록</span>
-          <span class="check-pill">개인정보 보호</span>
+          <span class="check-pill">AFPK · CFP 재무설계사</span>
+          <span class="check-pill">메타리치 시그널그룹</span>
         </div>
       </div>
       <div class="foot-col">
-        <h5>?? ?? 2??</h5>
+        <h5>010-1234-5678</h5>
         <ul>
-          <li><a href="#subjects">과목 카테고리</a></li>
-          <li><a href="#process">매칭 프로세스</a></li>
-          <li><a href="#pool">튜터 풀</a></li>
-          <li><a href="#cases">합격 사례</a></li>
+          <li><a href="#subjects">advisor@metarich.kr</a></li>
+          <li><a href="#process">설계사 매칭 · 맞는 전문가 한 명이 보험을 바꿉니다</a></li>
+          <li><a href="#pool">SIGNAL MATCH</a></li>
+          <li><a href="#cases">상담분야</a></li>
         </ul>
       </div>
       <div class="foot-col">
-        <h5>??? ?? ??</h5>
+        <h5>매칭 과정</h5>
         <ul>
-          <li><a href="#final-cta">무료 매칭</a></li>
-          <li><a href="#">카카오톡 상담</a></li>
-          <li><a href="#faq">? 4.8 ? 4??</a></li>
-          <li><a href="#">고객의 소리</a></li>
+          <li><a href="#final-cta">전문가 풀</a></li>
+          <li><a href="#">상담 사례</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#">무료 매칭 신청</a></li>
         </ul>
       </div>
       <div class="foot-col">
-        <h5>?? ??</h5>
+        <h5>매칭료 0원 · 첫 상담 무료</h5>
         <ul>
-          <li><a href="#">회사 소개</a></li>
-          <li><a href="#">튜터 등록 신청</a></li>
-          <li><a href="#">개인정보처리방침</a></li>
-          <li><a href="#">이용약관</a></li>
+          <li><a href="#">맞는 전문가 한 명이</a></li>
+          <li><a href="#">보험 이해를 바꿉니다.</a></li>
+          <li><a href="#">상담 목적·지역·연령대까지 확인해 가장 적합한 보험 전문가를 연결합니다. 상담료 없음, 부담 없는 첫 점검부터 시작하세요.</a></li>
+          <li><a href="#">상담 사례 보기</a></li>
         </ul>
       </div>
     </div>
     <div class="foot-bottom">
-      <div>15??</div>
-      <div>? ?? ??</div>
+      <div>등록 전문가 280명</div>
+      <div>평균 월 15만원 절감</div>
     </div>
   </div>
 </footer>
@@ -2640,10 +2688,10 @@ footer {
 <div class="mobile-sticky">
   <div class="mobile-sticky-inner">
     <div class="mobile-sticky-text">
-      <strong>02 ? BY NUMBERS</strong>
-      매칭료 무료 · 무료 교체 보장
+      <strong>24시간 안에 연락</strong>
+      매칭 추천 1순위
     </div>
-    <a href="#final-cta" class="mobile-sticky-cta">매칭 신청</a>
+    <a href="#final-cta" class="mobile-sticky-cta">보장분석 전문</a>
   </div>
 </div>
 
@@ -2745,17 +2793,17 @@ function submitMatch(e) {
         // TODO: 실제 백엔드로 전송
         // fetch('/api/match', { method: 'POST', body: JSON.stringify(data) });
 
-        console.log('[PAIR] Match request:', data);
+        console.log('[SIGNAL MATCH] Match request:', data);
 
         alert(
             '✓ 매칭 신청이 완료되었습니다.\n\n' +
             '24시간 안에 ' + (data.phone || '입력하신 연락처') + '로\n' +
-            '가장 적합한 튜터 3명을 추천해드리겠습니다.\n\n' +
-            '— PAIR Matching Team'
+            '가장 적합한 보험 전문가를 추천해드리겠습니다.\n\n' +
+            '— 메타리치 시그널그룹'
         );
         e.target.reset();
     } catch (err) {
-        console.error('[PAIR] Form error:', err);
+        console.error('[SIGNAL MATCH] Form error:', err);
         alert('전송 중 오류가 발생했습니다.\n02-XXX-XXXX로 전화 주시거나, hello@pair.kr로 메일 주세요.');
     }
 }
@@ -2799,11 +2847,4 @@ document.querySelectorAll(
 
 
 
-
-<!-- ============================================================
-  보험의 기준(배진우) · 메타리치 시그널그룹 브랜딩 AI
-  이 페이지는 설계사 브랜딩 도구에서 생성되었습니다.
-  용도: 영업·홍보·고객전달·제안서 브리핑 (조직 내 사용 허용)
-  금지: 재배포·재판매·타 조직 사용
-  ============================================================ -->
 </body></html>

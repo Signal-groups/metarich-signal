@@ -133,7 +133,7 @@ export type LandingTemplateId =
 
 export interface LandingTemplateMeta {
   id: LandingTemplateId; name: string
-  category: '보험 전용' | '프리미엄' | '임팩트' | '전문/데이터' | '교육/전문' | '서비스' | '테크'
+  category: '보험 전용' | '보험상담' | '보장분석' | '리모델링' | '보험청구' | '리쿠르팅' | '연금/은퇴' | '교육/전문' | '명함/프로필'
   accentColor: string; type: 'insurance' | 'external'; file?: string
 }
 
@@ -148,22 +148,22 @@ export const LANDING_TEMPLATES: LandingTemplateMeta[] = [
   { id: 'ins-recruit-real',   name: '리쿠르팅 풀버전',   category: '보험 전용', accentColor: '#1a3a9f', type: 'external', file: '/branding-templates/ins-recruit-real.html' },
   { id: 'ins-consult-simple', name: '보험상담 심플',      category: '보험 전용', accentColor: '#1d4ed8', type: 'external', file: '/branding-templates/ins-consult-simple.html' },
   { id: 'ins-recruit-simple', name: '리쿠르팅 심플',      category: '보험 전용', accentColor: '#1e3a8a', type: 'external', file: '/branding-templates/ins-recruit-simple.html' },
-  { id: 'ext-01', name: '다이닝 프리미엄형',    category: '프리미엄',    accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-01.html' },
-  { id: 'ext-02', name: '다이닝 엘레강스형',    category: '프리미엄',    accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-02.html' },
-  { id: 'ext-03', name: '아카데미 클린형',      category: '교육/전문',   accentColor: '#e8f0fe', type: 'external', file: '/branding-templates/template-03.html' },
-  { id: 'ext-04', name: '다크 퍼플 임팩트형',  category: '임팩트',      accentColor: '#0a0820', type: 'external', file: '/branding-templates/template-04.html' },
-  { id: 'ext-05', name: '대시보드 보고서형',   category: '전문/데이터', accentColor: '#f5f8fc', type: 'external', file: '/branding-templates/template-05.html' },
-  { id: 'ext-06', name: '브랜드 혁신 제안형',  category: '전문/데이터', accentColor: '#fffaf5', type: 'external', file: '/branding-templates/template-06.html' },
-  { id: 'ext-07', name: '아틀리에 베이지형',   category: '프리미엄',    accentColor: '#f9f7f4', type: 'external', file: '/branding-templates/template-07.html' },
-  { id: 'ext-08', name: '볼드 크림 에너지형',  category: '임팩트',      accentColor: '#f5f0eb', type: 'external', file: '/branding-templates/template-08.html' },
-  { id: 'ext-09', name: '다크 그로스형',       category: '임팩트',      accentColor: '#0a0d12', type: 'external', file: '/branding-templates/template-09.html' },
-  { id: 'ext-10', name: '다크 네이비 전문형',  category: '전문/데이터', accentColor: '#0d1424', type: 'external', file: '/branding-templates/template-10.html' },
-  { id: 'ext-11', name: '다크 퍼플 스튜디오형',category: '임팩트',      accentColor: '#0f0820', type: 'external', file: '/branding-templates/template-11.html' },
-  { id: 'ext-12', name: '라이트 전문형',       category: '전문/데이터', accentColor: '#f5f8fc', type: 'external', file: '/branding-templates/template-12.html' },
-  { id: 'ext-13', name: '화이트 컨설팅형',     category: '전문/데이터', accentColor: '#f7f7f4', type: 'external', file: '/branding-templates/template-13.html' },
-  { id: 'ext-14', name: 'B2B 플랫폼형',        category: '테크',        accentColor: '#f5f8ff', type: 'external', file: '/branding-templates/template-14.html' },
-  { id: 'ext-15', name: '민트 서비스형',        category: '서비스',      accentColor: '#e6faf6', type: 'external', file: '/branding-templates/template-15.html' },
-  { id: 'ext-16', name: '에메랄드 에듀형',      category: '교육/전문',   accentColor: '#f5fcfa', type: 'external', file: '/branding-templates/template-16.html' },
+  { id: 'ext-01', name: '프리미엄 보험상담형', category: '보험상담',   accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-01.html' },
+  { id: 'ext-02', name: '보험금 청구 도움형',  category: '보험청구',   accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-02.html' },
+  { id: 'ext-03', name: '보험 교육 세미나형',  category: '교육/전문',  accentColor: '#e8f0fe', type: 'external', file: '/branding-templates/template-03.html' },
+  { id: 'ext-04', name: '연금·노후 설계형',   category: '연금/은퇴',  accentColor: '#0a0820', type: 'external', file: '/branding-templates/template-04.html' },
+  { id: 'ext-05', name: '보장분석 리포트형',  category: '보장분석',   accentColor: '#f5f8fc', type: 'external', file: '/branding-templates/template-05.html' },
+  { id: 'ext-06', name: '보험 리모델링 제안형', category: '리모델링', accentColor: '#fffaf5', type: 'external', file: '/branding-templates/template-06.html' },
+  { id: 'ext-07', name: '개인 홈페이지 프로필형', category: '명함/프로필', accentColor: '#f9f7f4', type: 'external', file: '/branding-templates/template-07.html' },
+  { id: 'ext-08', name: '무료 보장분석 임팩트형', category: '보험상담', accentColor: '#f5f0eb', type: 'external', file: '/branding-templates/template-08.html' },
+  { id: 'ext-09', name: '보험료 절감 랜딩형', category: '리모델링',   accentColor: '#0a0d12', type: 'external', file: '/branding-templates/template-09.html' },
+  { id: 'ext-10', name: '무료 보장진단 전문형', category: '보장분석', accentColor: '#0d1424', type: 'external', file: '/branding-templates/template-10.html' },
+  { id: 'ext-11', name: '보험 콘텐츠 광고형', category: '보험상담',   accentColor: '#0f0820', type: 'external', file: '/branding-templates/template-11.html' },
+  { id: 'ext-12', name: '연금 재무설계 데이터형', category: '연금/은퇴', accentColor: '#f5f8fc', type: 'external', file: '/branding-templates/template-12.html' },
+  { id: 'ext-13', name: '보험청구 컨설팅형',  category: '보험청구',   accentColor: '#f7f7f4', type: 'external', file: '/branding-templates/template-13.html' },
+  { id: 'ext-14', name: '설계사 업무 플랫폼형', category: '리쿠르팅', accentColor: '#f5f8ff', type: 'external', file: '/branding-templates/template-14.html' },
+  { id: 'ext-15', name: '청구 컨시어지 서비스형', category: '보험청구', accentColor: '#e6faf6', type: 'external', file: '/branding-templates/template-15.html' },
+  { id: 'ext-16', name: '전문가 매칭 상담형', category: '보험상담',   accentColor: '#f5fcfa', type: 'external', file: '/branding-templates/template-16.html' },
 ]
 
 // ── 모바일 명함 템플릿 ──
@@ -175,12 +175,12 @@ export interface CardTemplateMeta {
 }
 
 export const CARD_TEMPLATES: CardTemplateMeta[] = [
-  { id: 'card-navy',   name: '다크 네이비 전문형', bg: 'linear-gradient(135deg,#0f4c81,#1e88e5)', defaultPhotoPos: 'top',    isDark: true  },
-  { id: 'card-green',  name: '다크 그린 신뢰형',   bg: 'linear-gradient(160deg,#1a3c2e,#2d6a4f)', defaultPhotoPos: 'top',    isDark: true  },
-  { id: 'card-black',  name: '블랙 프리미엄',       bg: 'linear-gradient(135deg,#1a1a2e,#16213e)', defaultPhotoPos: 'right',  isDark: true  },
-  { id: 'card-blue',   name: '로얄 블루형',         bg: '#2563eb',                                 defaultPhotoPos: 'circle', isDark: true  },
-  { id: 'card-white',  name: '화이트 클린형',       bg: '#f8fafc',                                 defaultPhotoPos: 'top',    isDark: false },
-  { id: 'card-purple', name: '퍼플 프리미엄',       bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)', defaultPhotoPos: 'right',  isDark: true  },
+  { id: 'card-navy',   name: '네이비 임팩트 명함', bg: 'linear-gradient(135deg,#0f4c81,#1e88e5)', defaultPhotoPos: 'top',    isDark: true  },
+  { id: 'card-green',  name: '그린 신뢰 명함',     bg: 'linear-gradient(160deg,#1a3c2e,#2d6a4f)', defaultPhotoPos: 'top',    isDark: true  },
+  { id: 'card-black',  name: '블랙 프리미엄 명함', bg: 'linear-gradient(135deg,#1a1a2e,#16213e)', defaultPhotoPos: 'right',  isDark: true  },
+  { id: 'card-blue',   name: '블루 상담 명함',     bg: '#2563eb',                                 defaultPhotoPos: 'circle', isDark: true  },
+  { id: 'card-white',  name: '화이트 심플 명함',   bg: '#f8fafc',                                 defaultPhotoPos: 'top',    isDark: false },
+  { id: 'card-purple', name: '퍼플 포인트 명함',   bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)', defaultPhotoPos: 'right',  isDark: true  },
 ]
 
 export const CARD_BG_SWATCHES = [

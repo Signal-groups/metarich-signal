@@ -63,19 +63,39 @@ function escapeHtml(value: string) {
 
 function buildBridgeScript(input: ExternalTemplateRenderInput) {
   const deletedSecs = JSON.stringify(input.deletedSecs || [])
+  const templateId = JSON.stringify(input.templateId)
 
   return `<script>
 (function(){
   var deletedSecs = ${deletedSecs};
+  var templateId = ${templateId};
   var deleteLabel = '\\uC139\\uC158 \\uC0AD\\uC81C';
   var deleteConfirm = '\\uC774 \\uC139\\uC158\\uC744 \\uC0AD\\uC81C\\uD560\\uAE4C\\uC694?';
   function postChange(){
     try{ window.parent.postMessage({ type:'__BAI_CHANGE__', html: document.documentElement.outerHTML }, '*'); }catch(e){}
   }
+  function postDelete(id){
+    try{ window.parent.postMessage({ type:'__BAI_DELETE_SECTION__', id: id, html: document.documentElement.outerHTML }, '*'); }catch(e){}
+  }
+  function managedSections(){
+    var seen = [];
+    var nodes = Array.prototype.slice.call(document.querySelectorAll('section,[data-section-id],main > div,main > article'));
+    nodes.forEach(function(node){
+      if(node.closest('[data-bai-delete]')) return;
+      if(seen.indexOf(node) < 0) seen.push(node);
+    });
+    return seen.filter(function(node){
+      return node && node.children && node.children.length > 0 && String(node.textContent || '').trim().length > 20;
+    });
+  }
   function sectionId(section, index){
     if(section.dataset.sectionId) return section.dataset.sectionId;
-    var cls = String(section.className || '').trim().split(/\\s+/).filter(Boolean)[0];
-    return section.id || cls || 'external-section-' + index;
+    return section.id ? templateId + '-id-' + section.id : templateId + '-section-' + index;
+  }
+  function assignSectionIds(){
+    managedSections().forEach(function(section, index){
+      section.dataset.sectionId = sectionId(section, index);
+    });
   }
   function insertPlainText(text){
     var selection = window.getSelection();
@@ -90,12 +110,13 @@ function buildBridgeScript(input: ExternalTemplateRenderInput) {
     selection.addRange(range);
   }
   function removeDeleted(){
-    document.querySelectorAll('section,[data-section-id]').forEach(function(section, index){
+    assignSectionIds();
+    managedSections().forEach(function(section, index){
       if(deletedSecs.indexOf(sectionId(section, index)) >= 0) section.remove();
     });
   }
   function addControls(){
-    document.querySelectorAll('section,[data-section-id]').forEach(function(section, index){
+    managedSections().forEach(function(section, index){
       section.querySelectorAll('[data-bai-delete],[id*="bai-d"]').forEach(function(button){ button.remove(); });
       var id = sectionId(section, index);
       section.dataset.sectionId = id;
@@ -109,13 +130,21 @@ function buildBridgeScript(input: ExternalTemplateRenderInput) {
         event.preventDefault();
         event.stopPropagation();
         if(!window.confirm(deleteConfirm)) return;
-        deletedSecs.push(id);
+        if(deletedSecs.indexOf(id) < 0) deletedSecs.push(id);
         section.remove();
-        postChange();
+        postDelete(id);
       };
       section.appendChild(button);
-      section.addEventListener('mouseenter', function(){ button.style.display = 'block'; });
-      section.addEventListener('mouseleave', function(){ button.style.display = 'none'; });
+      section.addEventListener('mouseenter', function(){
+        button.style.display = 'block';
+        section.style.outline = '2px dashed rgba(220,38,38,.45)';
+        section.style.outlineOffset = '-2px';
+      });
+      section.addEventListener('mouseleave', function(){
+        button.style.display = 'none';
+        section.style.outline = '';
+        section.style.outlineOffset = '';
+      });
     });
   }
   function makeEditable(){

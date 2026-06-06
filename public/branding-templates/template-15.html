@@ -2,7 +2,7 @@
 <html lang="ko"><head><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='14' fill='%230a0a0a'/&gt;&lt;path d='M38 4 L14 36 L28 36 L24 60 L50 26 L34 26 Z' fill='%23FFEB00' stroke='%23FFEB00' stroke-width='1' stroke-linejoin='round'/&gt;&lt;/svg&gt;">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>?? ?? ???? ? ??? ???????</title>
+<title>보험 청구 컨시어지 — 맡기면 정리해드립니다</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
@@ -874,7 +874,55 @@
     }
   }
 </style>
-</head>
+<style id="dp-force-reveal-style">
+      .reveal, .day-row, .fade-in, .fade-up, .scroll-reveal, [data-aos], [data-reveal], .scroll-trigger, .animate-on-scroll {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style><style id="dp-edit-hide-style">
+      body.dp-editing .dp-sec-del,
+      body.dp-editing .dp-bg-btn { opacity: 0.15 !important; transition: opacity .15s; }
+      body.dp-editing .dp-sec-del:hover,
+      body.dp-editing .dp-bg-btn:hover { opacity: 1 !important; }
+    </style><style id="dp-bg-style">
+      [data-dp-bg-bound]:hover > .dp-bg-btn{opacity:1 !important;transform:translateY(0)}
+      [data-dp-bg-bound]:hover{outline:3px dashed #03c75a !important;outline-offset:-3px}
+      .dp-bg-btn{
+        position:absolute;top:64px;right:14px;z-index:9998;
+        background:rgba(0,0,0,.92);color:#FFEB00;border:2px solid #FFEB00;
+        padding:8px 12px;border-radius:10px;cursor:pointer;
+        font-family:'Pretendard',sans-serif;font-weight:800;font-size:12px;
+        opacity:0.65;transition:all .2s;
+        box-shadow:0 6px 20px rgba(0,0,0,.6),0 0 0 2px rgba(255,235,0,0.2);
+        display:inline-flex;align-items:center;gap:6px;
+        max-width:calc(100% - 28px);white-space:nowrap;
+      }
+      .dp-bg-btn:hover{background:#FFEB00;color:#000;transform:scale(1.05)}
+      .dp-bg-broken{outline:4px dashed #FFEB00 !important;outline-offset:-4px;animation:dpBgPulse 1.5s ease-in-out infinite}
+      .dp-bg-broken > .dp-bg-btn{opacity:1 !important;background:#ff3030 !important;border-color:#fff !important;color:#fff !important}
+      @keyframes dpBgPulse{0%,100%{box-shadow:inset 0 0 0 0 rgba(255,235,0,0.3)}50%{box-shadow:inset 0 0 100px 0 rgba(255,235,0,0.15)}}
+    </style><style id="dp-link-style">
+      [data-dp-btn-bound]{position:relative}
+      .dp-link-btn{
+        position:absolute;top:-12px;right:-8px;z-index:9998;
+        background:#03c75a;color:#fff;border:2px solid #fff;
+        padding:4px 9px;border-radius:14px;cursor:pointer;
+        font-family:'Pretendard',sans-serif;font-weight:900;font-size:11px;
+        box-shadow:0 4px 12px rgba(0,0,0,.5);white-space:nowrap;
+        opacity:0.95;transition:all .15s;
+        line-height:1;
+      }
+      .dp-link-btn:hover{background:#fff;color:#03c75a;transform:scale(1.1);opacity:1}
+      [data-dp-btn-bound][data-dp-has-link="1"]{
+        box-shadow: inset 0 0 0 2px rgba(3,199,90,0.6);
+      }
+      [data-dp-btn-bound][data-dp-has-link="1"] > .dp-link-btn{
+        background:#0d9e4a;
+      }
+      [data-dp-btn-bound][data-dp-has-link="1"] > .dp-link-btn::before{
+        content:'✓ ';
+      }
+    </style></head>
 <body>
 
 <!-- ======================== 상단 네비 ======================== -->
@@ -882,16 +930,16 @@
   <div class="nav-inner">
     <div class="logo">
       <div class="logo-mark">CLAIMLY</div>
-      ???
+      서비스
     </div>
     <div class="nav-links">
-      <a href="#service">서비스</a>
-      <a href="#process">이용방법</a>
-      <a href="#price">가격</a>
-      <a href="#plan">정기권</a>
-      <a href="#faq">????</a>
+      <a href="#service" data-dp-btn-bound="1" data-dp-has-link="1">이용방법</a>
+      <a href="#process" data-dp-btn-bound="1" data-dp-has-link="1">범위</a>
+      <a href="#price" data-dp-btn-bound="1" data-dp-has-link="1">정기관리</a>
+      <a href="#plan" data-dp-btn-bound="1" data-dp-has-link="1">FAQ</a>
+      <a href="#faq" data-dp-btn-bound="1" data-dp-has-link="1">첫 상담 무료</a>
     </div>
-    <a href="#final" class="nav-cta">??</a>
+    <a href="#final" class="nav-cta" data-dp-btn-bound="1" data-dp-has-link="1">비대면 보험금 청구 도움</a>
   </div>
 </nav>
 
@@ -899,18 +947,18 @@
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">비대면 세탁 · 드라이클리닝</span>
-      <h1>맡기고 자면,<br><span class="em">다음 날 옷장에</span><br>걸려 있습니다.</h1>
+      <span class="eyebrow">서류를 보내면,</span>
+      <h1>전문가가 확인해<br><span class="em">안내드립니다.</span><br>병원 서류와 보험 증권을 확인해 청구 가능 항목과 준비 서류를 정리합니다. 실손·진단비·수술비·입원비까지 한 번에 확인하세요.</h1>
       <p class="hero-sub">
-        ????
+        첫 상담 무료 신청 →
       </p>
       <div class="hero-cta">
-        <a href="#final" class="btn btn-primary">FAQ</a>
-        <a href="#process" class="btn btn-secondary">이용 방법 보기</a>
+        <a href="#final" class="btn btn-primary" data-dp-btn-bound="1" data-dp-has-link="1">이용 방법 보기</a>
+        <a href="#process" class="btn btn-secondary" data-dp-btn-bound="1" data-dp-has-link="1">4.92</a>
       </div>
       <div class="hero-trust">
-        <div>★ <b>? ?? ??</b> ??? ??? ?? ??</div>
-        <div><b>??? ???,</b> · 손해 보험 가입</div>
+        <div>★ <b>· 상담 후기</b> 개인정보 보호</div>
+        <div><b>· 안전한 관리</b> 오늘 바로 확인</div>
       </div>
     </div>
 
@@ -923,62 +971,62 @@
 
             <!-- Screen 1: 수거 신청 -->
             <div class="screen is-active" data-screen="0">
-              <div class="screen-title">오늘 밤 수거</div>
-              <h4>???? ???</h4>
+              <div class="screen-title">청구할 서류가 있나요?</div>
+              <h4>상담 일정</h4>
               <div class="pick-card">
-                <div class="pick-row"><span>수거 일정</span><b>??????.</b></div>
-                <div class="pick-row"><span>배송 예정</span><b>?? ??? ?? ??? ??? ?? ?? ??? ?? ??? ?????. ???????????????? ? ?? ?????.</b></div>
-                <div class="pick-row"><span>수거지</span><b>역삼동 빌라트리오</b></div>
+                <div class="pick-row"><span>오늘 22:00</span><b>안내 예정</b></div>
+                <div class="pick-row"><span>내일 10:00</span><b>상담 지역</b></div>
+                <div class="pick-row"><span>온라인 상담</span><b>📄 진료비 영수증</b></div>
               </div>
               <div class="pick-bag">
-                <span>? ?? ?? ?? ?</span>
+                <span>🧾 진단서 · 약제비 영수증</span>
                 <span style="color: var(--mint-deep); font-weight: 700;">+</span>
               </div>
               <div class="pick-bag">
-                <span>?? ?? ??</span>
+                <span>청구 도움 요청하기</span>
                 <span style="color: var(--mint-deep); font-weight: 700;">+</span>
               </div>
-              <div class="pick-cta">수거 요청하기</div>
+              <div class="pick-cta">실시간 진행 상황</div>
             </div>
 
             <!-- Screen 2: 진행 상황 -->
             <div class="screen" data-screen="1">
-              <div class="screen-title">실시간 진행 상황</div>
-              <h4>세탁 중입니다</h4>
+              <div class="screen-title">서류 확인 중입니다</div>
+              <h4>접수 완료</h4>
               <div class="track-step done">
                 <div class="track-dot">✓</div>
-                <div class="track-info"><b>수거 완료</b><span>4.92</span></div>
+                <div class="track-info"><b>어제 22:14</b><span>보장 항목 검토</span></div>
               </div>
               <div class="track-step done">
                 <div class="track-dot">✓</div>
-                <div class="track-info"><b>입고 검수</b><span>? ?? ??</span></div>
+                <div class="track-info"><b>METARICH SIGNAL GROUP</b><span>정확한 분석, 신속한 청구</span></div>
               </div>
               <div class="track-step now">
-                <div class="track-dot">???? ??</div>
-                <div class="track-info"><b>세탁 진행</b><span>? ??? ??</span></div>
+                <div class="track-dot">보험 상담</div>
+                <div class="track-info"><b>보장 분석</b><span>보험금 청구</span></div>
               </div>
               <div class="track-step">
-                <div class="track-dot">?? ?? ??</div>
-                <div class="track-info"><b>품질 검수</b><span>예정</span></div>
+                <div class="track-dot">리모델링</div>
+                <div class="track-info"><b>연금 설계</b><span>상담 신청</span></div>
               </div>
               <div class="track-step">
-                <div class="track-dot">??? ??? ????</div>
-                <div class="track-info"><b>배송 출발</b><span>예정</span></div>
+                <div class="track-dot">무료 점검 신청하기</div>
+                <div class="track-info"><b>카카오톡으로 문의하기</b><span>전화 상담 예약</span></div>
               </div>
             </div>
 
             <!-- Screen 3: 결제 완료 -->
             <div class="screen" data-screen="2">
-              <div class="screen-title">결제가 완료됐습니다</div>
-              <h4>다음 수거를 기다려요</h4>
+              <div class="screen-title">전문가에게 바로 묻기</div>
+              <h4>내 보험 현황 확인</h4>
               <div class="receipt">
-                <div style="font-size: 12px; opacity: 0.85;">총 결제 금액</div>
-                <div class="receipt-amount">?? ??</div>
-                <div class="receipt-sub">?? 22:00</div>
-                <div class="receipt-tag">?? ??</div>
-                <div class="receipt-line"><span>?? 10:00</span><span>?? ??</span></div>
-                <div class="receipt-line"><span>??? ??</span><span>?? ??? ???</span></div>
-                <div class="receipt-line"><span>수거·배송</span><span>무료</span></div>
+                <div style="font-size: 12px; opacity: 0.85;">상담 가능 지역 확인</div>
+                <div class="receipt-amount">국내 30여개 보험사 비교</div>
+                <div class="receipt-sub">누적 상담 21,573건</div>
+                <div class="receipt-tag">24시간 내 전문가 연락</div>
+                <div class="receipt-line"><span>상담료 0원</span><span>개인정보 안전 관리</span></div>
+                <div class="receipt-line"><span>1:1 맞춤 분석</span><span>보장 공백 확인</span></div>
+                <div class="receipt-line"><span>중복 보험료 점검</span><span>갱신형 보험료 확인</span></div>
               </div>
             </div>
 
@@ -999,64 +1047,64 @@
 <section>
   <div class="wrap">
     <div class="stats-head reveal visible show active aos-animate is-visible in-view in">
-      <span class="eyebrow">?? ??? ? ??? ???</span>
-      <h2>?? ?? ????<br>옷을 맡깁니다.</h2>
-      <p class="lead">??? ?? ??</p>
+      <span class="eyebrow">실손보험 세대 점검</span>
+      <h2>암·뇌·심장 진단비 확인<br>수술비 보장 확인</h2>
+      <p class="lead">보험료는 줄이고 필요한 보장은 남깁니다</p>
     </div>
 
     <!-- 메인 4개 -->
     <div class="stats-main reveal visible show active aos-animate is-visible in-view in">
       <div class="stat-card">
-        <div class="stat-num"><span class="count" data-target="124000">?? ?? ????</span><span class="unit">건/월</span></div>
-        <div class="stat-label">누적 월 평균 세탁량</div>
+        <div class="stat-num"><span class="count" data-target="124000">고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다</span><span class="unit">가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다</span></div>
+        <div class="stat-label">복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num"><span class="count" data-target="22">?? ??</span><span class="unit">시간</span></div>
-        <div class="stat-label">평균 수거~배송 시간</div>
+        <div class="stat-num"><span class="count" data-target="22">보험 분석은 판매가 아니라 정리에서 시작합니다</span><span class="unit">상담 후 원치 않으면 언제든 중단하셔도 됩니다</span></div>
+        <div class="stat-label">이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num"><span class="count" data-target="68">?? 22:14</span><span class="unit">%</span></div>
-        <div class="stat-label">?? ?? ??</div>
+        <div class="stat-num"><span class="count" data-target="68">현재 보유 보험 증권을 기준으로 객관적으로 확인합니다</span><span class="unit">%</span></div>
+        <div class="stat-label">강원 · 경기 · 충북 지역 대면 상담 가능</div>
       </div>
       <div class="stat-card">
-        <div class="stat-num"><span class="count" data-target="100">METARICH SIGNAL GROUP</span><span class="unit">%</span></div>
-        <div class="stat-label">분실·손상 시 보상 보험</div>
+        <div class="stat-num"><span class="count" data-target="100">온라인 상담도 가능합니다</span><span class="unit">%</span></div>
+        <div class="stat-label">상담 신청서 작성</div>
       </div>
     </div>
 
     <!-- 보조 8개 -->
     <div class="stats-sub reveal visible show active aos-animate is-visible in-view in">
       <div class="stat-mini">
-        <div class="stat-mini-num">??? ??, ??? ??</div>
-        <div class="stat-mini-label">평균 별점</div>
+        <div class="stat-mini-num">전문가 배정</div>
+        <div class="stat-mini-label">보장 분석 리포트 전달</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-num">?? ??</div>
-        <div class="stat-mini-label">누적 리뷰</div>
+        <div class="stat-mini-num">후속 관리 안내</div>
+        <div class="stat-mini-label">보험은 많지만 내게 맞는 보험은 따로 있습니다</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-num">?? ??</div>
-        <div class="stat-mini-label">정시 배송률</div>
+        <div class="stat-mini-num">보험료가 부담된다면 먼저 구조를 확인해보세요</div>
+        <div class="stat-mini-label">청구하지 못한 보험금이 있는지 함께 확인합니다</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-num">??? ??</div>
-        <div class="stat-mini-label">평균 카톡 응답</div>
+        <div class="stat-mini-num">메타리치 시그널그룹 전문가가 직접 분석합니다</div>
+        <div class="stat-mini-label">보험을 어렵게 설명하지 않습니다</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-num">????</div>
-        <div class="stat-mini-label">서비스 가능 자치구</div>
+        <div class="stat-mini-num">고객이 이해할 때까지 쉽게 안내합니다</div>
+        <div class="stat-mini-label">김민준 재무설계사</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-num">?? ??</div>
-        <div class="stat-mini-label">월 절수량(전통세탁 대비)</div>
+        <div class="stat-mini-num">AFPK · CFP 재무설계사</div>
+        <div class="stat-mini-label">메타리치 시그널그룹</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-num">?? ??</div>
-        <div class="stat-mini-label">사용 세제 인증</div>
+        <div class="stat-mini-num">010-1234-5678</div>
+        <div class="stat-mini-label">advisor@metarich.kr</div>
       </div>
       <div class="stat-mini">
-        <div class="stat-mini-num">?? ?? ????</div>
-        <div class="stat-mini-label">분실·손상 발생률</div>
+        <div class="stat-mini-num">보험 청구 컨시어지 — 맡기면 정리해드립니다</div>
+        <div class="stat-mini-label">CLAIMLY</div>
       </div>
     </div>
   </div>
@@ -1066,65 +1114,65 @@
 <section class="svc-section" id="service">
   <div class="wrap">
     <div class="reveal visible show active aos-animate is-visible in-view" style="text-align:center;">
-      <span class="eyebrow">서비스 종류</span>
-      <h2>일상 빨래부터 명품까지,<br>전문가가 맡습니다.</h2>
+      <span class="eyebrow">서비스</span>
+      <h2>이용방법<br>범위</h2>
     </div>
     <div class="svc-grid reveal visible show active aos-animate is-visible in-view">
       <!-- 1 -->
       <div class="svc-card">
         <div class="svc-icon">🧺</div>
-        <div class="svc-name">일반 세탁</div>
-        <div class="svc-desc">티셔츠, 속옷, 양말 등 일상복 통세탁</div>
-        <div class="svc-price">?????? ???? <small>?? ?? ??</small></div>
+        <div class="svc-name">정기관리</div>
+        <div class="svc-desc">FAQ</div>
+        <div class="svc-price">첫 상담 무료 <small>비대면 보험금 청구 도움</small></div>
       </div>
       <!-- 2 -->
       <div class="svc-card">
         <div class="svc-icon">🧥</div>
-        <div class="svc-name">드라이클리닝</div>
-        <div class="svc-desc">물세탁이 어려운 의류 전문 케어</div>
-        <div class="svc-price">????? ?? ?? <small>? ?? ?? ??</small></div>
+        <div class="svc-name">서류를 보내면,</div>
+        <div class="svc-desc">전문가가 확인해</div>
+        <div class="svc-price">안내드립니다. <small>병원 서류와 보험 증권을 확인해 청구 가능 항목과 준비 서류를 정리합니다. 실손·진단비·수술비·입원비까지 한 번에 확인하세요.</small></div>
       </div>
       <!-- 3 -->
       <div class="svc-card">
         <div class="svc-icon">🛏️</div>
-        <div class="svc-name">이불 세탁</div>
-        <div class="svc-desc">대용량 드럼 + 살균 건조</div>
-        <div class="svc-price">?? ?? ?? ?? <small>?? 30?? ??? ??</small></div>
+        <div class="svc-name">첫 상담 무료 신청 →</div>
+        <div class="svc-desc">이용 방법 보기</div>
+        <div class="svc-price">4.92 <small>· 상담 후기</small></div>
       </div>
       <!-- 4 -->
       <div class="svc-card">
         <div class="svc-icon">👟</div>
-        <div class="svc-name">운동화 세탁</div>
-        <div class="svc-desc">손세척 + 형태 복원 + 발수 코팅</div>
-        <div class="svc-price">?? ?? 21,573? <small>24?? ? ??? ??</small></div>
+        <div class="svc-name">개인정보 보호</div>
+        <div class="svc-desc">· 안전한 관리</div>
+        <div class="svc-price">오늘 바로 확인 <small>청구할 서류가 있나요?</small></div>
       </div>
       <!-- 5 -->
       <div class="svc-card">
         <div class="svc-icon">💎</div>
-        <div class="svc-name">명품 케어</div>
-        <div class="svc-desc">버버리·구찌·메종마르지엘라 전담반</div>
-        <div class="svc-price">??? 0? <small>/ 가격 사전 안내</small></div>
+        <div class="svc-name">상담 일정</div>
+        <div class="svc-desc">오늘 22:00</div>
+        <div class="svc-price">안내 예정 <small>내일 10:00</small></div>
       </div>
       <!-- 6 -->
       <div class="svc-card">
         <div class="svc-icon">🧦</div>
-        <div class="svc-name">생활빨래</div>
-        <div class="svc-desc">수건·앞치마·식탁보 살균 패키지</div>
-        <div class="svc-price">???? ?? ?? <small>1:1 ?? ??</small></div>
+        <div class="svc-name">상담 지역</div>
+        <div class="svc-desc">온라인 상담</div>
+        <div class="svc-price">📄 진료비 영수증 <small>🧾 진단서 · 약제비 영수증</small></div>
       </div>
       <!-- 7 -->
       <div class="svc-card">
         <div class="svc-icon">👔</div>
-        <div class="svc-name">정장 케어</div>
-        <div class="svc-desc">자켓+슬랙스 세트 동시 세탁·다림</div>
-        <div class="svc-price">?? ?? ?? <small>?? ??? ??</small></div>
+        <div class="svc-name">청구 도움 요청하기</div>
+        <div class="svc-desc">실시간 진행 상황</div>
+        <div class="svc-price">서류 확인 중입니다 <small>접수 완료</small></div>
       </div>
       <!-- 8 -->
       <div class="svc-card">
         <div class="svc-icon">📐</div>
-        <div class="svc-name">셔츠 다림질</div>
-        <div class="svc-desc">??? ??? ??</div>
-        <div class="svc-price">???? ?? ?? <small>?????? ??? ??</small></div>
+        <div class="svc-name">어제 22:14</div>
+        <div class="svc-desc">보장 항목 검토</div>
+        <div class="svc-price">METARICH SIGNAL GROUP <small>정확한 분석, 신속한 청구</small></div>
       </div>
     </div>
   </div>
@@ -1134,42 +1182,42 @@
 <section id="process" class="process-section">
   <div class="wrap">
     <div class="reveal visible show active aos-animate is-visible in-view" style="text-align:center;">
-      <span class="eyebrow">이용 프로세스</span>
-      <h2>다섯 번의 단계,<br>??? ?? ??</h2>
+      <span class="eyebrow">보험 상담</span>
+      <h2>보장 분석<br>보험금 청구</h2>
       <p class="lead" style="margin: 16px auto 0px;">
-        문 앞에 두는 것 외에 사람을 만날 일이 없습니다. 모든 단계는 앱에서 실시간으로 확인할 수 있습니다.
+        리모델링
       </p>
     </div>
     <div class="process-flow reveal visible show active aos-animate is-visible in-view">
       <div class="step">
-        <div class="step-num">???? ??? ??? ??? ????</div>
-        <h4>앱 신청</h4>
-        <div class="step-time">??? ?? ??? ?? ?? ??? ?? ?????</div>
-        <p class="step-desc">옷 종류·수량 입력, 문 앞 시간 지정</p>
+        <div class="step-num">연금 설계</div>
+        <h4>상담 신청</h4>
+        <div class="step-time">무료 점검 신청하기</div>
+        <p class="step-desc">카카오톡으로 문의하기</p>
       </div>
       <div class="step">
-        <div class="step-num">???? ??? ?? ?? ? ??? ??? ????? ???? ????</div>
-        <h4>비대면 수거</h4>
-        <div class="step-time">??? ??? ?? ??? ???? ?? ???????</div>
-        <p class="step-desc">전용 수거백을 문 앞에 두면 끝</p>
+        <div class="step-num">전화 상담 예약</div>
+        <h4>전문가에게 바로 묻기</h4>
+        <div class="step-time">내 보험 현황 확인</div>
+        <p class="step-desc">상담 가능 지역 확인</p>
       </div>
       <div class="step">
-        <div class="step-num">?? ??? ??? ??? ???? ?????</div>
-        <h4>전문 세탁</h4>
-        <div class="step-time">?? ? ?? ??? ??? ????? ???</div>
-        <p class="step-desc">소재별 분류 → 얼룩 점검 → 세탁 → 다림</p>
+        <div class="step-num">국내 30여개 보험사 비교</div>
+        <h4>누적 상담 21,573건</h4>
+        <div class="step-time">24시간 내 전문가 연락</div>
+        <p class="step-desc">상담료 0원</p>
       </div>
       <div class="step">
-        <div class="step-num">??? ???? ???? ?? ???? ?? ??????</div>
-        <h4>품질 검수</h4>
-        <div class="step-time">?? ?? ?? ??? ???? ????? ?????</div>
-        <p class="step-desc">출고 전 색·오염·구김 최종 확인</p>
+        <div class="step-num">개인정보 안전 관리</div>
+        <h4>1:1 맞춤 분석</h4>
+        <div class="step-time">보장 공백 확인</div>
+        <p class="step-desc">중복 보험료 점검</p>
       </div>
       <div class="step">
-        <div class="step-num">?? ? ?? ? ?? ?? ?? ?? ??</div>
-        <h4>새벽 배송</h4>
-        <div class="step-time">??? ??? ?????</div>
-        <p class="step-desc">행거에 걸어 문 앞 비대면 배송</p>
+        <div class="step-num">갱신형 보험료 확인</div>
+        <h4>실손보험 세대 점검</h4>
+        <div class="step-time">암·뇌·심장 진단비 확인</div>
+        <p class="step-desc">수술비 보장 확인</p>
       </div>
     </div>
   </div>
@@ -1179,9 +1227,9 @@
 <section class="quality-section">
   <div class="wrap">
     <div class="reveal visible show active aos-animate is-visible in-view" style="text-align:center; max-width: 720px; margin: 0 auto;">
-      <span class="eyebrow">품질 관리 정책</span>
-      <h2>옷이 돌아오기까지<br>네 번 점검합니다.</h2>
-      <p class="lead">옷 한 점 한 점에 같은 기준을 적용합니다. 미흡한 부분은 무조건 다시 처리합니다.</p>
+      <span class="eyebrow">보험료는 줄이고 필요한 보장은 남깁니다</span>
+      <h2>고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다<br>가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다</h2>
+      <p class="lead">복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</p>
     </div>
 
     <div class="q-grid reveal visible show active aos-animate is-visible in-view">
@@ -1190,36 +1238,36 @@
         <div class="q-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
         </div>
-        <h3>얼룩 사전 점검</h3>
-        <p>?? ??? ??</p>
-        <span class="q-tag">??? ??</span>
+        <h3>보험 분석은 판매가 아니라 정리에서 시작합니다</h3>
+        <p>상담 후 원치 않으면 언제든 중단하셔도 됩니다</p>
+        <span class="q-tag">이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다</span>
       </div>
       <!-- 2 -->
       <div class="q-card">
         <div class="q-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>
         </div>
-        <h3>개별 보관 시스템</h3>
-        <p>?? ?? ??? ??</p>
-        <span class="q-tag">?? ?? ??</span>
+        <h3>현재 보유 보험 증권을 기준으로 객관적으로 확인합니다</h3>
+        <p>강원 · 경기 · 충북 지역 대면 상담 가능</p>
+        <span class="q-tag">온라인 상담도 가능합니다</span>
       </div>
       <!-- 3 -->
       <div class="q-card">
         <div class="q-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"></path><path d="m4.93 10.93 1.41 1.41"></path><path d="M2 18h2"></path><path d="M20 18h2"></path><path d="m19.07 10.93-1.41 1.41"></path><path d="M22 22H2"></path><path d="m16 6-4 4-4-4"></path><path d="M16 18a4 4 0 0 0-8 0"></path></svg>
         </div>
-        <h3>친환경 세제 인증</h3>
-        <p>??? ??? ?? ?? ??? ?? ????</p>
-        <span class="q-tag">???? ????? ?? ??? ??????</span>
+        <h3>상담 신청서 작성</h3>
+        <p>전문가 배정</p>
+        <span class="q-tag">보장 분석 리포트 전달</span>
       </div>
       <!-- 4 -->
       <div class="q-card">
         <div class="q-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
         </div>
-        <h3>???? ?? ???? ??? ?? ?????</h3>
-        <p>???? ????? ???? ?? ?????</p>
-        <span class="q-tag">??? ??? ???? ????</span>
+        <h3>후속 관리 안내</h3>
+        <p>보험은 많지만 내게 맞는 보험은 따로 있습니다</p>
+        <span class="q-tag">보험료가 부담된다면 먼저 구조를 확인해보세요</span>
       </div>
     </div>
   </div>
@@ -1229,41 +1277,41 @@
 <section id="price">
   <div class="wrap">
     <div class="reveal visible show active aos-animate is-visible in-view" style="text-align:center;">
-      <span class="eyebrow">가격표</span>
-      <h2>처음부터 끝까지<br>같은 가격입니다.</h2>
-      <p class="lead" style="margin: 16px auto 0px;">수거·배송 무료. 추가 요금 없음. 작업 전 견적 발생 시 사전 안내.</p>
+      <span class="eyebrow">청구하지 못한 보험금이 있는지 함께 확인합니다</span>
+      <h2>메타리치 시그널그룹 전문가가 직접 분석합니다<br>보험을 어렵게 설명하지 않습니다</h2>
+      <p class="lead" style="margin: 16px auto 0px;">고객이 이해할 때까지 쉽게 안내합니다</p>
     </div>
 
     <div class="price-table-wrap reveal visible show active aos-animate is-visible in-view">
       <div class="price-controls">
-        <span><b>??? ??? ??? ?? ?????</b> ?? ?? ????</span>
+        <span><b>김민준 재무설계사</b> AFPK · CFP 재무설계사</span>
         <div class="sort-btns">
-          <button class="sort-btn active" data-sort="default">기본순</button>
-          <button class="sort-btn" data-sort="asc">가격 낮은 순</button>
-          <button class="sort-btn" data-sort="desc">가격 높은 순</button>
+          <button class="sort-btn active" data-sort="default">메타리치 시그널그룹</button>
+          <button class="sort-btn" data-sort="asc">010-1234-5678</button>
+          <button class="sort-btn" data-sort="desc">advisor@metarich.kr</button>
         </div>
       </div>
       <table class="price">
         <thead>
           <tr>
-            <th>구분</th>
-            <th>품목</th>
-            <th>단가</th>
-            <th>소요 시간</th>
-            <th>비고</th>
+            <th>보험 청구 컨시어지 — 맡기면 정리해드립니다</th>
+            <th>CLAIMLY</th>
+            <th>서비스</th>
+            <th>이용방법</th>
+            <th>범위</th>
           </tr>
         </thead>
         <tbody id="price-body">
-          <tr data-price="1900"><td><span class="badge badge-mint">셔츠</span></td><td>와이셔츠 (다림 포함)</td><td class="amount">?? ??</td><td class="delta">???? ??</td><td class="delta">?? ??</td></tr>
-          <tr data-price="3900"><td><span class="badge badge-mint">드라이</span></td><td>니트 / 셔츠 드라이</td><td class="amount">? ?? ????</td><td class="delta">??? ?? ??</td><td class="delta">소재별 분류</td></tr>
-          <tr data-price="4500"><td><span class="badge badge-mint">생활</span></td><td>?? ??? ??</td><td class="amount">?? ?? ???</td><td class="delta">?? ?? ? ?? ??</td><td class="delta">살균 처리</td></tr>
-          <tr data-price="7900"><td><span class="badge badge-mint">드라이</span></td><td>슬랙스 / 정장 바지</td><td class="amount">?? ??? ?? ??</td><td class="delta">??? ??? ??? ??? ?????</td><td class="delta">크리스 다림</td></tr>
-          <tr data-price="8900"><td><span class="badge badge-blue">정장</span></td><td>자켓 + 슬랙스 세트</td><td class="amount">??? ?? ???? ?? ?? ?? ??? ?????</td><td class="delta">??? ???? ?? ?? ?????</td><td class="delta">동시 세탁 할인가</td></tr>
-          <tr data-price="12900"><td><span class="badge badge-mint">이불</span></td><td>이불 (싱글~퀸)</td><td class="amount">????? ?? ?? ? ???? ????</td><td class="delta">??? ?????</td><td class="delta">AFPK ? CFP ?????</td></tr>
-          <tr data-price="15900"><td><span class="badge badge-mint">운동화</span></td><td>???? ?????</td><td class="amount">010-1234-5678</td><td class="delta">advisor@metarich.kr</td><td class="delta">발수 코팅 포함</td></tr>
-          <tr data-price="16900"><td><span class="badge badge-blue">아우터</span></td><td>코트 / 트렌치코트</td><td class="amount">?? ?? ???? ? ??? ???????</td><td class="delta">CLAIMLY</td><td class="delta">기장별 차등</td></tr>
-          <tr data-price="22900"><td><span class="badge badge-blue">아우터</span></td><td>패딩 (구스/덕다운)</td><td class="amount">???</td><td class="delta">????</td><td class="delta">??</td></tr>
-          <tr data-price="29000"><td><span class="badge badge-blue">명품</span></td><td>명품 의류 (전담반)</td><td class="amount">????</td><td class="delta">FAQ</td><td class="delta">사전 견적 제공</td></tr>
+          <tr data-price="1900"><td><span class="badge badge-mint">정기관리</span></td><td>FAQ</td><td class="amount">첫 상담 무료</td><td class="delta">비대면 보험금 청구 도움</td><td class="delta">서류를 보내면,</td></tr>
+          <tr data-price="3900"><td><span class="badge badge-mint">전문가가 확인해</span></td><td>안내드립니다.</td><td class="amount">병원 서류와 보험 증권을 확인해 청구 가능 항목과 준비 서류를 정리합니다. 실손·진단비·수술비·입원비까지 한 번에 확인하세요.</td><td class="delta">첫 상담 무료 신청 →</td><td class="delta">이용 방법 보기</td></tr>
+          <tr data-price="4500"><td><span class="badge badge-mint">4.92</span></td><td>· 상담 후기</td><td class="amount">개인정보 보호</td><td class="delta">· 안전한 관리</td><td class="delta">오늘 바로 확인</td></tr>
+          <tr data-price="7900"><td><span class="badge badge-mint">청구할 서류가 있나요?</span></td><td>상담 일정</td><td class="amount">오늘 22:00</td><td class="delta">안내 예정</td><td class="delta">내일 10:00</td></tr>
+          <tr data-price="8900"><td><span class="badge badge-blue">상담 지역</span></td><td>온라인 상담</td><td class="amount">📄 진료비 영수증</td><td class="delta">🧾 진단서 · 약제비 영수증</td><td class="delta">청구 도움 요청하기</td></tr>
+          <tr data-price="12900"><td><span class="badge badge-mint">실시간 진행 상황</span></td><td>서류 확인 중입니다</td><td class="amount">접수 완료</td><td class="delta">어제 22:14</td><td class="delta">보장 항목 검토</td></tr>
+          <tr data-price="15900"><td><span class="badge badge-mint">METARICH SIGNAL GROUP</span></td><td>정확한 분석, 신속한 청구</td><td class="amount">보험 상담</td><td class="delta">보장 분석</td><td class="delta">보험금 청구</td></tr>
+          <tr data-price="16900"><td><span class="badge badge-blue">리모델링</span></td><td>연금 설계</td><td class="amount">상담 신청</td><td class="delta">무료 점검 신청하기</td><td class="delta">카카오톡으로 문의하기</td></tr>
+          <tr data-price="22900"><td><span class="badge badge-blue">전화 상담 예약</span></td><td>전문가에게 바로 묻기</td><td class="amount">내 보험 현황 확인</td><td class="delta">상담 가능 지역 확인</td><td class="delta">국내 30여개 보험사 비교</td></tr>
+          <tr data-price="29000"><td><span class="badge badge-blue">누적 상담 21,573건</span></td><td>24시간 내 전문가 연락</td><td class="amount">상담료 0원</td><td class="delta">개인정보 안전 관리</td><td class="delta">1:1 맞춤 분석</td></tr>
         </tbody>
       </table>
     </div>
@@ -1274,52 +1322,52 @@
 <section id="plan" class="plans-section">
   <div class="wrap">
     <div class="reveal visible show active aos-animate is-visible in-view" style="text-align:center;">
-      <span class="eyebrow">정기권 · 구독</span>
-      <h2>매주 옷을 맡기는 분께<br>가장 합리적인 선택.</h2>
-      <p class="lead" style="margin: 16px auto 0px;">정기권은 언제든 일시정지·해지할 수 있습니다.</p>
+      <span class="eyebrow">보장 공백 확인</span>
+      <h2>중복 보험료 점검<br>갱신형 보험료 확인</h2>
+      <p class="lead" style="margin: 16px auto 0px;">실손보험 세대 점검</p>
     </div>
 
     <div class="plans-grid reveal visible show active aos-animate is-visible in-view">
       <!-- 라이트 -->
       <div class="plan">
-        <div class="plan-name">? ?? ??</div>
-        <div class="plan-price">??? ??? ?? ??<small>/월</small></div>
-        <div class="plan-desc">??? ???,</div>
+        <div class="plan-name">암·뇌·심장 진단비 확인</div>
+        <div class="plan-price">수술비 보장 확인<small>보험료는 줄이고 필요한 보장은 남깁니다</small></div>
+        <div class="plan-desc">고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다</div>
         <ul>
-          <li>???? ???</li>
-          <li>??????.</li>
-          <li>?? ??? ?? ??? ??? ?? ?? ??? ?? ??? ?????. ???????????????? ? ?? ?????.</li>
-          <li>일시정지 무제한</li>
+          <li>가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다</li>
+          <li>복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</li>
+          <li>보험 분석은 판매가 아니라 정리에서 시작합니다</li>
+          <li>상담 후 원치 않으면 언제든 중단하셔도 됩니다</li>
         </ul>
-        <a href="#final" class="btn btn-secondary">시작하기</a>
+        <a href="#final" class="btn btn-secondary" data-dp-btn-bound="1" data-dp-has-link="1">이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다</a>
       </div>
       <!-- 스탠다드 (추천) -->
       <div class="plan featured">
-        <div class="plan-name">? ?? ?? ?? ?</div>
-        <div class="plan-price">?? ?? ??<small>/월</small></div>
-        <div class="plan-desc">4.92</div>
+        <div class="plan-name">현재 보유 보험 증권을 기준으로 객관적으로 확인합니다</div>
+        <div class="plan-price">강원 · 경기 · 충북 지역 대면 상담 가능<small>온라인 상담도 가능합니다</small></div>
+        <div class="plan-desc">상담 신청서 작성</div>
         <ul>
-          <li>? ?? ??</li>
-          <li>???? ??</li>
-          <li>? ??? ??</li>
-          <li>?? ?? ??</li>
-          <li>??? ??? ????</li>
+          <li>전문가 배정</li>
+          <li>보장 분석 리포트 전달</li>
+          <li>후속 관리 안내</li>
+          <li>보험은 많지만 내게 맞는 보험은 따로 있습니다</li>
+          <li>보험료가 부담된다면 먼저 구조를 확인해보세요</li>
         </ul>
-        <a href="#final" class="btn btn-primary">가장 인기 시작하기</a>
+        <a href="#final" class="btn btn-primary" data-dp-btn-bound="1" data-dp-has-link="1">청구하지 못한 보험금이 있는지 함께 확인합니다</a>
       </div>
       <!-- 패밀리 -->
       <div class="plan">
-        <div class="plan-name">?? ??</div>
-        <div class="plan-price">?? 22:00<small>/월</small></div>
-        <div class="plan-desc">?? ??</div>
+        <div class="plan-name">메타리치 시그널그룹 전문가가 직접 분석합니다</div>
+        <div class="plan-price">보험을 어렵게 설명하지 않습니다<small>고객이 이해할 때까지 쉽게 안내합니다</small></div>
+        <div class="plan-desc">김민준 재무설계사</div>
         <ul>
-          <li>월 무제한 수거·배송</li>
-          <li>?? 10:00</li>
-          <li>?? ??</li>
-          <li>??? ??</li>
-          <li>?? ??? ???</li>
+          <li>AFPK · CFP 재무설계사</li>
+          <li>메타리치 시그널그룹</li>
+          <li>010-1234-5678</li>
+          <li>advisor@metarich.kr</li>
+          <li>보험 청구 컨시어지 — 맡기면 정리해드립니다</li>
         </ul>
-        <a href="#final" class="btn btn-secondary">시작하기</a>
+        <a href="#final" class="btn btn-secondary" data-dp-btn-bound="1" data-dp-has-link="1">CLAIMLY</a>
       </div>
     </div>
   </div>
@@ -1329,8 +1377,8 @@
 <section>
   <div class="wrap">
     <div class="reveal visible show active aos-animate is-visible in-view" style="text-align:center;">
-      <span class="eyebrow">고객 후기</span>
-      <h2>옷장이 바뀐 사람들의<br>실제 이야기.</h2>
+      <span class="eyebrow">서비스</span>
+      <h2>이용방법<br>범위</h2>
     </div>
 
     <div class="reviews-grid reveal visible show active aos-animate is-visible in-view">
@@ -1338,44 +1386,44 @@
       <div class="review">
         <div class="stars">★★★★★</div>
         <p class="review-body">
-          출장이 잦아서 늘 셔츠가 부족했는데, 일요일 밤 다섯 장 맡기면 화요일 새벽에 다림질된 채로 옷장에 걸려 있어요. 빳빳한 정도가 호텔 세탁실 수준이라 정말 놀랐습니다. 제일 좋은 건 사람을 안 만나도 된다는 점. 출퇴근 동선이 망가지지 않아요.
+          정기관리
         </p>
         <div class="review-meta">
-          <div class="reviewer-img">박</div>
-          <div class="reviewer-info"><b>박○○</b><span>?? ??? ? ??? ???</span></div>
+          <div class="reviewer-img">FAQ</div>
+          <div class="reviewer-info"><b>첫 상담 무료</b><span>비대면 보험금 청구 도움</span></div>
         </div>
       </div>
       <!-- 2 -->
       <div class="review">
         <div class="stars">★★★★★</div>
         <p class="review-body">
-          아이 둘 키우는 워킹맘이라 빨래가 끝이 없습니다. 이불·아이 외출복·제 정장까지 한 번에 보내고 받아 보니, 주말 한나절을 통째로 돌려받은 기분이에요. 검수 사진까지 카톡으로 보내주는 점이 신뢰가 갑니다. 손상이 없을지 걱정했는데 오히려 새옷 같아요.
+          서류를 보내면,
         </p>
         <div class="review-meta">
-          <div class="reviewer-img">김</div>
-          <div class="reviewer-info"><b>김○○</b><span>?? ?? ????</span></div>
+          <div class="reviewer-img">전문가가 확인해</div>
+          <div class="reviewer-info"><b>안내드립니다.</b><span>병원 서류와 보험 증권을 확인해 청구 가능 항목과 준비 서류를 정리합니다. 실손·진단비·수술비·입원비까지 한 번에 확인하세요.</span></div>
         </div>
       </div>
       <!-- 3 -->
       <div class="review">
         <div class="stars">★★★★★</div>
         <p class="review-body">
-          ??? ?? ??
+          첫 상담 무료 신청 →
         </p>
         <div class="review-meta">
-          <div class="reviewer-img">이</div>
-          <div class="reviewer-info"><b>이○○</b><span>?? ?? ????</span></div>
+          <div class="reviewer-img">이용 방법 보기</div>
+          <div class="reviewer-info"><b>4.92</b><span>· 상담 후기</span></div>
         </div>
       </div>
       <!-- 4 -->
       <div class="review">
         <div class="stars">★★★★☆</div>
         <p class="review-body">
-          ?? ??
+          개인정보 보호
         </p>
         <div class="review-meta">
-          <div class="reviewer-img">정</div>
-          <div class="reviewer-info"><b>정○○</b><span>?? 22:14</span></div>
+          <div class="reviewer-img">· 안전한 관리</div>
+          <div class="reviewer-info"><b>오늘 바로 확인</b><span>청구할 서류가 있나요?</span></div>
         </div>
       </div>
     </div>
@@ -1386,72 +1434,72 @@
 <section id="faq" class="faq-section">
   <div class="wrap">
     <div class="reveal visible show active aos-animate is-visible in-view" style="text-align:center;">
-      <span class="eyebrow">자주 묻는 질문</span>
-      <h2>맡기기 전에<br>?? ?? ??</h2>
+      <span class="eyebrow">상담 일정</span>
+      <h2>오늘 22:00<br>안내 예정</h2>
     </div>
 
     <div class="faq reveal visible show active aos-animate is-visible in-view">
       <div class="faq-item">
         <button class="faq-q">
-          <span>METARICH SIGNAL GROUP</span>
+          <span>내일 10:00</span>
           <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          ??? ??, ??? ??
+          상담 지역
         </div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q">
-          <span>?? ??</span>
+          <span>온라인 상담</span>
           <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          ?? ??
+          📄 진료비 영수증
         </div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q">
-          <span>??? ??</span>
+          <span>🧾 진단서 · 약제비 영수증</span>
           <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          ????
+          청구 도움 요청하기
         </div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q">
-          <span>?? ??</span>
+          <span>실시간 진행 상황</span>
           <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          ?? ??
+          서류 확인 중입니다
         </div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q">
-          <span>?? ?? ????</span>
+          <span>접수 완료</span>
           <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          ?????? ????
+          어제 22:14
         </div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q">
-          <span>?? ?? ??</span>
+          <span>보장 항목 검토</span>
           <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          ????? ?? ??
+          METARICH SIGNAL GROUP
         </div></div>
       </div>
       <div class="faq-item">
         <button class="faq-q">
-          <span>? ?? ?? ??</span>
+          <span>정확한 분석, 신속한 청구</span>
           <svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"></path></svg>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          ?? ?? ?? ??
+          보험 상담
         </div></div>
       </div>
     </div>
@@ -1461,16 +1509,16 @@
 <!-- ======================== 10. 최종 CTA + 푸터 ======================== -->
 <section class="final-cta" id="final">
   <div class="wrap">
-    <h2>오늘 밤 수거,<br>모레 아침 배송.</h2>
-    <p>?? 30?? ??? ??</p>
+    <h2>보장 분석<br>보험금 청구</h2>
+    <p>리모델링</p>
     <div class="final-buttons">
-      <a href="#" class="btn btn-primary">?? ?? 21,573?</a>
-      <a href="#plan" class="btn btn-secondary">정기권 보기</a>
+      <a href="#" class="btn btn-primary" data-dp-btn-bound="1">연금 설계</a>
+      <a href="#plan" class="btn btn-secondary" data-dp-btn-bound="1" data-dp-has-link="1">상담 신청</a>
     </div>
     <div class="final-promise">
-      <span>24?? ? ??? ??</span>
-      <span>🌿 환경 인증 세제</span>
-      <span>??? 0?</span>
+      <span>무료 점검 신청하기</span>
+      <span>카카오톡으로 문의하기</span>
+      <span>전화 상담 예약</span>
     </div>
   </div>
 </section>
@@ -1480,43 +1528,43 @@
     <div class="foot-grid">
       <div class="foot-brand">
         <div class="logo" style="color:#fff;">
-          <div class="logo-mark">???? ?? ??</div>
-          1:1 ?? ??
+          <div class="logo-mark">전문가에게 바로 묻기</div>
+          내 보험 현황 확인
         </div>
-        <p>비대면 세탁·드라이클리닝 서비스<br>주식회사 워슐리 | 대표 ○○○<br>서울특별시 강남구 테헤란로 ○○</p>
-        <p>?? ?? ??<br>?? ??? ??</p>
+        <p>상담 가능 지역 확인<br>국내 30여개 보험사 비교<br>누적 상담 21,573건</p>
+        <p>24시간 내 전문가 연락<br>상담료 0원</p>
       </div>
       <div>
-        <h4>서비스</h4>
+        <h4>개인정보 안전 관리</h4>
         <ul>
-          <li><a href="#service">서비스 종류</a></li>
-          <li><a href="#process">이용 방법</a></li>
-          <li><a href="#price">가격표</a></li>
-          <li><a href="#plan">정기권</a></li>
+          <li><a href="#service" data-dp-btn-bound="1" data-dp-has-link="1">1:1 맞춤 분석</a></li>
+          <li><a href="#process" data-dp-btn-bound="1" data-dp-has-link="1">보장 공백 확인</a></li>
+          <li><a href="#price" data-dp-btn-bound="1" data-dp-has-link="1">중복 보험료 점검</a></li>
+          <li><a href="#plan" data-dp-btn-bound="1" data-dp-has-link="1">갱신형 보험료 확인</a></li>
         </ul>
       </div>
       <div>
-        <h4>고객지원</h4>
+        <h4>실손보험 세대 점검</h4>
         <ul>
-          <li><a href="#faq">??? ??? ??</a></li>
-          <li><a href="#">카카오톡 문의</a></li>
-          <li><a href="#">???? ?? ??</a></li>
-          <li><a href="#">제휴 문의</a></li>
+          <li><a href="#faq" data-dp-btn-bound="1" data-dp-has-link="1">암·뇌·심장 진단비 확인</a></li>
+          <li><a href="#" data-dp-btn-bound="1">수술비 보장 확인</a></li>
+          <li><a href="#" data-dp-btn-bound="1">보험료는 줄이고 필요한 보장은 남깁니다</a></li>
+          <li><a href="#" data-dp-btn-bound="1">고객의 생활 흐름에 맞춰 보험 구조를 다시 설계합니다</a></li>
         </ul>
       </div>
       <div>
-        <h4>회사</h4>
+        <h4>가입보다 중요한 것은 지금 내 보험이 제대로 작동하는지 확인하는 일입니다</h4>
         <ul>
-          <li><a href="#">회사 소개</a></li>
-          <li><a href="#">채용</a></li>
-          <li><a href="#">이용약관</a></li>
-          <li><a href="#">개인정보처리방침</a></li>
+          <li><a href="#" data-dp-btn-bound="1">복잡한 약관과 보장 내용을 이해하기 쉽게 정리해드립니다</a></li>
+          <li><a href="#" data-dp-btn-bound="1">보험 분석은 판매가 아니라 정리에서 시작합니다</a></li>
+          <li><a href="#" data-dp-btn-bound="1">상담 후 원치 않으면 언제든 중단하셔도 됩니다</a></li>
+          <li><a href="#" data-dp-btn-bound="1">이름과 연락처만 남기시면 담당 설계사가 직접 연락드립니다</a></li>
         </ul>
       </div>
     </div>
     <div class="foot-bottom">
-      <span>?????? ??? ??</span>
-      <span>??? ?? ??</span>
+      <span>현재 보유 보험 증권을 기준으로 객관적으로 확인합니다</span>
+      <span>강원 · 경기 · 충북 지역 대면 상담 가능</span>
     </div>
   </div>
 </footer>
@@ -1524,10 +1572,10 @@
 <!-- 모바일 sticky CTA -->
 <a href="#final" class="sticky-cta">
   <span>
-    <b>???? ??? ??? ??? ????</b>
-    <span>??? ?? ??? ?? ?? ??? ?? ?????</span>
+    <b>온라인 상담도 가능합니다</b>
+    <span>상담 신청서 작성</span>
   </span>
-  <span class="sticky-go">받기 →</span>
+  <span class="sticky-go">전문가 배정</span>
 </a>
 
 <script>
@@ -1712,11 +1760,4 @@
 </script>
 
 
-
-<!-- ============================================================
-  보험의 기준(배진우) · 메타리치 시그널그룹 브랜딩 AI
-  이 페이지는 설계사 브랜딩 도구에서 생성되었습니다.
-  용도: 영업·홍보·고객전달·제안서 브리핑 (조직 내 사용 허용)
-  금지: 재배포·재판매·타 조직 사용
-  ============================================================ -->
 </body></html>

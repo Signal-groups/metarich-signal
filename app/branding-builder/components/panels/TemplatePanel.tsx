@@ -26,7 +26,7 @@ interface TemplatePanelProps {
   onModeChange: (mode: BuilderMode) => void
 }
 
-const LANDING_CATS = ['전체', '보험 전용', '프리미엄', '임팩트', '전문/데이터', '교육/전문', '서비스', '테크'] as const
+const LANDING_CATS = ['전체', '보험 전용', '보험상담', '보장분석', '리모델링', '보험청구', '리쿠르팅', '연금/은퇴', '교육/전문', '명함/프로필'] as const
 const CONCEPTS = Object.entries(CONCEPT_LABELS) as [LandingConcept, string][]
 const PHOTO_POS_LABELS: Record<CardPhotoPosition, string> = { top: '상단 전체', circle: '원형', right: '우측 반' }
 
