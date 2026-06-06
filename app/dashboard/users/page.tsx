@@ -153,6 +153,8 @@ export default function StaffManagementPage() {
       return false
     }
 
+    // 게스트(타사) 또는 미승인이면 모든 권한 비활성화
+    const isGuest = nextRank === "guest"
     const updatePayload = {
       is_approved: isApproved,
       role: nextRank,
@@ -166,10 +168,11 @@ export default function StaffManagementPage() {
       department_name: company === "external" ? companyName : user.department_name || user.department || "",
       team: user.team || "",
       branch_name: user.branch_name || user.team || "",
-      crm_access: isApproved ? enabled(user.crm_access) : false,
-      office_access: isApproved ? enabled(user.office_access) : false,
-      claim_access: isApproved ? enabled(user.claim_access) : false,
-      branding_access: isApproved ? enabled(user.branding_access) : false,
+      // 게스트는 영구 차단, 미승인은 모두 false
+      crm_access: (!isApproved || isGuest) ? false : enabled(user.crm_access),
+      office_access: (!isApproved || isGuest) ? false : enabled(user.office_access),
+      claim_access: (!isApproved || isGuest) ? false : enabled(user.claim_access),
+      branding_access: (!isApproved || isGuest) ? false : enabled(user.branding_access),
     }
 
     const { error } = await supabase.from("users").update(updatePayload).eq("id", user.id)
@@ -250,69 +253,4 @@ export default function StaffManagementPage() {
             >
               ← 대시보드
             </button>
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#1a3a6e]">Metarich Staff</p>
-            <h1 className="mt-2 text-3xl font-black text-slate-950">직원 관리</h1>
-            <p className="mt-2 text-sm font-bold text-slate-500">메타리치 시그널그룹 직원 전체 관리</p>
-          </div>
-          <div className="rounded-2xl bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white">
-            총 직원 {users.length.toLocaleString()}명
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-[1400px] space-y-4 px-4 py-6">
-        <UserFilters
-          search={search}
-          onSearchChange={setSearch}
-          companyType={companyType}
-          onCompanyTypeChange={(value) => {
-            setCompanyType(value)
-            if (value === "external") setHeadquarter("")
-          }}
-          headquarter={headquarter}
-          onHeadquarterChange={setHeadquarter}
-          rank={rank}
-          onRankChange={setRank}
-          approved={approved}
-          onApprovedChange={setApproved}
-          sortBy={sortBy}
-          onSortByChange={setSortBy}
-          totalCount={users.length}
-          filteredCount={filteredUsers.length}
-        />
-        <BulkActions selectedIds={selectedIds} onBulkApprove={bulkApprove} onBulkRankChange={bulkRankChange} />
-        <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-          <p className="text-sm font-bold text-slate-500">
-            대외 인원은 타사로 표시되며, 회사명 기준으로 저장됩니다.
-          </p>
-          <button
-            type="button"
-            onClick={saveAllVisibleUsers}
-            disabled={savingAll || filteredUsers.length === 0}
-            className="rounded-xl bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white transition hover:bg-[#2563eb] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {savingAll ? "일괄 저장 중..." : `현재 목록 일괄 저장 (${filteredUsers.length.toLocaleString()}명)`}
-          </button>
-        </section>
-        <UserTable
-          users={filteredUsers}
-          selectedIds={selectedIds}
-          onSelectChange={onSelectChange}
-          onSelectAll={onSelectAll}
-          onDraftChange={(user) => setUsers((prev) => prev.map((item) => item.id === user.id ? { ...item, ...user } : item))}
-          onSave={saveUser}
-          onResetPassword={setResetUser}
-          viewerId={viewer?.id ?? ""}
-        />
-        {resetUser && (
-          <ResetPasswordModal
-            user={resetUser}
-            requesterId={viewer?.id ?? ""}
-            onSuccess={() => setResetUser(null)}
-            onClose={() => setResetUser(null)}
-          />
-        )}
-      </main>
-    </div>
-  )
-}
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#1a3a6e]">Metarich Staf

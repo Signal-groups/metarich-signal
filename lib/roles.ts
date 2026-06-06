@@ -111,31 +111,40 @@ export function isApprovedUser(user: any): boolean {
 }
 
 // ── 유료 기능 접근 권한 ────────────────────────────────────────────
-// 규칙: master → 항상 허용
-//       그 외  → is_approved: true AND 해당 개별 권한 true 동시 충족
+// 규칙:
+//   master → 항상 허용
+//   guest  → 모든 기능 차단 (타사 계정 — 메인홈만 이용 가능)
+//   그 외  → is_approved: true AND 해당 개별 권한 true 동시 충족
+//
+// 메타리치 설계사(agent) 신규 가입 시 office_access 기본 true 부여
+//   → 승인과 동시에 사무실 업무 자동 허용, CRM·브랜딩은 마스터 개별 부여
 // ──────────────────────────────────────────────────────────────────
 
-/** 고객 CRM — is_approved + crm_access 동시 필요 */
+/** 고객 CRM — is_approved + crm_access 동시 필요 (guest 영구 차단) */
 export function canAccessCrm(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
+  if (normalizeRole(user) === "guest") return false;
   return isApprovedUser(user) && enabled(user?.crm_access);
 }
 
-/** 사무실 업무 탭 — is_approved + office_access 동시 필요 */
+/** 사무실 업무 탭 — is_approved + office_access 동시 필요 (guest 영구 차단) */
 export function canAccessOffice(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
+  if (normalizeRole(user) === "guest") return false;
   return isApprovedUser(user) && enabled(user?.office_access);
 }
 
-/** AI 자동화 청구 — is_approved + claim_access 동시 필요 */
+/** AI 자동화 청구 — is_approved + claim_access 동시 필요 (guest 영구 차단) */
 export function canAccessClaim(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
+  if (normalizeRole(user) === "guest") return false;
   return isApprovedUser(user) && enabled(user?.claim_access);
 }
 
-/** 설계사 브랜딩 AI — is_approved + branding_access 동시 필요 */
+/** 설계사 브랜딩 AI — is_approved + branding_access 동시 필요 (guest 영구 차단) */
 export function canAccessBranding(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
+  if (normalizeRole(user) === "guest") return false;
   return isApprovedUser(user) && (enabled(user?.branding_access) || enabled(user?.paid_access));
 }
 
