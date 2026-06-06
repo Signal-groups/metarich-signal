@@ -17,7 +17,6 @@ import {
   getBranch,
   getDepartment,
   getHeadquarter,
-  isOrganizationAdminAccount,
   normalizeRole,
   roleLabel,
 } from "../../../lib/roles"
@@ -54,7 +53,6 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-01`
   const currentRole = normalizeRole(user)
   const isMaster = currentRole === "master"
-  const canOpenOrgManagement = isOrganizationAdminAccount(user)
   const canOpenSettings = currentRole === "leader" || currentRole === "headquarters" || currentRole === "master"
   const canEditSelectedDept = canEditDepartmentSettings(user, selectedHeadquarter, selectedDept)
   const canApproveSelectedDept = currentRole === "leader" || currentRole === "headquarters" || currentRole === "master"
@@ -190,7 +188,6 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
     { id: "act", label: "활동 및 분석" },
     { id: "edu", label: "교육 관리" },
     ...(canOpenSettings ? [{ id: "sys", label: "설정 관리" }] : []),
-    ...(canOpenOrgManagement ? [{ id: "users", label: "직원 관리" }] : []),
   ]
 
   const handleExport = (type: "excel" | "pdf") => {

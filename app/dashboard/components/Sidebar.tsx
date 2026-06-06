@@ -29,7 +29,7 @@ import {
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
-import { canAccessCrm, canAccessOffice, canAccessClaim, canAccessBranding, normalizeRole, roleLabel, isApprovedUser, isOrganizationAdminAccount } from "../../../lib/roles"
+import { canAccessCrm, canAccessOffice, canAccessClaim, canAccessBranding, normalizeRole, roleLabel, isApprovedUser } from "../../../lib/roles"
 
 function ToolIcon({ icon }: { icon: string }) {
   const className = "h-5 w-5"
@@ -88,7 +88,6 @@ export default function Sidebar({
   const isAgent = currentRole === 'agent' || isManager || isLeader || isMaster;
   
   const isAdmin = isMaster;
-  const canManageStaff = isOrganizationAdminAccount(user);
   const isStaff = isAgent;
   const isApproved = isApprovedUser(user);
   const canUseOffice = canAccessOffice(user);
@@ -103,39 +102,17 @@ export default function Sidebar({
 
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || DEFAULT_MENU_STATUS);
   const [isEditMode, setIsEditMode] = useState(false); 
-  const [staffList, setStaffList] = useState<any[]>([]);
-  const [showStaffManager, setShowStaffManager] = useState(false);
-
   useEffect(() => {
     if (isApproved) {
       fetchDailyData();
       fetch3MonthAvg();
     }
     fetchMenuSettings();
-    if (canManageStaff) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
   useEffect(() => {
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
-
-  async function fetchStaffList() {
-    const { data } = await supabase.from("users").select("*").order("name", { ascending: true });
-    if (data) setStaffList(data);
-  }
-
-  async function updateStaffRole(staffId: string, newRole: string) {
-    const roleLevel = newRole === "leader" ? "director" : newRole;
-    const { error } = await supabase.from("users").update({ role: newRole, role_level: roleLevel, rank: newRole }).eq("id", staffId);
-    if (!error) { alert("직급 권한이 변경되었습니다."); fetchStaffList(); }
-  }
-
-  async function toggleStaffApproval(staffId: string, currentStatus: any) {
-    const nextStatus = !(currentStatus === true || currentStatus === "true");
-    const { error } = await supabase.from("users").update({ is_approved: nextStatus }).eq("id", staffId);
-    if (!error) { alert(nextStatus ? "승인 완료되었습니다." : "승인이 취소되었습니다."); fetchStaffList(); }
-  }
-
 
   async function fetchMenuSettings() {
     const { data } = await supabase.from("team_settings").select("key, value");
@@ -430,51 +407,7 @@ export default function Sidebar({
                 />
               )}
 
-              {canManageStaff && (
-                <NavItem
-                  icon="조직"
-                  label="조직 관리"
-                  active={showStaffManager}
-                  onClick={() => setShowStaffManager(!showStaffManager)}
-                />
-              )}
             </nav>
-
-            {canManageStaff && showStaffManager && (
-              <div className="bg-white p-4 rounded-2xl border border-white/20 space-y-3 shadow-lg">
-                <p className="text-[14px] font-black text-[#1a3a6e]">조직 관리</p>
-                <p className="text-[13px] leading-relaxed text-slate-500">
-                  본부, 사업부, 지점 편집은 대시보드의 조직 관리에서 진행해주세요. 이곳에서는 빠른 승인과 직급만 조정합니다.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank")}
-                  className="text-[13px] font-black text-[#1a3a6e] underline underline-offset-4"
-                >
-                  상세 관리는 직원 관리 페이지에서 ↗
-                </button>
-                <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
-                  {staffList.map((staff) => (
-                    <div key={staff.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[14px] font-black text-slate-900">{staff.name || staff.email}</span>
-                        <button onClick={() => toggleStaffApproval(staff.id, staff.is_approved)}
-                          className={`text-[13px] px-2 py-1 rounded-lg font-black ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                          {(staff.is_approved === true || staff.is_approved === "true") ? '승인' : '미승인'}
-                        </button>
-                      </div>
-                      <select value={staff.role || 'agent'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[13px] font-bold p-2 bg-white text-slate-900 rounded-lg outline-none">
-                        <option value="agent">설계사</option>
-                        <option value="manager">지점장</option>
-                        <option value="leader">사업부장</option>
-                        <option value="headquarters">본부장</option>
-                        {isMaster && <option value="master">마스터</option>}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {isApproved && mode === 'office' && (
               <div className="space-y-4">
