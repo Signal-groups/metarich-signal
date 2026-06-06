@@ -96,7 +96,14 @@ export default function StaffManagementPage() {
     queueMicrotask(() => { void init() })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") init()
-      if (event === "SIGNED_OUT") router.replace("/login?redirectTo=/dashboard/users")
+      if (event === "SIGNED_OUT") {
+        // 새 창 오픈 시 토큰 갱신으로 인한 SIGNED_OUT 오발화 방지
+        // 실제 세션이 없는 경우에만 로그인으로 이동
+        setTimeout(async () => {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) router.replace("/login?redirectTo=/dashboard/users")
+        }, 800)
+      }
     })
     return () => subscription.unsubscribe()
   }, [init, router])
