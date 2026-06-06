@@ -26,6 +26,34 @@ const ROLE_OPTIONS = [
 
 const defaultEduWeeks = { 1: "", 2: "", 3: "", 4: "", 5: "" }
 
+function enabled(value: any): boolean {
+  return value === true || value === "true" || value === 1 || value === "1"
+}
+
+function getCompanyType(user: any): "metarich" | "external" {
+  if (user?.company_type === "external") return "external"
+  if (user?.company_type === "metarich") return "metarich"
+  if (getHeadquarter(user) === "대외" || user?.headquarter === "대외" || user?.headquarter_name === "대외") return "external"
+  return "metarich"
+}
+
+function getCompanyName(user: any): string {
+  return user?.company_name || (getCompanyType(user) === "external" ? getDepartment(user) : "메타리치 시그널그룹") || ""
+}
+
+function roleLevelFor(rank: string) {
+  if (rank === "headquarters") return "headquarters"
+  if (rank === "leader") return "director"
+  return rank
+}
+
+function formatDate(value?: string) {
+  if (!value) return "-"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "-"
+  return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "")
+}
+
 export default function AdminPopups({
   type,
   agents,
@@ -49,6 +77,7 @@ export default function AdminPopups({
   const [existingHeadquarters, setExistingHeadquarters] = useState<string[]>(HEADQUARTER_OPTIONS)
   const [existingDepts, setExistingDepts] = useState<string[]>([])
   const [existingTeams, setExistingTeams] = useState<{ dept: string, team: string }[]>([])
+  const [bulkSaving, setBulkSaving] = useState(false)
 
   const scopeHeadquarter = selectedScope?.headquarter || ""
   const scopeDepartment = selectedScope?.department || ""
@@ -115,6 +144,8 @@ export default function AdminPopups({
 
     setAllUsers(filteredUsers.map((target) => ({
       ...target,
+      company_type: getCompanyType(target),
+      company_name: getCompanyName(target),
       rank: normalizeRole(target),
       headquarter: getHeadquarter(target),
       department: getDepartment(target),
@@ -132,6 +163,14 @@ export default function AdminPopups({
   const updateUserInfo = (userId: string, field: string, value: string) => {
     setAllUsers((prev) => prev.map((user) => {
       if (user.id !== userId) return user
+      if (field === "company_type") {
+        return value === "external"
+          ? { ...user, company_type: "external", company_name: user.company_name || user.department || "", headquarter: "대외", department: user.company_name || user.department || "", team: user.team || user.branch_name || "" }
+          : { ...user, company_type: "metarich", company_name: "메타리치 시그널그룹", headquarter: "", department: "", team: "" }
+      }
+      if (field === "company_name") {
+        return { ...user, company_name: value, ...(user.company_type === "external" ? { department: value } : {}) }
+      }
       if (field === "headquarter" && value === "CUSTOM_INPUT") return { ...user, headquarter: "", isCustomHeadquarter: true }
       if (field === "department" && value === "CUSTOM_INPUT") return { ...user, department: "", team: "", isCustomDept: true }
       if (field === "team" && value === "CUSTOM_INPUT") return { ...user, team: "", isCustomTeam: true }
@@ -166,47 +205,80 @@ export default function AdminPopups({
 
   const handleUserSave = async (user: any) => {
     if (!canUseOrgManagement) return
+    const ok = await saveUserSettings(user)
+    if (ok) alert(`${user.name || user.email}님의 직원 정보가 저장되었습니다.`)
+  }
 
-    if (!user.headquarter || !user.department || !user.team) {
-      alert("본부, 사업부, 지점을 모두 입력해주세요.")
-      return
+  const saveUserSettings = async (user: any) => {
+    const companyType = getCompanyType(user)
+    const companyName = String(user.company_name || "").trim()
+
+    if (companyType === "external" && !companyName) {
+      alert(`${user.name || user.email}님의 회사명을 입력해주세요.`)
+      return false
+    }
+
+    if (companyType === "metarich" && (!user.headquarter || !user.department || !user.team)) {
+      alert(`${user.name || user.email}님의 본부, 사업부, 지점을 모두 입력해주세요.`)
+      return false
     }
 
     const updatePayload: any = {
       is_approved: true,
       role: user.rank,
-      role_level: user.rank === "headquarters" ? "headquarters" : user.rank === "leader" ? "director" : user.rank,
+      role_level: roleLevelFor(user.rank),
       rank: user.rank,
-      headquarter: user.headquarter,
-      headquarter_name: user.headquarter,
-      department: user.department,
-      department_name: user.department,
-      team: user.team,
-      branch_name: user.team,
+      company_type: companyType,
+      company_name: companyType === "external" ? companyName : "메타리치 시그널그룹",
+      headquarter: companyType === "external" ? "대외" : user.headquarter,
+      headquarter_name: companyType === "external" ? "대외" : user.headquarter,
+      department: companyType === "external" ? companyName : user.department,
+      department_name: companyType === "external" ? companyName : user.department,
+      team: companyType === "external" ? user.team || "" : user.team,
+      branch_name: companyType === "external" ? user.team || "" : user.team,
     }
 
     if (normalizeRole(viewer) === "master") {
       // 유료 기능 접근 권한 일괄 저장
-      updatePayload.crm_access = user.crm_access === true || user.crm_access === "true"
-      updatePayload.office_access = user.office_access === true || user.office_access === "true"
-      updatePayload.claim_access = user.claim_access === true || user.claim_access === "true"
-      updatePayload.branding_access = user.branding_access === true || user.branding_access === "true"
+      updatePayload.crm_access = enabled(user.crm_access)
+      updatePayload.office_access = enabled(user.office_access)
+      updatePayload.claim_access = enabled(user.claim_access)
+      updatePayload.branding_access = enabled(user.branding_access)
     }
 
     const { error } = await supabase.from("users").update(updatePayload).eq("id", user.id)
     if (error) {
       alert("저장 중 오류가 발생했습니다: " + error.message)
-      return
+      return false
     }
 
     try {
-      await syncOrganizationOptions(user)
-      alert(`${user.name}님의 직원 정보가 저장되었습니다.`)
+      if (companyType === "metarich") await syncOrganizationOptions(user)
     } catch (orgError: any) {
       alert(`${user.name}님의 정보는 저장됐지만 조직 선택지 동기화 중 오류가 발생했습니다: ${orgError?.message || "조직 테이블을 확인해주세요."}`)
     }
 
-    setAllUsers((prev) => prev.map((target) => target.id === user.id ? { ...target, is_approved: true } : target))
+    setAllUsers((prev) => prev.map((target) => target.id === user.id ? { ...target, ...updatePayload, is_approved: true } : target))
+    return true
+  }
+
+  const handleBulkUserSave = async () => {
+    if (!canUseOrgManagement || allUsers.length === 0) return
+    if (!confirm(`현재 목록 ${allUsers.length}명의 승인 상태와 권한 설정을 일괄 저장합니다.`)) return
+
+    setBulkSaving(true)
+    let savedCount = 0
+    for (const user of allUsers) {
+      const ok = await saveUserSettings(user)
+      if (!ok) {
+        setBulkSaving(false)
+        alert(`${savedCount}명 저장 후 중단되었습니다. 입력값을 확인해주세요.`)
+        return
+      }
+      savedCount += 1
+    }
+    setBulkSaving(false)
+    alert(`${savedCount}명의 직원 설정이 일괄 저장되었습니다.`)
   }
 
   const handleApprovePerf = async (agentId: string, currentStatus: boolean) => {
@@ -266,12 +338,29 @@ export default function AdminPopups({
         {type === "users" && (
           canUseOrgManagement ? (
             <div className="animate-in fade-in space-y-6 md:space-y-10">
-              <h3 className="inline-block border-b-4 border-[#1a3a6e] text-2xl md:text-3xl">직원 관리</h3>
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <h3 className="inline-block border-b-4 border-[#1a3a6e] text-2xl md:text-3xl">직원 관리</h3>
+                  <p className="mt-3 text-[13px] font-bold text-slate-500">
+                    대외로 표시된 인원은 타사로 분류되며, 회사명 기준으로 확인됩니다.
+                  </p>
+                </div>
+                {normalizeRole(viewer) === "master" && (
+                  <button
+                    onClick={handleBulkUserSave}
+                    disabled={bulkSaving || allUsers.length === 0}
+                    className="rounded-2xl bg-[#1a3a6e] px-6 py-4 text-[13px] font-black text-white shadow-lg shadow-blue-950/20 transition hover:bg-[#2563eb] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {bulkSaving ? "일괄 저장 중..." : `승인·권한 설정 일괄 저장 (${allUsers.length}명)`}
+                  </button>
+                )}
+              </div>
               <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-xl">
-                <table className="w-full min-w-[980px] text-left font-black">
+                <table className="w-full min-w-[1180px] text-left font-black">
                   <thead className="bg-[#1a3a6e] text-[13px] text-white">
                     <tr>
                       <th className="p-4 md:p-5">직원 정보</th>
+                      <th className="p-4 text-center md:p-5">소속 구분 / 회사명</th>
                       <th className="p-4 text-center md:p-5">직급 / 본부 / 사업부 / 지점</th>
                       {normalizeRole(viewer) === "master" && <th className="p-4 text-center md:p-5">유료 기능 권한</th>}
                       <th className="p-4 text-center md:p-5">처리</th>
@@ -287,6 +376,23 @@ export default function AdminPopups({
                             {!user.is_approved && <span className="ml-1 text-[13px] text-rose-500">승인대기</span>}
                           </div>
                           <p className="mt-1 text-[13px] font-normal text-slate-400">{user.email}</p>
+                          <p className="mt-1 text-[13px] font-normal text-slate-400">{user.phone || "연락처 미입력"}</p>
+                          <p className="mt-1 text-[12px] font-bold text-slate-300">가입일 {formatDate(user.created_at)}</p>
+                        </td>
+                        <td className="p-4 text-center md:p-6">
+                          <div className="grid min-w-[260px] grid-cols-1 gap-2">
+                            <select value={getCompanyType(user)} onChange={(event) => updateUserInfo(user.id, "company_type", event.target.value)} className="rounded-xl border border-slate-300 bg-white p-3 text-[14px] font-black text-slate-900">
+                              <option value="metarich">메타리치</option>
+                              <option value="external">타사</option>
+                            </select>
+                            <input
+                              value={user.company_name || (getCompanyType(user) === "external" ? user.department || "" : "메타리치 시그널그룹")}
+                              readOnly={getCompanyType(user) === "metarich"}
+                              onChange={(event) => updateUserInfo(user.id, "company_name", event.target.value)}
+                              placeholder="회사명 입력"
+                              className="rounded-xl border border-slate-300 bg-white p-3 text-[14px] font-black text-slate-900 outline-none read-only:bg-slate-100 read-only:text-slate-500"
+                            />
+                          </div>
                         </td>
                         <td className="p-4 text-center md:p-6">
                           <div className="grid min-w-[520px] grid-cols-1 gap-2 md:grid-cols-4">
@@ -296,7 +402,9 @@ export default function AdminPopups({
                                 .map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                             </select>
 
-                            {user.isCustomHeadquarter ? (
+                            {getCompanyType(user) === "external" ? (
+                              <input value="대외" readOnly className="rounded-xl border border-slate-200 bg-slate-100 p-3 text-[14px] font-black text-slate-500" />
+                            ) : user.isCustomHeadquarter ? (
                               <input autoFocus placeholder="본부 직접 입력" value={user.headquarter || ""} onChange={(event) => updateUserInfo(user.id, "headquarter", event.target.value)} className="rounded-xl border border-indigo-500 bg-white p-3 text-[14px] font-black text-slate-900" />
                             ) : (
                               <select value={user.headquarter || ""} onChange={(event) => updateUserInfo(user.id, "headquarter", event.target.value)} className="rounded-xl border border-slate-300 bg-white p-3 text-[14px] font-black text-slate-900">
@@ -306,7 +414,9 @@ export default function AdminPopups({
                               </select>
                             )}
 
-                            {user.isCustomDept ? (
+                            {getCompanyType(user) === "external" ? (
+                              <input value={user.company_name || user.department || ""} readOnly className="rounded-xl border border-slate-200 bg-slate-100 p-3 text-[14px] font-black text-slate-500" />
+                            ) : user.isCustomDept ? (
                               <input autoFocus placeholder="사업부 직접 입력" value={user.department || ""} onChange={(event) => updateUserInfo(user.id, "department", event.target.value)} className="rounded-xl border border-indigo-500 bg-white p-3 text-[14px] font-black text-slate-900" />
                             ) : (
                               <select value={user.department || ""} onChange={(event) => updateUserInfo(user.id, "department", event.target.value)} className="rounded-xl border border-slate-300 bg-white p-3 text-[14px] font-black text-slate-900">
@@ -316,7 +426,9 @@ export default function AdminPopups({
                               </select>
                             )}
 
-                            {user.isCustomTeam ? (
+                            {getCompanyType(user) === "external" ? (
+                              <input placeholder="직책 또는 부서" value={user.team || ""} onChange={(event) => updateUserInfo(user.id, "team", event.target.value)} className="rounded-xl border border-slate-300 bg-white p-3 text-[14px] font-black text-slate-900" />
+                            ) : user.isCustomTeam ? (
                               <input autoFocus placeholder="지점 직접 입력" value={user.team || ""} onChange={(event) => updateUserInfo(user.id, "team", event.target.value)} className="rounded-xl border border-indigo-500 bg-white p-3 text-[14px] font-black text-slate-900" />
                             ) : (
                               <select value={user.team || ""} onChange={(event) => updateUserInfo(user.id, "team", event.target.value)} disabled={!user.department && !user.isCustomDept} className="rounded-xl border border-slate-300 bg-white p-3 text-[14px] font-black text-slate-900 disabled:opacity-40">
