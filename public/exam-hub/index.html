@@ -148,7 +148,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
 
   <div class="notice-bar">
     <span class="icon">💡</span>
-    <p>각 과목 카드를 클릭하면 모의고사와 요약집을 선택할 수 있습니다. <strong>퇴직연금</strong>은 실제 문제가 탑재되어 있으며, 나머지 3개 과목은 순차적으로 업데이트됩니다.</p>
+    <p>각 과목 카드를 클릭하면 모의고사와 요약집을 선택할 수 있습니다. <strong>4개 과목 모두</strong> 모의고사 10회 + 기출요약집이 탑재되어 있습니다. 시험 전 최종 점검에 활용하세요!</p>
   </div>
 
   <!-- 퇴직연금 -->
@@ -211,29 +211,45 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
         <div class="subject-name">생명보험 모집인</div>
         <div class="subject-desc">보험법규 · 기초서류 및 생명보험 이해</div>
         <div class="subject-badges">
+          <span class="badge badge-ready">✓ 탑재 완료</span>
           <span class="badge badge-exam">10회 모의고사</span>
-          <span class="badge badge-summary">요약집</span>
-          <span class="badge badge-soon">업데이트 예정</span>
+          <span class="badge badge-summary">요약집 완비</span>
         </div>
       </div>
       <span class="subject-toggle">▾</span>
     </div>
     <div class="exam-list">
       <div class="subject-progress">
-        <div class="prog-label"><span>준비 중</span><span>0%</span></div>
-        <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:0%"></div></div>
+        <div class="prog-label"><span>업로드 완료</span><span>100%</span></div>
+        <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:100%"></div></div>
       </div>
       <br>
       <div class="exam-grid">
-        <div class="exam-btn disabled">
+        <a href="life/summary.html" target="_blank" class="exam-btn summary-btn">
           <span class="icon">📖</span>
-          <span><div>기출 요약집</div><div class="meta">업로드 예정</div></span>
-          <span class="tag tag-soon">준비중</span>
-        </div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제1~3회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제4~6회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제7~8회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제9~10회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
+          <span><div>기출 요약집</div><div class="meta">핵심 정리 · 암기노트</div></span>
+          <span class="tag tag-sum">요약</span>
+        </a>
+        <a href="life/exam-1-3.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제1~3회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">3회</span>
+        </a>
+        <a href="life/exam-4-6.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제4~6회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">3회</span>
+        </a>
+        <a href="life/exam-7-8.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제7~8회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">2회</span>
+        </a>
+        <a href="life/exam-9-10.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제9~10회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">2회</span>
+        </a>
       </div>
       <p style="font-size:11px;color:var(--muted);">📌 과목1: 보험법규 (20문항) &nbsp;|&nbsp; 과목2: 기초서류 및 생명보험 이해 (20문항) &nbsp;|&nbsp; 합격기준: 평균 70점 + 과목별 40점 이상</p>
     </div>
@@ -245,33 +261,49 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
       <div class="subject-icon nonlife">🚗</div>
       <div class="subject-info">
         <div class="subject-name">손해보험 모집인</div>
-        <div class="subject-desc">보험법규 · 손해보험 상품 이해</div>
+        <div class="subject-desc">보험업법 및 관련법규 · 손해보험의 이해</div>
         <div class="subject-badges">
+          <span class="badge badge-ready">✓ 탑재 완료</span>
           <span class="badge badge-exam">10회 모의고사</span>
-          <span class="badge badge-summary">요약집</span>
-          <span class="badge badge-soon">업데이트 예정</span>
+          <span class="badge badge-summary">요약집 완비</span>
         </div>
       </div>
       <span class="subject-toggle">▾</span>
     </div>
     <div class="exam-list">
       <div class="subject-progress">
-        <div class="prog-label"><span>준비 중</span><span>0%</span></div>
-        <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:0%"></div></div>
+        <div class="prog-label"><span>업로드 완료</span><span>100%</span></div>
+        <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:100%"></div></div>
       </div>
       <br>
       <div class="exam-grid">
-        <div class="exam-btn disabled">
+        <a href="nonlife/summary.html" target="_blank" class="exam-btn summary-btn">
           <span class="icon">📖</span>
-          <span><div>기출 요약집</div><div class="meta">업로드 예정</div></span>
-          <span class="tag tag-soon">준비중</span>
-        </div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제1~3회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제4~6회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제7~8회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제9~10회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
+          <span><div>기출 요약집</div><div class="meta">핵심 정리 · 암기노트</div></span>
+          <span class="tag tag-sum">요약</span>
+        </a>
+        <a href="nonlife/exam-1-3.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제1~3회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">3회</span>
+        </a>
+        <a href="nonlife/exam-4-6.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제4~6회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">3회</span>
+        </a>
+        <a href="nonlife/exam-7-8.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제7~8회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">2회</span>
+        </a>
+        <a href="nonlife/exam-9-10.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제9~10회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">2회</span>
+        </a>
       </div>
-      <p style="font-size:11px;color:var(--muted);">📌 과목1: 보험법규 (20문항) &nbsp;|&nbsp; 과목2: 손해보험 상품 이해 (20문항) &nbsp;|&nbsp; 합격기준: 평균 70점 + 과목별 40점 이상</p>
+      <p style="font-size:11px;color:var(--muted);">📌 과목1: 보험업법 및 관련법규 (20문항) &nbsp;|&nbsp; 과목2: 손해보험의 이해 (20문항) &nbsp;|&nbsp; 합격기준: 평균 70점 + 과목별 40점 이상</p>
     </div>
   </div>
 
@@ -281,33 +313,49 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
       <div class="subject-icon variable">📈</div>
       <div class="subject-info">
         <div class="subject-name">변액보험 모집인</div>
-        <div class="subject-desc">보험법규 및 변액보험 판매관리 · 투자이론 및 변액보험</div>
+        <div class="subject-desc">변액보험의 이론 · 변액보험의 실무</div>
         <div class="subject-badges">
+          <span class="badge badge-ready">✓ 탑재 완료</span>
           <span class="badge badge-exam">10회 모의고사</span>
-          <span class="badge badge-summary">요약집</span>
-          <span class="badge badge-soon">업데이트 예정</span>
+          <span class="badge badge-summary">요약집 완비</span>
         </div>
       </div>
       <span class="subject-toggle">▾</span>
     </div>
     <div class="exam-list">
       <div class="subject-progress">
-        <div class="prog-label"><span>준비 중</span><span>0%</span></div>
-        <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:0%"></div></div>
+        <div class="prog-label"><span>업로드 완료</span><span>100%</span></div>
+        <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:100%"></div></div>
       </div>
       <br>
       <div class="exam-grid">
-        <div class="exam-btn disabled">
+        <a href="variable/summary.html" target="_blank" class="exam-btn summary-btn">
           <span class="icon">📖</span>
-          <span><div>기출 요약집</div><div class="meta">업로드 예정</div></span>
-          <span class="tag tag-soon">준비중</span>
-        </div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제1~3회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제4~6회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제7~8회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
-        <div class="exam-btn disabled"><span class="icon">📝</span><span><div>제9~10회 모의고사</div><div class="meta">업로드 예정</div></span><span class="tag tag-soon">준비중</span></div>
+          <span><div>기출 요약집</div><div class="meta">핵심 정리 · 암기노트</div></span>
+          <span class="tag tag-sum">요약</span>
+        </a>
+        <a href="variable/exam-1-3.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제1~3회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">3회</span>
+        </a>
+        <a href="variable/exam-4-6.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제4~6회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">3회</span>
+        </a>
+        <a href="variable/exam-7-8.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제7~8회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">2회</span>
+        </a>
+        <a href="variable/exam-9-10.html" target="_blank" class="exam-btn">
+          <span class="icon">📝</span>
+          <span><div>제9~10회 모의고사</div><div class="meta">각 40문항 · 50분</div></span>
+          <span class="tag tag-exam">2회</span>
+        </a>
       </div>
-      <p style="font-size:11px;color:var(--muted);">📌 과목1: 보험법규 및 변액보험 판매관리 (10문항) &nbsp;|&nbsp; 과목2: 투자이론 및 변액보험 등 (30문항) &nbsp;|&nbsp; 합격기준: 평균 70점 + 과목별 40점 이상</p>
+      <p style="font-size:11px;color:var(--muted);">📌 과목1: 변액보험의 이론 (20문항) &nbsp;|&nbsp; 과목2: 변액보험의 실무 (20문항) &nbsp;|&nbsp; 합격기준: 평균 70점 + 과목별 40점 이상</p>
     </div>
   </div>
 

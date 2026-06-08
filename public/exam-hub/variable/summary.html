@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>변액보험 모집인 기출요약집</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+:root{--navy:#0d1b2a;--navy2:#162537;--accent:#9333ea;--accent2:#7e22ce;--text:#dde4f0;--muted:#7a90b0;--surface:#182840;--surface2:#1f3352;--border:rgba(255,255,255,0.07);--green:#22c55e;--red:#ef4444;--yellow:#fbbf24;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--text);font-size:14px;line-height:1.7;}
+.header{background:linear-gradient(135deg,#091525 0%,#1a0f2e 50%,#2d1a52 100%);border-bottom:2px solid var(--accent);padding:36px 40px 28px;}
+.header-badge{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;padding:3px 10px;border-radius:2px;margin-bottom:12px;}
+.header h1{font-size:26px;font-weight:900;color:#fff;margin-bottom:8px;}
+.header-sub{color:var(--muted);font-size:13px;margin-top:8px;}
+.tabs{display:flex;background:var(--navy2);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:200;}
+.tab{padding:14px 24px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab:hover{color:var(--text);}
+.panel{display:none;max-width:900px;margin:0 auto;padding:32px 20px 80px;}
+.panel.active{display:block;}
+.section-title{font-size:18px;font-weight:900;color:#fff;margin:32px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--accent);}
+.section-title:first-child{margin-top:0;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:12px;}
+.card h3{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px;}
+.card p,.card li{font-size:13px;color:var(--text);line-height:1.8;}
+.card ul{padding-left:20px;}
+.card li{margin-bottom:4px;}
+.highlight{background:rgba(147,51,234,0.1);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px;color:var(--text);}
+.highlight strong{color:var(--accent);}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px;}
+th{background:var(--surface2);color:var(--accent);padding:8px 12px;text-align:left;border:1px solid var(--border);}
+td{padding:8px 12px;border:1px solid var(--border);color:var(--text);}
+tr:nth-child(even) td{background:rgba(255,255,255,0.02);}
+.num-card{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:12px 0;}
+.num-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;}
+.num-val{font-size:18px;font-weight:900;color:var(--accent);margin-bottom:4px;}
+.num-label{font-size:11px;color:var(--muted);}
+.flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0;}
+.flow-step{background:var(--surface2);border:1px solid rgba(147,51,234,0.3);border-radius:6px;padding:8px 14px;font-size:12px;text-align:center;}
+.flow-arrow{color:var(--accent);font-size:16px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--navy);}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
+@media(max-width:640px){.header{padding:24px 16px 20px;}.header h1{font-size:20px;}.tab{padding:12px 16px;font-size:12px;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-badge">VARIABLE INSURANCE</div>
+  <h1>변액보험 모집인 검정시험<br>기출 핵심 요약집</h1>
+  <div class="header-sub">변액보험 이론 + 변액보험 실무 | 시험 직전 최종 정리</div>
+</div>
+<div class="tabs">
+  <div class="tab active" onclick="showTab('t1',this)">📘 변액보험 이론</div>
+  <div class="tab" onclick="showTab('t2',this)">💼 변액보험 실무</div>
+  <div class="tab" onclick="showTab('t3',this)">📊 상품별 비교</div>
+  <div class="tab" onclick="showTab('t4',this)">⚠️ 판매 의무·금지</div>
+  <div class="tab" onclick="showTab('t5',this)">🔢 필수 암기</div>
+</div>
+
+<div id="t1" class="panel active">
+  <div class="section-title">📘 변액보험 이론 핵심</div>
+
+  <div class="card">
+    <h3>변액보험이란?</h3>
+    <div class="highlight">보험료의 일부를 <strong>특별계정</strong>에서 투자 운용하여, 그 <strong>운용 실적에 따라</strong> 보험금·해지환급금이 변동되는 보험</div>
+    <ul>
+      <li>일반 생명보험과 달리 투자 위험을 <strong>계약자가 부담</strong></li>
+      <li>고수익 추구 가능하나 원금 손실 가능</li>
+      <li>인플레이션 헤지 기능</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>일반계정 vs 특별계정</h3>
+    <table>
+      <tr><th>구분</th><th>일반계정</th><th>특별계정</th></tr>
+      <tr><td>운용 주체</td><td>보험회사</td><td>보험회사(자산운용사 위탁)</td></tr>
+      <tr><td>수익 귀속</td><td>보험회사</td><td>계약자</td></tr>
+      <tr><td>위험 부담</td><td>보험회사</td><td>계약자</td></tr>
+      <tr><td>분리 여부</td><td>일반자산과 혼합</td><td>일반계정과 완전 분리</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>보험료의 구성</h3>
+    <div class="flow">
+      <div class="flow-step">납입 보험료</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">사업비 공제</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">위험보험료 공제</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>저축보험료</strong><br>(특별계정 투자)</div>
+    </div>
+    <ul>
+      <li>사업비: 계약 체결비, 유지비, 수금비 등</li>
+      <li>위험보험료: 순수 보장(사망·재해) 비용</li>
+      <li>저축보험료: 특별계정에서 펀드로 운용</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>펀드 종류와 특성</h3>
+    <table>
+      <tr><th>펀드 종류</th><th>주요 투자 대상</th><th>위험/수익</th></tr>
+      <tr><td>주식형</td><td>주식 60% 이상</td><td>고위험/고수익</td></tr>
+      <tr><td>채권형</td><td>채권 60% 이상</td><td>저위험/저수익</td></tr>
+      <tr><td>혼합형</td><td>주식+채권 혼합</td><td>중간</td></tr>
+      <tr><td>MMF형</td><td>단기 금융상품</td><td>최저위험/최저수익</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>최저보증 제도 (Guarantee)</h3>
+    <table>
+      <tr><th>약어</th><th>내용</th><th>해당 상품</th></tr>
+      <tr><td>GMDB</td><td>최저사망보험금 보증</td><td>변액종신</td></tr>
+      <tr><td>GMAB</td><td>최저연금적립금 보증</td><td>변액연금</td></tr>
+      <tr><td>GMWB</td><td>최저인출금액 보증</td><td>변액연금</td></tr>
+      <tr><td>GLWB</td><td>종신인출금액 보증</td><td>변액연금</td></tr>
+    </table>
+    <div class="highlight">⚠️ 최저보증 비용은 <strong>특별계정 자산에서 별도 차감</strong></div>
+  </div>
+
+  <div class="card">
+    <h3>기준가격(NAV) 이해</h3>
+    <ul>
+      <li>NAV = Net Asset Value = 펀드 1좌당 순자산가치</li>
+      <li>매 영업일마다 산정</li>
+      <li>계약자 적립금 = 보유 좌수 × 기준가격</li>
+      <li>주가처럼 변동하며 투자 수익/손실 반영</li>
+    </ul>
+  </div>
+</div>
+
+<div id="t2" class="panel">
+  <div class="section-title">💼 변액보험 실무 핵심</div>
+
+  <div class="card">
+    <h3>변액보험 판매 자격</h3>
+    <div class="highlight">일반 생명보험 자격 + <strong>변액보험 판매관리사</strong> 자격 별도 취득 필수</div>
+    <ul>
+      <li>생명보험협회 주관 교육 이수</li>
+      <li>시험 합격 후 등록</li>
+      <li>계속교육 의무 이수</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>계약 체결 전 교부 서류</h3>
+    <ul>
+      <li>보험약관</li>
+      <li>청약서 부본</li>
+      <li><strong>투자설명서</strong> (자본시장법)</li>
+    </ul>
+    <div class="highlight">⚠️ 보험증권은 계약 체결 <strong>후</strong> 교부</div>
+  </div>
+
+  <div class="card">
+    <h3>적합성 원칙</h3>
+    <ul>
+      <li>계약 전 반드시 계약자 정보 파악</li>
+      <li>파악 항목: 투자 경험, 재정 상황, 투자 목적, 위험 감수 능력</li>
+      <li>투자 성향에 맞지 않으면 권유 금지</li>
+      <li>고령자·무경험자에게 변액보험 판매 시 특히 주의</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>청약 철회권</h3>
+    <ul>
+      <li>보험증권 수령일부터 <strong>15일 이내</strong></li>
+      <li>청약일부터 <strong>30일 이내</strong></li>
+      <li>철회 시 납입 보험료 전액 환급 (3영업일 이내)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>계약 유지 서비스</h3>
+    <table>
+      <tr><th>기능</th><th>내용</th><th>가능 상품</th></tr>
+      <tr><td>펀드 변경</td><td>운용 펀드 전환</td><td>모든 변액보험</td></tr>
+      <tr><td>중도인출</td><td>적립금 일부 인출</td><td>변액유니버설</td></tr>
+      <tr><td>추가납입</td><td>자유 추가 납입</td><td>변액유니버설</td></tr>
+      <tr><td>보험료 자동대출</td><td>미납 시 적립금 담보 대출</td><td>대부분 상품</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>해지 시 환급금</h3>
+    <div class="highlight">해지환급금 = 계약자 적립금 - <strong>해지공제금</strong></div>
+    <ul>
+      <li>특별계정 투자 실적에 따라 변동</li>
+      <li>원금 손실 가능</li>
+      <li>해지 후 부활(재가입) 불가 (실효 후 부활은 가능)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>운용보고서 교부</h3>
+    <ul>
+      <li>교부 주기: <strong>반기별 (6개월)</strong></li>
+      <li>내용: 펀드 운용 현황, 수익률, 비용 등</li>
+      <li>계약자가 온라인으로도 확인 가능</li>
+    </ul>
+  </div>
+</div>
+
+<div id="t3" class="panel">
+  <div class="section-title">📊 변액보험 상품별 비교</div>
+
+  <div class="card">
+    <h3>3대 변액보험 상품 비교</h3>
+    <table>
+      <tr><th>구분</th><th>변액종신보험</th><th>변액연금보험</th><th>변액유니버설</th></tr>
+      <tr><td>주목적</td><td>사망보장</td><td>노후 연금</td><td>투자+보장</td></tr>
+      <tr><td>보험기간</td><td>종신</td><td>연금 개시까지</td><td>선택</td></tr>
+      <tr><td>최저보증</td><td>GMDB</td><td>GMAB/GMWB</td><td>-</td></tr>
+      <tr><td>납입 유연성</td><td>고정</td><td>고정/유연</td><td>매우 유연</td></tr>
+      <tr><td>중도인출</td><td>불가</td><td>제한적</td><td>가능</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>변액연금 적립기간 vs 연금기간</h3>
+    <div class="flow">
+      <div class="flow-step">납입기간<br>(보험료 납입)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">적립기간<br>(투자·운용)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">연금 개시<br>(적립금 → 연금)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">연금기간<br>(연금 수령)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>변액유니버설보험 특징</h3>
+    <ul>
+      <li>보험료 납입 유연성 (증액/감액/면제)</li>
+      <li>중도인출 가능 (계약자 적립금 일부)</li>
+      <li>추가납입 가능</li>
+      <li>보험가입금액 조정 가능</li>
+      <li>원금 보장 없음</li>
+    </ul>
+  </div>
+</div>
+
+<div id="t4" class="panel">
+  <div class="section-title">⚠️ 판매 의무와 금지 사항</div>
+
+  <div class="card">
+    <h3>필수 설명 의무</h3>
+    <ul>
+      <li>투자위험이 <strong>계약자 부담</strong>임을 설명</li>
+      <li>원금 손실 가능성 명시</li>
+      <li>펀드 구성·운용 방법 설명</li>
+      <li>최저보증 조건 및 비용 설명</li>
+      <li>투자설명서 교부 및 서명 확인</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>절대 금지 행위</h3>
+    <ul>
+      <li>❌ 원금 보장 약속</li>
+      <li>❌ 특정 수익률 보장</li>
+      <li>❌ 투자설명서 미교부</li>
+      <li>❌ 계약자 정보 파악 없이 판매</li>
+      <li>❌ 부적합 고객에게 권유</li>
+    </ul>
+    <div class="highlight">⚠️ 위반 시 <strong>불완전판매</strong>로 제재 및 손해배상 책임</div>
+  </div>
+
+  <div class="card">
+    <h3>불완전판매 유형</h3>
+    <table>
+      <tr><th>유형</th><th>내용</th></tr>
+      <tr><td>허위 설명</td><td>원금 보장, 수익률 보장 등 허위 내용 설명</td></tr>
+      <tr><td>설명 누락</td><td>투자위험, 원금 손실 가능성 등 미설명</td></tr>
+      <tr><td>서류 미교부</td><td>투자설명서, 약관 등 미교부</td></tr>
+      <tr><td>부적합 권유</td><td>투자 성향과 맞지 않는 상품 권유</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>고령자 판매 시 주의사항</h3>
+    <ul>
+      <li>만 65세 이상: 적합성 진단 강화</li>
+      <li>장기 변액보험 판매 자제</li>
+      <li>가족 동반 상담 권고</li>
+      <li>추가 확인 절차 실시</li>
+    </ul>
+  </div>
+</div>
+
+<div id="t5" class="panel">
+  <div class="section-title">🔢 필수 암기 정리</div>
+
+  <div class="num-card">
+    <div class="num-item"><div class="num-val">15일</div><div class="num-label">청약 철회 (증권 수령일 기준)</div></div>
+    <div class="num-item"><div class="num-val">30일</div><div class="num-label">청약 철회 최대 기한 (청약일 기준)</div></div>
+    <div class="num-item"><div class="num-val">반기(6개월)</div><div class="num-label">펀드 운용보고서 교부 주기</div></div>
+    <div class="num-item"><div class="num-val">3영업일</div><div class="num-label">철회 시 보험료 환급 기한</div></div>
+    <div class="num-item"><div class="num-val">70점</div><div class="num-label">합격 평균 점수</div></div>
+    <div class="num-item"><div class="num-val">40점</div><div class="num-label">과목별 최소 합격 점수</div></div>
+  </div>
+
+  <div class="section-title">📌 핵심 개념 정리</div>
+
+  <div class="card">
+    <h3>변액보험 3대 특징</h3>
+    <ul>
+      <li>① 운용 실적 연동: 보험금·환급금이 투자 결과에 따라 변동</li>
+      <li>② 계약자 투자위험 부담: 손실 발생 시 계약자 책임</li>
+      <li>③ 특별계정 분리 운용: 일반계정과 독립 운용</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>최저보증 종류 암기</h3>
+    <ul>
+      <li>GMDB = 최저 <strong>사망</strong>보험금 보증 (종신)</li>
+      <li>GMAB = 최저 <strong>연금적립금</strong> 보증 (연금 개시 시)</li>
+      <li>GMWB = 최저 <strong>인출</strong>금액 보증</li>
+      <li>GLWB = 종신 <strong>인출</strong>금액 보증</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>펀드 위험도 순서 (높은 순)</h3>
+    <div class="highlight">주식형 > 혼합형 > 채권형 > MMF형</div>
+    <ul>
+      <li>수익도 같은 순서로 높고 낮음</li>
+      <li>계약자 성향에 맞는 펀드 선택 중요</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>변액유니버설 vs 변액연금 차이</h3>
+    <table>
+      <tr><th>항목</th><th>변액유니버설</th><th>변액연금</th></tr>
+      <tr><td>목적</td><td>투자+보장</td><td>노후 연금</td></tr>
+      <tr><td>중도인출</td><td>가능</td><td>제한적</td></tr>
+      <tr><td>보험료 유연성</td><td>매우 높음</td><td>상대적 낮음</td></tr>
+      <tr><td>최저보증</td><td>없는 경우 많음</td><td>GMAB 등 있음</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+function showTab(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
