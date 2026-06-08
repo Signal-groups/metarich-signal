@@ -162,8 +162,13 @@ export default function Sidebar({
 
   const consultTools = CONSULTING_TOOLS.filter((tool) => tool.placement !== "office");
   const visibleConsultTools = consultTools.filter((tool) =>
-    tool.access === "public" ||
-    (tool.access === "approved" && isApproved && (menuStatus[tool.id] || isEditMode))
+    // 미승인·게스트: guestVisible 도구만 표시
+    !isApproved
+      ? tool.guestVisible === true
+      : (
+          tool.access === "public" ||
+          (tool.access === "approved" && (menuStatus[tool.id] || isEditMode))
+        )
   );
   const highlightTools = visibleConsultTools.filter((tool) => tool.highlight);
 
