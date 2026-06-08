@@ -69,11 +69,16 @@ export default function StaffManagementPage() {
         .eq("id", userId)
         .maybeSingle()
 
-      if (!profile || normalizeRole(profile) !== "master") {
+      if (!profile) return router.replace("/dashboard")
+
+      // auth 세션 이메일을 병합해서 마스터 판별 확실히 처리
+      // (DB 프로필에 email 컬럼이 없어도 세션 이메일로 마스터 확인)
+      const merged = { ...profile, email: session.user?.email ?? profile.email }
+      if (normalizeRole(merged) !== "master") {
         return router.replace("/dashboard")
       }
 
-      setViewer(profile as StaffUser)
+      setViewer(merged as StaffUser)
       await loadUsers()
       setLoading(false)
     } catch {
