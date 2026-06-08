@@ -257,8 +257,13 @@ export default function DashboardPage() {
   const visibleConsultingTools = CONSULTING_TOOLS.filter(m =>
     m.placement !== "office" &&
     (
-      m.access === "public" ||
-      (m.access === "approved" && isApproved && (menuStatus[m.id] || isConsultEditMode))
+      // 미승인·게스트: guestVisible 도구만 표시
+      !isApproved
+        ? m.guestVisible === true
+        : (
+            m.access === "public" ||
+            (m.access === "approved" && (menuStatus[m.id] || isConsultEditMode))
+          )
     )
   );
   const highlightTools = visibleConsultingTools.filter((tool) => tool.highlight);

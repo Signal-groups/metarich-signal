@@ -10,6 +10,7 @@ export type ConsultingTool = {
   fixed?: boolean;
   staffOnly?: boolean;
   access: "public" | "approved";
+  guestVisible?: boolean;  // true = 미승인·게스트도 볼 수 있는 도구
   highlight?: boolean;
   editable?: boolean;
   chromeRecommended?: boolean;
@@ -43,6 +44,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-emerald-500 text-emerald-600",
     fixed: true,
     access: "public",
+    guestVisible: true,
     highlight: true,
     editable: false,
     chromeRecommended: true,
@@ -58,6 +60,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-orange-500 text-orange-600",
     fixed: true,
     access: "public",
+    guestVisible: true,
     highlight: true,
     editable: false,
   },
@@ -72,6 +75,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-emerald-500 text-emerald-600",
     fixed: true,
     access: "public",
+    guestVisible: true,
     highlight: true,
     editable: false,
   },
@@ -114,6 +118,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-indigo-500 text-indigo-600",
     fixed: true,
     access: "public",
+    guestVisible: true,
     editable: false,
     category: "planning",
   },
@@ -142,6 +147,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-indigo-500 text-indigo-600",
     staffOnly: true,
     access: "approved",
+    guestVisible: true,
     editable: true,
     category: "planning",
   },
@@ -282,6 +288,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-teal-500 text-teal-600",
     fixed: true,
     access: "public",
+    guestVisible: true,
     editable: false,
     category: "planning",
   },

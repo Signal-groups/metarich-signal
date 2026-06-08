@@ -365,14 +365,12 @@ export default function Sidebar({
                 onClick={openInsuranceLibrary}
               />
 
-              {isApproved && (
-                <NavItem
-                  icon="DM"
-                  label="고객 DM 발송"
-                  active={false}
-                  onClick={openContentStudio}
-                />
-              )}
+              <NavItem
+                icon="DM"
+                label="고객 DM 발송"
+                active={false}
+                onClick={openContentStudio}
+              />
 
               <NavItem
                 icon="APP"
@@ -391,7 +389,7 @@ export default function Sidebar({
               />
 
               <NavItem
-                icon="톡"
+                icon="●"
                 label="보험의 기준 오픈채팅"
                 active={false}
                 onClick={openInsuranceChat}
