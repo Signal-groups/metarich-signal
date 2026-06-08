@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>생명보험 모집인 모의고사 1~3회</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+:root{--navy:#0d1b2a;--navy2:#162537;--blue:#1a3f6f;--blue2:#1e4d87;--accent:#2563eb;--accent2:#1d4ed8;--text:#dde4f0;--muted:#7a90b0;--surface:#182840;--surface2:#1f3352;--border:rgba(255,255,255,0.07);--green:#22c55e;--red:#ef4444;--yellow:#fbbf24;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--text);font-size:14px;line-height:1.7;}
+.header{background:linear-gradient(135deg,#091525 0%,#142236 50%,#1a3a5c 100%);border-bottom:2px solid var(--accent);padding:36px 40px 28px;position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;bottom:-80px;right:-80px;width:260px;height:260px;background:radial-gradient(circle,rgba(37,99,235,0.1) 0%,transparent 70%);pointer-events:none;}
+.header-badge{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;padding:3px 10px;border-radius:2px;margin-bottom:12px;}
+.header h1{font-size:26px;font-weight:900;color:#fff;margin-bottom:8px;}
+.header-meta{color:var(--muted);font-size:12px;display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;}
+.header-meta span{display:flex;align-items:center;gap:6px;}
+.header-meta strong{color:var(--accent);}
+.exam-selector{display:flex;background:var(--navy2);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:200;}
+.exam-tab{padding:14px 28px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;user-select:none;}
+.exam-tab:hover{color:var(--text);background:rgba(255,255,255,0.03);}
+.exam-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.container{max-width:860px;margin:0 auto;padding:32px 20px 80px;}
+.exam-section{display:none;}.exam-section.active{display:block;}
+.info-bar{display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+.info-chip{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;color:var(--muted);}
+.info-chip strong{color:var(--accent);}
+.subject-divider{background:linear-gradient(90deg,var(--blue) 0%,var(--blue2) 100%);padding:12px 20px;border-radius:8px;margin:28px 0 16px;display:flex;align-items:center;gap:12px;}
+.subject-divider .sub-num{background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;letter-spacing:1px;}
+.subject-divider .sub-title{font-size:14px;font-weight:700;color:#fff;}
+.subject-divider .sub-count{margin-left:auto;font-size:11px;color:rgba(255,255,255,0.6);}
+.q-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:12px;transition:border-color .2s;}
+.q-block:hover{border-color:rgba(37,99,235,0.2);}
+.q-header{display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;}
+.q-num{background:var(--blue2);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.q-text{font-size:13.5px;color:var(--text);line-height:1.7;flex:1;}
+.q-choices{display:flex;flex-direction:column;gap:6px;padding-left:4px;}
+.choice-label{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;transition:all .15s;background:var(--surface2);}
+.choice-label:hover{border-color:rgba(37,99,235,0.4);background:rgba(37,99,235,0.05);}
+.choice-label input{display:none;}
+.choice-label.selected{border-color:var(--accent);background:rgba(37,99,235,0.08);}
+.choice-label.correct{border-color:var(--green)!important;background:rgba(34,197,94,0.1)!important;color:var(--green)!important;}
+.choice-label.wrong{border-color:var(--red)!important;background:rgba(239,68,68,0.1)!important;color:var(--red)!important;}
+.choice-idx{font-size:12px;font-weight:700;color:var(--muted);width:14px;flex-shrink:0;margin-top:1px;}
+.choice-text{font-size:13px;line-height:1.6;}
+.q-explain{display:none;margin-top:10px;padding:10px 14px;background:rgba(37,99,235,0.07);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;font-size:12px;color:var(--muted);line-height:1.8;}
+.q-explain strong{color:var(--accent);}
+.q-explain.show{display:block;}
+.action-bar{position:sticky;bottom:0;background:var(--navy2);border-top:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;z-index:100;}
+.btn{padding:10px 24px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.score-display{margin-left:auto;font-size:13px;color:var(--muted);display:none;}
+.score-display.show{display:block;}
+.score-num{font-size:18px;font-weight:900;color:var(--accent);}
+.progress-wrap{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:20px;}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .3s;}
+.timer-display{font-size:13px;font-weight:700;color:var(--text);padding:6px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;letter-spacing:1px;}
+.timer-display.warn{color:var(--red);border-color:rgba(239,68,68,0.4);}
+.result-card{display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-top:24px;text-align:center;}
+.result-card.show{display:block;}
+.result-icon{font-size:48px;margin-bottom:12px;}
+.result-title{font-size:22px;font-weight:900;margin-bottom:8px;}
+.result-pass{color:var(--green);}
+.result-fail{color:var(--red);}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}
+.result-item{background:var(--surface2);border-radius:8px;padding:14px;}
+.result-item-val{font-size:22px;font-weight:900;color:var(--accent);margin-bottom:4px;}
+.result-item-label{font-size:11px;color:var(--muted);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--navy);}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px;}
+@media(max-width:640px){.header{padding:24px 16px 20px;}.header h1{font-size:20px;}.container{padding:20px 12px 80px;}.exam-tab{padding:12px 18px;font-size:12px;}.result-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-badge">LIFE INSURANCE</div>
+  <h1>생명보험 모집인 검정시험<br>모의고사 1~3회</h1>
+  <div class="header-meta">
+    <span>📋 총 <strong>40문항</strong>/회</span>
+    <span>⏱ 제한시간 <strong>50분</strong></span>
+    <span>✅ 합격기준 <strong>평균 70점 + 과목별 40점 이상</strong></span>
+    <span>📚 과목1·과목2 각 <strong>20문항</strong></span>
+  </div>
+</div>
+<div class="exam-selector">
+  <div class="exam-tab active" onclick="showExam(1,this)">📝 제1회 모의고사</div>
+  <div class="exam-tab" onclick="showExam(2,this)">📝 제2회 모의고사</div>
+  <div class="exam-tab" onclick="showExam(3,this)">📝 제3회 모의고사</div>
+</div>
+<div class="container">
+
+<div id="exam1" class="exam-section active">
+  <div class="info-bar">
+    <div class="info-chip">🗓 제1회 모의고사</div>
+    <div class="info-chip">문항 수: <strong>40문항</strong></div>
+    <div class="info-chip" id="timer1-chip">⏱ <span id="timer1">50:00</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="prog1" style="width:0%"></div></div>
+  <div class="subject-divider">
+    <span class="sub-num">과목 1</span>
+    <span class="sub-title">보험법규</span>
+    <span class="sub-count">1~20번</span>
+  </div>
+  <div id="q1-s1"></div>
+  <div class="subject-divider">
+    <span class="sub-num">과목 2</span>
+    <span class="sub-title">기초서류 및 생명보험 이해</span>
+    <span class="sub-count">21~40번</span>
+  </div>
+  <div id="q1-s2"></div>
+  <div class="result-card" id="result1">
+    <div class="result-icon" id="result1-icon"></div>
+    <div class="result-title" id="result1-title"></div>
+    <div class="result-grid" id="result1-grid"></div>
+  </div>
+</div>
+
+<div id="exam2" class="exam-section">
+  <div class="info-bar">
+    <div class="info-chip">🗓 제2회 모의고사</div>
+    <div class="info-chip">문항 수: <strong>40문항</strong></div>
+    <div class="info-chip" id="timer2-chip">⏱ <span id="timer2">50:00</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="prog2" style="width:0%"></div></div>
+  <div class="subject-divider">
+    <span class="sub-num">과목 1</span>
+    <span class="sub-title">보험법규</span>
+    <span class="sub-count">1~20번</span>
+  </div>
+  <div id="q2-s1"></div>
+  <div class="subject-divider">
+    <span class="sub-num">과목 2</span>
+    <span class="sub-title">기초서류 및 생명보험 이해</span>
+    <span class="sub-count">21~40번</span>
+  </div>
+  <div id="q2-s2"></div>
+  <div class="result-card" id="result2">
+    <div class="result-icon" id="result2-icon"></div>
+    <div class="result-title" id="result2-title"></div>
+    <div class="result-grid" id="result2-grid"></div>
+  </div>
+</div>
+
+<div id="exam3" class="exam-section">
+  <div class="info-bar">
+    <div class="info-chip">🗓 제3회 모의고사</div>
+    <div class="info-chip">문항 수: <strong>40문항</strong></div>
+    <div class="info-chip" id="timer3-chip">⏱ <span id="timer3">50:00</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="prog3" style="width:0%"></div></div>
+  <div class="subject-divider">
+    <span class="sub-num">과목 1</span>
+    <span class="sub-title">보험법규</span>
+    <span class="sub-count">1~20번</span>
+  </div>
+  <div id="q3-s1"></div>
+  <div class="subject-divider">
+    <span class="sub-num">과목 2</span>
+    <span class="sub-title">기초서류 및 생명보험 이해</span>
+    <span class="sub-count">21~40번</span>
+  </div>
+  <div id="q3-s2"></div>
+  <div class="result-card" id="result3">
+    <div class="result-icon" id="result3-icon"></div>
+    <div class="result-title" id="result3-title"></div>
+    <div class="result-grid" id="result3-grid"></div>
+  </div>
+</div>
+
+</div>
+<div class="action-bar">
+  <button class="btn btn-secondary" onclick="resetExam()">🔄 초기화</button>
+  <button class="btn btn-primary" onclick="submitExam()">✅ 채점하기</button>
+  <div class="score-display" id="score-display"></div>
+</div>
+
+<script>
+const exams={
+  1:{
+    s1:[
+      {n:1,q:"보험계약의 법적 성질로 옳지 않은 것은?",c:["낙성계약 — 청약과 승낙으로 성립","요식계약 — 반드시 서면으로 작성","사행계약 — 우연한 사고에 따라 급부 결정","최대선의계약 — 고지의무의 법적 근거"],a:1,ex:"보험계약은 낙성계약으로 서면 불요. 요식계약이 아님."},
+      {n:2,q:"타인의 생명을 보험에 가입할 때 반드시 필요한 요건은?",c:["보험계약자의 자필서명","피보험자의 서면동의","수익자의 동의","보험설계사의 확인"],a:1,ex:"타인의 생명 보험 = 피보험자 서면동의 필수. 없으면 무효."},
+      {n:3,q:"보험업법상 생명보험회사 설립 최저자본금은?",c:["100억원","200억원","300억원","500억원"],a:2,ex:"생명보험 최저자본금 = 300억원. 손해보험도 동일."},
+      {n:4,q:"고지의무 위반으로 보험계약을 해지할 수 있는 기간은?",c:["계약일로부터 1년 이내","계약일로부터 2년 이내","계약일로부터 3년 이내","계약일로부터 5년 이내"],a:2,ex:"고지의무 위반 해지 = 계약일로부터 3년. 위반 후 2년 경과 시 해지 불가."},
+      {n:5,q:"보험사기에 의한 계약 취소 가능 기간은?",c:["계약일로부터 2년","계약일로부터 3년","계약일로부터 5년","계약일로부터 10년"],a:2,ex:"사기 계약 취소 가능 기간 = 5년."},
+      {n:6,q:"청약 철회가 가능한 기간으로 맞는 것은?",c:["청약일로부터 7일 이내","청약일로부터 15일 이내","청약일로부터 30일 이내","보험증권 수령일로부터 30일 이내, 최대 청약 후 30일"],a:3,ex:"청약 철회: 보험증권 수령일로부터 15일 이내. 청약 후 30일 이내."},
+      {n:7,q:"보험료 납입 유예기간은 얼마인가?",c:["7일","14일","1개월","2개월"],a:2,ex:"보험료 납입 유예기간 = 1개월."},
+      {n:8,q:"실효된 보험계약의 부활 가능 기간은?",c:["실효일로부터 1년","실효일로부터 2년","실효일로부터 3년","실효일로부터 5년"],a:2,ex:"실효 후 부활 가능 기간 = 3년. 단, 미납 보험료 납입 및 건강 심사 필요."},
+      {n:9,q:"보험금 청구권의 소멸시효는?",c:["1년","2년","3년","5년"],a:2,ex:"보험금 청구권 소멸시효 = 3년."},
+      {n:10,q:"예금자보호법에 의한 1인당 보호 한도는?",c:["2천만원","3천만원","5천만원","1억원"],a:2,ex:"예금자보호: 1인당 5천만원 (원금+이자 합산)."},
+      {n:11,q:"보험계약이 무효가 되는 경우가 아닌 것은?",c:["심신박약자가 가입한 보험","15세 미만 미성년자를 피보험자로 한 사망보험","고의로 발생시킨 보험사고","고지의무 위반이 보험자 과실로 인한 경우"],a:3,ex:"보험자 과실로 모른 경우 → 해지 불가이나, 계약 자체는 무효가 아님."},
+      {n:12,q:"보험설계사가 금융감독원에 등록하지 않은 상태에서 보험을 모집하면?",c:["과태료 부과","허가 취소","등록 취소 및 형사처벌 가능","업무 정지"],a:2,ex:"무등록 모집은 불법. 등록 취소 및 형사처벌(2년 이하 징역 또는 2천만원 이하 벌금) 대상."},
+      {n:13,q:"보험계약의 성립 요건으로 옳은 것은?",c:["보험계약자와 보험자 간의 서면 합의","청약(청약자)과 승낙(보험자)의 의사 합치","감독당국의 인가","공증을 받은 서류 제출"],a:1,ex:"보험계약은 낙성계약. 청약+승낙으로 성립. 서면 불요."},
+      {n:14,q:"금융소비자보호법상 판매원칙 6가지에 포함되지 않는 것은?",c:["적합성 원칙","적정성 원칙","설명의무","수익보장 원칙"],a:3,ex:"6대 판매원칙: 적합성·적정성·설명의무·불공정거래금지·부당권유금지·광고규제. 수익보장 원칙은 없음."},
+      {n:15,q:"보험계약에서 고지의무를 지는 주체는?",c:["수익자","피보험자와 보험계약자","보험설계사","보험회사"],a:1,ex:"고지의무 주체 = 보험계약자 및 피보험자."},
+      {n:16,q:"보험업법상 보험회사의 재무건전성 기준인 지급여력비율은?",c:["50% 이상","70% 이상","100% 이상","150% 이상"],a:2,ex:"지급여력비율(RBC) = 100% 이상 유지 의무."},
+      {n:17,q:"보험설계사의 등록을 관할하는 기관은?",c:["금융위원회","금융감독원","한국보험협회","생명보험협회"],a:1,ex:"보험설계사 등록 = 금융감독원. 보험대리점·중개사 허가 = 금융위원회."},
+      {n:18,q:"보험증권은 보험계약 성립 후 얼마 내에 교부해야 하는가?",c:["7일","14일","30일","60일"],a:2,ex:"보험증권 교부 기한 = 계약 성립 후 30일 이내."},
+      {n:19,q:"보험 모집과정에서 절대 금지되는 행위는?",c:["계약자에게 보험 내용 설명","보험료 대납(납입 대행)","청약 시 계약자 서면 작성 안내","모집 후 유지 관리"],a:1,ex:"보험료 대납은 특별이익 제공으로 절대 금지."},
+      {n:20,q:"금융소비자보호법상 자료 보존 의무 기간은?",c:["3년","5년","7년","10년"],a:3,ex:"금소법 자료 보존 = 10년."}
+    ],
+    s2:[
+      {n:21,q:"생명보험료를 구성하는 요소가 아닌 것은?",c:["위험보험료","저축보험료","부가보험료","손해보험료"],a:3,ex:"영업보험료 = 순보험료(위험+저축) + 부가보험료. 손해보험료는 없음."},
+      {n:22,q:"보험료 산정의 3대 예정률 중 예정이율이 높아지면?",c:["보험료 상승","보험료 하락","보험금 감소","해약환급금 감소"],a:1,ex:"예정이율 ↑ = 운용수익 기대치 ↑ = 보험료 ↓(하락)."},
+      {n:23,q:"종신보험의 특성으로 옳은 것은?",c:["사망 시기에 관계없이 반드시 사망보험금 지급","기간 내 사망 시에만 보험금 지급","생존 시에만 연금 지급","사고 내용에 따라 보험금이 달라짐"],a:0,ex:"종신보험 = 사망 시기에 관계없이 반드시 지급."},
+      {n:24,q:"연금보험에서 일반적으로 연금을 받을 수 있는 최소 나이는?",c:["만 45세 이상","만 50세 이상","만 55세 이상","만 60세 이상"],a:2,ex:"연금개시 최소 나이 = 만 55세 이상."},
+      {n:25,q:"생명보험의 보험금 지급 원칙으로 옳은 것은?",c:["실손보상","정액지급","시가보상","이득금지"],a:1,ex:"생명보험 = 정액지급. 손해보험 = 실손보상."},
+      {n:26,q:"CI보험(중대한 질환 보험)의 특성으로 옳은 것은?",c:["모든 질병을 보장","사망보험금을 선지급하는 방식","실손 의료비를 보상","입원비 위주로 지급"],a:1,ex:"CI보험 = 사망보험금을 중대질병 발생 시 선지급. 선지급 후 사망보험금은 차감."},
+      {n:27,q:"계약자 대출의 한도는 일반적으로 해약환급금의 얼마인가?",c:["50%","70%","80~90%","100%"],a:2,ex:"계약자 대출 = 해약환급금의 80~90% 이내."},
+      {n:28,q:"변액보험의 특성으로 옳은 것은?",c:["원금을 보장","운용실적에 따라 보험금이 달라짐","예정이율이 고정","모든 리스크를 보험사가 부담"],a:1,ex:"변액보험 = 실적배당형. 운용실적에 따라 보험금 변동. 원금 미보장."},
+      {n:29,q:"생명표(사망표)를 작성·공표하는 기관은?",c:["통계청","금융감독원","보험개발원","금융위원회"],a:2,ex:"경험생명표 = 보험개발원 작성·공표."},
+      {n:30,q:"보험금 청구서류 수령 후 원칙적인 지급 기한은?",c:["1영업일","3영업일","5영업일","10영업일"],a:1,ex:"보험금 지급 원칙 = 청구서류 수령 후 3영업일 이내."},
+      {n:31,q:"표준미달체에 대한 설명으로 옳은 것은?",c:["보험 가입이 불가능한 자","표준보험료보다 낮은 보험료를 내는 자","위험이 높아 표준 요율 적용이 불가한 자","언더라이팅 결과 최우량 등급"],a:2,ex:"표준미달체 = 건강 상태가 나빠 표준 요율 적용 불가. 가산보험료 또는 조건부 인수."},
+      {n:32,q:"실손의료보험의 보상 방식은?",c:["정액지급","실제 발생한 의료비의 일부 보상","사망보험금 지급","입원일수에 따른 고정금액"],a:1,ex:"실손의료보험 = 실제 의료비의 일부(자기부담금 공제 후) 보상."},
+      {n:33,q:"역선택(Adverse Selection)을 방지하기 위한 수단으로 옳지 않은 것은?",c:["고지의무 부과","언더라이팅(보험심사)","가입 연령 제한","보험료 할인 정책"],a:3,ex:"보험료 할인은 역선택 방지와 무관. 역선택 방지 = 고지의무·언더라이팅·가입 제한·진단 등."},
+      {n:34,q:"연금보험에서 종신연금형의 특성으로 옳은 것은?",c:["일정 기간에만 연금 지급","피보험자 사망 시까지 연금 지급","상속 목적에 특화된 상품","원금 보장 없음"],a:1,ex:"종신연금형 = 사망 시까지 연금 지급. 오래 살수록 유리."},
+      {n:35,q:"보험약관의 불명확한 조항 해석 원칙은?",c:["보험자에게 유리하게 해석","계약자에게 유리하게 해석","중립적으로 법원이 판단","보험설계사 해석을 따름"],a:1,ex:"약관 불명확 = 계약자(작성자 상대방) 유리하게 해석 원칙(작성자 불이익 원칙)."},
+      {n:36,q:"생명보험에서 수익자를 지정하지 않았을 때 사망보험금 지급 상대방은?",c:["피보험자의 법정상속인","보험계약자의 직계존속","보험설계사","보험회사가 임의 결정"],a:0,ex:"수익자 미지정 시 사망보험금 = 피보험자의 법정상속인."},
+      {n:37,q:"보험계약 성립 이후 계약자가 할 수 없는 것은?",c:["수익자 변경","보험계약 해지","보험금 포기","보험료 미납으로 계약 유지"],a:3,ex:"보험료를 미납하면 유예기간(1개월) 이후 계약이 실효됨. '계약 유지'가 되지 않음."},
+      {n:38,q:"갱신형 보험의 특성으로 옳은 것은?",c:["보험료가 평생 동일","갱신 시 보험료 재산정","보험금이 매년 증가","해약 시 고액 환급"],a:1,ex:"갱신형 = 일정 기간마다 갱신. 갱신 시 나이·위험도에 따라 보험료 재산정."},
+      {n:39,q:"보험계약 해지 환급금 지급 기한은?",c:["청구 즉시","청구 후 1영업일","청구 후 3영업일","청구 후 7영업일"],a:2,ex:"해지환급금 지급 = 청구 후 3영업일 이내."},
+      {n:40,q:"생명보험 표준약관상 면책사유에 해당하는 것은?",c:["교통사고로 인한 사망","암으로 인한 사망","계약자의 고의에 의한 사망","질병으로 인한 입원"],a:2,ex:"면책: 계약자(보험수익자)의 고의, 피보험자의 자살(2년 이내), 전쟁·내란 등."}
+    ]
+  },
+  2:{
+    s1:[
+      {n:1,q:"보험업법상 보험업의 종류에 해당하지 않는 것은?",c:["생명보험업","손해보험업","제3보험업","공제보험업"],a:3,ex:"보험업법상 보험업 = 생명·손해·제3보험업. 공제는 별도 법률(공제조합 등)."},
+      {n:2,q:"생명보험회사와 달리 손해보험회사가 겸업할 수 없는 것은?",c:["상해보험","질병보험","연금보험","화재보험"],a:2,ex:"연금보험(사람의 생사를 보험사고로 함) = 생명보험 전유. 손해보험사 겸업 불가."},
+      {n:3,q:"보험계약의 청약 철회 시 환급 기한은?",c:["1영업일","3영업일","5영업일","7영업일"],a:1,ex:"청약 철회 후 보험료 반환 = 3영업일 이내."},
+      {n:4,q:"고지의무를 이행하지 않은 경우 보험자 해지권의 소멸 사유가 아닌 것은?",c:["보험자가 고지의무 위반 사실을 안 날로부터 1개월 경과","위반 후 보험계약 성립일로부터 2년 경과","보험자가 위반 사실을 알고 있었던 경우","고지의무 위반과 보험사고 사이에 인과관계가 없는 경우"],a:3,ex:"인과관계 없는 경우: 해지 가능하나 보험금은 지급. 해지권 소멸 사유는 아님."},
+      {n:5,q:"보험설계사에 관한 설명 중 옳지 않은 것은?",c:["금융감독원에 등록해야 한다","1개 보험회사에만 소속될 수 있는 것이 원칙","보험계약 체결 권한은 없고 모집만 가능","보험계약 체결권도 보유"],a:3,ex:"보험설계사는 모집권만 있고 계약 체결권 없음. 계약 체결 = 보험회사 임직원 또는 보험대리점."},
+      {n:6,q:"보험계약자가 특별한 이익을 제공받은 경우 적용되는 규정은?",c:["고지의무 위반","특별이익 제공 금지","보험료 할인 허용","약관 위반"],a:1,ex:"특별이익 제공 = 금지. 모집인이 보험료 대납·과도한 선물 등 금지."},
+      {n:7,q:"다음 중 보험계약의 무효 사유가 아닌 것은?",c:["15세 미만을 피보험자로 하는 사망보험","심신박약자가 계약한 보험","피보험이익이 전혀 없는 보험","가입 후 1년 이내 발생한 질병"],a:3,ex:"가입 후 1년 이내 질병은 면책 가능이나 계약 무효 사유 아님."},
+      {n:8,q:"보험약관을 교부하지 않은 경우 계약자의 권리는?",c:["계약 무효 주장","3개월 이내 계약 취소 가능","보험료 환급 청구","계약 변경 요구"],a:1,ex:"약관 미교부 시 → 계약자는 3개월 이내 계약 취소 가능."},
+      {n:9,q:"통신판매(TM) 보험모집 시 반드시 해야 하는 것은?",c:["피보험자 현장 확인","녹취","공증인 입회","은행 계좌 확인"],a:1,ex:"TM 모집 = 청약 및 설명 과정 녹취 의무."},
+      {n:10,q:"다음 중 보험중개사에 대한 설명으로 옳은 것은?",c:["금융감독원에 등록하면 된다","보험회사에 종속되지 않고 독립적으로 계약 체결 보조","여러 보험회사와 전속계약이 가능","보험설계사와 동일한 법적 지위"],a:1,ex:"보험중개사 = 금융위원회 허가. 보험회사에 종속되지 않고 독립적으로 활동."},
+      {n:11,q:"보험약관에 규정하지 않은 이유로 보험금 지급을 거절할 수 있는가?",c:["가능하다","불가능하다","금융감독원 승인 시 가능","소송을 통해서만 가능"],a:1,ex:"약관에 없는 이유로 지급 거절 = 불가. 약관에 명시된 면책 사유만 허용."},
+      {n:12,q:"금융소비자보호법상 적합성 원칙의 내용으로 옳은 것은?",c:["모든 소비자에게 동일한 상품 권유","소비자의 재산 상황·투자 성향에 맞는 상품 권유","수익성이 가장 높은 상품 우선 권유","판매자 실적에 맞춰 상품 권유"],a:1,ex:"적합성 원칙 = 소비자 재산·위험 성향에 적합한 상품만 권유."},
+      {n:13,q:"보험계약자와 피보험자가 다른 계약에서, 보험계약자 사망 시 계약은?",c:["자동 해지","상속인에게 상속","보험회사가 임의 처리","계약 무효"],a:1,ex:"보험계약자 사망 → 보험계약상 권리·의무 상속인에게 상속."},
+      {n:14,q:"보험설계사가 계약 전환(승환)을 권유할 때 금지되는 행위가 아닌 것은?",c:["기존 계약보다 불리한 조건임을 숨기는 행위","계약자에게 손익 비교를 충분히 설명하는 행위","기존 계약의 장점을 부정하는 행위","가짜 비교 자료를 제시하는 행위"],a:1,ex:"충분한 손익 비교 설명 = 합법적·의무적 행위. 나머지는 부당 승환."},
+      {n:15,q:"면책기간 동안 발생한 보험사고에 대한 설명으로 옳은 것은?",c:["보험금 전액 지급","보험금 일부 지급","보험금 지급 없음","보험료만 반환"],a:2,ex:"면책기간(책임개시일 전) 사고 = 보험금 지급 없음."},
+      {n:16,q:"보험계약의 해지 사유가 아닌 것은?",c:["고지의무 위반","계약자의 해지 청구","보험료 미납","보험사고 발생"],a:3,ex:"보험사고 발생은 해지 사유가 아님. 보험금을 지급하는 것."},
+      {n:17,q:"보험업법상 보험상품 광고 시 금지 사항이 아닌 것은?",c:["수익을 보장하는 표현 사용","과장·허위 정보 제공","객관적 사실에 근거한 상품 비교","위험성을 숨기는 광고"],a:2,ex:"객관적 사실 기반 상품 비교 = 허용. 나머지는 금지."},
+      {n:18,q:"생명보험 표준약관상 자살의 면책 기간은 계약일로부터 얼마인가?",c:["1년","2년","3년","5년"],a:1,ex:"자살 면책 기간 = 계약일로부터 2년. 2년 이후 자살 = 보험금 지급."},
+      {n:19,q:"보험계약자가 다른 보험계약 체결 사실을 알릴 의무는?",c:["있다 — 모든 보험계약","있다 — 동종 보험만","없다 — 생명보험은 이득금지 원칙 미적용","없다 — 보험자가 조회 가능"],a:2,ex:"생명보험 = 정액지급. 이득금지 원칙 적용 안 됨. 중복 보험 고지 의무 없음."},
+      {n:20,q:"보험약관 중요 사항 설명 의무를 위반한 경우 계약자의 권리는?",c:["계약 무효","3개월 이내 취소","1년 이내 해지","보험료 반환만 가능"],a:1,ex:"중요 사항 설명의무 위반 시 → 계약자는 3개월 이내 취소 가능."}
+    ],
+    s2:[
+      {n:21,q:"생명보험에서 피보험이익이 없는 경우 계약의 효력은?",c:["유효하다","무효이다","취소 가능하다","금융감독원 판단에 따른다"],a:1,ex:"생명보험에서도 피보험이익이 전혀 없는 경우 무효 가능. 단, 원칙적으로는 인적 보험에서 피보험이익 요건 완화."},
+      {n:22,q:"보험개발원이 경험생명표를 개정하는 주기는?",c:["1년","3년","5년","10년"],a:2,ex:"경험생명표 개정 주기 = 5년."},
+      {n:23,q:"생명보험의 예정사망률에 대한 설명으로 옳은 것은?",c:["예정사망률이 낮으면 보험료가 상승","예정사망률이 높으면 보험료가 상승","예정사망률은 국민연금공단이 결정","예정사망률과 보험료는 관계없다"],a:1,ex:"예정사망률 ↑ = 위험 높음 = 위험보험료 ↑ = 보험료 ↑."},
+      {n:24,q:"자동이체 할인이나 건강 체형 할인처럼 계약자에게 유리한 보험료 조정은?",c:["특별이익 제공으로 금지","부가보험료 내에서 허용","금융감독원 승인 시 가능","보험설계사 재량으로 결정"],a:1,ex:"보험약관에 정해진 할인 = 부가보험료 범위 내에서 합법. 임의 보험료 할인은 금지."},
+      {n:25,q:"정기보험(기간보험)과 종신보험의 가장 큰 차이는?",c:["보험료 납입 방법","보장 기간의 유무","수익자 지정 가능 여부","피보험자 건강 심사"],a:1,ex:"정기보험 = 정해진 기간 내 사망 시만 지급. 종신보험 = 언제든 사망 시 지급."},
+      {n:26,q:"우리나라 연금보험에서 세제적격 상품의 납입 한도(연간)는?",c:["600만원","1,200만원","1,800만원","2,400만원"],a:0,ex:"세제적격 연금저축보험 납입 한도 = 연 600만원(2023년 기준 세액공제 한도)."},
+      {n:27,q:"어린이보험에 대한 설명으로 옳은 것은?",c:["출생 즉시 가입 불가","성인이 되면 자동 해지","태아 때부터 가입 가능하며 성인 이후도 보장 지속 가능","보험료가 성인보험보다 비쌈"],a:2,ex:"어린이보험 = 태아 가입 가능. 성인(일반적으로 30세) 전환 시 전환 없이 지속 가능."},
+      {n:28,q:"만기환급형 보험과 순수보장형 보험의 차이로 옳은 것은?",c:["만기환급형은 보험료가 더 낮음","순수보장형은 만기 시 납입 보험료 전액 환급","만기환급형은 만기 시 환급금 지급, 순수보장형은 환급 없음","두 상품의 보험금은 동일"],a:2,ex:"만기환급형 = 만기 환급금 있어 보험료 비쌈. 순수보장형 = 환급 없어 보험료 저렴."},
+      {n:29,q:"보험계약 후 피보험자가 직업을 변경한 경우 계약자의 의무는?",c:["알릴 의무(통지의무) 있음","아무 의무 없음","즉시 해지해야 함","새로운 계약을 체결해야 함"],a:0,ex:"직업 변경 등 위험 변경 = 통지의무 있음. 미통지 시 보험자가 해지 또는 보험료 조정 가능."},
+      {n:30,q:"생명보험 계약의 부활(효력 회복) 요건이 아닌 것은?",c:["연체 보험료와 이자 납입","부활 청약 서면 제출","보험자의 승낙","부활 시 새 피보험자 지정"],a:3,ex:"부활 시 피보험자 변경 불가. 연체 보험료+이자 납입, 청약 제출, 보험자 승낙이 필요."},
+      {n:31,q:"퇴직 후 IRP에 이전된 퇴직급여를 연금으로 수령할 때 적용 세율은?",c:["소득세 없음","퇴직소득세의 60~70%","일반 소득세율","분리과세 16.5%"],a:1,ex:"IRP 연금 수령 시 = 퇴직소득세의 60~70% 적용(10년 초과 시 60%, 이하 70%). 절세 효과."},
+      {n:32,q:"보험 만기 후 연금으로 전환하는 상품에서 연금전환 시 유의사항이 아닌 것은?",c:["연금전환 시 사망보험금은 줄어들 수 있음","연금형태(종신/확정) 선택 가능","전환 후 해지 불가","연금전환 신청은 만기 이전에 가능"],a:2,ex:"연금전환 후에도 해지 가능(단, 환급금이 줄어든 형태일 수 있음). 전환 후 해지 불가는 틀림."},
+      {n:33,q:"생명보험 언더라이팅(심사) 결과 중 '조건부 승인'에 해당하는 것은?",c:["표준체로 정상 인수","특정 질병 보장 제외 조건부 인수","거절(가입 불가)","보험료 대폭 할인 적용"],a:1,ex:"조건부 승인 = 특정 부위/질병 부보 제외 또는 보험료 가산 후 인수."},
+      {n:34,q:"생명보험 약관 중 보험자가 책임을 지지 않는 '면책사유'를 잘못 설명한 것은?",c:["계약자의 고의로 인한 사고","피보험자의 고의적 자해","전쟁·내란으로 인한 사망","피보험자가 암으로 사망한 경우"],a:3,ex:"암 사망은 질병으로 인한 사망 = 보험금 지급 대상. 면책 사유 아님."},
+      {n:35,q:"보험금 지급이 지연될 때 보험회사가 지급해야 하는 것은?",c:["원금만 지급","지연이자 없음","지급지연이자를 가산하여 지급","소비자 원망에 의해 결정"],a:2,ex:"보험금 지연 시 = 지급지연이자 가산 의무."},
+      {n:36,q:"보험계약자가 수익자를 지정하지 않고 사망했을 경우 사망보험금의 귀속은?",c:["피보험자의 법정상속인","보험계약자의 재산상속인","보험회사 귀속","국고 귀속"],a:0,ex:"수익자 미지정 = 피보험자의 법정상속인에게 지급."},
+      {n:37,q:"비갱신형 보험의 특성으로 옳은 것은?",c:["주기적으로 보험료 재산정","보험기간 내 보험료 변동 없음","나이 들수록 자동으로 보험료 인상","보험기간 종료 후 자동 갱신"],a:1,ex:"비갱신형 = 보험기간 동안 보험료 변동 없음. 초기 보험료가 갱신형보다 비쌈."},
+      {n:38,q:"생명보험에서 다수의 피보험자를 한 계약으로 묶는 상품은?",c:["단체보험","종신보험","CI보험","저축보험"],a:0,ex:"단체보험 = 기업·단체가 소속원 다수를 일괄 가입. 보험료 저렴."},
+      {n:39,q:"계약자 대출(약관 대출) 이용 중 사망보험금 지급 시 처리 방법은?",c:["대출금 무시하고 전액 지급","대출원리금을 차감 후 지급","대출금만큼 보험금 증액","대출 자동 소멸"],a:1,ex:"약관 대출 이용 중 보험금 지급 = 대출 원리금 차감 후 잔액 지급."},
+      {n:40,q:"생명보험의 보험가액에 대한 설명으로 옳은 것은?",c:["사람의 생명에 금전적 가치를 매겨 한도 설정","생명보험에는 보험가액 개념이 적용되지 않음","보험가액 초과 보험은 반드시 무효","보험가액은 보험개발원이 매년 발표"],a:1,ex:"생명보험 = 정액지급. 보험가액 개념 적용 안 됨. 중복 보험도 각각 지급."}
+    ]
+  },
+  3:{
+    s1:[
+      {n:1,q:"보험대리점에 관한 설명으로 옳은 것은?",c:["금융감독원에 등록","금융위원회에 허가","보험회사 임직원과 동일한 지위","모집 권한만 있고 계약 체결 권한 없음"],a:1,ex:"보험대리점 = 금융위원회 허가. 보험설계사 = 금융감독원 등록."},
+      {n:2,q:"보험계약자가 보험증권을 분실한 경우 재발급을 요청할 수 있는 기관은?",c:["금융감독원","금융위원회","보험회사","한국보험협회"],a:2,ex:"보험증권 재발급 = 해당 보험회사에 요청."},
+      {n:3,q:"청약 시 계약자가 청약서에 기재해야 하는 사항이 아닌 것은?",c:["직업","기왕증 여부","현재 계약 중인 타사 생명보험 금액","계약자 신용등급"],a:3,ex:"신용등급은 청약서 기재 사항이 아님."},
+      {n:4,q:"보험업법상 보험계약자 보호를 위한 제도가 아닌 것은?",c:["예금자보호","보험계약 이전","계약자 배당","지급여력비율 유지"],a:2,ex:"계약자 배당(이익 배당)은 소비자 보호 제도가 아닌 계약 조건에 따른 권리."},
+      {n:5,q:"보험 모집인이 보험계약 체결 시 교부 의무가 없는 것은?",c:["청약서 부본","보험약관","보험설계사 등록증 사본","보험증권(계약 성립 후)"],a:2,ex:"설계사 등록증 사본 교부는 의무 아님. 청약서 부본·약관 교부는 의무."},
+      {n:6,q:"금융감독원 분쟁조정위원회에 분쟁 조정 신청을 할 수 있는 사람은?",c:["보험회사만 가능","보험소비자만 가능","보험소비자와 보험회사 모두 가능","금융위원회만 가능"],a:2,ex:"분쟁조정 = 소비자, 보험회사 모두 신청 가능."},
+      {n:7,q:"보험계약자가 고지의무를 위반했지만, 보험자가 이를 알고도 승낙한 경우 해지 가능 여부는?",c:["해지 가능","해지 불가능","1년 이내에만 해지 가능","금감원 승인 후 해지 가능"],a:1,ex:"보험자가 고지의무 위반 사실을 알면서 승낙 = 해지권 상실."},
+      {n:8,q:"보험증권의 법적 성격으로 옳은 것은?",c:["계약 성립을 증명하는 증거 서류","청약 의사 표시 서류","보험금 지급 청구서","보험계약 체결 필수 서류"],a:0,ex:"보험증권 = 계약 성립 후 교부하는 증거 서류. 계약 성립에 필수 아님(낙성계약)."},
+      {n:9,q:"보험료의 일부를 적립하여 보험기간 중 해지 시 환급해 주는 금액은?",c:["만기보험금","사망보험금","해약환급금","배당금"],a:2,ex:"해약환급금 = 저축보험료 적립분. 초기 해지 시 원금 손실."},
+      {n:10,q:"보험업법상 '보험모집인'이 아닌 자는?",c:["보험설계사","보험대리점 소속 직원","보험계약자","보험중개사"],a:2,ex:"보험계약자는 모집인이 아님. 모집인 = 설계사·대리점·중개사·보험사 임직원."},
+      {n:11,q:"전화를 이용한 보험모집(TM) 시 녹취 보관 기간은?",c:["1년","3년","5년","10년"],a:1,ex:"TM 녹취 보관 기간 = 3년(보험업법 시행규칙 기준)."},
+      {n:12,q:"보험사기 방지 특별법에 따른 보험사기 행위자에 대한 처벌 기준은?",c:["과태료만 부과","10년 이하 징역 또는 5천만원 이하 벌금","1년 이하 징역 또는 1천만원 이하 벌금","5년 이하 징역 또는 5천만원 이하 벌금"],a:3,ex:"보험사기 = 5년 이하 징역 또는 5천만원 이하 벌금(보험사기 방지 특별법)."},
+      {n:13,q:"다음 중 보험계약의 해지권이 보험자에게 있는 경우는?",c:["피보험자의 직업 변경 미통보","단순 보험료 연체","수익자 변경 신청","보험계약 이전 요청"],a:0,ex:"직업 변경 미통보(통지의무 위반) = 보험자에게 해지권 발생."},
+      {n:14,q:"다음 중 생명보험회사가 판매할 수 없는 상품은?",c:["사망보험","연금보험","재산종합보험","건강보험(제3보험)"],a:2,ex:"재산종합보험(화재, 배상책임 등) = 손해보험 영역. 생명보험사 판매 불가."},
+      {n:15,q:"보험계약 체결 시 모집인이 반드시 설명해야 하는 '중요 사항'이 아닌 것은?",c:["보험금 지급 조건","보험료 납입 기간","보험회사 이사회 회의록","면책 사유"],a:2,ex:"이사회 회의록은 중요 설명 사항 아님. 보험금 지급 조건·납입 기간·면책 사유는 의무."},
+      {n:16,q:"보험계약자가 보험계약 체결 후 계약 내용을 변경하려 할 때 필요한 것은?",c:["보험자의 승낙","금융감독원의 승인","공증","보험설계사의 동의"],a:0,ex:"계약 내용 변경 = 보험자 승낙 필요."},
+      {n:17,q:"금소법상 적정성 원칙이란?",c:["소비자 성향에 맞는 상품 권유","소비자가 요청한 상품이 위험성 있을 때 적절성 확인 후 경고","수익 최대화를 위한 상품 선택","비용을 최소화하는 상품 선택"],a:1,ex:"적정성 원칙 = 소비자가 요청한 상품이 위험성이 있을 때 적합 여부 확인, 부적합 시 경고."},
+      {n:18,q:"보험업법상 특별이익 제공이 허용되는 예외 사유가 아닌 것은?",c:["약관에 따른 이익","보험료 할인 쿠폰 제공","보험료 할인(요율 내)","단체보험의 집단 할인"],a:1,ex:"보험료 할인 쿠폰 = 특별이익으로 금지. 약관 내 할인·단체 할인은 허용."},
+      {n:19,q:"고지의무 위반이 보험사고와 인과관계가 없음이 증명된 경우 보험자는?",c:["보험금 지급 및 해지 불가","보험금 지급 후 계약 해지 가능","보험금 지급 없이 해지","보험금 절반만 지급"],a:1,ex:"인과관계 없는 경우 = 해지 가능하지만 보험금은 지급해야 함."},
+      {n:20,q:"다음 중 보험설계사가 보험 모집 시 반드시 확인·교부해야 하는 서류는?",c:["보험회사의 재무제표","보험약관 및 청약서 부본","보험설계사 자격증 사본","보험 개발원 인가서"],a:1,ex:"모집 시 의무 교부 = 보험약관 및 청약서 부본."}
+    ],
+    s2:[
+      {n:21,q:"보험료 산정 시 '예정사업비율'의 역할은?",c:["사망률 예측에 사용","운용수익률 예측에 사용","보험회사 운영비용 부담 계산에 사용","보험금 지급 시기 결정에 사용"],a:2,ex:"예정사업비율 = 보험회사 운영에 필요한 사업비(신계약비·유지비·수금비) 예측."},
+      {n:22,q:"종신보험의 해약환급금 특성으로 옳은 것은?",c:["납입 보험료보다 항상 많다","초기 해지 시 적고, 시간이 지날수록 증가","납입 완료 즉시 전액 환급","보험기간과 관계없이 일정"],a:1,ex:"종신보험 해약환급금 = 초기 적고 시간이 지날수록 증가."},
+      {n:23,q:"보험계약 후 3개월 이내에 보험사고가 발생한 경우 면책기간 관련 규정은?",c:["모든 사고 면책","질병 관련 사고는 일부 면책 적용 가능","면책 기간 없이 전액 지급","보험설계사가 결정"],a:1,ex:"질병보험 등은 계약 후 일정 기간(면책기간) 내 발생 시 보장 제외 가능. 약관에 따라 상이."},
+      {n:24,q:"생명보험의 '보험 기간'과 '보험료 납입 기간'에 대한 설명으로 옳은 것은?",c:["항상 동일","보험료 납입 기간이 보험 기간보다 길 수 없음","보험 기간이 보험료 납입 기간보다 짧을 수 있음","보험 기간이 납입 기간과 독립적으로 설계 가능"],a:3,ex:"보험기간과 납입기간은 독립적으로 설계 가능. 단기납·장기납·일시납 등 다양."},
+      {n:25,q:"보장성 보험과 저축성 보험의 과세 차이로 옳은 것은?",c:["보장성 = 보험료 공제, 저축성 = 비과세 가능","보장성 = 비과세, 저축성 = 소득공제","둘 다 동일하게 과세","보장성 = 소득세 면제, 저축성 = 완전 과세"],a:0,ex:"보장성보험 = 근로자 보험료 공제(세액공제). 저축성보험 = 10년 이상 유지 시 이자 비과세."},
+      {n:26,q:"무배당 보험과 유배당 보험의 차이로 옳은 것은?",c:["무배당 = 보험료 더 저렴, 유배당 = 이익 일부 배당","무배당 = 보험료 비쌈, 유배당 = 저렴","두 상품은 보험료 동일","유배당 상품은 원금 보장"],a:0,ex:"유배당 = 이익 발생 시 배당, 보험료 높음. 무배당 = 배당 없음, 보험료 낮음."},
+      {n:27,q:"생명보험회사가 보유한 책임준비금의 성격으로 옳은 것은?",c:["회사의 이익 적립금","계약자에게 지급할 미래 보험금을 위한 부채성 적립금","세금 납부를 위한 적립금","투자 목적의 자산"],a:1,ex:"책임준비금 = 미래 보험금 지급을 위해 적립하는 부채성 준비금."},
+      {n:28,q:"우리나라 생명보험에 적용되는 예금자보호 특성으로 옳은 것은?",c:["원금 전액 보장","원금+이자 합산 5천만원 보호","보험금 전액 보장","운용수익까지 보장"],a:1,ex:"예금자보호 = 원금+이자 합산 5천만원 한도."},
+      {n:29,q:"암보험에서 '소액암(갑상선암 등)'의 진단 보험금이 일반암보다 적은 이유는?",c:["치료비가 더 많이 들기 때문","예후(생존율)가 좋아 위험도가 낮기 때문","소액암은 보험 적용 제외이기 때문","의학적으로 암이 아니기 때문"],a:1,ex:"소액암(갑상선암·대장점막암 등)은 예후 좋음. 위험도 낮아 보험금 적게 설정."},
+      {n:30,q:"보험료 가산(Extra Premium)이 적용되는 대상은?",c:["표준체","우량체(비흡연자)","표준미달체(위험이 높은 자)","고령자만"],a:2,ex:"보험료 가산 = 표준미달체(위험이 표준보다 높은 자)에게 적용."},
+      {n:31,q:"생명보험에서 '계약자 배당'이 발생하는 근거는?",c:["보험료를 많이 납입했기 때문","예정기초율(사망률·이율·사업비율)과 실제 결과의 차이","보험기간이 길기 때문","보험금 청구를 하지 않았기 때문"],a:1,ex:"유배당 보험의 배당 = 예정기초율과 실제 기초율 차이에서 발생하는 이익(사차·이차·비차 배당)."},
+      {n:32,q:"다음 중 '제3보험'에 해당하는 상품은?",c:["자동차보험","화재보험","실손의료보험","적하보험"],a:2,ex:"제3보험 = 상해·질병·간병. 실손의료보험·암보험·상해보험 등. 생명·손해 모두 판매 가능."},
+      {n:33,q:"보험회사가 파산한 경우 계약 이전 시 우선 순위로 보호받는 것은?",c:["주주의 자본","계약자의 보험금 청구권","임직원 급여","투자 자산"],a:1,ex:"파산 시 = 계약자(보험금 청구권)가 다른 채권자보다 우선 보호."},
+      {n:34,q:"CI(치명적 질환) 보험에서 '중대한 암'의 정의가 일반 암 진단보험과 다른 이유는?",c:["중대한 암이 더 가벼운 질환이기 때문","CI에서의 암 정의가 더 엄격하여 일부 암은 제외","CI는 모든 암을 포함","CI의 보험금이 훨씬 낮기 때문"],a:1,ex:"CI보험의 '중대한 암' 정의 = 일반 암 진단보험보다 좁음. 예: 전립선암 일부, 갑상선암 등 제외 가능."},
+      {n:35,q:"생명보험 약관에서 '보험나이'의 계산 방법은?",c:["생년월일 기준 만 나이","주민등록상 나이","6개월 단위로 올림/내림하는 만 나이","계약일 기준 나이"],a:2,ex:"보험나이 = 생년월일 기준 만 나이에서 6개월 미만 버림, 6개월 이상 올림."},
+      {n:36,q:"생명보험 계약자 또는 수익자가 이미 발생한 보험사고를 알고 계약한 경우는?",c:["소급보험으로 유효","계약 체결 가능하나 보험금 지급 제한","계약 무효","보험자가 특별히 승낙 시 유효"],a:2,ex:"사고 발생 사실을 알고 계약 = 사기 또는 선의 없음으로 계약 무효."},
+      {n:37,q:"건강보험(실손의료보험) 가입 후 동일 내용의 보험을 추가 가입할 경우 보험금은?",c:["각 보험사에서 각각 전액 지급","전체 합산 실손 지급(비례보상)","두 번째 보험만 지급","첫 번째 보험만 지급"],a:1,ex:"실손의료보험은 이득금지 원칙 적용. 중복 가입 시 합산 비례 보상."},
+      {n:38,q:"생명보험에서 '불가쟁기간'이 의미하는 것은?",c:["계약 취소 가능 기간","고지의무 위반 해지를 할 수 없는 기간","청약 철회 가능 기간","보험료 납입 유예 기간"],a:1,ex:"불가쟁기간(incontestability) = 계약일로부터 2년(위반 후) 또는 3년(계약일 기준) 경과 후 해지 불가."},
+      {n:39,q:"생명보험 표준약관상 '중요 사항 미설명' 시 계약자가 취할 수 있는 최대 행사 기간은?",c:["계약 후 1개월","계약 후 3개월","계약 후 6개월","계약 후 1년"],a:1,ex:"중요 사항 미설명 = 계약자가 3개월 이내 취소 가능."},
+      {n:40,q:"생명보험에서 '면책기간(책임개시일 이전)'이 적용되는 목적으로 옳은 것은?",c:["역선택 방지","보험료 절감","보험금 절감","보험사기 조장"],a:0,ex:"면책기간 = 가입 직후 이미 질환이 있는 자의 보험 악용(역선택) 방지."}
+    ]
+  }
+};
+
+let currentExam=1;
+let timers={};
+let timerIntervals={};
+let answered={1:{},2:{},3:{}};
+let submitted={1:false,2:false,3:false};
+
+function renderExam(n){
+  const d=exams[n];
+  ['s1','s2'].forEach((sub,si)=>{
+    const cont=document.getElementById(`q${n}-${sub}`);
+    if(!cont)return;
+    cont.innerHTML=d[sub].map(q=>`
+      <div class="q-block" id="qb${n}-${q.n}">
+        <div class="q-header">
+          <span class="q-num">${q.n}번</span>
+          <span class="q-text">${q.q}</span>
+        </div>
+        <div class="q-choices">
+          ${q.c.map((c,i)=>`
+            <label class="choice-label" id="cl${n}-${q.n}-${i}" onclick="selectChoice(${n},${q.n},${i})">
+              <input type="radio" name="q${n}-${q.n}" value="${i}">
+              <span class="choice-idx">${i+1}</span>
+              <span class="choice-text">${c}</span>
+            </label>
+          `).join('')}
+        </div>
+        <div class="q-explain" id="ex${n}-${q.n}"><strong>해설:</strong> ${q.ex}</div>
+      </div>
+    `).join('');
+  });
+}
+
+function selectChoice(exam,qn,idx){
+  if(submitted[exam])return;
+  answered[exam][qn]=idx;
+  const total=[...exams[exam].s1,...exams[exam].s2].length;
+  const done=Object.keys(answered[exam]).length;
+  document.getElementById(`prog${exam}`).style.width=(done/total*100)+'%';
+  for(let i=0;i<4;i++){
+    const el=document.getElementById(`cl${exam}-${qn}-${i}`);
+    if(el)el.classList.toggle('selected',i===idx);
+  }
+}
+
+function showExam(n,el){
+  document.querySelectorAll('.exam-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.exam-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('exam'+n).classList.add('active');
+  el.classList.add('active');
+  currentExam=n;
+  if(!exams[n]._rendered){renderExam(n);exams[n]._rendered=true;}
+  document.getElementById('score-display').classList.remove('show');
+  startTimer(n);
+}
+
+function startTimer(n){
+  if(timerIntervals[n])return;
+  timers[n]=50*60;
+  timerIntervals[n]=setInterval(()=>{
+    if(submitted[n]){clearInterval(timerIntervals[n]);return;}
+    timers[n]--;
+    const m=Math.floor(timers[n]/60).toString().padStart(2,'0');
+    const s=(timers[n]%60).toString().padStart(2,'0');
+    const el=document.getElementById('timer'+n);
+    if(el)el.textContent=`${m}:${s}`;
+    const chip=document.getElementById(`timer${n}-chip`);
+    if(timers[n]<=300&&chip)chip.querySelector('span').style.color='var(--red)';
+    if(timers[n]<=0){clearInterval(timerIntervals[n]);submitExam();}
+  },1000);
+}
+
+function submitExam(){
+  const n=currentExam;
+  if(submitted[n])return;
+  submitted[n]=true;
+  clearInterval(timerIntervals[n]);
+  const all=[...exams[n].s1,...exams[n].s2];
+  let correct=0,s1c=0,s2c=0;
+  all.forEach(q=>{
+    const chosen=answered[n][q.n];
+    const isS1=exams[n].s1.some(x=>x.n===q.n);
+    const ok=chosen===q.a;
+    if(ok){correct++;if(isS1)s1c++;else s2c++;}
+    const ex=document.getElementById(`ex${n}-${q.n}`);
+    if(ex)ex.classList.add('show');
+    q.c.forEach((_,i)=>{
+      const cl=document.getElementById(`cl${n}-${q.n}-${i}`);
+      if(!cl)return;
+      cl.classList.remove('selected');
+      if(i===q.a)cl.classList.add('correct');
+      else if(i===chosen&&chosen!==q.a)cl.classList.add('wrong');
+    });
+  });
+  const total=all.length;
+  const s1total=exams[n].s1.length,s2total=exams[n].s2.length;
+  const score=Math.round(correct/total*100);
+  const s1score=Math.round(s1c/s1total*100);
+  const s2score=Math.round(s2c/s2total*100);
+  const pass=score>=70&&s1score>=40&&s2score>=40;
+  const sd=document.getElementById('score-display');
+  sd.innerHTML=`점수: <span class="score-num ${pass?'score-pass':'score-fail'}">${score}점</span> ${pass?'✅합격':'❌불합격'}`;
+  sd.classList.add('show');
+  const rc=document.getElementById('result'+n);
+  document.getElementById('result'+n+'-icon').textContent=pass?'🎉':'😓';
+  document.getElementById('result'+n+'-title').innerHTML=`<span class="${pass?'result-pass':'result-fail'}">${pass?'합격!':'불합격'}</span>`;
+  document.getElementById('result'+n+'-grid').innerHTML=`
+    <div class="result-item"><div class="result-item-val">${score}점</div><div class="result-item-label">총점</div></div>
+    <div class="result-item"><div class="result-item-val">${s1score}점</div><div class="result-item-label">과목1</div></div>
+    <div class="result-item"><div class="result-item-val">${s2score}점</div><div class="result-item-label">과목2</div></div>
+  `;
+  rc.classList.add('show');
+  rc.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function resetExam(){
+  const n=currentExam;
+  answered[n]={};submitted[n]=false;
+  clearInterval(timerIntervals[n]);timerIntervals[n]=null;
+  exams[n]._rendered=false;
+  document.getElementById('exam'+n).innerHTML=`
+    <div class="info-bar">
+      <div class="info-chip">🗓 제${n}회 모의고사</div>
+      <div class="info-chip">문항 수: <strong>40문항</strong></div>
+      <div class="info-chip" id="timer${n}-chip">⏱ <span id="timer${n}">50:00</span></div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="prog${n}" style="width:0%"></div></div>
+    <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">보험법규</span><span class="sub-count">1~20번</span></div>
+    <div id="q${n}-s1"></div>
+    <div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">기초서류 및 생명보험 이해</span><span class="sub-count">21~40번</span></div>
+    <div id="q${n}-s2"></div>
+    <div class="result-card" id="result${n}"><div class="result-icon" id="result${n}-icon"></div><div class="result-title" id="result${n}-title"></div><div class="result-grid" id="result${n}-grid"></div></div>
+  `;
+  renderExam(n);exams[n]._rendered=true;
+  document.getElementById('score-display').classList.remove('show');
+  startTimer(n);
+}
+
+// Init
+renderExam(1);exams[1]._rendered=true;
+startTimer(1);
+</script>
+</body>
+</html>

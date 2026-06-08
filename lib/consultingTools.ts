@@ -97,7 +97,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     id: "show_card_consult",
     title: "고객상담 카드",
     label: "고객상담 카드",
-    desc: "3가지 상담 카드를 선택해 고객의 관심 보장과 상담 방향을 확인합니다.",
+    desc: "카드를 선택해 나에게 맞는 보험이 설계되었는지 필요한 것은 무엇인지 확인해보세요",
     icon: "checklist",
     url: "/card-consult",
     color: "border-sky-500",

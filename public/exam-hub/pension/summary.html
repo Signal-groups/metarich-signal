@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퇴직연금모집인 검정시험 기출 요약집</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;700&display=swap');
+
+  :root {
+    --navy: #0f1c2e;
+    --navy2: #162236;
+    --blue: #1e4a8c;
+    --accent: #f0a500;
+    --accent2: #e86a17;
+    --text: #e8edf5;
+    --text-muted: #8a9bb8;
+    --surface: #1a2d45;
+    --surface2: #213552;
+    --border: rgba(255,255,255,0.08);
+    --correct: #22c55e;
+    --wrong: #ef4444;
+    --highlight: #fbbf24;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  .hero {
+    background: linear-gradient(135deg, #0a1628 0%, #162236 40%, #1e3a5c 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 48px 40px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(240,165,0,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+  .hero-sub {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-num {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── NAV ── */
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--navy2);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .nav-tab {
+    padding: 14px 24px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .nav-tab:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── MAIN ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .section-title { font-size: 18px; font-weight: 700; color: #fff; }
+  .section-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── KEY POINT CARDS ── */
+  .key-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .key-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .key-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .key-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .key-card-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .key-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .key-card-body {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+  .key-card-body strong { color: var(--highlight); font-weight: 700; }
+  .key-card-body .wrong-val { color: var(--wrong); }
+  .key-card-body .right-val { color: var(--correct); }
+
+  /* ── Q&A BLOCK ── */
+  .qa-list { display: flex; flex-direction: column; gap: 14px; }
+  .qa-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .qa-item:hover { border-color: rgba(240,165,0,0.3); }
+  .qa-q {
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    user-select: none;
+  }
+  .qa-num {
+    background: var(--blue);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .qa-text { font-size: 13px; color: var(--text); line-height: 1.6; flex: 1; }
+  .qa-arrow {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.25s;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .qa-item.open .qa-arrow { transform: rotate(180deg); }
+  .qa-a {
+    display: none;
+    padding: 0 20px 16px 52px;
+    border-top: 1px solid var(--border);
+  }
+  .qa-item.open .qa-a { display: block; }
+  .qa-choices { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .qa-choice {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .qa-choice.correct {
+    background: rgba(34,197,94,0.12);
+    border-color: rgba(34,197,94,0.4);
+    color: var(--correct);
+    font-weight: 600;
+  }
+  .qa-choice.correct::before { content: '✓ '; }
+  .qa-explain {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(240,165,0,0.08);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+  .qa-explain strong { color: var(--accent); }
+
+  /* ── TABLE ── */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-size: 13px;
+  }
+  .compare-table th {
+    background: var(--blue);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .compare-table td {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  .compare-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .compare-table td strong { color: var(--highlight); }
+  .compare-table td .tag-db { color: #60a5fa; }
+  .compare-table td .tag-dc { color: #34d399; }
+
+  /* ── NUMBER BOX ── */
+  .num-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .num-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .num-box-val {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .num-box-label { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .alert-warn {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+  }
+  .alert-info {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3);
+    color: #93c5fd;
+  }
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert strong { color: #fff; }
+
+  /* ── CHAPTER LABEL ── */
+  .chapter-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 28px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chapter-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── SCROLL ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--navy); }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 32px 20px 28px; }
+    .hero h1 { font-size: 22px; }
+    .container { padding: 20px 16px 60px; }
+    .key-grid { grid-template-columns: 1fr; }
+    .num-grid { grid-template-columns: 1fr 1fr; }
+    .nav-tab { padding: 12px 16px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Study Guide 2025</div>
+  <h1>퇴직연금모집인 검정시험<br>기출 핵심 요약집</h1>
+  <div class="hero-sub">실전문제풀이 + 퀴즈 파일 기반 · 과목1 + 과목2 통합 정리</div>
+  <div class="hero-stats">
+    <div class="stat-item"><span class="stat-num">70점</span><span class="stat-label">합격 기준 (평균)</span></div>
+    <div class="stat-item"><span class="stat-num">40점</span><span class="stat-label">과목별 최저</span></div>
+    <div class="stat-item"><span class="stat-num">20H</span><span class="stat-label">등록교육 이수</span></div>
+    <div class="stat-item"><span class="stat-num">2년</span><span class="stat-label">유효기간</span></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="showSection('s1', this)">📘 과목1 핵심개념</div>
+  <div class="nav-tab" onclick="showSection('s2', this)">⚖️ 과목2 법령·모집인</div>
+  <div class="nav-tab" onclick="showSection('s3', this)">💰 자산운용·세제</div>
+  <div class="nav-tab" onclick="showSection('s4', this)">📋 기출 Q&A</div>
+  <div class="nav-tab" onclick="showSection('s5', this)">🔢 빈출 숫자 암기</div>
+</div>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════
+     SECTION 1 : 과목1 핵심개념
+══════════════════════════════════════════ -->
+<div id="s1" class="section active">
+  <div class="section-header">
+    <div class="section-icon">📘</div>
+    <div>
+      <div class="section-title">과목1 — 퇴직연금제도의 이해</div>
+      <div class="section-desc">1강~10강 핵심 + 기출 오답 포인트</div>
+    </div>
+  </div>
+
+  <div class="chapter-label">기본 제도 구조</div>
+
+  <div class="alert alert-info">
+    <span class="alert-icon">ℹ️</span>
+    <div><strong>적용 대상 주의</strong> — 계속근로기간 <strong>1년 미만</strong> 또는 4주 평균 주 <strong>15시간 미만</strong> 근로자는 퇴직급여 대상 제외. "20시간 미만"은 오답 선택지로 자주 등장.</div>
+  </div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 01</div>
+      <div class="key-card-title">퇴직금제도 기본</div>
+      <div class="key-card-body">
+        근속 <strong>1년마다 30일분 이상</strong>의 평균임금 지급<br>
+        급여 방식: <strong>일시금만</strong> (연금 불가 → 오답 주의)<br>
+        근거법: 근로자퇴직급여보장법
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 02</div>
+      <div class="key-card-title">퇴직연금 도입 배경</div>
+      <div class="key-card-body">
+        · 기업 도산 시 <strong>최종 3년분</strong> 퇴직금만 최우선 변제<br>
+        · 퇴직금은 사외적립 미의무 → 수급권 보호 미흡<br>
+        · 도입 시기: <strong>2005년 12월 1일</strong>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 03</div>
+      <div class="key-card-title">3층 보장 구조</div>
+      <div class="key-card-body">
+        <strong>1층</strong>: 공적연금 (국민연금·특수직역연금)<br>
+        <strong>2층</strong>: 퇴직연금<br>
+        <strong>3층</strong>: 개인연금<br>
+        특수직역연금: <strong>1층+2층</strong> 동시 역할
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 04</div>
+      <div class="key-card-title">국민연금 소득대체율</div>
+      <div class="key-card-body">
+        평균 가입자 기준 <strong>40%</strong> 수준<br>
+        공적연금 연계제도: 가입기간 합산 <strong>20년</strong> 초과 시 연금 수령 가능
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 05</div>
+      <div class="key-card-title">중소기업퇴직연금기금</div>
+      <div class="key-card-body">
+        상시 <strong>30명 이하</strong> 사업장 설정 가능<br>
+        2022년 도입 (사전지정운용제도도 동시 도입)<br>
+        운영: 근로복지공단
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 06</div>
+      <div class="key-card-title">은퇴설계 필요성</div>
+      <div class="key-card-body">
+        <span class="wrong-val">✗ 고금리 환경에서 필요성 증가</span><br>
+        <span class="right-val">✓ 저금리·고령화 환경에서 필요성 증가</span><br>
+        공적연금 급여: 소비자물가 상승률 연계
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">DB형 vs DC형 핵심 비교</div>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th class="tag-db">DB형 (확정급여형)</th>
+        <th class="tag-dc">DC형 (확정기여형)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>급여 산정</td>
+        <td>퇴직 전 3개월 평균임금 × 근속연수</td>
+        <td>납입 부담금 + 운용수익</td>
+      </tr>
+      <tr>
+        <td>운용 주체</td>
+        <td><strong>사용자</strong></td>
+        <td><strong>근로자</strong></td>
+      </tr>
+      <tr>
+        <td>투자 리스크</td>
+        <td><strong>사용자</strong> 부담</td>
+        <td><strong>근로자</strong> 부담</td>
+      </tr>
+      <tr>
+        <td>부담금 납입</td>
+        <td>재정검증 후 부족분 추가</td>
+        <td>연간 임금총액의 <strong>1/12 이상</strong>, 매년 납입</td>
+      </tr>
+      <tr>
+        <td>중도인출</td>
+        <td><strong>불가</strong></td>
+        <td>법정 요건 충족 시 가능</td>
+      </tr>
+      <tr>
+        <td>유리한 근로자</td>
+        <td>임금 상승률 높은 자, 장기 근속자</td>
+        <td>투자 수익률 기대 높은 자</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-warn">
+    <span class="alert-icon">⚠️</span>
+    <div><strong>기출 함정</strong> — "DB형에서 적립금 운용손실 발생 시 누가 부담?" → 반드시 <strong>사용자</strong>. "DC형에서 투자 손실은?" → <strong>근로자</strong>.</div>
+  </div>
+
+  <div class="chapter-label">DC형 중도인출 요건 (자주 출제)</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">허용 사유</div>
+      <div class="key-card-title">DC형 중도인출 가능</div>
+      <div class="key-card-body">
+        · 무주택자 <strong>본인 명의</strong> 주택 구입<br>
+        · 전세·보증금 부담 (<strong>동일 직장 1회</strong>만)<br>
+        · 본인·배우자·직계존비속 <strong>6개월 이상</strong> 요양, 연간임금 12.5% 초과 의료비<br>
+        · 파산선고 또는 개인회생<br>
+        · 천재지변
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">기출 함정</div>
+      <div class="key-card-title">중도인출 불가 사례</div>
+      <div class="key-card-body">
+        <span class="wrong-val">✗ 근로시간 단축으로 퇴직금 감소</span><br>
+        <span class="wrong-val">✗ DB형에서의 중도인출</span><br>
+        <span class="wrong-val">✗ 배우자 명의 주택 있으면 무주택자 아님</span><br>
+        <span class="wrong-val">✗ 본인 3개월 요양 (6개월 이상이어야 함)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">규약 · 동의 요건</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 07</div>
+      <div class="key-card-title">규약 작성·신고 주체</div>
+      <div class="key-card-body">
+        작성·신고: <strong>사용자(사업주)</strong><br>
+        신고처: <strong>사업장 주소지 관할 고용노동지청</strong><br>
+        (금융감독원·퇴직연금사업자 ✗)
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 08</div>
+      <div class="key-card-title">근로자 대표 동의 필요</div>
+      <div class="key-card-body">
+        · DB·DC·기금형 <strong>최초 도입</strong><br>
+        · 제도 내용 <strong>불이익 변경</strong><br>
+        · <strong>폐지</strong> (퇴직금으로 환원)<br>
+        · 제도 종류 변경 (DB↔DC)
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 09</div>
+      <div class="key-card-title">의견청취만 필요</div>
+      <div class="key-card-body">
+        · 제도 내용 <strong>불이익하지 않은 변경</strong><br>
+        · 퇴직연금사업자 추가<br>
+        규약 동의 취득 시: 취업규칙·단체협약 <strong>별도 동의 불필요</strong>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 10</div>
+      <div class="key-card-title">퇴직급여 시효</div>
+      <div class="key-card-body">
+        퇴직일로부터 <strong>3년</strong><br>
+        (1년·2년·4년 모두 오답 선택지로 등장)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 2 : 과목2 법령·모집인
+══════════════════════════════════════════ -->
+<div id="s2" class="section">
+  <div class="section-header">
+    <div class="section-icon">⚖️</div>
+    <div>
+      <div class="section-title">과목2 — 법령·모집인 준수사항</div>
+      <div class="section-desc">근로자퇴직급여보장법 + 모집인 규정</div>
+    </div>
+  </div>
+
+  <div class="chapter-label">IRP 핵심 규정</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 01</div>
+      <div class="key-card-title">IRP 의무이전 원칙</div>
+      <div class="key-card-body">
+        DB·DC·퇴직금 모두 퇴직 시 <strong>IRP 계좌로 의무 이전</strong><br>
+        2022년 4월 14일부터 퇴직금도 포함
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 02</div>
+      <div class="key-card-title">IRP 예외 (직접 지급 가능)</div>
+      <div class="key-card-body">
+        <span class="right-val">✓ 만 55세 이후 퇴직</span><br>
+        <span class="right-val">✓ 퇴직급여 <strong>300만원 이하</strong> (퀴즈) / <strong>150만원 이하</strong> (실전문제)</span><br>
+        <span class="right-val">✓ 담보대출 상환</span><br>
+        <span class="wrong-val">✗ 1,800만원 초과분은 예외 아님</span>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 03</div>
+      <div class="key-card-title">IRP 수령 요건</div>
+      <div class="key-card-body">
+        나이: <strong>만 55세 이상</strong><br>
+        가입기간: <strong>10년 이상</strong> (연금 선택 가능)<br>
+        연금 수령 전까지는 IRP 일부 해지 <strong>불가</strong>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 04</div>
+      <div class="key-card-title">IRP 가입 가능자</div>
+      <div class="key-card-body">
+        근로자·자영업자·퇴직자·공무원 등<br>
+        <strong>소득 있는 자 모두</strong> 가입 가능<br>
+        <span class="wrong-val">✗ 1년 실직 근로자는 가입 불가</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">퇴직급여 지급 규정</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 05</div>
+      <div class="key-card-title">지급 기한·지연이자</div>
+      <div class="key-card-body">
+        지급 기한: 퇴직일로부터 <strong>14일 이내</strong><br>
+        지연이자: 연 <strong>100분의 20 (20%)</strong><br>
+        당사자 합의 시 기한 연장 가능
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 06</div>
+      <div class="key-card-title">임금 관련</div>
+      <div class="key-card-body">
+        임금 지불 4원칙: 통화불·직접불·전액불·정기불<br>
+        <span class="wrong-val">✗ 환율반영 원칙 → 존재 안 함</span><br>
+        임금 성격 아닌 것: 재난 대응 일시 지급금
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">퇴직연금모집인 핵심</div>
+
+  <div class="alert alert-warn">
+    <span class="alert-icon">⚠️</span>
+    <div><strong>모집인 불가 업무</strong> — 가입자의 <strong>운용지시 대리 작성</strong>은 재산권 침해 행위. 절대 불가. 구두 지시를 받았어도 대리 작성 불가.</div>
+  </div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 07</div>
+      <div class="key-card-title">모집인 등록 요건</div>
+      <div class="key-card-body">
+        ① 보험설계사 / 개인 보험대리점<br>
+        ② 투자권유대행인<br>
+        ③ 고용노동부장관 인정자<br>
+        <span class="wrong-val">✗ 퇴직연금사업자 임직원은 모집인 불가</span><br>
+        <span class="wrong-val">✗ 대학에서 재무관리 이수 + 금융기관 1년 → 불가</span>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 08</div>
+      <div class="key-card-title">모집인 교육</div>
+      <div class="key-card-body">
+        등록교육: <strong>20시간 이상</strong> (집체 6시간 이상)<br>
+        보수교육: <strong>10시간 이상</strong><br>
+        검정시험: <strong>객관식만</strong> (단답식 ✗)<br>
+        유효기간: <strong>2년</strong>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 09</div>
+      <div class="key-card-title">모집인 준수사항</div>
+      <div class="key-card-body">
+        · 사용자·가입자로부터 <strong>금품 수령 금지</strong><br>
+        · <strong>1개</strong>의 퇴직연금사업자와만 위탁계약<br>
+        · 위탁받은 업무 재위탁 <strong>금지</strong><br>
+        · 보험설계사 명칭으로 모집 <strong>금지</strong>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 10</div>
+      <div class="key-card-title">자격취소 사유</div>
+      <div class="key-card-body">
+        · 등록 요건 미충족<br>
+        · 위탁업무 재위탁<br>
+        · 준수사항 위반<br>
+        <span class="wrong-val">✗ A업체 내용을 B업체에 전달 → 취소 아님 (업무 실수)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">특별이익 금지 규정</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">허용</div>
+      <div class="key-card-title">특별이익 해당 안 됨</div>
+      <div class="key-card-body">
+        · 설명회 개최비용 부담<br>
+        · 운용·회계·세무 교육 및 상담 비용<br>
+        · 약관 근거 수수료 할인<br>
+        · 커피 1잔 (소액 의례적 제공)
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">금지</div>
+      <div class="key-card-title">특별이익 해당</div>
+      <div class="key-card-body">
+        · 계약 유도 목적 <strong>금품 제공</strong><br>
+        · 가입자 비용 대신 부담<br>
+        · 약관 외 수수료 할인<br>
+        · 골프 접대 / 화환 주문 / 운동회 물품
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">벌칙 규정</div>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>위반 내용</th><th>처벌</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>미등록 모집행위</td><td><strong>2년 이하 징역</strong> 또는 2천만원 이하 벌금</td></tr>
+      <tr><td>준수업무 위반</td><td><strong>500만원 이하 벌금</strong> (형사처벌)</td></tr>
+      <tr><td>모집인 준수업무 위반 시 퇴직연금사업자 책임</td><td><strong>있음</strong> (오답: 없다 ✗)</td></tr>
+      <tr><td>적립금운용위원회 미구성</td><td>최대 <strong>500만원 이하</strong> 과태료</td></tr>
+      <tr><td>DB 최소적립금 95% 미달 미해소</td><td>최대 <strong>1천만원 이하</strong> 과태료 (1차 200만·2차 500만·3차+ 1천만원)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="chapter-label">적립금운용위원회 (DB형)</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 11</div>
+      <div class="key-card-title">구성 요건</div>
+      <div class="key-card-body">
+        대상: DB형 운영 <strong>300명 이상</strong> 기업<br>
+        구성: 위원장(퇴직연금 담당 임원) + <strong>5~7명</strong><br>
+        재정검증 미달 시 추가 포함: 근로자 대표, 업무부서장, 전문가 각 1명 이상<br>
+        <span class="wrong-val">✗ 대표이사는 반드시 포함 아님</span>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 12</div>
+      <div class="key-card-title">가입자 교육</div>
+      <div class="key-card-body">
+        사용자: 매년 <strong>1회 이상</strong> 실시 의무<br>
+        방법: 대면·온라인·서면·이메일 모두 가능<br>
+        위탁: 퇴직연금사업자에게 위탁 가능<br>
+        <span class="wrong-val">✗ DB형도 가입자 교육 실시 의무 있음</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 3 : 자산운용·세제
+══════════════════════════════════════════ -->
+<div id="s3" class="section">
+  <div class="section-header">
+    <div class="section-icon">💰</div>
+    <div>
+      <div class="section-title">자산운용 · 세제</div>
+      <div class="section-desc">11강~14강 + 세금 관련 퀴즈 전 범위</div>
+    </div>
+  </div>
+
+  <div class="chapter-label">운용 가능 상품 분류</div>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>분류</th><th>상품</th><th>100% 가능 여부</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>원리금보장형</strong></td>
+        <td>은행 예적금, 이율보증형 보험, 금리연동형, ELB, DLB, RP, 발행어음·표지어음</td>
+        <td style="color:var(--correct)"><strong>100% 가능</strong></td>
+      </tr>
+      <tr>
+        <td><strong>위험자산</strong></td>
+        <td>주식펀드, 주식혼합형, TDF, ETF (주식 포함)</td>
+        <td style="color:var(--wrong)"><strong>70% 이내</strong></td>
+      </tr>
+      <tr>
+        <td><strong>주의</strong></td>
+        <td>채권형펀드 (주식 0%), 채권혼합형 (주식 50% 이내)</td>
+        <td style="color:var(--correct)"><strong>100% 가능</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-warn">
+    <span class="alert-icon">⚠️</span>
+    <div><strong>기출 함정</strong> — ELB는 <strong>원리금보장형</strong>이지 실적배당형이 아님. TDF는 실적배당형. 주택저당증권에만 투자하는 집합투자증권은 원리금보장 ✗ (실적배당형).</div>
+  </div>
+
+  <div class="chapter-label">투자 금지 상품 (DC형)</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">금지</div>
+      <div class="key-card-title">DC형 투자 절대 금지</div>
+      <div class="key-card-body">
+        · <span class="wrong-val">무등급 채권</span><br>
+        · <span class="wrong-val">사모발행 파생결합증권</span><br>
+        · <span class="wrong-val">전환사채</span><br>
+        · <span class="wrong-val">비상장주식</span><br>
+        · <span class="wrong-val">개별 주식 직접투자</span><br>
+        · <span class="wrong-val">레버리지·인버스 ETF</span>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">가능</div>
+      <div class="key-card-title">DC형 가능 상품</div>
+      <div class="key-card-body">
+        · <span class="right-val">사용자 계열사 발행 증권 (허용)</span><br>
+        · 투자적격 채권 (BBB- 이상)<br>
+        · 공모펀드<br>
+        · ETF (단, 레버리지·인버스 제외)<br>
+        파생상품: <strong>헤지 목적만</strong> 허용
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">예금자보호</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 01</div>
+      <div class="key-card-title">예금자보호 적용</div>
+      <div class="key-card-body">
+        퇴직연금: 다른 금융상품과 <strong>별도 5천만원</strong> 보호<br>
+        <span class="wrong-val">✗ 모든 금융회사 합산 5천만원 → 오답</span><br>
+        보호 안 됨: <strong>ELB·DLB·RP</strong>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 02</div>
+      <div class="key-card-title">투자원칙 법칙</div>
+      <div class="key-card-body">
+        <strong>72의 법칙</strong>: 72 ÷ 수익률 = 자산 2배 기간<br>
+        <strong>100-나이 법칙</strong>: 젊을수록 공격적 자산 비중↑<br>
+        30세 → 주식 약 70%<br>
+        <strong>-50=+100 법칙</strong>: 손실 위험의 중요성<br>
+        <span class="wrong-val">✗ 50의 법칙 → 존재 안 함</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-label">세제 핵심</div>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>항목</th><th>내용</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>IRP 납입 한도</td><td>연 <strong>1,800만원</strong> (연금저축 합산)</td></tr>
+      <tr><td>세액공제 한도</td><td>연 <strong>900만원</strong></td></tr>
+      <tr><td>세액공제율</td><td>총급여 5,500만원 이하: <strong>16.5%</strong> / 초과: <strong>13.2%</strong></td></tr>
+      <tr><td>과세 이연</td><td>퇴직일로부터 60일 이내 IRP 이체 시 (80% 이상 이체 시도 과세이연 가능)</td></tr>
+      <tr><td>퇴직소득세 특징</td><td>분류과세, 연분연승, 근속기간 길수록 세부담 <strong>감소</strong></td></tr>
+      <tr><td>연금 수령 세율</td><td>3~5% 분리과세 (연간 사적연금 <strong>1,500만원</strong> 초과 시 종합과세)</td></tr>
+      <tr><td>DB 운용수익 법인과세</td><td><strong>비과세</strong> (과세이연 아님)</td></tr>
+      <tr><td>DC 손금산입</td><td>불입 연도에 <strong>전액 손금산입</strong> / 전기미납분을 당기 납부 시 <strong>당기 손금</strong></td></tr>
+      <tr><td>임원 초과 부담금</td><td>퇴직일이 속하는 사업연도에 손금불산입</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-info">
+    <span class="alert-icon">ℹ️</span>
+    <div><strong>연금소득 과세체계</strong> — EET 방식 (납입 시 공제→운용 시 과세유예→<strong>인출 시 과세</strong>). IRP 연금수령 시 원천에 따라 세율 다름: 퇴직소득 원천은 퇴직소득세의 70%로 분리과세.</div>
+  </div>
+
+  <div class="chapter-label">사전지정운용제도 (디폴트옵션)</div>
+
+  <div class="key-grid">
+    <div class="key-card">
+      <div class="key-card-num">KEY 03</div>
+      <div class="key-card-title">적용 대상·절차</div>
+      <div class="key-card-body">
+        적용: <strong>DC형·IRP</strong> (<span class="wrong-val">DB형 ✗</span>)<br>
+        만기 후 4주 경과→2주 전 사전 통지→통지 후 2주 후 자동 운용<br>
+        운용 중에도 <strong>언제든 다른 지시 가능</strong>
+      </div>
+    </div>
+    <div class="key-card">
+      <div class="key-card-num">KEY 04</div>
+      <div class="key-card-title">실물이전 불가 상품</div>
+      <div class="key-card-body">
+        · 보험계약 형태의 퇴직연금계약<br>
+        · 언번들형 계약<br>
+        · 사업자 자체 상품(디폴트옵션 포함)<br>
+        · 수관회사 미취급 상품 → 매도 후 현금 이전<br>
+        <span class="wrong-val">✗ ETF는 실물이전 제외 아님</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 4 : 기출 Q&A
+══════════════════════════════════════════ -->
+<div id="s4" class="section">
+  <div class="section-header">
+    <div class="section-icon">📋</div>
+    <div>
+      <div class="section-title">기출 Q&A (오답 주의 문제)</div>
+      <div class="section-desc">클릭하면 정답과 해설 확인</div>
+    </div>
+  </div>
+
+  <div class="qa-list">
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q1</span>
+        <span class="qa-text">퇴직급여제도에 대한 설명으로 맞는 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 계속근로기간 1년 미만인 자도 대상이 된다</div>
+          <div class="qa-choice">② 1주 소정근로시간이 20시간 미만인 자는 제외된다</div>
+          <div class="qa-choice correct">③ 상시 30명 이하 사업장은 중소기업퇴직연금기금제도를 설정할 수 있다</div>
+          <div class="qa-choice">④ 5인 이상 사업장을 대상으로 한다</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> 적용 제외는 1년 미만 또는 <strong>15시간 미만</strong> (20시간 아님). 중소기업기금은 <strong>30명 이하</strong>. 퇴직급여는 1인 이상 전 사업장 적용.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q2</span>
+        <span class="qa-text">우리나라에서 퇴직연금제도가 도입된 시기는?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 2005년 1월 1일</div>
+          <div class="qa-choice correct">② 2005년 12월 1일</div>
+          <div class="qa-choice">③ 2010년 1월 1일</div>
+          <div class="qa-choice">④ 2010년 12월 1일</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> <strong>2005년 12월 1일</strong>. 연도는 맞아도 월이 틀린 선택지가 등장하므로 "12월"까지 암기.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q3</span>
+        <span class="qa-text">DC형 중도인출 요건이 아닌 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice correct">① 근로시간의 단축으로 근로자의 퇴직금이 감소되는 경우</div>
+          <div class="qa-choice">② 무주택자인 가입자가 본인 명의로 주택을 구입하는 경우</div>
+          <div class="qa-choice">③ 가입자 배우자의 6개월 이상 요양을 필요로 하는 의료비</div>
+          <div class="qa-choice">④ 파산선고를 받은 경우</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> 근로시간 단축으로 퇴직금 감소는 DC 중도인출 사유 <strong>아님</strong>. DB형 중간정산 예외적 사유와 혼동 주의.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q4</span>
+        <span class="qa-text">퇴직연금사업자의 '특별이익'이 아닌 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 계약체결 유도 목적 금품 제공</div>
+          <div class="qa-choice">② 약관 근거 없는 수수료 할인</div>
+          <div class="qa-choice">③ 가입자 부담 비용의 전부 부담</div>
+          <div class="qa-choice correct">④ 사용자·가입자 각각 3만원 이하인 경우</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> 금액이 소액이라도 특별이익 금지 규정에서 <strong>3만원 이하 예외 규정은 없음</strong>. 가입자당 소액 제공도 원칙적으로 금지.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q5</span>
+        <span class="qa-text">DC형 위험자산 투자한도에서 가장 거리가 먼 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 증권회사 ELB, 은행 정기예금은 100% 이내 투자 가능</div>
+          <div class="qa-choice correct">② 비상장주식도 투자 가능하다</div>
+          <div class="qa-choice">③ 위험자산에 대한 투자한도 40% 이내 집합투자증권은 투자 가능</div>
+          <div class="qa-choice">④ 위험자산은 총 적립금의 70% 한도 내 투자 가능</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> DC형에서 <strong>비상장주식은 투자 금지</strong>. ELB는 원리금보장형으로 100% 가능.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q6</span>
+        <span class="qa-text">퇴직소득세의 특징이 아닌 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 분류과세</div>
+          <div class="qa-choice">② 연분연승</div>
+          <div class="qa-choice">③ 근속기간과 금액 두 가지에 따라 결정</div>
+          <div class="qa-choice correct">④ 동일한 퇴직금이라면 근속연수가 길수록 세부담이 증가</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> 근속연수가 <strong>길수록 세부담 감소</strong>. 연분연승 구조로 장기 근속을 우대하는 구조.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q7</span>
+        <span class="qa-text">모집인 준수업무 위반 시 틀린 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 모집인 준수업무를 위반하면 형사처벌을 받는다</div>
+          <div class="qa-choice correct">② 모집인의 준수업무 위반에 대한 퇴직연금사업자의 책임은 없다</div>
+          <div class="qa-choice">③ 모집인 준수업무 위반 시 500만원 이하 벌금</div>
+          <div class="qa-choice">④ 미등록 모집 시 2년 이하 징역에 처해질 수 있다</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> 모집인 위반에 대해 퇴직연금사업자도 <strong>책임 있음</strong>. "책임 없다"는 틀린 선택지로 자주 등장.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q8</span>
+        <span class="qa-text">사전지정운용제도(디폴트옵션)의 내용 중 틀린 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 퇴직연금규약에 반영되어야 한다</div>
+          <div class="qa-choice">② 디폴트옵션 운용 중에도 언제든 다른 방법으로 운용지시 가능</div>
+          <div class="qa-choice correct">③ 확정급여형(DB)제도에 사전지정운용제도가 도입되었다</div>
+          <div class="qa-choice">④ 포트폴리오 유형의 상품이 있다</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> 디폴트옵션은 <strong>DC형·IRP</strong>에만 적용. DB형에는 도입되지 않음.</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q9</span>
+        <span class="qa-text">IRP에 가입할 수 없는 사람은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice">① 퇴직급여제도의 일시금을 수령한 사람</div>
+          <div class="qa-choice correct">② 1년 동안 실직한 근로자</div>
+          <div class="qa-choice">③ 자영업자</div>
+          <div class="qa-choice">④ 퇴직급여제도 미설정 근로자</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> IRP는 소득이 있는 자만 가입 가능. <strong>실직자</strong>는 소득 없으므로 가입 불가 (재직 중이어야 추가납입 가능).</div>
+      </div>
+    </div>
+
+    <div class="qa-item">
+      <div class="qa-q" onclick="toggleQA(this)">
+        <span class="qa-num">Q10</span>
+        <span class="qa-text">100-나이의 법칙을 가장 잘 설명하는 것은?</span>
+        <span class="qa-arrow">▼</span>
+      </div>
+      <div class="qa-a">
+        <div class="qa-choices">
+          <div class="qa-choice correct">① 나이가 젊을수록 공격적인 자산의 비율을 높이고, 나이가 들면 안정적인 자산 비율을 늘려가는 것이다</div>
+          <div class="qa-choice">② 투자에 있어서 위험의 중요성을 강조하는 법칙이다</div>
+          <div class="qa-choice">③ 손실이 발생하지 않도록 하는 것이 무엇보다 중요하다는 의미이다</div>
+          <div class="qa-choice">④ 자산이 두 배가 되는 기간을 알 수 있게 해 주는 법칙이다</div>
+        </div>
+        <div class="qa-explain"><strong>해설:</strong> ②는 -50=+100 법칙, ④는 72의 법칙. 100-나이 = 주식 투자 비중 (나이 30세 → 주식 70%).</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 5 : 빈출 숫자 암기
+══════════════════════════════════════════ -->
+<div id="s5" class="section">
+  <div class="section-header">
+    <div class="section-icon">🔢</div>
+    <div>
+      <div class="section-title">빈출 숫자·기준 암기표</div>
+      <div class="section-desc">시험 직전 반복 확인용</div>
+    </div>
+  </div>
+
+  <div class="chapter-label">제도 기준</div>
+  <div class="num-grid">
+    <div class="num-box"><span class="num-box-val">1년</span><div class="num-box-label">퇴직급여 발생 최소 계속근로기간</div></div>
+    <div class="num-box"><span class="num-box-val">15H</span><div class="num-box-label">주 소정근로시간 미만 시 적용 제외</div></div>
+    <div class="num-box"><span class="num-box-val">30명</span><div class="num-box-label">중소기업퇴직연금기금 적용 상한</div></div>
+    <div class="num-box"><span class="num-box-val">3년</span><div class="num-box-label">퇴직급여 청구 소멸시효</div></div>
+    <div class="num-box"><span class="num-box-val">14일</span><div class="num-box-label">퇴직급여 지급 기한</div></div>
+    <div class="num-box"><span class="num-box-val">20%</span><div class="num-box-label">지연이자율 (연 100분의 20)</div></div>
+  </div>
+
+  <div class="chapter-label">모집인 교육</div>
+  <div class="num-grid">
+    <div class="num-box"><span class="num-box-val">20H</span><div class="num-box-label">등록교육 이수 시간 (집체 6H↑)</div></div>
+    <div class="num-box"><span class="num-box-val">10H</span><div class="num-box-label">보수교육 이수 시간</div></div>
+    <div class="num-box"><span class="num-box-val">2년</span><div class="num-box-label">등록 유효기간 / 보수교육 주기</div></div>
+    <div class="num-box"><span class="num-box-val">70점</span><div class="num-box-label">검정시험 평균 합격선</div></div>
+    <div class="num-box"><span class="num-box-val">40점</span><div class="num-box-label">과목별 최저 점수</div></div>
+  </div>
+
+  <div class="chapter-label">투자한도</div>
+  <div class="num-grid">
+    <div class="num-box"><span class="num-box-val">70%</span><div class="num-box-label">위험자산 총 투자한도 (DB·DC 동일)</div></div>
+    <div class="num-box"><span class="num-box-val">100%</span><div class="num-box-label">원리금보장형·채권형 투자한도</div></div>
+    <div class="num-box"><span class="num-box-val">BBB-</span><div class="num-box-label">투자적격 신용등급 최저 기준</div></div>
+    <div class="num-box"><span class="num-box-val">10%</span><div class="num-box-label">동일법인 발행증권 투자한도</div></div>
+  </div>
+
+  <div class="chapter-label">세제</div>
+  <div class="num-grid">
+    <div class="num-box"><span class="num-box-val">1,800만원</span><div class="num-box-label">IRP·연금저축 연간 납입 한도</div></div>
+    <div class="num-box"><span class="num-box-val">900만원</span><div class="num-box-label">세액공제 적용 한도</div></div>
+    <div class="num-box"><span class="num-box-val">16.5%</span><div class="num-box-label">세액공제율 (총급여 5,500만원 이하)</div></div>
+    <div class="num-box"><span class="num-box-val">13.2%</span><div class="num-box-label">세액공제율 (5,500만원 초과)</div></div>
+    <div class="num-box"><span class="num-box-val">1,500만원</span><div class="num-box-label">사적연금 분리과세 한도 (연간)</div></div>
+    <div class="num-box"><span class="num-box-val">60일</span><div class="num-box-label">퇴직소득 과세이연 IRP 이전 기한</div></div>
+  </div>
+
+  <div class="chapter-label">IRP 수령·연금</div>
+  <div class="num-grid">
+    <div class="num-box"><span class="num-box-val">55세</span><div class="num-box-label">연금 수령 가능 최소 연령</div></div>
+    <div class="num-box"><span class="num-box-val">10년</span><div class="num-box-label">연금 수령 가능 최소 가입기간</div></div>
+    <div class="num-box"><span class="num-box-val">300만원</span><div class="num-box-label">IRP 직접지급 예외 금액 기준 (퀴즈 기준)</div></div>
+    <div class="num-box"><span class="num-box-val">20년</span><div class="num-box-label">공적연금 연계 최소 합산기간</div></div>
+    <div class="num-box"><span class="num-box-val">40%</span><div class="num-box-label">국민연금 평균 가입자 소득대체율</div></div>
+  </div>
+
+  <div class="chapter-label">적립금운용위원회 (DB형)</div>
+  <div class="num-grid">
+    <div class="num-box"><span class="num-box-val">300명</span><div class="num-box-label">구성 의무 대상 (이상)</div></div>
+    <div class="num-box"><span class="num-box-val">5~7명</span><div class="num-box-label">위원 구성 인원</div></div>
+    <div class="num-box"><span class="num-box-val">95%</span><div class="num-box-label">최소적립비율 미달 기준</div></div>
+    <div class="num-box"><span class="num-box-val">1천만원</span><div class="num-box-label">미해소 시 최대 과태료</div></div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+function showSection(id, tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  tab.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleQA(el) {
+  const item = el.parentElement;
+  item.classList.toggle('open');
+}
+</script>
+</body>
+</html>

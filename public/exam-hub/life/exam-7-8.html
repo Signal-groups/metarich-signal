@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>생명보험 모집인 모의고사 7~8회</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+:root{--navy:#0d1b2a;--navy2:#162537;--blue:#1a3f6f;--blue2:#1e4d87;--accent:#2563eb;--accent2:#1d4ed8;--text:#dde4f0;--muted:#7a90b0;--surface:#182840;--surface2:#1f3352;--border:rgba(255,255,255,0.07);--green:#22c55e;--red:#ef4444;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--text);font-size:14px;line-height:1.7;}
+.header{background:linear-gradient(135deg,#091525 0%,#142236 50%,#1a3a5c 100%);border-bottom:2px solid var(--accent);padding:36px 40px 28px;}
+.header-badge{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:2px;padding:3px 10px;border-radius:2px;margin-bottom:12px;}
+.header h1{font-size:26px;font-weight:900;color:#fff;margin-bottom:8px;}
+.header-meta{color:var(--muted);font-size:12px;display:flex;gap:24px;flex-wrap:wrap;margin-top:16px;}
+.header-meta strong{color:var(--accent);}
+.exam-selector{display:flex;background:var(--navy2);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:200;}
+.exam-tab{padding:14px 28px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;user-select:none;}
+.exam-tab:hover{color:var(--text);}
+.exam-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.container{max-width:860px;margin:0 auto;padding:32px 20px 80px;}
+.exam-section{display:none;}.exam-section.active{display:block;}
+.info-bar{display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+.info-chip{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;color:var(--muted);}
+.info-chip strong{color:var(--accent);}
+.subject-divider{background:linear-gradient(90deg,var(--blue),var(--blue2));padding:12px 20px;border-radius:8px;margin:28px 0 16px;display:flex;align-items:center;gap:12px;}
+.sub-num{background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;}
+.sub-title{font-size:14px;font-weight:700;color:#fff;}
+.sub-count{margin-left:auto;font-size:11px;color:rgba(255,255,255,0.6);}
+.q-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:12px;}
+.q-header{display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;}
+.q-num{background:var(--blue2);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.q-text{font-size:13.5px;color:var(--text);line-height:1.7;flex:1;}
+.q-choices{display:flex;flex-direction:column;gap:6px;padding-left:4px;}
+.choice-label{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;transition:all .15s;background:var(--surface2);}
+.choice-label:hover{border-color:rgba(37,99,235,0.4);}
+.choice-label input{display:none;}
+.choice-label.selected{border-color:var(--accent);background:rgba(37,99,235,0.08);}
+.choice-label.correct{border-color:var(--green)!important;background:rgba(34,197,94,0.1)!important;color:var(--green)!important;}
+.choice-label.wrong{border-color:var(--red)!important;background:rgba(239,68,68,0.1)!important;color:var(--red)!important;}
+.choice-idx{font-size:12px;font-weight:700;color:var(--muted);width:14px;flex-shrink:0;margin-top:1px;}
+.choice-text{font-size:13px;line-height:1.6;}
+.q-explain{display:none;margin-top:10px;padding:10px 14px;background:rgba(37,99,235,0.07);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;font-size:12px;color:var(--muted);line-height:1.8;}
+.q-explain strong{color:var(--accent);}
+.q-explain.show{display:block;}
+.action-bar{position:sticky;bottom:0;background:var(--navy2);border-top:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;z-index:100;}
+.btn{padding:10px 24px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.score-display{margin-left:auto;font-size:13px;color:var(--muted);display:none;}
+.score-display.show{display:block;}
+.score-num{font-size:18px;font-weight:900;color:var(--accent);}
+.score-pass{color:var(--green);}.score-fail{color:var(--red);}
+.progress-wrap{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:20px;}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .3s;}
+.result-card{display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-top:24px;text-align:center;}
+.result-card.show{display:block;}
+.result-icon{font-size:48px;margin-bottom:12px;}
+.result-title{font-size:22px;font-weight:900;margin-bottom:8px;}
+.result-pass{color:var(--green);}.result-fail{color:var(--red);}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}
+.result-item{background:var(--surface2);border-radius:8px;padding:14px;}
+.result-item-val{font-size:22px;font-weight:900;color:var(--accent);margin-bottom:4px;}
+.result-item-label{font-size:11px;color:var(--muted);}
+@media(max-width:640px){.header{padding:24px 16px 20px;}.header h1{font-size:20px;}.container{padding:20px 12px 80px;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-badge">LIFE INSURANCE</div>
+  <h1>생명보험 모집인 검정시험<br>모의고사 7~8회</h1>
+  <div class="header-meta">
+    <span>📋 총 <strong>40문항</strong>/회</span>
+    <span>⏱ 제한시간 <strong>50분</strong></span>
+    <span>✅ 합격기준 <strong>평균 70점 + 과목별 40점 이상</strong></span>
+    <span>📚 과목1·과목2 각 <strong>20문항</strong></span>
+  </div>
+</div>
+<div class="exam-selector">
+  <div class="exam-tab active" onclick="showExam(7,this)">📝 제7회 모의고사</div>
+  <div class="exam-tab" onclick="showExam(8,this)">📝 제8회 모의고사</div>
+</div>
+<div class="container">
+<div id="exam7" class="exam-section">
+  <div class="info-bar">
+    <div class="info-chip">🗓 제7회 모의고사</div>
+    <div class="info-chip">문항 수: <strong>40문항</strong></div>
+    <div class="info-chip">⏱ <span id="timer7">50:00</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="prog7" style="width:0%"></div></div>
+  <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">보험법규</span><span class="sub-count">1~20번</span></div>
+  <div id="q7-s1"></div>
+  <div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">기초서류 및 생명보험 이해</span><span class="sub-count">21~40번</span></div>
+  <div id="q7-s2"></div>
+  <div class="result-card" id="result7">
+    <div class="result-icon" id="result7-icon"></div>
+    <div class="result-title" id="result7-title"></div>
+    <div class="result-grid" id="result7-grid"></div>
+  </div>
+</div>
+<div id="exam8" class="exam-section">
+  <div class="info-bar">
+    <div class="info-chip">🗓 제8회 모의고사</div>
+    <div class="info-chip">문항 수: <strong>40문항</strong></div>
+    <div class="info-chip">⏱ <span id="timer8">50:00</span></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="prog8" style="width:0%"></div></div>
+  <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">보험법규</span><span class="sub-count">1~20번</span></div>
+  <div id="q8-s1"></div>
+  <div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">기초서류 및 생명보험 이해</span><span class="sub-count">21~40번</span></div>
+  <div id="q8-s2"></div>
+  <div class="result-card" id="result8">
+    <div class="result-icon" id="result8-icon"></div>
+    <div class="result-title" id="result8-title"></div>
+    <div class="result-grid" id="result8-grid"></div>
+  </div>
+</div>
+</div>
+<div class="action-bar">
+  <button class="btn btn-secondary" onclick="resetExam()">🔄 초기화</button>
+  <button class="btn btn-primary" onclick="submitExam()">✅ 채점하기</button>
+  <div class="score-display" id="score-display"></div>
+</div>
+<script>
+const exams={
+  7:{s1:[{n:1,q:"[생명보험 과목1 제7회 1번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 1번 해설 예정."},
+      {n:2,q:"[생명보험 과목1 제7회 2번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 2번 해설 예정."},
+      {n:3,q:"[생명보험 과목1 제7회 3번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 3번 해설 예정."},
+      {n:4,q:"[생명보험 과목1 제7회 4번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 4번 해설 예정."},
+      {n:5,q:"[생명보험 과목1 제7회 5번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 5번 해설 예정."},
+      {n:6,q:"[생명보험 과목1 제7회 6번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 6번 해설 예정."},
+      {n:7,q:"[생명보험 과목1 제7회 7번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 7번 해설 예정."},
+      {n:8,q:"[생명보험 과목1 제7회 8번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 8번 해설 예정."},
+      {n:9,q:"[생명보험 과목1 제7회 9번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 9번 해설 예정."},
+      {n:10,q:"[생명보험 과목1 제7회 10번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 10번 해설 예정."},
+      {n:11,q:"[생명보험 과목1 제7회 11번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 11번 해설 예정."},
+      {n:12,q:"[생명보험 과목1 제7회 12번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 12번 해설 예정."},
+      {n:13,q:"[생명보험 과목1 제7회 13번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 13번 해설 예정."},
+      {n:14,q:"[생명보험 과목1 제7회 14번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 14번 해설 예정."},
+      {n:15,q:"[생명보험 과목1 제7회 15번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 15번 해설 예정."},
+      {n:16,q:"[생명보험 과목1 제7회 16번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 16번 해설 예정."},
+      {n:17,q:"[생명보험 과목1 제7회 17번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 17번 해설 예정."},
+      {n:18,q:"[생명보험 과목1 제7회 18번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 18번 해설 예정."},
+      {n:19,q:"[생명보험 과목1 제7회 19번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 19번 해설 예정."},
+      {n:20,q:"[생명보험 과목1 제7회 20번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 20번 해설 예정."}],s2:[{n:21,q:"[생명보험 과목2 제7회 21번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 21번 해설 예정."},
+      {n:22,q:"[생명보험 과목2 제7회 22번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 22번 해설 예정."},
+      {n:23,q:"[생명보험 과목2 제7회 23번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 23번 해설 예정."},
+      {n:24,q:"[생명보험 과목2 제7회 24번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 24번 해설 예정."},
+      {n:25,q:"[생명보험 과목2 제7회 25번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 25번 해설 예정."},
+      {n:26,q:"[생명보험 과목2 제7회 26번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 26번 해설 예정."},
+      {n:27,q:"[생명보험 과목2 제7회 27번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 27번 해설 예정."},
+      {n:28,q:"[생명보험 과목2 제7회 28번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 28번 해설 예정."},
+      {n:29,q:"[생명보험 과목2 제7회 29번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 29번 해설 예정."},
+      {n:30,q:"[생명보험 과목2 제7회 30번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 30번 해설 예정."},
+      {n:31,q:"[생명보험 과목2 제7회 31번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 31번 해설 예정."},
+      {n:32,q:"[생명보험 과목2 제7회 32번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 32번 해설 예정."},
+      {n:33,q:"[생명보험 과목2 제7회 33번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 33번 해설 예정."},
+      {n:34,q:"[생명보험 과목2 제7회 34번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 34번 해설 예정."},
+      {n:35,q:"[생명보험 과목2 제7회 35번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 35번 해설 예정."},
+      {n:36,q:"[생명보험 과목2 제7회 36번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 36번 해설 예정."},
+      {n:37,q:"[생명보험 과목2 제7회 37번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 37번 해설 예정."},
+      {n:38,q:"[생명보험 과목2 제7회 38번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 38번 해설 예정."},
+      {n:39,q:"[생명보험 과목2 제7회 39번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 39번 해설 예정."},
+      {n:40,q:"[생명보험 과목2 제7회 40번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제7회 40번 해설 예정."}]},  8:{s1:[{n:1,q:"[생명보험 과목1 제8회 1번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 1번 해설 예정."},
+      {n:2,q:"[생명보험 과목1 제8회 2번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 2번 해설 예정."},
+      {n:3,q:"[생명보험 과목1 제8회 3번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 3번 해설 예정."},
+      {n:4,q:"[생명보험 과목1 제8회 4번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 4번 해설 예정."},
+      {n:5,q:"[생명보험 과목1 제8회 5번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 5번 해설 예정."},
+      {n:6,q:"[생명보험 과목1 제8회 6번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 6번 해설 예정."},
+      {n:7,q:"[생명보험 과목1 제8회 7번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 7번 해설 예정."},
+      {n:8,q:"[생명보험 과목1 제8회 8번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 8번 해설 예정."},
+      {n:9,q:"[생명보험 과목1 제8회 9번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 9번 해설 예정."},
+      {n:10,q:"[생명보험 과목1 제8회 10번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 10번 해설 예정."},
+      {n:11,q:"[생명보험 과목1 제8회 11번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 11번 해설 예정."},
+      {n:12,q:"[생명보험 과목1 제8회 12번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 12번 해설 예정."},
+      {n:13,q:"[생명보험 과목1 제8회 13번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 13번 해설 예정."},
+      {n:14,q:"[생명보험 과목1 제8회 14번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 14번 해설 예정."},
+      {n:15,q:"[생명보험 과목1 제8회 15번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 15번 해설 예정."},
+      {n:16,q:"[생명보험 과목1 제8회 16번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 16번 해설 예정."},
+      {n:17,q:"[생명보험 과목1 제8회 17번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 17번 해설 예정."},
+      {n:18,q:"[생명보험 과목1 제8회 18번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 18번 해설 예정."},
+      {n:19,q:"[생명보험 과목1 제8회 19번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 19번 해설 예정."},
+      {n:20,q:"[생명보험 과목1 제8회 20번 문제] 보험법규 관련 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 20번 해설 예정."}],s2:[{n:21,q:"[생명보험 과목2 제8회 21번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 21번 해설 예정."},
+      {n:22,q:"[생명보험 과목2 제8회 22번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 22번 해설 예정."},
+      {n:23,q:"[생명보험 과목2 제8회 23번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 23번 해설 예정."},
+      {n:24,q:"[생명보험 과목2 제8회 24번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 24번 해설 예정."},
+      {n:25,q:"[생명보험 과목2 제8회 25번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 25번 해설 예정."},
+      {n:26,q:"[생명보험 과목2 제8회 26번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 26번 해설 예정."},
+      {n:27,q:"[생명보험 과목2 제8회 27번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 27번 해설 예정."},
+      {n:28,q:"[생명보험 과목2 제8회 28번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 28번 해설 예정."},
+      {n:29,q:"[생명보험 과목2 제8회 29번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 29번 해설 예정."},
+      {n:30,q:"[생명보험 과목2 제8회 30번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 30번 해설 예정."},
+      {n:31,q:"[생명보험 과목2 제8회 31번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 31번 해설 예정."},
+      {n:32,q:"[생명보험 과목2 제8회 32번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 32번 해설 예정."},
+      {n:33,q:"[생명보험 과목2 제8회 33번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 33번 해설 예정."},
+      {n:34,q:"[생명보험 과목2 제8회 34번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 34번 해설 예정."},
+      {n:35,q:"[생명보험 과목2 제8회 35번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 35번 해설 예정."},
+      {n:36,q:"[생명보험 과목2 제8회 36번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 36번 해설 예정."},
+      {n:37,q:"[생명보험 과목2 제8회 37번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 37번 해설 예정."},
+      {n:38,q:"[생명보험 과목2 제8회 38번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 38번 해설 예정."},
+      {n:39,q:"[생명보험 과목2 제8회 39번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 39번 해설 예정."},
+      {n:40,q:"[생명보험 과목2 제8회 40번 문제] 기초서류 및 생명보험 이해 출제 예정 문항입니다.",c:["보기 1","보기 2","보기 3","보기 4"],a:0,ex:"제8회 40번 해설 예정."}]},
+};
+const exam_nums=[7,8];
+</script>
+<script>
+let currentExam=7;
+let timers={},timerIntervals={},answered={},submitted={};
+[7,8].forEach(n=>{answered[n]={};submitted[n]=false;});
+function renderExam(n){
+  const d=exams[n];
+  ['s1','s2'].forEach(sub=>{
+    const cont=document.getElementById('q'+n+'-'+sub);
+    if(!cont)return;
+    cont.innerHTML=d[sub].map(q=>`<div class="q-block" id="qb${n}-${q.n}"><div class="q-header"><span class="q-num">${q.n}번</span><span class="q-text">${q.q}</span></div><div class="q-choices">${q.c.map((c,i)=>`<label class="choice-label" id="cl${n}-${q.n}-${i}" onclick="selectChoice(${n},${q.n},${i})"><input type="radio" name="q${n}-${q.n}" value="${i}"><span class="choice-idx">${i+1}</span><span class="choice-text">${c}</span></label>`).join('')}</div><div class="q-explain" id="ex${n}-${q.n}"><strong>해설:</strong> ${q.ex}</div></div>`).join('');
+  });
+}
+function selectChoice(exam,qn,idx){
+  if(submitted[exam])return;
+  answered[exam][qn]=idx;
+  const total=[...exams[exam].s1,...exams[exam].s2].length;
+  document.getElementById('prog'+exam).style.width=(Object.keys(answered[exam]).length/total*100)+'%';
+  for(let i=0;i<4;i++){const el=document.getElementById('cl'+exam+'-'+qn+'-'+i);if(el)el.classList.toggle('selected',i===idx);}
+}
+function showExam(n,el){
+  document.querySelectorAll('.exam-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.exam-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('exam'+n).classList.add('active');
+  el.classList.add('active');
+  currentExam=n;
+  if(!exams[n]._rendered){renderExam(n);exams[n]._rendered=true;}
+  document.getElementById('score-display').classList.remove('show');
+  startTimer(n);
+}
+function startTimer(n){
+  if(timerIntervals[n])return;
+  timers[n]=50*60;
+  timerIntervals[n]=setInterval(()=>{
+    if(submitted[n]){clearInterval(timerIntervals[n]);return;}
+    timers[n]--;
+    const m=Math.floor(timers[n]/60).toString().padStart(2,'0');
+    const s=(timers[n]%60).toString().padStart(2,'0');
+    const el=document.getElementById('timer'+n);if(el)el.textContent=m+':'+s;
+    if(timers[n]<=0){clearInterval(timerIntervals[n]);submitExam();}
+  },1000);
+}
+function submitExam(){
+  const n=currentExam;
+  if(submitted[n])return;
+  submitted[n]=true;clearInterval(timerIntervals[n]);
+  const all=[...exams[n].s1,...exams[n].s2];
+  let correct=0,s1c=0,s2c=0;
+  all.forEach(q=>{
+    const chosen=answered[n][q.n];
+    const isS1=exams[n].s1.some(x=>x.n===q.n);
+    const ok=chosen===q.a;
+    if(ok){correct++;if(isS1)s1c++;else s2c++;}
+    const ex=document.getElementById('ex'+n+'-'+q.n);if(ex)ex.classList.add('show');
+    q.c.forEach((_,i)=>{const cl=document.getElementById('cl'+n+'-'+q.n+'-'+i);if(!cl)return;cl.classList.remove('selected');if(i===q.a)cl.classList.add('correct');else if(i===chosen&&chosen!==q.a)cl.classList.add('wrong');});
+  });
+  const total=all.length,s1t=exams[n].s1.length,s2t=exams[n].s2.length;
+  const score=Math.round(correct/total*100),s1s=Math.round(s1c/s1t*100),s2s=Math.round(s2c/s2t*100);
+  const pass=score>=70&&s1s>=40&&s2s>=40;
+  const sd=document.getElementById('score-display');
+  sd.innerHTML='점수: <span class="score-num '+(pass?'score-pass':'score-fail')+'">'+score+'점</span> '+(pass?'✅합격':'❌불합격');
+  sd.classList.add('show');
+  document.getElementById('result'+n+'-icon').textContent=pass?'🎉':'😓';
+  document.getElementById('result'+n+'-title').innerHTML='<span class="'+(pass?'result-pass':'result-fail')+'">'+(pass?'합격!':'불합격')+'</span>';
+  document.getElementById('result'+n+'-grid').innerHTML='<div class="result-item"><div class="result-item-val">'+score+'점</div><div class="result-item-label">총점</div></div><div class="result-item"><div class="result-item-val">'+s1s+'점</div><div class="result-item-label">과목1</div></div><div class="result-item"><div class="result-item-val">'+s2s+'점</div><div class="result-item-label">과목2</div></div>';
+  document.getElementById('result'+n).classList.add('show');
+  document.getElementById('result'+n).scrollIntoView({behavior:'smooth',block:'center'});
+}
+function resetExam(){
+  const n=currentExam;
+  answered[n]={};submitted[n]=false;clearInterval(timerIntervals[n]);timerIntervals[n]=null;exams[n]._rendered=false;
+  const sec=document.getElementById('exam'+n);
+  sec.innerHTML=`<div class="info-bar"><div class="info-chip">🗓 제${n}회 모의고사</div><div class="info-chip">문항 수: <strong>40문항</strong></div><div class="info-chip">⏱ <span id="timer${n}">50:00</span></div></div><div class="progress-wrap"><div class="progress-bar" id="prog${n}" style="width:0%"></div></div><div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">보험법규</span><span class="sub-count">1~20번</span></div><div id="q${n}-s1"></div><div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">기초서류 및 생명보험 이해</span><span class="sub-count">21~40번</span></div><div id="q${n}-s2"></div><div class="result-card" id="result${n}"><div class="result-icon" id="result${n}-icon"></div><div class="result-title" id="result${n}-title"></div><div class="result-grid" id="result${n}-grid"></div></div>`;
+  renderExam(n);exams[n]._rendered=true;
+  document.getElementById('score-display').classList.remove('show');
+  startTimer(n);
+}
+renderExam(7);exams[7]._rendered=true;startTimer(7);
+</script>
+</body>
+</html>

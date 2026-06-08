@@ -49,8 +49,8 @@ const APP = {
   // ── 인수조건 조회
   getCondition(code, companyId) {
     const cond = this.conditions[code];
-    if (!cond) return { status: 'ok', note: '인수 가능(확인 필요)', score: 3 };
-    return cond[companyId] || { status: 'ok', note: '확인 필요', score: 3 };
+    if (!cond) return { status: 'conditional', note: '원본 기준 미등록 - 회사별 가이드 확인 필요', score: 2 };
+    return cond[companyId] || { status: 'conditional', note: '회사별 원본 확인 필요', score: 2 };
   },
 
   // ── 선택 질환 추가/제거

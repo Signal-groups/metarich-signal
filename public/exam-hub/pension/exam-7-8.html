@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퇴직연금모집인 모의고사 7~10회</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+:root{
+  --navy:#08111e;--navy2:#0e1b2a;--blue:#12335e;--blue2:#174278;
+  --accent:#c87820;--accent2:#a05a10;
+  --text:#d0daea;--muted:#607090;
+  --surface:#121f30;--surface2:#182a3e;
+  --border:rgba(255,255,255,0.07);
+  --green:#16a34a;--red:#dc2626;--yellow:#ca8a04;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--text);font-size:14px;line-height:1.7;}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#040c18 0%,#0c1a28 50%,#132038 100%);border-bottom:2px solid var(--accent);padding:32px 40px 24px;position:relative;overflow:hidden;}
+.header::before{content:'';position:absolute;bottom:-80px;right:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(200,120,32,0.07) 0%,transparent 70%);}
+.header-badge{display:inline-block;background:var(--accent);color:#000;font-size:10px;font-weight:700;letter-spacing:2px;padding:3px 10px;border-radius:2px;margin-bottom:10px;}
+.header h1{font-size:24px;font-weight:900;color:#fff;margin-bottom:8px;}
+.header-meta{color:var(--muted);font-size:12px;display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;}
+.header-meta strong{color:var(--accent);}
+.final-badge{display:inline-block;background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.4);color:#fca5a5;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;margin-top:8px;margin-left:8px;}
+.pdf-badge{display:inline-block;background:rgba(22,163,74,0.2);border:1px solid rgba(22,163,74,0.4);color:#86efac;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;margin-top:8px;}
+
+/* NAV */
+.exam-selector{display:flex;gap:0;background:var(--navy2);border-bottom:1px solid var(--border);overflow-x:auto;position:sticky;top:0;z-index:200;}
+.exam-tab{padding:13px 24px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;user-select:none;}
+.exam-tab:hover{color:var(--text);background:rgba(255,255,255,0.02);}
+.exam-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* CONTAINER */
+.container{max-width:880px;margin:0 auto;padding:28px 18px 80px;}
+.exam-section{display:none;}
+.exam-section.active{display:block;}
+
+/* INFO BAR */
+.info-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+.info-chip{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;color:var(--muted);}
+.info-chip strong{color:var(--accent);}
+.answered-count{font-size:12px;color:var(--muted);padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;}
+
+/* PROGRESS */
+.progress-wrap{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:18px;}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .3s;}
+
+/* SUBJECT DIVIDER */
+.subject-divider{background:linear-gradient(90deg,var(--blue) 0%,var(--blue2) 100%);padding:11px 18px;border-radius:8px;margin:24px 0 12px;display:flex;align-items:center;gap:12px;}
+.sub-num{background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;color:#fff;letter-spacing:1px;}
+.sub-title{font-size:13px;font-weight:700;color:#fff;}
+.sub-count{margin-left:auto;font-size:11px;color:rgba(255,255,255,0.6);}
+
+/* QUESTION */
+.q-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:10px;transition:border-color .2s;}
+.q-block:hover{border-color:rgba(200,120,32,0.2);}
+.q-header{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;}
+.q-num{background:var(--blue2);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.q-text{font-size:13px;color:var(--text);line-height:1.7;flex:1;}
+.q-choices{display:flex;flex-direction:column;gap:5px;}
+.choice-label{display:flex;align-items:flex-start;gap:9px;padding:8px 11px;border-radius:6px;border:1px solid var(--border);cursor:pointer;transition:all .15s;background:var(--surface2);}
+.choice-label:hover{border-color:rgba(200,120,32,0.4);background:rgba(200,120,32,0.05);}
+.choice-label.selected{border-color:var(--accent);background:rgba(200,120,32,0.08);}
+.choice-label.correct{border-color:var(--green)!important;background:rgba(22,163,74,0.1)!important;color:#86efac!important;}
+.choice-label.wrong{border-color:var(--red)!important;background:rgba(220,38,38,0.1)!important;color:#fca5a5!important;}
+.choice-idx{font-size:11px;font-weight:700;color:var(--muted);width:14px;flex-shrink:0;margin-top:2px;}
+.choice-text{font-size:12.5px;line-height:1.6;}
+.q-explain{display:none;margin-top:9px;padding:9px 12px;background:rgba(200,120,32,0.06);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;font-size:12px;color:var(--muted);line-height:1.8;}
+.q-explain strong{color:var(--accent);}
+.q-explain.show{display:block;}
+
+/* ACTION BAR */
+.action-bar{position:sticky;bottom:0;background:var(--navy2);border-top:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;z-index:100;}
+.btn{padding:9px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:inherit;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#d48830;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.score-display{margin-left:auto;font-size:12px;color:var(--muted);display:none;}
+.score-display.show{display:block;}
+.score-num{font-size:18px;font-weight:900;color:var(--accent);}
+.score-pass{color:var(--green);}
+.score-fail{color:var(--red);}
+
+/* RESULT */
+.result-card{display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:20px;text-align:center;}
+.result-card.show{display:block;}
+.result-icon{font-size:44px;margin-bottom:10px;}
+.result-title{font-size:20px;font-weight:900;margin-bottom:6px;}
+.result-pass{color:var(--green);}
+.result-fail{color:var(--red);}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0;}
+.result-item{background:var(--surface2);border-radius:8px;padding:12px;}
+.result-item-val{font-size:20px;font-weight:900;color:var(--accent);margin-bottom:3px;}
+.result-item-label{font-size:11px;color:var(--muted);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--navy);}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px;}
+
+@media(max-width:640px){
+  .header{padding:20px 14px 18px;}.header h1{font-size:18px;}
+  .container{padding:16px 10px 70px;}
+  .exam-tab{padding:11px 14px;font-size:11px;}
+  .result-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">OFFICIAL MOCK EXAM</div>
+  <h1>퇴직연금모집인 검정시험<br>모의고사 7~10회</h1>
+  <div>
+    <span class="pdf-badge">📄 7·8회 — PDF 원본 문제 (1유형·2유형)</span>
+    <span class="final-badge">🎯 9·10회 — 최종 종합 모의고사</span>
+  </div>
+  <div class="header-meta">
+    <span>📋 총 <strong>40문항</strong>/회</span>
+    <span>⏱ 제한시간 <strong>50분</strong></span>
+    <span>✅ 합격 <strong>평균 70점 + 과목별 40점</strong></span>
+  </div>
+</div>
+
+<div class="exam-selector">
+  <div class="exam-tab active" onclick="showExam(7,this)">📝 제7회 (1유형 원본)</div>
+  <div class="exam-tab" onclick="showExam(8,this)">📝 제8회 (2유형 원본)</div>
+  <div class="exam-tab" onclick="showExam(9,this)">🎯 제9회 최종①</div>
+  <div class="exam-tab" onclick="showExam(10,this)">🎯 제10회 최종②</div>
+</div>
+
+<div class="container">
+  <div id="exam7" class="exam-section active">
+    <div class="info-bar">
+      <div class="info-chip">📄 제7회 — 1유형 원본</div>
+      <div class="info-chip" id="timer7-chip">⏱ <span id="timer7">50:00</span></div>
+      <div class="answered-count" id="ans7">답변: 0/40</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="prog7" style="width:0%"></div></div>
+    <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">근로자퇴직급여 보장법령의 이해</span><span class="sub-count">1~20번</span></div>
+    <div id="q7-s1"></div>
+    <div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">퇴직연금제도 모집인 준수사항 등</span><span class="sub-count">21~40번</span></div>
+    <div id="q7-s2"></div>
+    <div class="result-card" id="result7"><div class="result-icon" id="ri7"></div><div class="result-title" id="rt7"></div><div class="result-grid" id="rg7"></div></div>
+  </div>
+
+  <div id="exam8" class="exam-section">
+    <div class="info-bar">
+      <div class="info-chip">📄 제8회 — 2유형 원본</div>
+      <div class="info-chip" id="timer8-chip">⏱ <span id="timer8">50:00</span></div>
+      <div class="answered-count" id="ans8">답변: 0/40</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="prog8" style="width:0%"></div></div>
+    <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">근로자퇴직급여 보장법령의 이해</span><span class="sub-count">1~20번</span></div>
+    <div id="q8-s1"></div>
+    <div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">퇴직연금제도 모집인 준수사항 등</span><span class="sub-count">21~40번</span></div>
+    <div id="q8-s2"></div>
+    <div class="result-card" id="result8"><div class="result-icon" id="ri8"></div><div class="result-title" id="rt8"></div><div class="result-grid" id="rg8"></div></div>
+  </div>
+
+  <div id="exam9" class="exam-section">
+    <div class="info-bar">
+      <div class="info-chip">🎯 제9회 최종 종합①</div>
+      <div class="info-chip" id="timer9-chip">⏱ <span id="timer9">50:00</span></div>
+      <div class="answered-count" id="ans9">답변: 0/40</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="prog9" style="width:0%"></div></div>
+    <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">근로자퇴직급여 보장법령의 이해</span><span class="sub-count">1~20번</span></div>
+    <div id="q9-s1"></div>
+    <div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">퇴직연금제도 모집인 준수사항 등</span><span class="sub-count">21~40번</span></div>
+    <div id="q9-s2"></div>
+    <div class="result-card" id="result9"><div class="result-icon" id="ri9"></div><div class="result-title" id="rt9"></div><div class="result-grid" id="rg9"></div></div>
+  </div>
+
+  <div id="exam10" class="exam-section">
+    <div class="info-bar">
+      <div class="info-chip">🎯 제10회 최종 종합②</div>
+      <div class="info-chip" id="timer10-chip">⏱ <span id="timer10">50:00</span></div>
+      <div class="answered-count" id="ans10">답변: 0/40</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="prog10" style="width:0%"></div></div>
+    <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">근로자퇴직급여 보장법령의 이해</span><span class="sub-count">1~20번</span></div>
+    <div id="q10-s1"></div>
+    <div class="subject-divider"><span class="sub-num">과목 2</span><span class="sub-title">퇴직연금제도 모집인 준수사항 등</span><span class="sub-count">21~40번</span></div>
+    <div id="q10-s2"></div>
+    <div class="result-card" id="result10"><div class="result-icon" id="ri10"></div><div class="result-title" id="rt10"></div><div class="result-grid" id="rg10"></div></div>
+  </div>
+</div>
+
+<div class="action-bar">
+  <button class="btn btn-secondary" onclick="resetExam()">🔄 초기화</button>
+  <button class="btn btn-primary" onclick="submitExam()">✅ 채점하기</button>
+  <div class="score-display" id="score-display"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// 7회 (1유형 원본) — 해설지 정답 기반
+// ═══════════════════════════════════════════════════
+const exam7={
+sub1:[
+{n:1,q:"퇴직금 및 퇴직연금 제도에 연혁에 관한 설명으로 잘못 된 것은?",c:["퇴직금제도는 1961년 들어 30인 이상 사업장에 의무 적용하였다","퇴직연금제도는 2005년 12월 1일 도입되었다","퇴직금제도는 2010년 5인 이하 모든 사업장에 적용되었다","퇴직연금제도는 2017년 IRP 가입대상을 소득활동이 있는 모든 개인으로 확대하였다"],a:2,ex:"③ 2010년에 4인 이하 모든 사업장까지 확대됨. '5인 이하'가 아닌 '4인 이하'가 정확한 표현."},
+{n:2,q:"퇴직연금제도 도입 배경에 대한 설명으로 옳지 못한 것은?",c:["기업 도산 시 1년 퇴직금만 최우선 변제를 받을 수 있다","퇴직금제도는 연공서열적 임금체계에 적합하다","임금피크제 적용 시 퇴직금 규모가 감소할 수도 있다","퇴직금은 사외적립이 의무화되지 않아 수급권 보호가 미흡하다"],a:0,ex:"① 기업 도산 시 최종 3년분(3년간)의 퇴직금이 최우선 변제됨. '1년'이 아닌 '3년'."},
+{n:3,q:"퇴직연금제도에 대한 설명으로 맞는 것은?",c:["퇴직급여 지급재원은 사내에 예치해야 한다","이직 시 퇴직급여를 개인형 IRP로 이전해야 한다","퇴직급여는 연금으로만 수령이 가능하다","신설 사업장의 사용자는 6개월 이내에 퇴직연금제도를 설정해야 한다"],a:1,ex:"② 이직 시 퇴직급여는 IRP로 의무 이전. ① 사외 적립 의무. ③ 일시금도 가능. ④ 1년 이내 설정."},
+{n:4,q:"3층보장제도에 대한 설명으로 맞는 것은?",c:["1층:공적연금, 2층:개인연금, 3층:퇴직연금","1층:퇴직연금, 2층:공적연금, 3층:개인연금","1층:공적연금, 2층:퇴직연금, 3층:개인연금","1층:개인연금, 2층:퇴직연금, 3층:공적연금"],a:2,ex:"③ 1층=공적연금, 2층=퇴직연금, 3층=개인연금."},
+{n:5,q:"노후대비 은퇴설계에 대한 설명으로 틀린것은?",c:["은퇴설계시 우선적으로 고려해야하는 소득원은 공적연금과 퇴직연금이다","공적연금은 소비자물가 상승률을 감안해 매년 연금급여를 조정한다","정부는 은퇴설계를 지원하기 위해 '통합연금포털'을 구축하였다","우리나라의 퇴직연금 소득대체율은 노후 소득보장 기능을 하기에 충분하다"],a:3,ex:"④ 우리나라 퇴직연금 소득대체율은 13% 수준으로 상당히 낮은 편. '충분'하지 않음."},
+{n:6,q:"퇴직급여보장법 용어에 대한 설명으로 틀린 것은?",c:["사업주는 사업을 책임지고 경영하는 주체를 말하며 법인이나 기업의 주인인 개인을 말한다","평균임금은 이를 산정하여야 할 사유가 발생한 날 이전 3개월 동안에 그 근로자에게 지급된 임금의 총액을 그 기간의 총 일수로 나눈 금액을 말한다","급여란 퇴직급여제도나 개인형퇴직연금제도에 의해 근로자에게 지급되는 임금을 말한다","근로자란 직업의 종류와 관계없이 임금을 목적으로 사업이나 사업장에 근로를 제공하는 자이다"],a:2,ex:"③ 급여는 '임금'이 아닌 '금여(급부)'를 말함. 급여란 연금 또는 일시금으로 지급되는 금액."},
+{n:7,q:"퇴직급여보장법 적용 배제 대상이 아닌 경우는?",c:["동거하는 친족만을 사용하는 사업장","가구 내 고용활동을 하는 가사사용인","국내에 본사가 있고 지점 등이 국외 있는 경우","특별법 적용자"],a:2,ex:"③ 본사가 국내에 있는 경우 근기법 적용 대상. 국외 지점이 있어도 국내 본사는 적용됨."},
+{n:8,q:"소액체당금제도에 대한 설명으로 틀린 것은?",c:["확정판결을 받으면 정부가 퇴직 전 3개월의 체불임금 중 최대 300만원까지 우선 지급하고 있다","정부가 지급한 금액에 대해서는 사업주에게 구상권을 행사하여 변제금을 청구한다","임금이나 퇴직금을 지급받지 못하고 퇴직한 근로자들이 사업주에게 소송을 제기할 수 있다","소액체당금 제도는 2015년 7월 1일부터 도입 시행되고 있다"],a:0,ex:"① 2017년 7월 1일 이후부터 최대 400만원으로 확대됨. '300만원'은 변경 전 금액."},
+{n:9,q:"퇴직연금제도의 적립금 부족 해소방법에 대한 설명으로 틀린 것은?",c:["적립금이 최소적립금의 95% 수준에 미치지 못하는 경우 적립금 부족을 해소해야 한다","사용자는 적립금 부족을 2년 이내에 균등하게 해소할 수 있도록 계획서를 작성하여야 한다","사용자는 재정검증 결과를 통보받은 날부터 60일 이내에 재정안정화 계획서를 통보해야 한다","재정안정화 계획서를 작성하지 아니하거나, 근로자 대표 또는 퇴직연금 사업자에게 통보하지 아니하는 경우 500만원 이하의 과태료가 부과 될 수 있다"],a:1,ex:"② 3년 이내에 균등하게 해소. '2년'이 아닌 '3년'."},
+{n:10,q:"확정급여형 퇴직연금의 급여에 대한 설명으로 옳지 않은 것은?",c:["확정급여형에서는 연금 또는 일시금으로 지급된다","가입자가 연금으로 지급받기 위해서는 55세 이상이어야 한다","가입기간이 10년 이상이어야 한다","일시금은 연금수급요건을 갖추지 못한 경우에만 지급한다"],a:3,ex:"④ 일시금은 연금수급 요건 충족 여부와 관계없이 가입자가 원할 경우 지급 가능."},
+{n:11,q:"퇴직연금 제도설정 시 근로자 대표에 대한 설명으로 틀린 것은?",c:["근로자의 과반수가 가입한 노동조합이란 사용자에 해당하는 자를 제외한 일반 근로자의 과반수 이상이 가입한 노동조합을 말한다","과반수 미만의 근로자가 가입한 노동조합은 근로자 대표의 권한이 없다","노조위원장을 대신하여 노동조합 대의원 또는 총회의 과반수 동의는 근로자 대표 동의가 아니다","노사협의회의 근로자 위원은 원칙적으로 근로자 대표가 될 수 있다"],a:3,ex:"④ 노사협의회의 근로자 위원은 근로자 대표가 되려면 별도의 위임이나 대표권을 확보해야 함. 원칙적으로 대표 아님."},
+{n:12,q:"다음 중 평균임금에 대한 설명으로 틀린 것은?",c:["평균임금이 그 근로자의 통상임금보다 저액일 경우에는 그 통상임금액을 평균임금으로 한다","평균임금 '선정사유 발생일 이전 3월간'은 사유가 발생한 날부터 소급하는 역법상의 3월이다","평균임금 산정 시, 업무상 부상, 질병 기간은 제외한다","격월 또는 분기로 지급되는 상여금 등은 1년 분의 상여금과 연차휴가미사용수당 금액의 3/12을 산입하여야 한다"],a:1,ex:"② '선정사유 발생한 날'은 포함하지 않음. 발생한 날 이전 3개월."},
+{n:13,q:"퇴직연금 가입자에 대한 교육 주체로 틀린 것은?",c:["확정급여형 가입자에 대한 교육의무는 사용자에게 있다","확정기여형 가입자에 대한 교육의무는 퇴직연금사업자에게 있다","IRP 가입자에 대한 교육의무는 퇴직연금사업자에게 있다","확정급여형 가입자에 대한 교육은 퇴직연금사업자에게 위탁할 수 있다"],a:1,ex:"② DC형 가입자 교육의무 주체 = 사용자. 퇴직연금사업자가 아님. 위탁은 가능하지만 의무 주체는 사용자."},
+{n:14,q:"퇴직급여 지급 기한에 대한 설명으로 잘못된 것은?",c:["퇴직급의 소멸시효는 별도 중단사유가 없는 한 퇴직일로부터 5년간 행사하지 않으면 소멸된다","사용자는 가입자가 퇴직하는 날로부터 14일 이내에 퇴직급여를 지급하여야 한다","퇴직급여 청구권자는 퇴직하는 근로자 본인이다","근로자가 사망한 경우에는 해당 근로자의 재산 상속인이 수급권자가 된다"],a:0,ex:"① 퇴직급여 소멸시효 = 3년. '5년'이 아님."},
+{n:15,q:"확정급여형 퇴직연금제도의 부담금 종류가 아닌 것은?",c:["표준부담금","보충부담금","추가부담금","특별부담금"],a:2,ex:"③ 추가부담금 = 확정기여형(DC)에서 가입자가 추가 납입하는 부담금. DB형 부담금 종류: 표준부담금, 보충부담금, 특별부담금."},
+{n:16,q:"개인형 퇴직연금제도로의 이전 예외 사유가 아닌 것은?",c:["가입자가 55세 이후에 퇴직하여 급여를 받는 경우","담보로 대출받은 금액 등을 상환하기 위한 경우","퇴직급여액이 고용노동부장관이 정하는 금액(현재 300만원) 이하인 경우","가입자가 개인형 퇴직연금제도의 계정을 지정하지 않으면 개인급여통장으로 이전한다"],a:3,ex:"④ IRP 계정 미지정 시 퇴직연금사업자가 운영하는 계정으로 이전됨(개인급여통장 아님)."},
+{n:17,q:"확정기여형 퇴직연금에서 적립금의 운용방법에 대한 설명으로 옳지 않은 것은?",c:["퇴직연금사업자가 분기에 1회 이상 3개 이상의 서로 다른 운영방법을 제시한다","운용방법의 차이는 위험과 수익구조에 따라 이루어 진다","운용방법은 가입자가 선택한다","가입자는 반기에 1회 이상 적립금의 운용방법을 변경할 수 있다"],a:0,ex:"① 퇴직연금사업자는 '반기'에 1회 이상 3개 이상 운용방법을 제시해야 함. '분기'가 아님."},
+{n:18,q:"확정급여형 퇴직연금에서 위험자산의 투자한도 중 거리가 먼 것은?",c:["국내 상장주식에의 투자한도는 70% 이내이다","주식편입비중 40% 이하인 펀드는 위험자산 투자한도를 100%까지 투자 가능하다","혼합형 간접투자증권은 투자 가능하다","동일법인 등이 발행한 증권의(집합투자증권 제외) 투자한도는 사용자별 적립금의 20% 이내에서 투자가 가능하다"],a:3,ex:"④ 동일법인 발행 증권 투자한도 = 10% 이내. '20%'가 아님."},
+{n:19,q:"원리금 보장상품의 예금자 보호에 대한 설명으로 틀린 것은?",c:["DC형 퇴직연금과 IRP에 한해 예금과 금리연동형, 이율보증형보험은 예금자보호 대상이다","ELB, DLB, RP등은 예금자 보호의 적용을 받지 않는다","DB형의 경우도 원리금보장보험은 예금자보호 대상이다","퇴직연금 외 예금자보호대상 상품과 퇴직연금 원리금보장상품에 각각 별도로 5천만원의 예금자 보호를 적용하고 있다"],a:2,ex:"③ DB형은 예금자보호 대상이 아님. DC형과 IRP에 한해 원리금보장상품이 예금자보호 대상."},
+{n:20,q:"퇴직연금제에 가입 후 자산관리를 하면서 몇 %의 수익률을 잡아야 하는가가 방향타 역할을 하는 법칙은?",c:["72의 법칙","증액투자의 법칙","100-나이의 법칙","-50 = +100의 법칙"],a:0,ex:"① 72의 법칙: 72÷투자수익률=자산이 2배 되는 기간. 목표 수익률 설정의 방향타 역할."}
+],
+sub2:[
+{n:21,q:"퇴직연금 제도 모집인이 수행할 수 없는 업무는?",c:["가입자의 편의를 도모하기 위한 운용지시서의 대리작성","퇴직연금 도입을 고려 중인 사용자를 퇴직연금사업자에게 소개","가입자의 질의 사항에 대한 퇴직연금 사업자의 답변 전달","IRP 가입을 검토 중인 자영업자를 퇴직연금 사업자에게 소개"],a:0,ex:"① 어떤 경우에도 운용지시서를 대리 작성할 수 없음. 소개·전달·안내는 허용 업무."},
+{n:22,q:"다음 중 퇴직연금제도 모집인이 될 수 없는 자는?",c:["보험설계사와 개인인 보험대리점으로 해당 분야 1년 이상 경력자","등록된 투자권유 대행인으로서 해당분야 1년 이상 경력자","고용노동부장관이 퇴직연금제도에 관한 전문성이 있다고 인정하는 자","퇴직연금 사업자의 임직원으로 서면계약으로 모집업무를 위탁받은 자"],a:3,ex:"④ 임직원은 모집인이 아닌 퇴직연금사업자의 당사자임. 임직원은 모집인 자격 불가."},
+{n:23,q:"퇴직연금 모집인 교육요건으로 맞게 설명한 것은?",c:["소정 교육시간의 100분의 70 이상 출석하면 이수할 수 있다","검정시험 합격 기준은 100점 만점에 각 과목 40점 이상 전 과목 평균 80점 이상이다","보수교육은 매 2년이 되는 날로부터 6개월 이내에 받아야 한다","보수교육 시간은 20시간 이상이다"],a:2,ex:"③ 보수교육 = 매 2년이 되는 날로부터 6개월 이내, 10시간 이상. ① 80% 이상 출석. ② 평균 70점. ④ 10시간 이상."},
+{n:24,q:"퇴직연금 모집인 등록취소에 대하여 잘못 설명한 것은?",c:["등록이 취소된 자는 취소된 날로부터 2년이 경과되어야 다시 모집인이 될 수 있다","모집인 등록이 취소되는 사유는 모집인 요건을 갖추기 못하게 된 때이다","위탁받은 업무를 다른 자에게 다시 위탁하는 경우 모집인 등록이 취소된다","퇴직여금제도 모집인의 준수사항을 위반한 경우 모집인 등록이 취소된다"],a:0,ex:"① 등록 취소 후 3년이 경과해야 다시 모집인 가능. '2년'이 아닌 '3년'."},
+{n:25,q:"퇴직연금 모집인 준수사항으로 맞는 것은?",c:["특정 퇴직연금사업자와 모집업무 위탁계약을 체결하는 행위","사용자에게 고마움의 표시로 골프접대를 하는 행위","가입자의 선택권 확대를 위해 3개의 사업자와 위탁계약 체결하는 행위","보험설계사로서 보험설계사 명칭을 사용한 퇴직연금 모집 행위"],a:0,ex:"① 특정(1개) 사업자와 위탁계약 체결 = 허용되고 준수사항에 부합. ②③④는 모두 금지."},
+{n:26,q:"근로자퇴직급여보장법상 금지되는 특별이익에 해당하지 않는것은?",c:["가입자 또는 사용자가 부담해야 할 비용의 일부 또는 전부의 부담","계약체결을 유도하기 위한 금품의 제공","금전적 가치가 있는 경제적 편익 제공","퇴직연금사업자와 합의를 바탕으로 한 수수료의 할인을 약속하는 행위"],a:3,ex:"④ 약관(합의)에 근거한 수수료 할인 = 특별이익 해당 안 됨(허용). 나머지는 모두 금지."},
+{n:27,q:"모집인 준수사항 위반 시 벌칙에 대한 내용 중 잘못된 것은?",c:["퇴직연금 모집인으로 지켜야 할 사항을 위반한 경우 3년 동안 모집인 자격을 상실한다","등록하지 않은 상태에서 모집업무를 수행하면 2천만원 이하의 벌금에 처한다","법에서 규정하는 준수사항을 어길 경우 500만원 이하의 벌금형에 처해질 수 있다","무등록 상태에서 퇴직연금제도 모집행위를 할 경우 2년 이하의 징역에 처해질 수 있다"],a:1,ex:"② 무등록 모집 = 2년 이하 징역 또는 2천만원 이하 벌금(선택적). 1천만원이 아님."},
+{n:28,q:"퇴직연금제도 도입 및 운용단계별 핵심 활동의 연결이 바르지 않은 것은?",c:["준비단계: 제도 도입에 대한 공감대 형성하는 단계","도입단계: 퇴직연금 제도 및 사업자를 선정하는 단계","운용단계: 퇴직연금 규약을 작성하고 실질적으로 운용하는 단계","지급단계: 퇴직자 발생 시 퇴직금 지급 업무를 하는 단계"],a:2,ex:"③ 규약 작성 및 신고는 도입단계. 운용단계 = 부담금 납부, 가입자 교육, 적립금 운용 등."},
+{n:29,q:"퇴직연금 제도의 유형에 포함되지 않는 것은?",c:["확정급여형 퇴직연금제도","연합형 퇴직연금제도","확정기여형 퇴직연금제도","표준형 퇴직연금제도"],a:1,ex:"② 연합형은 없고 '혼합형' 퇴직연금제도가 있음. 또는 중소기업퇴직연금기금제도 등."},
+{n:30,q:"퇴직연금제도 지급단계에 대한 설명으로 옳지 않은 것은?",c:["사용자는 근로자의 퇴직급여를 지급할 사유가 발생한 날로부터 14일 이내에 지급하여야 한다","퇴직급여 금액이 300만원 이하인 경우 가입자에게 직접 퇴직금 지급이 가능하다","퇴직급여를 받기 위한 IRP 계좌를 근로자가 제공하지 않는 경우 기존 퇴직연금 사업자의 임의계좌로 입금된다","DC제도의 퇴직급여 지급 시 퇴직소득 원천징수 의무는 사용자(회사) 이다"],a:3,ex:"④ DC제도 퇴직급여 지급 시 원천징수 의무자 = 퇴직연금사업자(금융기관). 사용자 아님."},
+{n:31,q:"퇴직연금 제도에 관한 내용 중 틀린 것은?",c:["DB제도의 적립금이 책임준비금의 100%를 넘은 경우 사용자는 100% 초과 금액에 대하여 반환을 청구할 수 있다","확정기여형의 최소 부담금은 연간임금 총액의 12분의 1이다","DC제도에서 DB제도로의 전환은 불가능 하다","퇴직연금사업자 변경 시 반드시 서면을 통한 근로자 동의를 받아야 한다"],a:0,ex:"① 적립금이 책임준비금의 150%를 넘는 경우에 초과분 반환 청구 가능. '100%'가 아닌 '150%'."},
+{n:32,q:"퇴직연금제도 규약 작성 및 신고에 대한 설명으로 맞는 것은?",c:["고용노동부에 규약신고를 접수하면 5영업일 이내에 규약 수리여부를 확인할 수 있다","퇴직연금제도를 도입하거나 근로자에게 불리하게 변경되는 경우, 근로자 대표의 의견을 들었음을 증명하기만 하면 된다","근로자 대표는 근로자의 과반수가 가입한 노동조합이 있는 경우, 그 위원장이다","퇴직연금 사업자를 추가하는 경우 반드시 근로자의 과반수 이상이 동의해야 한다"],a:2,ex:"③ 과반수 노조 있으면 그 위원장이 근로자 대표. 규약 수리확인은 7영업일, 불리한 변경 시 동의 필요, 사업자 추가는 의견청취만 필요."},
+{n:33,q:"퇴직연금 가입자 교육에 대한 설명으로 틀린 것은?",c:["DB or DC 제도를 설정한 사용자는 퇴직연금 가입자 교육을 매년 1회 이상 실시해야 한다","사용자는 퇴직연금사업자에게 그 교육의 실시를 위탁할 수 없다","IRP제도는 퇴직연금사업자에게 교육의무가 부여된다","가입자 교육을 하지 않은 경우 사용자에 대하여 1천만원 이하의 과태료가 부과 받는다"],a:1,ex:"② 사용자는 퇴직연금사업자에게 교육 위탁 가능. '위탁할 수 없다'는 틀린 설명."},
+{n:34,q:"퇴직연금제도의 설명으로 틀린 것은?",c:["확정기여형제도의 적립금 운용책임은 회사이다","퇴직연금 규약은 근로자대표의 동의를 얻어 지방노동청에 신고한다","확정급여형제도는 평균임금으로 계산하여 퇴직금을 계산한다","IRP제도는 개인이 가입하는 퇴직연금제도이다"],a:0,ex:"① DC형 운용책임 = 개인(근로자). 회사(사용자)가 아님."},
+{n:35,q:"IRP에 대한 설명 중 틀린 것은?",c:["IRP 추가 납입의 한도는 연간 1,800만원 이다","IRP는 퇴직금 외에 추가 납입도 가능하다","만 55세 미만 퇴직 시 연금으로 수령할 수 없다","IRP 제도는 일부 해지가 가능하다"],a:3,ex:"④ IRP는 일부 해지 불가. 전액 해지만 가능. '일부 해지 가능'은 틀린 설명."},
+{n:36,q:"퇴직연금 수령시 과세 방법에 대한 설명 중 틀린 것은?",c:["퇴직연금을 연금 외 수령하는 운용수익에 대해서는 기타소득으로 과세한다","퇴직소득은 종합소득으로 과세하지 않고 별도로 분류하여 과세한다","퇴직연금을 연금으로 수령하는 경우 퇴직소득세가 과세된다","연금소득은 원칙적으로 다른 종류의 소득과 합산하여 종합소득으로 과세된다"],a:2,ex:"③ 연금으로 수령하는 경우 = 연금소득세(3~5%) 과세. 퇴직소득세는 연금 외 수령(일시금) 시 적용."},
+{n:37,q:"다음 중 소득세법상 연금계좌에 해당하지 않는 것은?",c:["연금저축","개인형퇴직연금","확정급여형퇴직연금","확정기여형퇴직연금"],a:2,ex:"③ DB형(확정급여형)은 소득세법상 연금계좌에 해당 안 됨. 연금계좌 = 연금저축+IRP+DC형."},
+{n:38,q:"IRP계좌 승계에 대한 설명으로 맞는 것은?",c:["IRP에서 과세이연이라 함은 상속세가 면제된다는 의미이다","IRP계좌는 배우자만 승계할 수 있다","IRP를 승계하려는 상속인은 피상속인 사망한 날이 속한 달의 말일부터 3개월 이내에 승계신청을 하여야 한다","2015부터 연금계좌 가입자의 사망시 연금계좌를 승계하는 것이 허용되었다"],a:1,ex:"② IRP 계좌는 배우자만 승계 가능. 과세이연≠상속세 면제, 승계기간=6개월, 허용=2013년부터."},
+{n:39,q:"IRP 가입 후 연금소득세를 적용받기 위한 연금수령 요건으로 틀린 것은?",c:["가입기간 10년 이상","55세 이후 연금개시 신청","연간 연금수령 한도 이내 수령","연금수령연차가 11년 이상인 경우 연금수령한도 미 적용"],a:0,ex:"① 연금소득세 적용 요건에 가입기간 10년 이상은 해당 없음. 5년 이상이 연금수령 가능 요건."},
+{n:40,q:"연금소득 과세방법에 대한 설명으로 틀린 것은?",c:["EET 과세체계를 취하므로 인출시 과세한다","퇴직연금 운용수익을 연금으로 받는경우 과세대상 연금소득에 포함된다","IRP에서 연금 외 수령한 퇴직소득에 대해서는 종합소득으로 합산하여 과세한다","사적연금 분리과세 한도는 연간 1200만원이다"],a:2,ex:"③ IRP에서 연금 외 수령한 퇴직소득 = 퇴직소득세로 분류과세(종합소득 합산 아님)."}
+]};
+
+// ═══════════════════════════════════════════════════
+// 8회 (2유형 원본) — 해설지 정답 기반
+// ═══════════════════════════════════════════════════
+const exam8={
+sub1:[
+{n:1,q:"우리나라 퇴직연금제도에 대한 설명으로 잘못된 것은?",c:["퇴직연금제도는 개인연금보다 늦게 도입되었다","확정급여형은 퇴직급여가 사전에 확정되어 있는 제도이다","기업형 IRP는 5인 이하 영세사업장에 대한 특례제도로서 확정기여형의 일종이다","확정기여형은 사용자가 납부해야 하는 부담금이 사전에 확정되어 있는 제도이다"],a:2,ex:"③ 기업형 IRP는 10인 이하 사업장 특례. '5인 이하'가 아닌 '10인 이하'. 개인연금은 1994년, 퇴직연금은 2005년 도입."},
+{n:2,q:"다음 중 특수직역 연금에 해당되지 않는 것은?",c:["공무원연금","근로복지연금","별정우체국직원연금","사립학교교직원연금"],a:1,ex:"② 근로복지연금은 특수직역연금이 아님. 특수직역연금: 공무원·군인·사학·별정우체국직원연금."},
+{n:3,q:"개인연금에 대한 설명으로 잘못 된 것은?",c:["세제비적격은 생명보험회사의 연금보험 상품으로 판매된다","세제적격은 세액공제 혜택을 부여하는 연금저축이 해당된다","세제비적격은 보험업법에 의해 일정 조건 충족 시 보험차익을 비과세한다","시장규모는 세제적격이 세제비적격보다 크다"],a:3,ex:"④ 시장규모는 비적격(연금보험)이 적격(연금저축)보다 큼. '세제적격이 크다'는 틀린 설명."},
+{n:4,q:"노후대비 은퇴설계에 대한 설명으로 맞는 것은?",c:["공적연금은 물가상승률을 반영해 급여액을 조정하기 때문에 가장 충실한 노후 소득원이다","은퇴설계는 기대여명이 감소함에 따라 그 필요성이 중시되고 있다","일반적으로 은퇴설계는 4단계의 과정을 거쳐 진행된다","우리나라 퇴직연금 소득대체율은 제도가 성숙한 국가에 비해 소득대체율이 높은 수준이다"],a:0,ex:"① 공적연금은 소비자물가 연계로 실질가치 유지. 기대여명 증가↑, 은퇴설계 6단계, 소득대체율 낮은 편."},
+{n:5,q:"퇴직금 및 퇴직연금 제도의 도입 순서를 맞게 설명한 것은?",c:["퇴직연금→퇴직금→국민연금퇴직금전환금","국민연금퇴직금전환금→퇴직금→퇴직연금","퇴직금→퇴직연금→국민연금퇴직금전환금","퇴직금→국민연금퇴직금전환금→퇴직연금"],a:3,ex:"④ 퇴직금(1961년)→국민연금퇴직금전환금(1988년)→퇴직연금(2005년)."},
+{n:6,q:"다음 중 근로자 퇴직급여보장법 적용범위에 대한 설명으로 맞는 것은?",c:["가구내 고용 활동을 하는 가사사용인도 이법의 적용 대상이다","계속근로기간이 1년 미만인 근로자는 예외적으로 제도의 강제 적용을 배제하고 있다","사립학교 교원 이나 청원경찰 등도 퇴직급여보장법 적용 대상이다","국외에 본사가 있는 사업장의 근로자도 이법의 적용 대상이다"],a:1,ex:"② 계속근로기간 1년 미만 = 적용 배제(강제 적용 면제). 가사사용인·특별법 적용자·국외사업장 본사는 비대상."},
+{n:7,q:"퇴직연금제 변경과 관련된 노동관계법에 대한 설명으로 틀린 것은?",c:["퇴직연금제도를 변경하는 경우 근로자 대표의 동의를 받아야 한다","퇴직연금제도를 폐지하고 퇴직금제도로 환원하는 경우 근로자 대표의 동의를 받아야 한다","퇴직연금사업자를 추가하는 경우 근로자 대표의 동의를 받아야 한다","퇴직연금제도를 최초로 설정하는 경우 근로자 대표의 동의를 받아야 한다"],a:2,ex:"③ 사업자 추가 = 불이익하지 않은 변경 → 의견청취만 필요. 동의 불필요."},
+{n:8,q:"퇴직연금 지급관련 법규에 대한 설명으로 틀린 것은?",c:["퇴직급여는 특별한 사유가 없는 한 퇴직일로부터 5년간 행사하지 않으면 소멸된다","퇴직급여의 청구권자는 퇴직하는 근로자 본인이다","급여를 지급할 사유가 발생한 날로부터 14일까지의 기간에 대해서는 10%의 지연이자를 부담한다","퇴직급여는 퇴직한 날로부터 14일 이내에 지급하여야 한다"],a:0,ex:"① 퇴직급여 소멸시효 = 3년간. '5년'이 아님. ③ 14일 내 지급 기간 중 지연이자 미부과, 이후 20% 적용."},
+{n:9,q:"퇴직금 중간정산 조건으로 잘못 설명한 것은?",c:["무주택인 근로자가 주택임대차보호법에 따른 보증금을 부담하는 경우","6개월 이상 장기요양을 필요로 하는 경우","중간정산 신청일로 부터 역산하여 5년 이내에 근로자가 채무자 희생 및 파산에 관한 법률에 따라 파산선고를 받은 경우","무주택자인 근로자가 본인이나 배우자 명의로 주택을 구입하는 경우"],a:3,ex:"④ 중간정산은 '본인 명의'로 주택을 구입하는 경우만 허용. 배우자 명의는 해당 안 됨."},
+{n:10,q:"퇴직금 중간정산제의 장단점에 대한 설명으로 옳지 않은 것은?",c:["연봉제가 도입되고 고용형태가 다양화되면서 퇴직금의 노후소득 보장이 강화되었다","근로자의 입장에서 목돈이 필요할 때 중간정산제도는 유용하다","근로자의 노후소득 보장 기능을 저해한다","중간정산을 함으로써 사용자는 퇴직 시 퇴직금 지급에 대한 부담을 분산할 수 있다"],a:0,ex:"① 중간정산 확대로 노후소득 보장 기능이 약화됨. '강화'가 아닌 '약화'."},
+{n:11,q:"다음 중 확정급여형 퇴직연금제도의 설정 요건에 관한 설명으로 옳지 않은 것은?",c:["근로자가 받을 급여수준이 사전에 확정되어야 한다","사용자는 근로자대표의 동의를 얻거나 의견을 들어야 한다","퇴직연금규약을 작성하여 고용노동부장관에게 신고해야 한다","사용자가 부담해야 할 금액이 고정되어야 한다"],a:3,ex:"④ 확정급여형에 대한 설명 아님. ④는 확정기여형의 설명. DB형은 급여수준 확정, 부담금은 유동적."},
+{n:12,q:"복수의 사용자가 참여하는 확정기여형 퇴직연금제도에 대한 설명으로 잘못된 것은?",c:["퇴직연금사업자는 표준규약을 작성해야 한다","운용관리업무 및 자산관리 업무에 관한 표준 계약서를 작성해야 한다","표준규약과 표준계약서는 고용노동부 장관에게 신고해야 한다","2011년 법 개정으로 하나의 사업장이 확정급여형 및 확정기여형 퇴직연금제도를 함께 설정할 수 있도록 되었다"],a:2,ex:"③ 표준규약과 표준계약서는 '신고'가 아닌 '승인'을 받아야 함. 고용노동부 장관에게 승인 신청."},
+{n:13,q:"사용자가 퇴직연금 급여의 지급능력을 확보하기 위하여 얼마나 적립하는 것이 좋은지를 제시하는 기준이 되는 금액은?",c:["최소적립금","기준책임준비금","표준부담금","기초율"],a:1,ex:"② 기준책임준비금 = 사용자가 급여 지급능력 확보를 위해 적립해야 할 기준 금액."},
+{n:14,q:"확정급여형 퇴직연금제도의 급여 종류에 대한 설명으로 옳은 것은?",c:["연금 또는 일시금으로 지급하되, 일시금은 연금 수급요건을 갖추치 못한 경우에만 지급된다","연금 외 일시금으로는 지급 받을 수 없다","연금 또는 일시금으로 지급하되, 연금은 일시금 수급요건을 갖추지 못한 경우에만 지급된다","연금은 55세 이상으로서 가입기간이 10년 이상인 자에게 지급한다"],a:3,ex:"④ 연금 지급: 55세 이상 + 가입기간 10년 이상. 일시금은 가입자가 원하면 받을 수 있음."},
+{n:15,q:"확정급여형 퇴직연금사업자가 적립금액 및 운용수익률 등을 가입자에게 알려야 하는 주기는?",c:["매년 2회 이상","매년 1회","매년 1회 이상","매년 4회"],a:2,ex:"③ 매년 1회 이상 통보 의무. '매년 1회' 정확히가 아닌 '이상'."},
+{n:16,q:"확정기여형 퇴직연금제도의 부담금의 납입에 대한 설명으로 옳지 않은 것은?",c:["사용자는 분기별로 1회 정기적으로 부담금을 가입자의 확정기여형 계정에 납입해야 한다","가입자는 추가부담금을 가입자의 확정기여형 퇴직연금제도 계정에 납입할 수 있다","지정기일까지 사용자가 부담금을 납입하지 않은 경우 그 다음날부터 부담금을 납입한 날까지 지연이자를 부담해야 한다","납입기일을 연장할 수 있도록 한 경우 그 연장된 기일까지 납입하지 않은 경우 기연일수에 대하여 연 40/100이내의 범위에서 지연이자를 납입해야 한다"],a:0,ex:"① DC형 부담금 납입 주기 = 매년 1회(연 1회). '분기별'이 아님."},
+{n:17,q:"사용자가 개별근로자의 동의를 받거나 근로자의 요구에 따라 개인형 퇴직연금제도를 설정할 수 있는 사업의 규모는?",c:["10명 미만","10명 이하","5명 미만","5명 이하"],a:0,ex:"① 10명 미만(=9인 이하) 사업장에서 개인의 동의나 요구로 IRP 설정 가능."},
+{n:18,q:"확정기여형 퇴직연금제도 가입자에 대한 가입자 교육에 관한 설명으로 옳지 않은 것은?",c:["서면 또는 전자우편 등을 통한 정기적인 자료의 발송","직원연수, 조회, 회의, 강의 등의 대면 교육의 실시","정보통신망을 통한 온라인 교육의 실시","해당 사업장 등에 상시 게시"],a:3,ex:"④ 상시 게시 방법은 확정기여형 가입자 교육 방법에 해당 안 됨. 사무실 게시는 확정급여형에만 해당."},
+{n:19,q:"다음 중 퇴직연금 사업자의 책무에 해당하지 않은 것은?",c:["퇴직연금제도 취급 실적을 고용노동부장관 및 금감원장에게 제출","약관 또는 표준계약서을 제정하거나 변경하는 경우 고용노동부 장관에게 보고","IRP가입자에 대한 매년 1회 이상의 가입자 교육","매년 말 적립금 운용 수익률 및 수수료를 금융위가 정하는 바에 따라 공시"],a:1,ex:"② 약관 제정·변경 시 '고용노동부 장관'이 아닌 '금융감독원장'에게 신고."},
+{n:20,q:"퇴직연금 운용상품 중 펀드에 대한 설명으로 틀린 것은?",c:["채권형펀드는 주식에는 40% 미만 투자하고, 채권에 60% 이상 투자되는 펀드이다","주식형펀드는 주식에 펀드자산의 60% 이상을 투자할 수 있는 펀드이다","주식혼합형펀드는 주식에 펀드자산의 40%~60%를 투자 할 수 있는 펀드이다","채권혼합형펀드는 주식에 펀드자산의 40% 이내에서 투자하고 나머지를 채권 등에 투자하는 펀드이다"],a:0,ex:"① 채권형 펀드 = 주식에 투자하지 않음(주식 0%). '40% 미만'이라는 설명이 틀림."}
+],
+sub2:[
+{n:21,q:"다음 중 퇴직연금제도 모집인에 대하여 규정한 법률은 무엇인가?",c:["근로기준법","근로자퇴직급여 보장법","퇴직연금법","국민연금법"],a:1,ex:"② 퇴직연금 모집인 관련 규정 = 근로자퇴직급여보장법. 퇴직연금법이라는 별도 법률은 없음."},
+{n:22,q:"다음 중 퇴직연금제도 모집인에게 허용되는 업무는?",c:["퇴직연금사업자에게 위탁받은 모집업무를 재 위탁하는 행위","퇴직연금사업자를 대리하여 계약을 체결하는 행위","허위정보에 의하여 퇴직연금제도 가입자를 모집하는 행위","퇴직연금계약 체결 이전에 적립금 운용방법에 대한 설명 및 정보를 전달하는 행위"],a:3,ex:"④ 계약 전 적립금 운용방법 설명·정보 전달 = 허용 업무. 재위탁·대리 계약·허위모집은 모두 금지."},
+{n:23,q:"퇴직연금제도 모집인 자격요건과 관련하여 다음 설명 중 틀린 것은?",c:["모집인은 둘 이상의 퇴직연금사업자와 모집업무 위탁계약을 체결할 수 없다","1년 이상의 경력이 있는 개인 보험대리점은 교육과정 등 이수요건 충속 시 모집업무 위탁계약을 체결할 수 있다","모집인 자격요건은 퇴직여금제도 모집인의 자격을 유지하는 동안에도 함께 유지되어야 한다","모집인 등록이 취소된 자는 취소된 날로부터 2년이 경과해야 다시 모집인이 될 수 있다"],a:3,ex:"④ 등록 취소 후 재등록 가능 기간 = 3년 경과 후. '2년'이 아닌 '3년'."},
+{n:24,q:"퇴직연금제도 모집인 교육과 관련한 설명 중 틀린 것은?",c:["등록교육은 등록 전 자격취득 교육을 말하며 교육 이수의 유효기간은 3년으로 한다","퇴직연금제도 모집인 교육에는 등록교육과 보수교육이 있다","등록교육 이수시간은 20시간 이상의 교육과 검정시험 평균 70점 이상 득점이다","보수교육은 모집인이 등록한 날로부터 기산, 매2년이 되는 날부터 6개월 이내에 받아야 한다"],a:0,ex:"① 등록교육 유효기간 = 2년. '3년'이 아닌 '2년'."},
+{n:25,q:"퇴직연금 모집인 보수교육에 관한 다음 설명 중 맞는 것은?",c:["모집인이 등록한 날부터 기산하여 매 2년이 되는 날 부터 3개월 이내에 받아야 한다","보수교육의 교육시간은 20시간 이상이다","보수교육 이수 후 별도의 검정시험을 통과해야 한다","보수교육은 집체교육, 인터넷원격교육 또는 혼합교육 중 하나의 방법으로 실시하면 된다"],a:3,ex:"④ 보수교육 실시 방법: 집체·인터넷원격·혼합 중 선택. 기간=6개월, 시간=10시간, 검정시험 불필요."},
+{n:26,q:"다음 퇴직연금제도 모집인의 금지행위에 대한 설명 중 틀린 것은?",c:["모집인은 허위 사실에 근거하여 모집업무를 수행하여서는 안된다","사용자 또는 가입자로부터 재산상의 가치가 있는것을 받아서는 안된다","자신이 모집업무를 위탁받은 자라는 사실을 나타내는 증표를 보여주면 안된다","모집업무의 위탁범위를 벗어나서 업무를 수행하면 안된다"],a:2,ex:"③ 모집인은 증표를 '보여줘야' 함. 보여주면 안 된다는 것은 틀린 설명."},
+{n:27,q:"퇴직연금제도 모집인이 사용자 등에게 알려야 하는 사항 중 틀린 것은?",c:["모집업무를 위반한 퇴직연금사업자의 명칭","퇴직연금 사업자로부터 부담금 수납 권한을 부여받은 경우 그러한 사실을 증명하는 서류","적립금 운용방법에 대한 지시를 대리하거나 매매할 권한을 위탁받을 수 없다는 사실","모집업무를 위탁한 퇴직연금사업자를 대리하여 계약을 체결할 권한이 없다는 사실"],a:1,ex:"① '위반한 사업자 명칭'이 아닌 '위탁한 사업자의 명칭'을 알려야 함. '위반' 표현이 오답."},
+{n:28,q:"퇴직연금제도 모집인 이외의 자에게 모집업무를 위탁한 퇴직연금사업자에 대한 처벌은?",c:["2년 이하의 징역 1천만원 이하의 벌금","2년 이하의 징역 2천만원 이하의 벌금","1년 이하의 징역 1천만원 이하의 벌금","3년 이하의 징역 2천만원 이하의 벌금"],a:0,ex:"① 비모집인에게 위탁한 사업자 처벌 = 2년 이하 징역 또는 1천만원 이하 벌금."},
+{n:29,q:"퇴직연금제도 모집인이 모집업무를 수행함에 있어 자신이 모집업무를 위탁 받은 자라는 사실 또는 증표를 상대방에게 내보여야 하는 시점은 언제인가?",c:["퇴직연금계약체결 전","모집업무 착수 시","사용인 또는 가입 예정자가 표시 또는 증표의 제시를 요구할 때","표지 또는 증표를 제시할 의무가 없음"],a:1,ex:"② 모집업무 착수 시 즉시 증표를 내보여야 함."},
+{n:30,q:"다음 중 퇴직연금제도 모집인이 할 수 있는 업무는 어느 것인가?",c:["최소적립금계산","적립금운용지시","퇴직연금제도 및 운영에 관한 사항을 설명","퇴직연금 가입자교육"],a:2,ex:"③ 제도 및 운영 관련 설명·전달 = 허용 업무. 최소적립금 계산·운용지시·가입자교육은 모집인 업무 아님."},
+{n:31,q:"퇴직연금제도 도입 및 운용 4단계 핵심 활동에 대한 내용으로 틀리게 설명한 것은?",c:["임직원의 동의를 이끌어 내는 단계는 준비단계 이다","규약을 작성 및 신고하는 것은 준비단계 이다","부담금을 납부하고 가입자 교육을 하는 것은 운용단계 이다","퇴직자 발생시 퇴직금을 지급하는 것은 지급단계 이다"],a:1,ex:"② 규약 작성 및 신고 = 도입단계. '준비단계'가 아님."},
+{n:32,q:"확정급여형 퇴직연금 제도에 대한 설명으로 잘못된 것은?",c:["근로자는 퇴직시에 정해진 퇴직금을 받는 제도이다","퇴직금이 최소 계속근로기간 1년에 대하여 30일분의 평균임금에 상당하는 금액이 되도록 하고 있다","최소적립기준보다 적은 금액을 적립하고 있다면 사전에 근로자 대표의 승인을 받아야 한다","계속근로기간 1년에 대해 30일분 평균임금을 초과하는 퇴직금을 지급할 수 있다"],a:2,ex:"③ 최소적립금 미달 시 근로자 대표 승인이 아니라 재정안정화 계획서 작성·통보 의무."},
+{n:33,q:"DB형과 DC형의 투자 수익률에 따른 퇴직급여 크기가 바른 것은?",c:["임금상승률이 투자수익률보다 크면 DB가 DC의 퇴직급여보다 크다","임금상승률이 투자수익률보다 크면 DC가 DB의 퇴직급여보다 크다","임금상승률과 투자수익률이 같으면 DB가 DC의 퇴직급여보다 크다","임금상승률, 투자수익률과 관계없이 DB와 DC의 퇴직급여는 동일하다"],a:0,ex:"① 임금상승률 > 투자수익률 → DB 유리. 투자수익률 > 임금상승률 → DC 유리."},
+{n:34,q:"표준형 퇴직연금제도에 대한 설명 중 옳지 않은 것은?",c:["모든 퇴직연금사업자는 표준형 퇴직연금제도를 제안 할 수 있다","표준형퇴직연금제도는 2012년 7월에 도입되었다","개별기업이 퇴직연금규약을 작성하고 신고할 필요가 없다","제도도입 절차가 간소하다"],a:0,ex:"① 표준형 제도 운영 = 고용노동부 장관 승인 받은 사업자만 가능. 모든 사업자 불가."},
+{n:35,q:"IRP에 대한 설명으로 잘못된 것은?",c:["퇴직급여를 IRP계좌로 이전 받은 경우 해지를 통해 일시금 수령이 가능하다","IRP로 이전한 경우 55세 이상이면 연금 수령이 가능하다","연금으로 수령하는 경우 나이에 따라 3.3%~5.5%의 연금소득세 대상이 된다","IRP 운용 시 주식혼합형 및 주식형 펀드 상품에는 60%까지만 투자가 가능하다"],a:3,ex:"④ IRP 위험자산(주식형·주식혼합형 등) 투자한도 = 70%. '60%'가 아님."},
+{n:36,q:"다음 중 퇴직연금 손비(세법상 비용)인정에 관한 설명으로 틀린 것은?",c:["확정급여형 퇴직연금은 퇴직급여추계액을 한도로 손비에 산입한다","퇴직급여추계액은 일시퇴직기준이나 보험수리기준으로 계산한 추계액 중 적은 금액으로 한다","확정기여형 퇴직연금은 회사가 퇴직연금을 납부하는 때에 전액 해당년도 손비에 산입한다","2016년도부터 사내유보에 대한 손금산입한도는 폐지 되었다"],a:1,ex:"② 퇴직급여추계액 = 일시퇴직기준과 보험수리기준 중 '큰 금액'. '적은 금액'이 아님."},
+{n:37,q:"퇴직소득세와 관련된 아래의 설명 중 옳은 것은?",c:["퇴직소득세 원천징수의무자는 퇴직소득세를 원천 징수하여 그 징수일이 속하는 달의 다음 달 10일까지 납부해야 한다","퇴직소득세는 동일한 퇴직금이라면 근속연수가 길수록 세부담이 증가한다","소득세법은 퇴직소득을 종합소득에서 제외하여 별도로 분리과세 한다","퇴직급을 지급받은 날로부터 30일 이내에 IRP로 입금하면 퇴직소득세를 환급받게 된다"],a:0,ex:"① 퇴직소득세 원천징수 후 다음달 10일까지 납부 맞음. ②근속 길수록 세부담 감소, ③퇴직소득=분류과세(맞지만 '종합소득에서 제외'가 오해 소지), ④60일 이내."},
+{n:38,q:"다음 중 세법(소득세법 시행령)상 현실적인 퇴직으로 보는 경우가 아닌 것은?",c:["개인회생, 파산, 임금피크제 시행 등","무주택자의 주택 구입이나 전세자금 대출","법인의 임원이 향후 퇴직급여를 받지 않는 조건으로 급여를 연봉제로 전환하는 경우","본인 또는 부양가족의 6개월 이상의 요양"],a:2,ex:"③ 임원 연봉제 전환 = 현실적 퇴직으로 보지 않음(2015년 이후 삭제). 나머지는 현실적 퇴직 사유."},
+{n:39,q:"확정기여형 퇴직연금의 회계처리에 대한 설명으로 틀린 것은?",c:["퇴직자 발생시 회사는 별도의 회계처리를 하지 않는다","회사가 불입한 퇴직연금부담금은 '퇴직연금 운용자산' 계정항목의 자산으로 회계처리한다","적립금 운용 수익이 발생한 경우 회사는 별도의 회계처리를 하지 않는다","회계연도 결산시 별도의 회계처리를 하지 않는다"],a:1,ex:"② DC형 납입 부담금 = 퇴직급여(비용)로 처리. '퇴직연금 운용자산' 계정은 DB형에서 사용."},
+{n:40,q:"연금계좌의 이체에 대한 설명으로 잘못된 것은?",c:["연금계좌에 있는 금액을 다른 연금계좌로 이체되는 경우 이를 인출로 보지 아니한다","연금수령 요건을 충족하는 경우 연금저축계좌와 IRP간 전액 이체시 인출로 본다","DC나 IRP의 계좌이체를 허용하되 전액을 이체하여야 한다","연금계좌의 가입일 등은 이체받은 계좌를 기준으로 적용한다"],a:1,ex:"② 연금수령 요건 충족 후 연금저축↔IRP 전액 이체 시 인출로 보지 않음. '인출로 본다'가 틀린 설명."}
+]};
+
+// 공통 엔진 (7·8회)
+const allData={7:exam7,8:exam8};
+let cur=7,ans={7:{},8:{}},sub={7:false,8:false};
+let tObj={7:null,8:null},tLeft={7:3000,8:3000};
+const IDX=['①','②','③','④'];
+
+function renderExam(n){
+  const d=allData[n];
+  ['s1','s2'].forEach((s,si)=>{
+    const c=document.getElementById('q'+n+'-'+s);if(!c)return;c.innerHTML='';
+    (si===0?d.sub1:d.sub2).forEach(q=>c.appendChild(makeQ(n,q)));
+  });
+}
+function makeQ(en,q){
+  const div=document.createElement('div');div.className='q-block';div.id='qb-'+en+'-'+q.n;
+  const hd=document.createElement('div');hd.className='q-header';
+  const num=document.createElement('span');num.className='q-num';num.textContent=q.n+'번';
+  const qt=document.createElement('span');qt.className='q-text';qt.textContent=q.q;
+  hd.appendChild(num);hd.appendChild(qt);div.appendChild(hd);
+  const cl=document.createElement('div');cl.className='q-choices';
+  q.c.forEach((ch,i)=>{
+    const lbl=document.createElement('div');lbl.className='choice-label';lbl.id='ch-'+en+'-'+q.n+'-'+i;
+    lbl.onclick=()=>selAns(en,q.n,i);
+    const idx=document.createElement('span');idx.className='choice-idx';idx.textContent=IDX[i];
+    const ct=document.createElement('span');ct.className='choice-text';ct.textContent=ch;
+    lbl.appendChild(idx);lbl.appendChild(ct);cl.appendChild(lbl);
+  });
+  div.appendChild(cl);
+  const ex=document.createElement('div');ex.className='q-explain';ex.id='ex-'+en+'-'+q.n;
+  ex.innerHTML='<strong>해설:</strong> '+q.ex;div.appendChild(ex);
+  return div;
+}
+function selAns(en,qn,ci){
+  if(sub[en])return;ans[en][qn]=ci;
+  for(let i=0;i<4;i++){const e=document.getElementById('ch-'+en+'-'+qn+'-'+i);if(e)e.classList.toggle('selected',i===ci);}
+  updProg(en);
+}
+function updProg(en){
+  const done=Object.keys(ans[en]).length;
+  const p=document.getElementById('prog'+en);if(p)p.style.width=(done/40*100)+'%';
+  const a=document.getElementById('ans'+en);if(a)a.textContent='답변: '+done+'/40';
+}
+function startTimer(n){
+  if(tObj[n])return;
+  tObj[n]=setInterval(()=>{
+    if(sub[n]){clearInterval(tObj[n]);return;}
+    tLeft[n]--;
+    const m=Math.floor(tLeft[n]/60),s=tLeft[n]%60;
+    const el=document.getElementById('timer'+n);if(el)el.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    if(tLeft[n]<=300){const c=document.getElementById('timer'+n+'-chip');if(c)c.style.color='#ef4444';}
+    if(tLeft[n]<=0){clearInterval(tObj[n]);doSubmit();}
+  },1000);
+}
+function showExam(n,tab){
+  document.querySelectorAll('.exam-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.exam-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('exam'+n).classList.add('active');
+  tab.classList.add('active');
+  cur=n;startTimer(n);
+  document.getElementById('score-display').classList.remove('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function submitExam(){doSubmit();}
+function doSubmit(){
+  const n=cur;if(sub[n])return;sub[n]=true;clearInterval(tObj[n]);
+  const d=allData[n];const allQ=[...d.sub1,...d.sub2];
+  let c1=0,c2=0;
+  allQ.forEach(q=>{
+    const u=ans[n][q.n],ok=q.a;const correct=u===ok;
+    if(q.n<=20){if(correct)c1++;}else{if(correct)c2++;}
+    for(let i=0;i<4;i++){
+      const el=document.getElementById('ch-'+n+'-'+q.n+'-'+i);if(!el)continue;
+      el.classList.remove('selected');
+      if(i===ok)el.classList.add('correct');
+      else if(i===u&&u!==ok)el.classList.add('wrong');
+    }
+    const ex=document.getElementById('ex-'+n+'-'+q.n);if(ex)ex.classList.add('show');
+  });
+  const s1=c1*5,s2=c2*5,tot=(s1+s2)/2;const pass=s1>=40&&s2>=40&&tot>=70;
+  const rc=document.getElementById('result'+n);rc.classList.add('show');
+  document.getElementById('ri'+n).textContent=pass?'🎉':'📌';
+  document.getElementById('rt'+n).innerHTML=pass?'<span class="result-pass">합격</span>':'<span class="result-fail">불합격 — 재도전!</span>';
+  document.getElementById('rg'+n).innerHTML=
+    '<div class="result-item"><div class="result-item-val" style="color:'+(s1>=40?'var(--green)':'var(--red)')+'">'+s1+'점</div><div class="result-item-label">과목1 ('+c1+'/20)</div></div>'+
+    '<div class="result-item"><div class="result-item-val" style="color:'+(s2>=40?'var(--green)':'var(--red)')+'">'+s2+'점</div><div class="result-item-label">과목2 ('+c2+'/20)</div></div>'+
+    '<div class="result-item"><div class="result-item-val">'+tot.toFixed(0)+'점</div><div class="result-item-label">평균 (기준: 70점)</div></div>';
+  rc.scrollIntoView({behavior:'smooth',block:'center'});
+  const sd=document.getElementById('score-display');
+  sd.innerHTML='<span class="score-num">'+tot.toFixed(0)+'점</span> <span class="'+(pass?'score-pass':'score-fail')+'">'+(pass?'✅ 합격':'❌ 불합격')+'</span>';
+  sd.classList.add('show');
+}
+function resetExam(){
+  const n=cur;ans[n]={};sub[n]=false;clearInterval(tObj[n]);tObj[n]=null;tLeft[n]=3000;
+  const el=document.getElementById('timer'+n);if(el)el.textContent='50:00';
+  const c=document.getElementById('timer'+n+'-chip');if(c)c.style.color='';
+  const p=document.getElementById('prog'+n);if(p)p.style.width='0%';
+  const a=document.getElementById('ans'+n);if(a)a.textContent='답변: 0/40';
+  document.getElementById('result'+n).classList.remove('show');
+  document.getElementById('score-display').classList.remove('show');
+  renderExam(n);startTimer(n);window.scrollTo({top:0,behavior:'smooth'});
+}
+window.addEventListener('DOMContentLoaded',()=>{[7,8].forEach(n=>renderExam(n));startTimer(7);});
+</script>
+</body>
+</html>

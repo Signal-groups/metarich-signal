@@ -6,7 +6,7 @@ underwriting/
 ├── index.html          ← 메인 대시보드 (UI)
 ├── vercel.json         ← Vercel 배포 설정
 ├── data/
-│   ├── companies.json  ← 보험사 정보 (10개사)
+│   ├── companies.json  ← 보험사 정보 (21개사)
 │   ├── diseases.json   ← 전체 질환 목록 (113개)
 │   ├── conditions.json ← 회사별 인수조건 ★ 주로 수정
 │   └── jobs.json       ← 직업 상해급수 (39개)
@@ -44,6 +44,11 @@ underwriting/
 {"id":"새보험사", "name":"새보험사", "type":"손해", "color":"#색상"}
 ```
 → conditions.json의 각 질병코드에도 해당 회사 항목 추가 필요
+
+## 2026-06 원본자료 점검 메모
+- 손보/생보 간편보험 예외질환 리스트 압축자료 기준 비교 대상은 21개사입니다.
+- 회사별 조건이 아직 정규화되지 않은 질환은 화면에서 `회사별 원본 확인 필요`로 표시합니다.
+- 원본자료가 확인되지 않은 회사는 비교 대상에서 제외했습니다.
 
 ## Vercel 배포
 1. GitHub 저장소에 이 폴더 업로드

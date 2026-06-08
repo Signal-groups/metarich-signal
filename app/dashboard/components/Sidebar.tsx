@@ -14,6 +14,7 @@ import {
   CarFront,
   ClipboardCheck,
   FileSearch,
+  GraduationCap,
   Home,
   Hospital,
   MessageSquareText,
@@ -30,6 +31,7 @@ import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
 import { canAccessCrm, canAccessOffice, canAccessClaim, canAccessBranding, normalizeRole, roleLabel, isApprovedUser } from "../../../lib/roles"
+import LibrarySearchPopup from "./LibrarySearchPopup"
 
 function ToolIcon({ icon }: { icon: string }) {
   const className = "h-5 w-5"
@@ -64,6 +66,8 @@ function ToolIcon({ icon }: { icon: string }) {
       return <PieChart className={className} />
     case "직원관리":
       return <Users className={className} />
+    case "시험":
+      return <GraduationCap className={className} />
     default:
       return <Search className={className} />
   }
@@ -78,7 +82,8 @@ export default function Sidebar({
   
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
-  const [isConsultModalOpen, setIsConsultModalOpen] = useState(false); 
+  const [isConsultModalOpen, setIsConsultModalOpen] = useState(false);
+  const [isLibrarySearchOpen, setIsLibrarySearchOpen] = useState(false);
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
   const currentRole = normalizeRole(user);
@@ -243,7 +248,12 @@ export default function Sidebar({
   };
 
   const openInsuranceLibrary = () => {
-    window.open(`${window.location.origin}/insurance-tools/coverage-stats`, "_blank", "noopener,noreferrer");
+    setIsLibrarySearchOpen(true);
+    setIsOpen(false);
+  };
+
+  const openExamHub = () => {
+    window.open(`${window.location.origin}/exam-hub/index.html`, "_blank", "noopener,noreferrer");
     setIsOpen(false);
   };
 
@@ -368,6 +378,14 @@ export default function Sidebar({
                 label="보험자료실"
                 active={false}
                 onClick={openInsuranceLibrary}
+              />
+
+              <NavItem
+                icon="시험"
+                label="자격시험 모의고사"
+                active={false}
+                onClick={openExamHub}
+                badge="NEW"
               />
 
               <NavItem
@@ -558,6 +576,13 @@ export default function Sidebar({
       )}
 
       {isOpen && <div onClick={() => setIsOpen(false)} className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" />}
+
+      {isLibrarySearchOpen && (
+        <LibrarySearchPopup
+          onClose={() => setIsLibrarySearchOpen(false)}
+          isApproved={isApproved}
+        />
+      )}
     </>
   );
 }

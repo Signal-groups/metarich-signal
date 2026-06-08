@@ -1,12 +1,172 @@
 [
-  {"id":"삼성화재","name":"삼성화재","type":"손해","color":"#1565C0","maxDis":5,"waitPeriod":"3개월"},
-  {"id":"DB손보","name":"DB손보","type":"손해","color":"#2E7D32","maxDis":5,"waitPeriod":"1~3개월","note":"즉시인수 215개 포함"},
-  {"id":"KB손해","name":"KB손해보험","type":"손해","color":"#E65100","maxDis":5,"waitPeriod":"1~6개월"},
-  {"id":"현대해상","name":"현대해상","type":"손해","color":"#6A1B9A","maxDis":5,"waitPeriod":"3개월","special":"2Q패스 설계 요청 필수"},
-  {"id":"NH농협손보","name":"NH농협손보","type":"손해","color":"#00695C","maxDis":4,"waitPeriod":"치료중 연기","note":"예외질환 4개까지"},
-  {"id":"메리츠화재","name":"메리츠화재","type":"손해","color":"#BF360C","maxDis":5,"waitPeriod":"7일경과"},
-  {"id":"삼성생명","name":"삼성생명","type":"생명","color":"#1A237E","maxDis":5,"waitPeriod":"즉시~5년"},
-  {"id":"한화생명","name":"한화생명","type":"생명","color":"#F57F17","maxDis":5,"waitPeriod":"3개월"},
-  {"id":"흥국생명","name":"흥국생명","type":"생명","color":"#880E4F","maxDis":5,"waitPeriod":"완치후"},
-  {"id":"미래에셋","name":"미래에셋생명","type":"생명","color":"#01579B","maxDis":5,"waitPeriod":"즉시~3개월"}
+  {
+    "id": "삼성화재",
+    "name": "삼성화재",
+    "type": "손해",
+    "color": "#1565C0",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "DB손보",
+    "name": "DB손보",
+    "type": "손해",
+    "color": "#2E7D32",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인",
+    "note": "즉시인수 2단계 포함"
+  },
+  {
+    "id": "KB손해",
+    "name": "KB손해보험",
+    "type": "손해",
+    "color": "#E65100",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "NH농협손보",
+    "name": "NH농협손보",
+    "type": "손해",
+    "color": "#00695C",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인",
+    "note": "간편 경증예외/건굿플 기준 별도 확인"
+  },
+  {
+    "id": "메리츠화재",
+    "name": "메리츠화재",
+    "type": "손해",
+    "color": "#BF360C",
+    "maxDis": 5,
+    "waitPeriod": "7일 경과 기준 확인"
+  },
+  {
+    "id": "AIG손보",
+    "name": "AIG손보",
+    "type": "손해",
+    "color": "#004C97",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "롯데손보",
+    "name": "롯데손보",
+    "type": "손해",
+    "color": "#D71920",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "하나손보",
+    "name": "하나손보",
+    "type": "손해",
+    "color": "#008485",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "한화손보",
+    "name": "한화손보",
+    "type": "손해",
+    "color": "#F37321",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "흥국화재",
+    "name": "흥국화재",
+    "type": "손해",
+    "color": "#C2185B",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "ABL생명",
+    "name": "ABL생명",
+    "type": "생명",
+    "color": "#0066B3",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "DB생명",
+    "name": "DB생명",
+    "type": "생명",
+    "color": "#00843D",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "KB라이프",
+    "name": "KB라이프생명",
+    "type": "생명",
+    "color": "#776C61",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "교보생명",
+    "name": "교보생명",
+    "type": "생명",
+    "color": "#005BAC",
+    "maxDis": 5,
+    "waitPeriod": "고지유형별 확인"
+  },
+  {
+    "id": "NH농협생명",
+    "name": "NH농협생명",
+    "type": "생명",
+    "color": "#009A44",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "라이나생명",
+    "name": "라이나생명",
+    "type": "생명",
+    "color": "#662D91",
+    "maxDis": 5,
+    "waitPeriod": "상품별 예외질환 확인"
+  },
+  {
+    "id": "미래에셋",
+    "name": "미래에셋생명",
+    "type": "생명",
+    "color": "#01579B",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "신한라이프",
+    "name": "신한라이프",
+    "type": "생명",
+    "color": "#254AA5",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "푸본현대생명",
+    "name": "푸본현대생명",
+    "type": "생명",
+    "color": "#00A0DF",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "한화생명",
+    "name": "한화생명",
+    "type": "생명",
+    "color": "#F57F17",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  },
+  {
+    "id": "흥국생명",
+    "name": "흥국생명",
+    "type": "생명",
+    "color": "#880E4F",
+    "maxDis": 5,
+    "waitPeriod": "원본 확인"
+  }
 ]
