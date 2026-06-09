@@ -339,25 +339,37 @@ export default function DashboardPage() {
 
                 <div className="mb-10 bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100">
                   {/* 보험의기준 브랜드 헤더 */}
-                  <div className="flex items-center gap-5 px-7 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-                    {/* 나침반 로고 */}
-                    <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-                      <circle cx="26" cy="26" r="24" stroke="#2d4a5a" strokeWidth="1.2" fill="none"/>
-                      <circle cx="26" cy="26" r="18" stroke="#2d4a5a" strokeWidth="0.6" strokeDasharray="2 3" fill="none"/>
-                      <text x="26" y="7.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">N</text>
-                      <text x="26" y="48.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">S</text>
-                      <text x="5.5" y="27.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">W</text>
-                      <text x="46.5" y="27.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">E</text>
-                      <polygon points="26,10 28,26 26,24 24,26" fill="#2d4a5a"/>
-                      <polygon points="26,42 28,26 26,28 24,26" fill="#9aacb8"/>
-                      <polygon points="10,26 26,24 24,26 26,28" fill="#9aacb8"/>
-                      <polygon points="42,26 26,24 28,26 26,28" fill="#2d4a5a"/>
-                      <circle cx="26" cy="26" r="2.5" fill="#2d4a5a"/>
+                  <div className="flex items-center gap-5 px-7 py-5 border-b border-slate-100 bg-gradient-to-r from-[#f0f4f8] to-white">
+                    {/* 나침반 로고 — compass rose */}
+                    <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0 drop-shadow-sm">
+                      {/* 배경 원 */}
+                      <circle cx="34" cy="34" r="33" fill="#e8eef4" stroke="#2d4a5a" strokeWidth="1.5"/>
+                      {/* 내부 장식 원 */}
+                      <circle cx="34" cy="34" r="24" stroke="#2d4a5a" strokeWidth="0.8" strokeDasharray="3 4" fill="none" opacity="0.5"/>
+                      {/* 45° 방향 점 4개 */}
+                      <circle cx="57.4" cy="10.6" r="1.5" fill="#2d4a5a" opacity="0.35"/>
+                      <circle cx="57.4" cy="57.4" r="1.5" fill="#2d4a5a" opacity="0.35"/>
+                      <circle cx="10.6" cy="57.4" r="1.5" fill="#2d4a5a" opacity="0.35"/>
+                      <circle cx="10.6" cy="10.6" r="1.5" fill="#2d4a5a" opacity="0.35"/>
+                      {/* NORTH 침 (진남색, 위쪽) */}
+                      <path d="M34 5 L37.5 31 L34 34 L30.5 31 Z" fill="#1a3a6e"/>
+                      {/* N 레이블 (북쪽 침 위) */}
+                      <text x="34" y="20" textAnchor="middle" fontSize="7" fontWeight="900" fill="white" fontFamily="Arial, sans-serif" letterSpacing="0">N</text>
+                      {/* SOUTH 침 (연한 색, 아래쪽) */}
+                      <path d="M34 63 L37.5 37 L34 34 L30.5 37 Z" fill="#7a9bb0"/>
+                      {/* EAST 침 (진남색, 오른쪽) */}
+                      <path d="M63 34 L37 30.5 L34 34 L37 37.5 Z" fill="#1a3a6e"/>
+                      {/* WEST 침 (연한 색, 왼쪽) */}
+                      <path d="M5 34 L31 30.5 L34 34 L31 37.5 Z" fill="#7a9bb0"/>
+                      {/* 중심 허브 */}
+                      <circle cx="34" cy="34" r="5" fill="#1a3a6e"/>
+                      <circle cx="34" cy="34" r="2.8" fill="#e8eef4"/>
+                      <circle cx="34" cy="34" r="1.2" fill="#1a3a6e"/>
                     </svg>
-                    <div className="w-px h-10 bg-slate-300 flex-shrink-0" />
+                    <div className="w-px h-12 bg-slate-300 flex-shrink-0" />
                     <div>
-                      <p className="font-black text-[22px] text-[#2d4a5a] tracking-tight leading-none">보험의기준</p>
-                      <p className="text-[10px] text-slate-400 tracking-[3px] font-medium mt-1">STANDARD OF INSURANCE</p>
+                      <p className="font-black text-[24px] text-[#1a3a6e] tracking-tight leading-none">보험의기준</p>
+                      <p className="text-[10px] text-slate-400 tracking-[3px] font-semibold mt-1.5">STANDARD OF INSURANCE</p>
                     </div>
                   </div>
                   {/* 타이틀 + 버튼 */}

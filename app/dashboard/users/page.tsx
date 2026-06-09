@@ -36,6 +36,7 @@ export default function StaffManagementPage() {
   const [sortBy, setSortBy] = useState<SortKey>("created_at")
   const [savingAll, setSavingAll] = useState(false)
   const [activeTab, setActiveTab] = useState<"users" | "analytics">("users")
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const loadUsers = useCallback(async () => {
     const { data, error } = await supabase
@@ -119,6 +120,48 @@ export default function StaffManagementPage() {
         return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       })
   }, [approved, companyType, headquarter, rank, search, sortBy, users])
+
+  // 같은 이름+전화번호 조합인 사용자를 중복으로 감지
+  const duplicateIds = useMemo(() => {
+    const keyMap = new Map<string, string[]>()
+    users.forEach((u) => {
+      const name = String(u.name || "").trim()
+      const phone = String(u.phone || "").replace(/[^0-9]/g, "")
+      if (!name || !phone) return
+      const key = `${name}__${phone}`
+      const existing = keyMap.get(key) || []
+      keyMap.set(key, [...existing, u.id])
+    })
+    const ids = new Set<string>()
+    keyMap.forEach((idList) => { if (idList.length > 1) idList.forEach((id) => ids.add(id)) })
+    return ids
+  }, [users])
+
+  const deleteUser = async (user: StaffUser) => {
+    const label = user.name || user.email || "이 계정"
+    const isDup = duplicateIds.has(user.id)
+    const msg = isDup
+      ? `⚠️ 중복 의심 계정입니다.\n[${label}] (${user.email})\n\n정말 삭제하시겠습니까?\n삭제 후 복구 불가합니다.`
+      : `[${label}] (${user.email})\n\n정말 삭제하시겠습니까?\n삭제 후 복구 불가합니다.`
+    if (!confirm(msg)) return
+
+    setDeletingId(user.id)
+    try {
+      const res = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: user.id, requesterId: viewer?.id }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { alert("삭제 실패: " + (json.error || "알 수 없는 오류")); return }
+      setUsers((prev) => prev.filter((u) => u.id !== user.id))
+      setSelectedIds((prev) => { const n = new Set(prev); n.delete(user.id); return n })
+    } catch {
+      alert("삭제 중 오류가 발생했습니다.")
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const onSelectChange = (id: string, checked: boolean) => {
     setSelectedIds((prev) => { const n = new Set(prev); checked ? n.add(id) : n.delete(id); return n })
@@ -257,11 +300,22 @@ export default function StaffManagementPage() {
                 {savingAll ? "일괄 저장 중..." : "현재 목록 일괄 저장 (" + filteredUsers.length.toLocaleString() + "명)"}
               </button>
             </section>
+            {duplicateIds.size > 0 && (
+              <div className="flex items-center gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <p className="text-sm font-black text-orange-700">중복 의심 계정 {duplicateIds.size}건 감지됨</p>
+                  <p className="text-xs font-bold text-orange-500">같은 이름+전화번호로 여러 계정이 가입된 경우입니다. 주황색으로 표시된 계정을 확인 후 불필요한 계정을 삭제해주세요.</p>
+                </div>
+              </div>
+            )}
             <UserTable
               users={filteredUsers} selectedIds={selectedIds}
               onSelectChange={onSelectChange} onSelectAll={onSelectAll}
               onDraftChange={(u) => setUsers((prev) => prev.map((item) => item.id === u.id ? { ...item, ...u } : item))}
               onSave={saveUser} onResetPassword={setResetUser}
+              onDelete={deleteUser}
+              duplicateIds={duplicateIds}
               viewerId={viewer?.id ?? ""}
             />
             {resetUser && (

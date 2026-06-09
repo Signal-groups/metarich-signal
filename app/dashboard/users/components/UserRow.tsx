@@ -49,7 +49,9 @@ interface UserRowProps {
   onDraftChange: (user: StaffUser) => void
   onSave: (user: StaffUser) => Promise<boolean>
   onResetPassword: (user: StaffUser) => void
+  onDelete: (user: StaffUser) => void
   viewerId: string
+  isDuplicate?: boolean
   compact?: boolean
 }
 
@@ -119,7 +121,7 @@ export function formatDate(value?: string | null) {
   return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "")
 }
 
-export default function UserRow({ user, selected, onSelectChange, onDraftChange, onSave, onResetPassword, viewerId, compact = false }: UserRowProps) {
+export default function UserRow({ user, selected, onSelectChange, onDraftChange, onSave, onResetPassword, onDelete, viewerId, isDuplicate = false, compact = false }: UserRowProps) {
   const [draft, setDraft] = useState<EditableStaffUser>(() => ({
     ...user,
     rank: toRank(user),
@@ -194,12 +196,15 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
 
   if (compact) {
     return (
-      <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <article className={`rounded-2xl border p-4 shadow-sm ${isDuplicate ? "border-orange-300 bg-orange-50" : "border-slate-200 bg-white"}`}>
         <div className="flex items-start justify-between gap-3">
           <label className="flex items-center gap-3">
             <input type="checkbox" checked={selected} onChange={(event) => onSelectChange(user.id, event.target.checked)} className="h-5 w-5 accent-[#1a3a6e]" />
             <span>
-              <span className="block text-base font-black text-slate-900">{user.name || "이름 없음"}</span>
+              <span className="block text-base font-black text-slate-900">
+                {user.name || "이름 없음"}
+                {isDuplicate && <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-black text-orange-600">⚠️ 중복의심</span>}
+              </span>
               <span className="block text-xs font-bold text-slate-400">{user.email || "-"}</span>
             </span>
           </label>
@@ -246,9 +251,10 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
           <button type="button" onClick={() => patchDraft({ is_approved: !draft.is_approved })} className={`rounded-xl px-4 py-3 text-sm font-black ${draft.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
             {draft.is_approved ? "승인 완료" : "승인 대기"}
           </button>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button type="button" onClick={save} disabled={saving} className="rounded-xl bg-[#1a3a6e] px-4 py-3 text-sm font-black text-white disabled:opacity-50">{saving ? "저장 중" : "저장"}</button>
             <button type="button" onClick={() => onResetPassword(user)} disabled={user.id === viewerId} className="rounded-xl bg-rose-500 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40">초기화</button>
+            <button type="button" onClick={() => onDelete(user)} disabled={user.id === viewerId} className="rounded-xl bg-slate-700 px-4 py-3 text-sm font-black text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40">삭제</button>
           </div>
         </div>
       </article>
@@ -256,10 +262,14 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
   }
 
   return (
-    <tr className={`${draft.is_approved ? "bg-white" : "bg-amber-50"} align-middle transition hover:bg-slate-50`}>
+    <tr className={`${isDuplicate ? "bg-orange-50" : draft.is_approved ? "bg-white" : "bg-amber-50"} align-middle transition hover:bg-slate-50`}>
       <td className="p-4"><input type="checkbox" checked={selected} onChange={(event) => onSelectChange(user.id, event.target.checked)} className="h-5 w-5 accent-[#1a3a6e]" /></td>
       <td className="p-4">
-        <p className="font-black text-slate-900">{user.name || "이름 없음"} {!draft.is_approved && <span className="ml-1 text-[12px] text-rose-500">승인대기</span>}</p>
+        <p className="font-black text-slate-900">
+          {user.name || "이름 없음"}
+          {!draft.is_approved && <span className="ml-1 text-[12px] text-rose-500">승인대기</span>}
+          {isDuplicate && <span className="ml-1.5 inline-flex items-center rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-black text-orange-600">⚠️ 중복</span>}
+        </p>
         <p className="mt-1 text-xs font-bold text-slate-400">{user.email || "-"}</p>
         <p className="mt-1 text-xs font-bold text-slate-400">{user.phone || "-"}</p>
       </td>
@@ -304,9 +314,18 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
       </td>
       <td className="p-4 text-sm font-bold text-slate-500">{formatDate(user.created_at)}</td>
       <td className="p-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button type="button" onClick={save} disabled={saving} className="rounded-xl bg-[#1a3a6e] px-4 py-2 text-[12px] font-black text-white disabled:opacity-50">{saving ? "저장 중" : "저장"}</button>
-          <button type="button" onClick={() => onResetPassword(user)} className="rounded-xl bg-rose-500 px-4 py-2 text-[12px] font-black text-white hover:bg-rose-600">초기화</button>
+          <button type="button" onClick={() => onResetPassword(user)} disabled={user.id === viewerId} className="rounded-xl bg-rose-500 px-4 py-2 text-[12px] font-black text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40">초기화</button>
+          <button
+            type="button"
+            onClick={() => onDelete(user)}
+            disabled={user.id === viewerId}
+            title={isDuplicate ? "중복 계정 — 삭제 권장" : "계정 삭제"}
+            className={`rounded-xl px-4 py-2 text-[12px] font-black text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${isDuplicate ? "animate-pulse bg-orange-500 hover:bg-orange-600" : "bg-slate-400 hover:bg-red-600"}`}
+          >
+            {isDuplicate ? "⚠️ 삭제" : "삭제"}
+          </button>
         </div>
       </td>
     </tr>

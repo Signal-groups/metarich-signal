@@ -10,6 +10,8 @@ interface UserTableProps {
   onDraftChange: (user: StaffUser) => void
   onSave: (user: StaffUser) => Promise<boolean>
   onResetPassword: (user: StaffUser) => void
+  onDelete: (user: StaffUser) => void
+  duplicateIds: Set<string>
   viewerId: string
 }
 
@@ -21,6 +23,8 @@ export default function UserTable({
   onDraftChange,
   onSave,
   onResetPassword,
+  onDelete,
+  duplicateIds,
   viewerId,
 }: UserTableProps) {
   const allSelected = users.length > 0 && users.every((user) => selectedIds.has(user.id))
@@ -46,6 +50,8 @@ export default function UserTable({
             onDraftChange={onDraftChange}
             onSave={onSave}
             onResetPassword={onResetPassword}
+            onDelete={onDelete}
+            isDuplicate={duplicateIds.has(user.id)}
             viewerId={viewerId}
             compact
           />
@@ -79,6 +85,8 @@ export default function UserTable({
                 onDraftChange={onDraftChange}
                 onSave={onSave}
                 onResetPassword={onResetPassword}
+                onDelete={onDelete}
+                isDuplicate={duplicateIds.has(user.id)}
                 viewerId={viewerId}
               />
             ))}
