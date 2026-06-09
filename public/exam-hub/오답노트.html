@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📒 오답노트 — 메타리치 시그널그룹</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Black+Han+Sans&family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+:root {
+  --primary: #1A2744;
+  --primary-light: #2D4A8A;
+  --accent: #C9A96E;
+  --accent-warm: #E8A84B;
+  --bg-dark: #0a0a0a;
+  --bg-light: #FAFAF8;
+  --bg-surface: #F5F2ED;
+  --text-primary: #111111;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --life-color: #2563eb;
+  --nonlife-color: #16a34a;
+  --variable-color: #9333ea;
+  --pension-color: #ea580c;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+  background: var(--bg-dark);
+  color: #e5e7eb;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  min-height: 100vh;
+}
+
+/* ── 헤더 ── */
+.top-nav {
+  background: rgba(10,10,10,0.95);
+  border-bottom: 1px solid rgba(201,169,110,0.15);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.top-nav h1 { font-family: 'Noto Serif KR', serif; font-size: 18px; color: var(--accent); letter-spacing: -0.3px; }
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  color: #9CA3AF; font-size: 13px; text-decoration: none;
+  padding: 6px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.2s;
+}
+.back-btn:hover { color: var(--accent); border-color: rgba(201,169,110,0.3); }
+
+/* ── 통계 바 ── */
+.stats-bar {
+  background: linear-gradient(135deg, rgba(26,39,68,0.8) 0%, rgba(10,10,10,0.9) 100%);
+  border-bottom: 1px solid rgba(201,169,110,0.1);
+  padding: 20px;
+}
+.stats-inner { max-width: 900px; margin: 0 auto; }
+.stats-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; }
+.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+@media (max-width: 640px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+.stat-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 14px 12px; text-align: center;
+  transition: all 0.2s;
+}
+.stat-card:hover { border-color: rgba(201,169,110,0.2); }
+.stat-num { font-size: 24px; font-weight: 700; color: #f3f4f6; }
+.stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.stat-card.life .stat-num { color: #60a5fa; }
+.stat-card.nonlife .stat-num { color: #4ade80; }
+.stat-card.variable .stat-num { color: #c084fc; }
+.stat-card.pension .stat-num { color: #fb923c; }
+
+/* ── 필터 탭 ── */
+.filter-section { padding: 16px 20px 0; max-width: 900px; margin: 0 auto; }
+.filter-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 0;
+}
+.filter-tab {
+  padding: 9px 16px; border-radius: 10px 10px 0 0;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.06); border-bottom: none;
+  background: rgba(255,255,255,0.03); color: #9CA3AF;
+  transition: all 0.2s;
+}
+.filter-tab:hover { color: #e5e7eb; background: rgba(255,255,255,0.06); }
+.filter-tab.active {
+  background: rgba(201,169,110,0.12);
+  border-color: rgba(201,169,110,0.25);
+  color: var(--accent);
+}
+.filter-tab[data-subject="life"].active { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.3); color: #60a5fa; }
+.filter-tab[data-subject="nonlife"].active { background: rgba(22,163,74,0.12); border-color: rgba(22,163,74,0.3); color: #4ade80; }
+.filter-tab[data-subject="variable"].active { background: rgba(147,51,234,0.12); border-color: rgba(147,51,234,0.3); color: #c084fc; }
+.filter-tab[data-subject="pension"].active { background: rgba(234,88,12,0.12); border-color: rgba(234,88,12,0.3); color: #fb923c; }
+
+/* ── 툴바 ── */
+.toolbar { padding: 14px 20px; max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.sort-select {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  color: #e5e7eb; padding: 7px 12px; border-radius: 8px; font-size: 12px;
+  font-family: 'Pretendard Variable', sans-serif; cursor: pointer;
+}
+.clear-btn {
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+  color: #f87171; padding: 7px 14px; border-radius: 8px; font-size: 12px;
+  cursor: pointer; transition: all 0.2s; font-family: 'Pretendard Variable', sans-serif;
+}
+.clear-btn:hover { background: rgba(239,68,68,0.15); }
+
+/* ── 콘텐츠 영역 ── */
+.content { max-width: 900px; margin: 0 auto; padding: 16px 20px 60px; }
+
+/* ── 빈 상태 ── */
+.empty-state {
+  text-align: center; padding: 80px 20px;
+  background: rgba(255,255,255,0.02); border-radius: 20px;
+  border: 1px dashed rgba(255,255,255,0.08);
+}
+.empty-state .big-icon { font-size: 64px; margin-bottom: 20px; }
+.empty-state h2 { font-size: 20px; color: #e5e7eb; margin-bottom: 10px; }
+.empty-state p { font-size: 14px; color: var(--text-muted); line-height: 1.8; }
+.go-exam-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 24px; padding: 12px 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: var(--accent); border-radius: 12px; text-decoration: none;
+  font-weight: 600; font-size: 14px; transition: all 0.3s;
+  border: 1px solid rgba(201,169,110,0.3);
+}
+.go-exam-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+
+/* ── 카테고리 카드 ── */
+.cat-section { margin-bottom: 12px; }
+.cat-header {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 16px 20px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
+.cat-header:hover { background: rgba(255,255,255,0.05); border-color: rgba(201,169,110,0.15); }
+.cat-header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.subj-badge {
+  flex-shrink: 0; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;
+}
+.subj-badge.life { background: rgba(37,99,235,0.2); color: #60a5fa; border: 1px solid rgba(37,99,235,0.3); }
+.subj-badge.nonlife { background: rgba(22,163,74,0.2); color: #4ade80; border: 1px solid rgba(22,163,74,0.3); }
+.subj-badge.variable { background: rgba(147,51,234,0.2); color: #c084fc; border: 1px solid rgba(147,51,234,0.3); }
+.subj-badge.pension { background: rgba(234,88,12,0.2); color: #fb923c; border: 1px solid rgba(234,88,12,0.3); }
+.cat-name { font-size: 15px; font-weight: 600; color: #f3f4f6; }
+.star-row { display: flex; gap: 2px; align-items: center; }
+.star { font-size: 16px; }
+.star.filled { color: #f59e0b; }
+.star.empty { color: rgba(255,255,255,0.15); }
+.cat-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.wrong-count { font-size: 12px; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 6px; }
+.chevron { font-size: 18px; color: var(--text-muted); transition: transform 0.3s; flex-shrink: 0; }
+.cat-section.open .chevron { transform: rotate(180deg); }
+
+/* ── 카드 컨텐츠 (질문 + 요약집) ── */
+.cat-body { display: none; padding: 4px 0 0; }
+.cat-section.open .cat-body { display: block; }
+
+/* 요약집 */
+.summary-note {
+  background: linear-gradient(135deg, rgba(26,39,68,0.6) 0%, rgba(45,74,138,0.2) 100%);
+  border: 1px solid rgba(201,169,110,0.2);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 12px 12px 0; padding: 16px 18px; margin-bottom: 8px;
+}
+.summary-note-title { font-size: 12px; color: var(--accent); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.summary-note-body { font-size: 13px; color: #d1d5db; line-height: 1.9; }
+.summary-note-body strong { color: var(--accent-warm); }
+.summary-note-body ul { padding-left: 16px; margin-top: 8px; }
+.summary-note-body ul li { margin-bottom: 5px; }
+
+/* 문제 카드 */
+.q-list { display: flex; flex-direction: column; gap: 8px; }
+.q-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 16px 18px;
+  transition: all 0.2s;
+}
+.q-card:hover { border-color: rgba(255,255,255,0.12); }
+.q-card.mastered {
+  opacity: 0.45;
+  border-color: rgba(74,222,128,0.1);
+  background: rgba(74,222,128,0.02);
+}
+.q-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.q-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px; background: rgba(201,169,110,0.1); border: 1px solid rgba(201,169,110,0.2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--accent); }
+.q-text { font-size: 14px; color: #f3f4f6; line-height: 1.7; flex: 1; }
+.master-btn {
+  flex-shrink: 0; padding: 4px 10px; border-radius: 7px; font-size: 11px; font-weight: 600;
+  background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2);
+  color: #4ade80; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  font-family: 'Pretendard Variable', sans-serif;
+}
+.master-btn:hover { background: rgba(74,222,128,0.15); }
+.master-btn.done { background: rgba(74,222,128,0.05); color: #6b7280; border-color: rgba(255,255,255,0.06); }
+.q-choices { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.choice {
+  display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px;
+  border-radius: 8px; font-size: 13px; border: 1px solid transparent;
+}
+.choice-num { flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.05); color: #9CA3AF; }
+.choice-text { line-height: 1.5; color: #9CA3AF; }
+.choice.correct { background: rgba(74,222,128,0.06); border-color: rgba(74,222,128,0.2); }
+.choice.correct .choice-num { background: rgba(74,222,128,0.2); color: #4ade80; }
+.choice.correct .choice-text { color: #d1fae5; }
+.choice.wrong-ans { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.2); }
+.choice.wrong-ans .choice-num { background: rgba(239,68,68,0.2); color: #f87171; }
+.choice.wrong-ans .choice-text { color: #fecaca; text-decoration: line-through; }
+.q-explanation {
+  background: rgba(26,39,68,0.4); border: 1px solid rgba(201,169,110,0.1);
+  border-radius: 8px; padding: 10px 12px; font-size: 12.5px;
+  color: #9CA3AF; line-height: 1.7;
+}
+.q-explanation span { color: var(--accent); font-weight: 600; margin-right: 6px; }
+.q-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.q-meta-tag { font-size: 11px; padding: 2px 8px; border-radius: 5px; background: rgba(255,255,255,0.04); color: #6b7280; }
+.wrong-count-tag { color: #fca5a5; background: rgba(239,68,68,0.08); }
+
+/* ── 스크롤바 ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* ── 토스트 ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: rgba(26,39,68,0.95); border: 1px solid rgba(201,169,110,0.3);
+  color: var(--accent); padding: 12px 20px; border-radius: 12px;
+  font-size: 13px; font-weight: 600;
+  transform: translateY(20px); opacity: 0; transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- 네비게이션 -->
+<nav class="top-nav">
+  <h1>📒 오답노트</h1>
+  <a href="index.html" class="back-btn">
+    <iconify-icon icon="solar:arrow-left-linear" width="14"></iconify-icon>
+    시험 허브로
+  </a>
+</nav>
+
+<!-- 통계 바 -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stats-title">학습 현황</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-total">0</div>
+        <div class="stat-label">총 오답</div>
+      </div>
+      <div class="stat-card life">
+        <div class="stat-num" id="stat-life">0</div>
+        <div class="stat-label">생명보험</div>
+      </div>
+      <div class="stat-card nonlife">
+        <div class="stat-num" id="stat-nonlife">0</div>
+        <div class="stat-label">손해보험</div>
+      </div>
+      <div class="stat-card variable">
+        <div class="stat-num" id="stat-variable">0</div>
+        <div class="stat-label">변액보험</div>
+      </div>
+      <div class="stat-card pension">
+        <div class="stat-num" id="stat-pension">0</div>
+        <div class="stat-label">퇴직연금</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 필터 탭 -->
+<div class="filter-section">
+  <div class="filter-tabs">
+    <div class="filter-tab active" data-subject="all" onclick="setFilter('all')">전체</div>
+    <div class="filter-tab" data-subject="life" onclick="setFilter('life')">생명보험</div>
+    <div class="filter-tab" data-subject="nonlife" onclick="setFilter('nonlife')">손해보험</div>
+    <div class="filter-tab" data-subject="variable" onclick="setFilter('variable')">변액보험</div>
+    <div class="filter-tab" data-subject="pension" onclick="setFilter('pension')">퇴직연금</div>
+  </div>
+</div>
+
+<!-- 툴바 -->
+<div class="toolbar">
+  <select class="sort-select" onchange="setSort(this.value)">
+    <option value="stars">별점 높은 순</option>
+    <option value="count">오답 많은 순</option>
+    <option value="subject">과목별</option>
+    <option value="alpha">가나다순</option>
+  </select>
+  <button class="clear-btn" onclick="clearAll()">🗑️ 전체 초기화</button>
+</div>
+
+<!-- 메인 콘텐츠 -->
+<div class="content" id="main-content"></div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =========================================
+// 1. 카테고리별 요약집 데이터
+// =========================================
+const CAT_NOTES = {
+  // ── 손해보험 과목1 (보험업법 및 관련법규) ──
+  '손해보험_계약자 보호·권리': {
+    title: '계약자 보호·권리',
+    body: `<strong>핵심 원칙:</strong> 보험계약자는 보험회사에 비해 정보 비대칭이 크므로 법률로 특별히 보호됩니다.<br><br>
+<ul>
+<li><strong>청약 철회권</strong>: 보험증권 수령일로부터 15일, 청약일로부터 30일 중 짧은 기간 내 철회 가능</li>
+<li><strong>품질보증 해지권</strong>: 보험계약 체결 후 3개월 이내 중요 사항 위반 시 해지 가능</li>
+<li><strong>민감정보 보호</strong>: 계약자 동의 없이 제3자 제공 금지</li>
+<li><strong>불공정 계약 무효</strong>: 약관법 위반 조항은 효력 없음</li>
+</ul>`
+  },
+  '손해보험_모집종사자 의무': {
+    title: '모집종사자 의무',
+    body: `<strong>보험 모집종사자는 다음 의무를 지닙니다:</strong><br><br>
+<ul>
+<li><strong>선량한 관리자 의무</strong>: 계약자 이익 우선 원칙</li>
+<li><strong>적합성 원칙</strong>: 계약자 재무 상황·니즈에 적합한 상품 권유</li>
+<li><strong>설명 의무</strong>: 보장 내용, 보험료, 해지환급금 등 핵심 사항 설명</li>
+<li><strong>기록 보존</strong>: 모집 관련 서류 5년 보존 의무</li>
+<li><strong>비밀 유지</strong>: 업무상 취득한 계약자 정보 누설 금지</li>
+</ul>`
+  },
+  '손해보험_보험모집 개념': {
+    title: '보험모집 개념',
+    body: `<strong>보험모집이란</strong> 보험계약의 체결을 중개하거나 대리하는 행위입니다.<br><br>
+<ul>
+<li><strong>모집 행위 해당</strong>: 청약 권유, 계약 체결 대리, 보험료 수령 행위</li>
+<li><strong>모집 행위 비해당</strong>: 단순 정보 제공, 광고 행위</li>
+<li><strong>모집 자격 필요</strong>: 무자격 모집 시 형사처벌 (3년 이하 징역 또는 3천만원 이하 벌금)</li>
+<li><strong>법령 근거</strong>: 보험업법 제83조~제101조</li>
+</ul>`
+  },
+  '손해보험_모집인 자격': {
+    title: '모집인 자격 요건',
+    body: `<strong>보험모집 자격 종류:</strong><br><br>
+<ul>
+<li><strong>보험설계사</strong>: 등록 후 모집 가능, 1개 보험회사 전속 원칙 (예외: 생손보 겸업)</li>
+<li><strong>보험대리점(GA)</strong>: 개인형/법인형, 여러 회사 상품 판매 가능</li>
+<li><strong>보험중개사</strong>: 독립적으로 계약자를 위해 모집, 고도의 전문성 요구</li>
+<li><strong>임직원</strong>: 보험회사 소속, 별도 등록 불필요</li>
+<li><strong>결격 사유</strong>: 금치산자, 5년 이내 금융 범죄 전력자 등</li>
+</ul>`
+  },
+  '손해보험_금지행위': {
+    title: '금지행위 ★★★ 자주 출제',
+    body: `<strong>절대 금지 행위 (암기 필수):</strong><br><br>
+<ul>
+<li><strong>허위·과장 설명</strong>: 보험금 과대 설명, 손실 축소 설명</li>
+<li><strong>부당 비교</strong>: 타사 상품 근거 없이 비교·비방</li>
+<li><strong>특별이익 제공</strong>: 보험료 할인·대납, 사은품 제공 (3만원 이하 가능)</li>
+<li><strong>보험료 대납</strong>: 계약자 보험료를 모집인이 대신 납부 금지</li>
+<li><strong>중요사항 미고지</strong>: 보장 제한 사항, 면책 조건 숨김 금지</li>
+<li><strong>통신수단 남용</strong>: 거부 의사 표시 후 재연락 금지</li>
+</ul>
+<br>📌 <strong>처벌</strong>: 1년 이하 징역 또는 1천만원 이하 벌금`
+  },
+  '손해보험_청약·철회': {
+    title: '청약과 철회',
+    body: `<strong>보험계약 청약·철회 핵심 정리:</strong><br><br>
+<ul>
+<li><strong>청약 시 고지의무</strong>: 계약자/피보험자는 중요 사항 사실대로 고지</li>
+<li><strong>청약 철회 기간</strong>: 보험증권 수령 후 15일 (단, 전화·통신 청약은 30일)</li>
+<li><strong>청약 철회 효과</strong>: 납입 보험료 3영업일 이내 환급, 이자 포함</li>
+<li><strong>철회 불가 상황</strong>: 보험기간 1개월 이하, 청약일 이미 15일 경과</li>
+<li><strong>청약 승낙 기간</strong>: 30일 이내 승낙 또는 거절 통지 (초과 시 자동 승낙)</li>
+</ul>`
+  },
+  '손해보험_모집종사자 분류': {
+    title: '모집종사자 분류',
+    body: `<strong>모집종사자 유형별 특징:</strong><br><br>
+<ul>
+<li><strong>전속설계사</strong>: 1개사 전속, 회사 지휘 감독 아래 모집</li>
+<li><strong>독립보험대리점(GA)</strong>: 여러 보험사 상품 취급, 독립적 운영</li>
+<li><strong>방카슈랑스</strong>: 은행·증권사 등 금융기관에서 보험 판매</li>
+<li><strong>텔레마케팅</strong>: 전화를 통한 보험 모집, 모집 규정 동일 적용</li>
+<li><strong>온라인 모집</strong>: 인터넷 직판, 설계사 없이 계약자 직접 청약</li>
+</ul>`
+  },
+  '손해보험_설명의무': {
+    title: '설명의무 ★★★',
+    body: `<strong>설명의무 핵심 (자주 출제):</strong><br><br>
+<ul>
+<li><strong>설명 대상</strong>: 보험약관의 중요 사항 (보장 내용, 보험료, 해지환급금, 면책사항)</li>
+<li><strong>설명 시기</strong>: 계약 체결 전 (청약 이전)</li>
+<li><strong>설명 방법</strong>: 서면, 전화, 전자문서 가능, 계약자 이해 확인 필요</li>
+<li><strong>위반 시</strong>: 계약자가 3개월 이내 계약 취소 가능, 이미 납입한 보험료 + 이자 환급</li>
+<li><strong>예외</strong>: 계약자가 이미 알고 있는 경우, 계약자가 설명 거부 시</li>
+</ul>`
+  },
+  '손해보험_보험료 산출': {
+    title: '보험료 산출 원리',
+    body: `<strong>보험료 = 순보험료 + 부가보험료</strong><br><br>
+<ul>
+<li><strong>순보험료</strong>: 실제 보험금 지급에 충당되는 보험료 (위험보험료 + 저축보험료)</li>
+<li><strong>부가보험료</strong>: 사업비 충당 (신계약비, 유지비, 수금비)</li>
+<li><strong>손해율</strong> = 지급보험금 / 수입보험료 × 100%</li>
+<li><strong>합산비율</strong> = 손해율 + 사업비율 (100% 이상이면 언더라이팅 적자)</li>
+<li><strong>경험요율</strong>: 과거 손해율에 따라 갱신 시 보험료 조정</li>
+<li><strong>예정이율</strong>: 보험료 산출 시 적용 금리 (낮아질수록 보험료 ↑)</li>
+</ul>`
+  },
+  '손해보험_제재·과태료': {
+    title: '제재·과태료',
+    body: `<strong>위반 행위별 제재 수준:</strong><br><br>
+<ul>
+<li><strong>형사처벌</strong>: 무자격 모집 (3년↓/3천만원↓), 허위 설명 (1년↓/1천만원↓)</li>
+<li><strong>과태료 5천만원 이하</strong>: 기초서류 위반, 중요 사항 미설명</li>
+<li><strong>과태료 3천만원 이하</strong>: 비밀 누설, 불공정 모집 행위</li>
+<li><strong>등록 취소</strong>: 금융 범죄, 거짓 등록, 업무 정지 기간 중 영업</li>
+<li><strong>업무 정지</strong>: 경미한 위반 시 최대 6개월</li>
+</ul>`
+  },
+  '손해보험_보험금 지급': {
+    title: '보험금 지급',
+    body: `<strong>보험금 지급 프로세스:</strong><br><br>
+<ul>
+<li><strong>지급 기한</strong>: 청구 서류 접수 후 3영업일 이내 지급 원칙</li>
+<li><strong>조사 필요 시</strong>: 10영업일 이내 (특수 경우 최대 30일)</li>
+<li><strong>지급 지연 이자</strong>: 연 15% (상법 기준)</li>
+<li><strong>면책 사유</strong>: 고의 사고, 전쟁, 핵 위험 등</li>
+<li><strong>비례 보상</strong>: 중복 보험 시 각 회사가 비율에 따라 분담</li>
+<li><strong>대위 청구권</strong>: 보험금 지급 후 제3자에게 구상권 행사</li>
+</ul>`
+  },
+  '손해보험_고지의무': {
+    title: '고지의무',
+    body: `<strong>고지의무 핵심 정리:</strong><br><br>
+<ul>
+<li><strong>의무자</strong>: 계약자 및 피보험자</li>
+<li><strong>고지 시기</strong>: 계약 체결 시 (청약 시)</li>
+<li><strong>고지 내용</strong>: 중요 사항 (직업, 건강 상태, 기왕증, 위험 증가 요소)</li>
+<li><strong>위반 효과</strong>: 회사 계약 해지 가능 (사고 후에도 해지 가능)</li>
+<li><strong>해지 불가</strong>: 회사가 고지의무 위반 알고 계약 체결 시, 2년 경과 후 (사고 없으면)</li>
+<li><strong>인과관계 없으면</strong>: 보험금 지급 (고지의무 위반과 사고 무관 시)</li>
+</ul>`
+  },
+  '손해보험_보험회사 운영': {
+    title: '보험회사 운영·감독',
+    body: `<strong>보험회사 설립·운영 기준:</strong><br><br>
+<ul>
+<li><strong>인가 요건</strong>: 최저 자본금 300억원 (생명), 100억원 (손해)</li>
+<li><strong>지급여력비율(RBC)</strong>: 100% 이상 유지 의무 (150% 이상 권고)</li>
+<li><strong>책임준비금</strong>: 장래 보험금 지급 위한 필수 적립</li>
+<li><strong>감독기관</strong>: 금융위원회 (정책), 금융감독원 (감독)</li>
+<li><strong>검사 권한</strong>: 금감원, 보험회사 업무 및 재산 검사 가능</li>
+</ul>`
+  },
+  '손해보험_보험계약 성립': {
+    title: '보험계약 성립',
+    body: `<strong>계약 성립 요건:</strong><br><br>
+<ul>
+<li><strong>청약 + 승낙</strong>: 계약자 청약 → 보험회사 승낙으로 계약 성립</li>
+<li><strong>최초 보험료 납입</strong>: 승낙 이전이라도 보험료 수령 시 책임 개시</li>
+<li><strong>청약서 작성</strong>: 계약자·피보험자 서명 필수</li>
+<li><strong>보험증권 교부</strong>: 계약 성립 후 보험증권 발행·교부 의무</li>
+<li><strong>승낙 의제</strong>: 30일 내 거절 통지 없으면 승낙으로 간주</li>
+</ul>`
+  },
+  '손해보험_보험계약 관리': {
+    title: '보험계약 관리',
+    body: `<strong>계약 유지 관련 사항:</strong><br><br>
+<ul>
+<li><strong>보험료 납입 유예</strong>: 미납 시 1개월 이상 납입 유예 기간 부여</li>
+<li><strong>실효</strong>: 유예 기간 경과 후 계약 효력 상실</li>
+<li><strong>부활(복구)</strong>: 실효 후 2년 이내 연체 보험료 납입 시 부활 가능</li>
+<li><strong>계약 변경</strong>: 보장 내용, 수익자 변경 등은 회사 승인 필요</li>
+<li><strong>해지환급금</strong>: 해지 시 지급, 초기에는 납입 보험료보다 적음</li>
+</ul>`
+  },
+  '손해보험_기초서류': {
+    title: '기초서류',
+    body: `<strong>기초서류 종류와 특징:</strong><br><br>
+<ul>
+<li><strong>기초서류 종류</strong>: 사업방법서, 보험약관, 보험료 및 책임준비금 산출 방법서</li>
+<li><strong>신고·인가</strong>: 기초서류 제·개정 시 금융위 신고 또는 인가 필요</li>
+<li><strong>약관 효력</strong>: 계약자에게 불리한 조항은 효력 제한</li>
+<li><strong>준수 의무</strong>: 모집 시 기초서류 내용 그대로 설명 의무</li>
+</ul>`
+  },
+
+  // ── 손해보험 과목2 ──
+  '손해보험_손해보험 기본원칙': {
+    title: '손해보험 기본원칙 ★★★',
+    body: `<strong>손해보험 4대 원칙 (필수 암기):</strong><br><br>
+<ul>
+<li><strong>①실손보상 원칙</strong>: 실제 손해액만큼만 보상 (이득 금지 원칙)</li>
+<li><strong>②피보험이익</strong>: 보험사고 발생 시 경제적 손해를 입을 이해관계 (없으면 계약 무효)</li>
+<li><strong>③최대선의 원칙</strong>: 계약 당사자 모두 최대한 성실하게 행동</li>
+<li><strong>④대위 원칙</strong>: 보험자는 보험금 지급 후 제3자에 대한 피보험자 권리 취득</li>
+</ul>
+<br>📌 <strong>보험가액 vs 보험금액</strong>: 보험가액(실제 가치) ≥ 보험금액(보상 한도)`
+  },
+  '손해보험_화재보험': {
+    title: '화재보험',
+    body: `<strong>화재보험 핵심 사항:</strong><br><br>
+<ul>
+<li><strong>담보 위험</strong>: 화재, 낙뢰, 폭발(화재 수반), 항공기 충돌</li>
+<li><strong>면책 위험</strong>: 지진, 홍수, 전쟁, 방화(고의), 핵 위험</li>
+<li><strong>보험 목적</strong>: 건물, 동산, 기계류 등 (토지 제외)</li>
+<li><strong>보험가액 평가</strong>: 시가(시장 가치) 기준 원칙, 특약으로 신가 기준 가능</li>
+<li><strong>잔존물</strong>: 보험금 지급 후 잔존물은 보험회사 소유</li>
+<li><strong>신가보험</strong>: 재취득 비용 기준 보상, 보험료 추가 부담</li>
+</ul>`
+  },
+  '손해보험_자동차보험': {
+    title: '자동차보험 ★★★ 자주 출제',
+    body: `<strong>자동차보험 구조:</strong><br><br>
+<ul>
+<li><strong>의무보험(책임보험)</strong>: 대인배상Ⅰ (사망 1.5억, 부상 3천만원), 대물배상 2천만원</li>
+<li><strong>대인배상Ⅱ</strong>: 의무보험 초과 인신사고 보상 (임의)</li>
+<li><strong>대물배상</strong>: 타인 재물 피해 보상 (임의)</li>
+<li><strong>자기차량손해(자차)</strong>: 자기 차량 수리 비용</li>
+<li><strong>자기신체사고(자손)</strong>: 운전자 본인 상해</li>
+<li><strong>무보험차상해</strong>: 무보험 차량 사고 피해 보상</li>
+</ul>
+<br>📌 <strong>음주운전·무면허</strong>: 회사 면책 후 구상권 행사`
+  },
+  '손해보험_보험가액·가입금액': {
+    title: '보험가액과 가입금액',
+    body: `<strong>핵심 개념 비교:</strong><br><br>
+<ul>
+<li><strong>보험가액</strong>: 피보험 이익의 금전적 평가액 (실제 가치)</li>
+<li><strong>가입금액(보험금액)</strong>: 계약상 보상 한도액</li>
+<li><strong>전부보험</strong>: 가입금액 = 보험가액 → 전액 보상</li>
+<li><strong>일부보험</strong>: 가입금액 < 보험가액 → 비례보상 (가입금액/보험가액 × 손해액)</li>
+<li><strong>초과보험</strong>: 가입금액 > 보험가액 → 보험가액까지만 보상 (초과분 무효)</li>
+<li><strong>중복보험</strong>: 여러 보험으로 동일 위험 담보 시 각 사 비례 부담</li>
+</ul>`
+  },
+  '손해보험_배상책임보험': {
+    title: '배상책임보험',
+    body: `<strong>배상책임보험 기본 구조:</strong><br><br>
+<ul>
+<li><strong>법률상 배상책임</strong>: 제3자에게 신체·재물 손해 야기 시 배상 의무</li>
+<li><strong>담보 구성</strong>: 손해 배상금 + 방어비용 + 소송 비용</li>
+<li><strong>주요 종류</strong>: 영업배상책임, 시설소유관리배상책임, 생산물배상책임(PL)</li>
+<li><strong>임원배상책임(D&O)</strong>: 임원의 경영 판단 관련 제3자 손해 담보</li>
+<li><strong>직업배상책임(E&O)</strong>: 전문직 과실로 인한 손해 담보</li>
+<li><strong>면책</strong>: 고의 행위, 계약상 가중 책임</li>
+</ul>`
+  },
+  '손해보험_해상보험': {
+    title: '해상보험',
+    body: `<strong>해상보험 특징:</strong><br><br>
+<ul>
+<li><strong>담보 목적물</strong>: 선박, 화물, 운임, 희망이익</li>
+<li><strong>ICC 약관</strong>: A(전위험담보), B(열거위험+조건), C(열거위험 제한)</li>
+<li><strong>공동해손</strong>: 선박·화물 공동 위험 시 희생·비용을 이해관계자 공동 부담</li>
+<li><strong>단독해손</strong>: 개별 피보험자가 단독으로 부담하는 손해</li>
+<li><strong>협회적하약관(ICC)</strong>: 영국 협회 표준 약관, 국제 해상무역에 적용</li>
+</ul>`
+  },
+  '손해보험_상해보험': {
+    title: '상해보험',
+    body: `<strong>상해보험 핵심:</strong><br><br>
+<ul>
+<li><strong>상해의 정의</strong>: 급격하고 우연한 외래의 사고로 신체에 입은 손해</li>
+<li><strong>3요소</strong>: ①급격성 ②우연성 ③외래성 (모두 충족 시 상해)</li>
+<li><strong>보험금 종류</strong>: 사망보험금, 후유장해보험금, 입원일당, 수술비</li>
+<li><strong>후유장해</strong>: 1~100% 척도, 장해 정도에 따라 보험금 비례 지급</li>
+<li><strong>면책</strong>: 자해, 전쟁, 직업상 특수 위험 (별도 가입 시 담보 가능)</li>
+</ul>`
+  },
+  '손해보험_특종보험': {
+    title: '특종보험',
+    body: `<strong>특종보험 주요 종류:</strong><br><br>
+<ul>
+<li><strong>도난보험</strong>: 절도, 강도로 인한 재물 손해</li>
+<li><strong>기계보험</strong>: 기계류의 갑작스러운 물리적 손해</li>
+<li><strong>건설공사보험(CAR)</strong>: 공사 기간 중 목적물 손해</li>
+<li><strong>조립보험(EAR)</strong>: 기계 조립·설치 중 손해</li>
+<li><strong>동물보험</strong>: 가축·애완동물 폐사·부상</li>
+<li><strong>레저보험</strong>: 골프, 스키 등 레저 활동 중 배상책임·상해</li>
+</ul>`
+  },
+
+  // ── 변액보험 과목1 ──
+  '변액보험_변액보험 개념': {
+    title: '변액보험 기본 개념 ★★★',
+    body: `<strong>변액보험이란:</strong><br><br>
+<ul>
+<li><strong>정의</strong>: 보험료 일부를 주식·채권 등에 투자하여 운용 실적에 따라 보험금이 변동되는 보험</li>
+<li><strong>일반 보험과 차이</strong>: 투자 위험을 계약자가 부담 (회사 보증 없음)</li>
+<li><strong>특별계정 운용</strong>: 일반계정과 분리하여 운용</li>
+<li><strong>판매 자격</strong>: 변액보험 판매 자격증 별도 취득 필요</li>
+<li><strong>종류</strong>: 변액종신, 변액연금, 변액유니버설, 변액CI</li>
+</ul>
+<br>📌 <strong>투자 원칙</strong>: 원금 손실 가능, 과거 수익률 미래 보장 불가`
+  },
+  '변액보험_특별계정': {
+    title: '특별계정(Separate Account)',
+    body: `<strong>특별계정 핵심:</strong><br><br>
+<ul>
+<li><strong>분리 운용</strong>: 일반계정과 완전 분리, 파산 시에도 보호</li>
+<li><strong>펀드 종류</strong>: 주식형, 채권형, 혼합형, MMF 등</li>
+<li><strong>기준가격(NAV)</strong>: 1좌당 가격, 매일 공시</li>
+<li><strong>좌수</strong>: 계약자적립금 ÷ 기준가격 = 보유 좌수</li>
+<li><strong>펀드 변경</strong>: 연 12회 무료, 초과 시 수수료 부과</li>
+<li><strong>운용보고서</strong>: 6개월마다 계약자에게 통지 의무</li>
+</ul>`
+  },
+  '변액보험_최저보증': {
+    title: '최저보증(Guarantee)',
+    body: `<strong>최저보증 종류:</strong><br><br>
+<ul>
+<li><strong>GMDB</strong>: 최저사망보험금 보증 - 사망 시 최소 기납입 보험료 보장</li>
+<li><strong>GMAB</strong>: 최저적립금 보증 - 만기 시 특정 금액 이상 보증</li>
+<li><strong>GMIB</strong>: 최저연금전환 보증 - 연금 개시 시 최저 연금액 보증</li>
+<li><strong>GMWB</strong>: 최저인출금 보증 - 펀드 감소 시에도 일정 인출 보증</li>
+<li><strong>최저보증 비용</strong>: 특별계정에서 공제, 계약자 부담</li>
+</ul>`
+  },
+  '변액보험_운용보수·비용': {
+    title: '운용보수·비용 구조',
+    body: `<strong>변액보험 비용 체계:</strong><br><br>
+<ul>
+<li><strong>사업비</strong>: 보험료에서 공제 (신계약비, 유지비)</li>
+<li><strong>위험보험료</strong>: 순수 사망 위험 비용</li>
+<li><strong>운용보수</strong>: 펀드 운용 수수료 (연 0.2~2.0%)</li>
+<li><strong>최저보증 비용</strong>: 보증 서비스 대가 (특별계정에서 공제)</li>
+<li><strong>해지공제</strong>: 조기 해지 시 부과, 납입 기간 경과로 감소</li>
+<li><strong>중도인출 수수료</strong>: 인출 시마다 부과 (일부 면제 조건 있음)</li>
+</ul>`
+  },
+  '변액보험_변액유니버설보험': {
+    title: '변액유니버설보험(VUL)',
+    body: `<strong>변액유니버설보험 특징:</strong><br><br>
+<ul>
+<li><strong>유연성</strong>: 보험료 추가 납입, 중도 인출, 보험료 납입 유예 가능</li>
+<li><strong>투자 기능</strong>: 특별계정 투자로 적립금 증가 가능</li>
+<li><strong>위험</strong>: 투자 손실 시 계약 실효 위험 (적립금으로 위험보험료 충당 불가 시)</li>
+<li><strong>추가납입 한도</strong>: 기본보험료의 200% 이내</li>
+<li><strong>중도인출 조건</strong>: 적립금의 일정 비율, 최저 적립금 유지 조건</li>
+</ul>`
+  },
+  '변액보험_투자위험': {
+    title: '투자위험',
+    body: `<strong>변액보험 투자 위험 유형:</strong><br><br>
+<ul>
+<li><strong>시장위험</strong>: 주가·금리·환율 변동으로 인한 손실</li>
+<li><strong>신용위험</strong>: 채권 발행사 부도로 인한 손실</li>
+<li><strong>유동성위험</strong>: 환매 집중 시 기준가 하락</li>
+<li><strong>운용위험</strong>: 펀드 매니저 운용 실패</li>
+<li><strong>집중위험</strong>: 특정 자산 집중 투자로 인한 위험</li>
+</ul>
+<br>📌 <strong>핵심</strong>: 변액보험은 실적 배당형 — 원금 보장 불가, 투자 책임은 계약자`
+  },
+  '변액보험_변액보험 종류': {
+    title: '변액보험 종류',
+    body: `<strong>주요 변액보험 상품:</strong><br><br>
+<ul>
+<li><strong>변액종신보험</strong>: 종신 보장 + 투자 기능, 사망 시 변동 보험금</li>
+<li><strong>변액연금보험</strong>: 노후 연금 목적, 연금 개시 전까지 특별계정 운용</li>
+<li><strong>변액유니버설보험</strong>: 보험료 유연 납입 + 투자 기능</li>
+<li><strong>변액CI보험</strong>: 중대질병 발생 시 보험금 선지급 + 투자</li>
+</ul>`
+  },
+  '변액보험_판매 자격': {
+    title: '변액보험 판매 자격',
+    body: `<strong>변액보험 판매 자격 요건:</strong><br><br>
+<ul>
+<li><strong>자격증 필요</strong>: 변액보험 판매 자격증 (보험연수원 시험)</li>
+<li><strong>교육 이수</strong>: 기본 교육 + 보수 교육 (매 2년)</li>
+<li><strong>자격 취소 사유</strong>: 금융 범죄, 자격증 양도, 부정 취득</li>
+<li><strong>겸업 가능</strong>: 일반 보험 + 변액보험 동시 판매 가능 (자격 취득 후)</li>
+</ul>`
+  },
+  '변액보험_계약자 적립금': {
+    title: '계약자 적립금',
+    body: `<strong>적립금 계산 구조:</strong><br><br>
+<ul>
+<li><strong>산출 방법</strong>: 좌수 × 기준가격(NAV)</li>
+<li><strong>납입 보험료</strong> - 사업비 - 위험보험료 = 특별계정 투입 보험료</li>
+<li><strong>기준가격 상승</strong> → 좌수 동일, 적립금 증가</li>
+<li><strong>추가납입</strong>: 사업비 낮음 (기본보험료 대비), 적립 효율 높음</li>
+<li><strong>해지환급금</strong>: 적립금 - 해지공제, 초기에는 납입 보험료보다 낮음</li>
+</ul>`
+  },
+  '변액보험_계약 서류': {
+    title: '계약 관련 서류',
+    body: `<strong>변액보험 필수 서류:</strong><br><br>
+<ul>
+<li><strong>투자설명서</strong>: 펀드 운용 방법, 위험 고지 서류 (서명 필수)</li>
+<li><strong>변액보험 안내자료</strong>: 상품 구조, 비용, 예시 수익률 포함</li>
+<li><strong>청약서</strong>: 계약자·피보험자 서명, 투자 위험 인지 확인란</li>
+<li><strong>핵심상품 설명서</strong>: 주요 사항 2페이지 요약</li>
+<li><strong>운용보고서</strong>: 6개월마다 계약자에게 발송</li>
+</ul>`
+  },
+  '변액보험_펀드·투자': {
+    title: '펀드 투자 기초',
+    body: `<strong>펀드 관련 핵심 개념:</strong><br><br>
+<ul>
+<li><strong>펀드 유형</strong>: 주식형(주식 60%↑), 채권형(채권 60%↑), 혼합형</li>
+<li><strong>기준가격(NAV)</strong>: 순자산 ÷ 좌수, 매일 공시</li>
+<li><strong>좌수</strong>: 펀드 지분 단위, 납입 시 자동 매수</li>
+<li><strong>분산투자</strong>: 여러 펀드에 배분 가능 (리밸런싱 기능)</li>
+<li><strong>타깃데이트펀드(TDF)</strong>: 은퇴 시점 접근할수록 안전 자산 비중 자동 증가</li>
+</ul>`
+  },
+  '변액보험_변액연금': {
+    title: '변액연금보험',
+    body: `<strong>변액연금 특징:</strong><br><br>
+<ul>
+<li><strong>납입 기간</strong>: 거치 기간 동안 특별계정 투자로 적립</li>
+<li><strong>연금 개시</strong>: 일반계정 이전 후 연금 지급 (확정, 종신, 상속 선택)</li>
+<li><strong>GMAB</strong>: 연금 개시 시 최저 적립금 보증</li>
+<li><strong>세제 혜택</strong>: 연금 소득 분리과세 (종신형 선택 시)</li>
+<li><strong>연금 전환</strong>: 납입 완료 후 일반 보험으로 전환 불가 (변액 유지)</li>
+</ul>`
+  },
+  '변액보험_보험료 구성': {
+    title: '변액보험 보험료 구성',
+    body: `<strong>변액보험 보험료 흐름:</strong><br><br>
+납입보험료 → (사업비 공제) → (위험보험료 공제) → 특별계정 투입<br><br>
+<ul>
+<li><strong>신계약비</strong>: 1~7년 차 집중 부과 (계약 유치 비용)</li>
+<li><strong>유지비</strong>: 매년 균등 부과 (계약 관리 비용)</li>
+<li><strong>위험보험료</strong>: 연령·성별 기준, 사망 위험 대비 비용</li>
+<li><strong>추가납입 효과</strong>: 사업비 적용 안 됨 → 투자 효율 높음</li>
+</ul>`
+  },
+  '변액보험_계약자 정보': {
+    title: '계약자 정보 관리',
+    body: `<strong>계약자 정보 관련 의무:</strong><br><br>
+<ul>
+<li><strong>KYC(Know Your Customer)</strong>: 계약자 투자 성향, 재무 상태 파악 의무</li>
+<li><strong>정보 유효 기간</strong>: 2년마다 갱신 권고</li>
+<li><strong>고객 정보 변경</strong>: 직업·주소 변경 시 즉시 통지 의무</li>
+<li><strong>개인정보 보호</strong>: 동의 없이 제3자 제공 금지</li>
+<li><strong>투자 성향 불일치</strong>: 부적합 상품 판매 금지 (적합성 원칙)</li>
+</ul>`
+  },
+
+  // ── 변액보험 과목2 ──
+  '변액보험_설명의무': {
+    title: '변액보험 설명의무',
+    body: `<strong>변액보험 설명 시 필수 포함 사항:</strong><br><br>
+<ul>
+<li><strong>투자 위험 고지</strong>: 원금 손실 가능성 명확히 설명</li>
+<li><strong>비용 구조</strong>: 사업비, 위험보험료, 운용보수 상세 설명</li>
+<li><strong>수익률 예시</strong>: 낙관·기본·비관 시나리오 예시</li>
+<li><strong>펀드 정보</strong>: 운용 전략, 편입 자산, 과거 수익률</li>
+<li><strong>최저보증 내용</strong>: 보증 조건, 비용, 범위 설명</li>
+<li><strong>서명 확인</strong>: 계약자가 이해했음을 서면 확인</li>
+</ul>`
+  },
+  '변액보험_청약·철회': {
+    title: '변액보험 청약·철회',
+    body: `<strong>변액보험 청약 특이사항:</strong><br><br>
+<ul>
+<li><strong>철회 기간</strong>: 보험증권 수령 후 15일</li>
+<li><strong>철회 시 환급</strong>: 납입 보험료 전액 + 이자 (3영업일 이내)</li>
+<li><strong>단, 기준가격 하락 시</strong>: 이미 투자된 적립금 손실분 차감 가능</li>
+<li><strong>철회 불가</strong>: 피보험자 건강 진단 완료 후</li>
+<li><strong>품질보증 해지</strong>: 보험증권 수령 후 3개월 이내 가능</li>
+</ul>`
+  },
+  '변액보험_투자설명서': {
+    title: '투자설명서',
+    body: `<strong>투자설명서 교부 의무:</strong><br><br>
+<ul>
+<li><strong>교부 시기</strong>: 청약 전 (계약 체결 이전)</li>
+<li><strong>서명 필수</strong>: 계약자가 수령하고 이해했음을 서면 확인</li>
+<li><strong>내용</strong>: 펀드 운용 방법, 위험, 비용, 수익률 예시</li>
+<li><strong>거부 시</strong>: 계약 체결 불가 (설명 거부 시에도 사실 기록)</li>
+<li><strong>자본시장법 적용</strong>: 변액보험 = 집합투자기구에 준해 규제</li>
+</ul>`
+  },
+  '변액보험_고지의무': {
+    title: '변액보험 고지의무',
+    body: `<strong>변액보험 고지의무:</strong><br><br>
+<ul>
+<li><strong>일반 보험과 동일</strong>: 중요 사항 사실대로 고지</li>
+<li><strong>투자 성향 고지</strong>: KYC 정보 정확히 제공</li>
+<li><strong>위반 효과</strong>: 회사 계약 해지 가능</li>
+<li><strong>해지 불가 사유</strong>: 회사 인지 후 계약, 2년 경과</li>
+</ul>`
+  },
+  '변액보험_중도인출': {
+    title: '중도인출',
+    body: `<strong>중도인출 조건 및 한도:</strong><br><br>
+<ul>
+<li><strong>인출 한도</strong>: 해지환급금 범위 내 (최저 잔여 적립금 유지 조건)</li>
+<li><strong>인출 횟수</strong>: 연 12회 무료, 초과 시 수수료</li>
+<li><strong>인출 영향</strong>: 적립금 감소 → 향후 연금 수령액 감소</li>
+<li><strong>세금</strong>: 인출 시 즉시 과세 없음 (연금 수령 시 과세)</li>
+<li><strong>제한 조건</strong>: 계약 후 일정 기간 경과 후 가능 (상품마다 상이)</li>
+</ul>`
+  },
+  '변액보험_해지환급금': {
+    title: '해지환급금',
+    body: `<strong>해지환급금 산출:</strong><br><br>
+<ul>
+<li><strong>계산</strong>: 계약자 적립금 - 해지공제액</li>
+<li><strong>해지공제</strong>: 초기 계약 해지 시 패널티, 기간 경과로 감소</li>
+<li><strong>초기 해지 손실</strong>: 초기 사업비 집중 부과로 납입 보험료보다 낮음</li>
+<li><strong>투자 손실 시</strong>: 기준가 하락으로 적립금 자체가 감소</li>
+<li><strong>선납보험료 환급</strong>: 미경과 선납 보험료 별도 환급</li>
+</ul>`
+  },
+  '변액보험_부적합 판매': {
+    title: '부적합 판매 금지',
+    body: `<strong>부적합 판매 유형:</strong><br><br>
+<ul>
+<li><strong>투자 성향 불일치</strong>: 안전 성향 고객에게 고위험 변액 판매</li>
+<li><strong>위험 미고지</strong>: 원금 손실 가능성 설명 누락</li>
+<li><strong>과거 수익률 보장</strong>: "예금보다 안전" 등 허위 설명</li>
+<li><strong>비용 미설명</strong>: 사업비, 해지공제 설명 생략</li>
+<li><strong>노인·취약계층</strong>: 이해도 확인 없이 복잡한 상품 판매</li>
+</ul>
+<br>📌 처벌: 판매 자격 취소, 과징금, 형사처벌`
+  },
+  '변액보험_운용보고서': {
+    title: '운용보고서',
+    body: `<strong>운용보고서 규정:</strong><br><br>
+<ul>
+<li><strong>발송 주기</strong>: 6개월마다 계약자에게 통지</li>
+<li><strong>내용</strong>: 기준가격, 수익률, 적립금 현황, 펀드 운용 현황</li>
+<li><strong>발송 방법</strong>: 서면 또는 계약자 동의 시 전자적 방법</li>
+<li><strong>확인 방법</strong>: 홈페이지, 앱에서 실시간 조회 가능</li>
+</ul>`
+  },
+  '변액보험_금지행위': {
+    title: '변액보험 금지행위',
+    body: `<strong>변액보험 판매 금지 행위:</strong><br><br>
+<ul>
+<li><strong>수익률 보장</strong>: "원금 보장", "확정 수익" 표현 금지</li>
+<li><strong>허위 비교</strong>: 다른 펀드·상품과 유리한 면만 비교</li>
+<li><strong>투자 성향 조작</strong>: 고위험 판매 위해 투자 성향 임의 변경</li>
+<li><strong>펀드 변경 유도</strong>: 수수료 목적 잦은 펀드 변경 권유</li>
+<li><strong>투자설명서 미교부</strong>: 서면 확인 없이 계약 체결</li>
+</ul>`
+  },
+  '변액보험_적합성 원칙': {
+    title: '적합성 원칙',
+    body: `<strong>적합성 원칙 (Suitability):</strong><br><br>
+<ul>
+<li><strong>정의</strong>: 고객의 투자 목적·재무 상태·위험 감수 능력에 맞는 상품 권유</li>
+<li><strong>KYC 정보 활용</strong>: 고객 정보 파악 후 적합 상품 추천</li>
+<li><strong>부적합 상품</strong>: 권유 자체 금지 (원칙), 고객이 요청하면 위험 고지 후 판매 가능</li>
+<li><strong>서류 작성</strong>: 적합성 확인서 계약자 서명 보관</li>
+<li><strong>법적 근거</strong>: 자본시장법 제46조, 보험업법 적용</li>
+</ul>`
+  },
+  '변액보험_보험료 자동대출': {
+    title: '보험료 자동대출(APL)',
+    body: `<strong>보험료 자동대출 제도:</strong><br><br>
+<ul>
+<li><strong>기능</strong>: 보험료 미납 시 해지환급금 범위 내 자동 대출로 계약 유지</li>
+<li><strong>이자</strong>: 대출 이자 발생 (계약 대출 이율 적용)</li>
+<li><strong>한도</strong>: 해지환급금의 일정 비율 이내</li>
+<li><strong>주의</strong>: 대출 누적 시 해지환급금 초과 가능 → 계약 해지 위험</li>
+<li><strong>변액보험 특이점</strong>: 적립금 투자 손실 시 APL 한도 감소</li>
+</ul>`
+  },
+  '변액보험_펀드 선택': {
+    title: '펀드 선택·변경',
+    body: `<strong>펀드 선택 관련 규정:</strong><br><br>
+<ul>
+<li><strong>초기 선택</strong>: 청약 시 투자 성향에 맞는 펀드 배분</li>
+<li><strong>펀드 변경</strong>: 연 12회 무료, 초과 시 수수료 (보통 0.1~0.3%)</li>
+<li><strong>자동 재배분</strong>: 설정 비율로 자동 리밸런싱 (선택 가능)</li>
+<li><strong>타깃데이트펀드</strong>: 은퇴 목표 시점 자동 자산 배분 조정</li>
+<li><strong>펀드 폐쇄 시</strong>: 회사가 유사 펀드로 자동 이전 (사전 통지)</li>
+</ul>`
+  },
+  '변액보험_계약 관리': {
+    title: '변액보험 계약 관리',
+    body: `<strong>계약 유지·관리 사항:</strong><br><br>
+<ul>
+<li><strong>납입 유예</strong>: VUL의 경우 보험료 납입 중단 가능 (적립금으로 비용 충당)</li>
+<li><strong>계약 유지 조건</strong>: 적립금 > 위험보험료 + 최저보증 비용</li>
+<li><strong>감액 완납</strong>: 납입 중단 후 보험금 낮춰 계약 유지</li>
+<li><strong>연장 정기</strong>: 납입 중단 후 정기보험으로 전환</li>
+<li><strong>수익자 변경</strong>: 계약자가 언제든 변경 가능 (피보험자 동의 불필요)</li>
+</ul>`
+  },
+  '변액보험_수익률 공시': {
+    title: '수익률 공시',
+    body: `<strong>변액보험 수익률 공시 의무:</strong><br><br>
+<ul>
+<li><strong>공시 주체</strong>: 보험회사</li>
+<li><strong>공시 주기</strong>: 매일 기준가격 공시, 월간·연간 수익률 공시</li>
+<li><strong>공시 내용</strong>: 기준가격, 누적 수익률, 설정 이후 수익률</li>
+<li><strong>금지</strong>: 과거 수익률로 미래 수익 보장 표현 금지</li>
+<li><strong>확인</strong>: 생명보험협회 공시실에서 비교 가능</li>
+</ul>`
+  },
+  '변액보험_불완전판매': {
+    title: '불완전판매 ★★★',
+    body: `<strong>불완전판매 개념과 처리:</strong><br><br>
+<ul>
+<li><strong>정의</strong>: 설명의무·적합성 원칙 위반, 허위 설명으로 이루어진 계약</li>
+<li><strong>주요 유형</strong>: 위험 미고지, 수익률 보장 설명, 투자설명서 미교부</li>
+<li><strong>계약자 구제</strong>: 계약 취소 가능 (5년 이내), 납입 보험료 + 이자 환급</li>
+<li><strong>회사 제재</strong>: 불완전판매 비율 공시, 일정 비율 초과 시 제재</li>
+<li><strong>민원 처리</strong>: 금감원 민원 접수 → 조정 → 분쟁 처리</li>
+</ul>`
+  },
+  '변액보험_기준가격(NAV)': {
+    title: '기준가격(NAV) 산출',
+    body: `<strong>NAV(Net Asset Value) 계산:</strong><br><br>
+<ul>
+<li><strong>공식</strong>: NAV = 특별계정 순자산 ÷ 총 좌수</li>
+<li><strong>순자산</strong>: 투자 자산 평가액 - 부채 (운용 보수 등)</li>
+<li><strong>좌당 기준가</strong>: 보통 1,000원에서 시작</li>
+<li><strong>적립금 계산</strong>: 보유 좌수 × 기준가격</li>
+<li><strong>영업일</strong>: 매 영업일 마감 후 산출·공시</li>
+<li><strong>시장 영향</strong>: 주가 하락 → NAV 하락 → 적립금 감소</li>
+</ul>`
+  },
+  '변액보험_최저보증 비용': {
+    title: '최저보증 비용',
+    body: `<strong>최저보증 비용 구조:</strong><br><br>
+<ul>
+<li><strong>부과 방식</strong>: 특별계정에서 정기적으로 공제</li>
+<li><strong>수준</strong>: 보통 연 0.05~0.5% (보증 범위, 연령에 따라 상이)</li>
+<li><strong>GMDB 비용</strong>: 사망보험금 최저보증 대가</li>
+<li><strong>GMAB 비용</strong>: 적립금 최저보증 대가 (연금형 상품)</li>
+<li><strong>총 비용 영향</strong>: 운용보수 + 최저보증 비용 = 총 특별계정 공제 비용</li>
+</ul>`
+  },
+
+  // ── 생명보험 / 퇴직연금 (제네릭) ──
+  '생명보험_과목1': {
+    title: '생명보험 과목1 — 보험업법 및 관련법규',
+    body: `<strong>핵심 영역:</strong><br><br>
+<ul>
+<li><strong>보험모집 규제</strong>: 모집 자격, 금지행위, 설명의무</li>
+<li><strong>보험계약자 보호</strong>: 청약 철회, 품질보증 해지</li>
+<li><strong>고지의무</strong>: 계약 전 중요 사항 사실 고지</li>
+<li><strong>제재</strong>: 위반 행위별 과태료·형사처벌 수준</li>
+<li><strong>보험회사 감독</strong>: 지급여력, 책임준비금 규제</li>
+</ul>`
+  },
+  '생명보험_과목2': {
+    title: '생명보험 과목2 — 생명보험 이론 및 실무',
+    body: `<strong>핵심 영역:</strong><br><br>
+<ul>
+<li><strong>생명보험 기본 원리</strong>: 대수의 법칙, 수지상등 원칙</li>
+<li><strong>보험료 구조</strong>: 순보험료(위험+저축) + 부가보험료</li>
+<li><strong>보험금 지급 조건</strong>: 사망, 생존, 고도장해</li>
+<li><strong>계약 관리</strong>: 감액, 연장, 해지, 부활</li>
+<li><strong>상품 종류</strong>: 종신, 정기, 양로, 연금, 건강보험</li>
+</ul>`
+  },
+  '퇴직연금_과목1': {
+    title: '퇴직연금 과목1 — 퇴직연금 제도 이해',
+    body: `<strong>퇴직연금 제도 핵심:</strong><br><br>
+<ul>
+<li><strong>DB형(확정급여형)</strong>: 퇴직 시 받을 급여 확정, 운용 책임 회사</li>
+<li><strong>DC형(확정기여형)</strong>: 납입할 부담금 확정, 운용 책임 근로자</li>
+<li><strong>IRP(개인형)</strong>: 퇴직 후 또는 자영업자 등 개인 가입</li>
+<li><strong>급여 종류</strong>: 연금(55세 이후, 10년 이상) 또는 일시금</li>
+<li><strong>수수료</strong>: 운용관리 + 자산관리 수수료</li>
+</ul>`
+  },
+  '퇴직연금_과목2': {
+    title: '퇴직연금 과목2 — 퇴직연금 실무',
+    body: `<strong>퇴직연금 실무 핵심:</strong><br><br>
+<ul>
+<li><strong>적립금 운용</strong>: 원리금보장 상품 + 실적배당 상품</li>
+<li><strong>안전자산 비율</strong>: DC/IRP는 위험자산 70% 이하 제한</li>
+<li><strong>중도 인출</strong>: DC·IRP는 조건부 인출 가능 (주택구입, 의료비 등)</li>
+<li><strong>세제 혜택</strong>: 연 900만원 세액공제 (IRP+연금저축 합산)</li>
+<li><strong>모집 규제</strong>: 퇴직연금 모집인 등록, 교육 이수 의무</li>
+</ul>`
+  },
+};
+
+// =========================================
+// 2. 상태 변수
+// =========================================
+const KEY = 'mrsg_odalNote';
+let currentFilter = 'all';
+let currentSort = 'stars';
+let noteData = { answers: {}, catStats: {} };
+let masteredIds = JSON.parse(localStorage.getItem('mrsg_mastered') || '{}');
+
+// =========================================
+// 3. 데이터 로드
+// =========================================
+function loadData() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) noteData = JSON.parse(raw);
+  } catch(e) {
+    noteData = { answers: {}, catStats: {} };
+  }
+}
+
+// =========================================
+// 4. 통계 계산
+// =========================================
+function calcStats() {
+  const all = Object.values(noteData.answers);
+  const counts = { total: 0, life: 0, nonlife: 0, variable: 0, pension: 0 };
+  all.forEach(q => {
+    if (masteredIds[q.q?.slice(0,20)]) return;
+    counts.total++;
+    if (q.subject === 'life') counts.life++;
+    else if (q.subject === 'nonlife') counts.nonlife++;
+    else if (q.subject === 'variable') counts.variable++;
+    else if (q.subject === 'pension') counts.pension++;
+  });
+  return counts;
+}
+
+// =========================================
+// 5. 카테고리 그룹화
+// =========================================
+function groupByCategory() {
+  const groups = {};
+  Object.values(noteData.answers).forEach(q => {
+    const catKey = q.catKey || (q.subjectName + '_' + (q.cat || '과목1'));
+    if (!groups[catKey]) {
+      groups[catKey] = {
+        catKey,
+        subject: q.subject,
+        subjectName: q.subjectName,
+        cat: q.cat || '과목1',
+        questions: [],
+        stars: Math.min(noteData.catStats[catKey] || 0, 5),
+        totalWrong: noteData.catStats[catKey] || 0,
+      };
+    }
+    groups[catKey].questions.push(q);
+  });
+  return groups;
+}
+
+// =========================================
+// 6. 렌더링
+// =========================================
+function renderStars(n) {
+  let s = '';
+  for (let i = 1; i <= 5; i++) {
+    s += `<span class="star ${i <= n ? 'filled' : 'empty'}">${i <= n ? '★' : '☆'}</span>`;
+  }
+  return s;
+}
+
+function subjectClass(subj) {
+  const m = { life:'life', nonlife:'nonlife', variable:'variable', pension:'pension' };
+  return m[subj] || 'life';
+}
+function subjectLabel(subj) {
+  const m = { life:'생명보험', nonlife:'손해보험', variable:'변액보험', pension:'퇴직연금' };
+  return m[subj] || subj;
+}
+
+function renderQuestion(q, idx) {
+  const mKey = q.q?.slice(0,20) || idx;
+  const isMastered = !!masteredIds[mKey];
+  const choicesHtml = (q.c || []).map((c, i) => {
+    let cls = '';
+    if (i === q.a) cls = 'correct';
+    else if (i === q.userAns || i === q.lastUserAns) cls = 'wrong-ans';
+    return `<div class="choice ${cls}">
+      <span class="choice-num">${i+1}</span>
+      <span class="choice-text">${c}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="q-card ${isMastered ? 'mastered' : ''}" id="qcard-${idx}">
+    <div class="q-header">
+      <div class="q-num">${idx+1}</div>
+      <div class="q-text">${q.q || '질문 없음'}</div>
+      <button class="master-btn ${isMastered ? 'done' : ''}" onclick="toggleMaster('${mKey}', ${idx})">
+        ${isMastered ? '✓ 완료' : '✓ 완료 처리'}
+      </button>
+    </div>
+    <div class="q-choices">${choicesHtml}</div>
+    ${q.ex ? `<div class="q-explanation"><span>해설</span>${q.ex}</div>` : ''}
+    <div class="q-meta">
+      <span class="q-meta-tag wrong-count-tag">오답 ${q.wrongCount || 1}회</span>
+      <span class="q-meta-tag">최근 ${q.lastWrong || ''}</span>
+    </div>
+  </div>`;
+}
+
+function renderCategoryCard(group, openOnLoad) {
+  const note = CAT_NOTES[group.catKey] || CAT_NOTES[group.subjectName + '_과목1'] || null;
+  const activeQs = group.questions.filter(q => !masteredIds[q.q?.slice(0,20)]);
+  if (activeQs.length === 0) return '';
+
+  const noteHtml = note ? `<div class="summary-note">
+    <div class="summary-note-title">📖 핵심 요약 — ${note.title}</div>
+    <div class="summary-note-body">${note.body}</div>
+  </div>` : '';
+
+  const questionsHtml = activeQs.map((q, i) => renderQuestion(q, i)).join('');
+  const cls = subjectClass(group.subject);
+
+  return `<div class="cat-section" id="cat-${group.catKey.replace(/[^a-zA-Z0-9가-힣]/g,'_')}">
+    <div class="cat-header" onclick="toggleCat(this)">
+      <div class="cat-header-left">
+        <span class="subj-badge ${cls}">${subjectLabel(group.subject)}</span>
+        <span class="cat-name">${group.cat}</span>
+        <div class="star-row">${renderStars(group.stars)}</div>
+      </div>
+      <div class="cat-meta">
+        <span class="wrong-count">오답 ${group.totalWrong}회</span>
+        <span class="chevron">⌄</span>
+      </div>
+    </div>
+    <div class="cat-body">
+      ${noteHtml}
+      <div class="q-list">${questionsHtml}</div>
+    </div>
+  </div>`;
+}
+
+function render() {
+  loadData();
+  const stats = calcStats();
+  document.getElementById('stat-total').textContent = stats.total;
+  document.getElementById('stat-life').textContent = stats.life;
+  document.getElementById('stat-nonlife').textContent = stats.nonlife;
+  document.getElementById('stat-variable').textContent = stats.variable;
+  document.getElementById('stat-pension').textContent = stats.pension;
+
+  const groups = groupByCategory();
+  let entries = Object.values(groups);
+
+  // 필터
+  if (currentFilter !== 'all') {
+    entries = entries.filter(g => g.subject === currentFilter);
+  }
+
+  // 정렬
+  if (currentSort === 'stars') entries.sort((a,b) => b.stars - a.stars || b.totalWrong - a.totalWrong);
+  else if (currentSort === 'count') entries.sort((a,b) => b.totalWrong - a.totalWrong);
+  else if (currentSort === 'subject') entries.sort((a,b) => a.subject.localeCompare(b.subject));
+  else if (currentSort === 'alpha') entries.sort((a,b) => a.cat.localeCompare(b.cat));
+
+  const container = document.getElementById('main-content');
+
+  if (entries.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="big-icon">📝</div>
+      <h2>${stats.total === 0 ? '아직 오답 기록이 없어요' : '해당 과목의 오답이 없어요'}</h2>
+      <p>${stats.total === 0
+        ? '시험을 응시하면 틀린 문제가 자동으로 여기에 저장됩니다.<br>각 과목 모의고사를 풀고 오답노트를 완성해보세요!'
+        : '다른 과목 필터를 선택하거나 해당 과목 시험을 응시해보세요.'
+      }</p>
+      <a href="index.html" class="go-exam-btn">
+        <iconify-icon icon="solar:book-bold" width="16"></iconify-icon>
+        시험 허브 바로가기
+      </a>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = entries.map(g => renderCategoryCard(g, false)).join('');
+}
+
+// =========================================
+// 7. 인터랙션
+// =========================================
+function toggleCat(header) {
+  const section = header.parentElement;
+  section.classList.toggle('open');
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.toggle('active', t.dataset.subject === f));
+  render();
+}
+
+function setSort(v) {
+  currentSort = v;
+  render();
+}
+
+function toggleMaster(mKey, idx) {
+  if (masteredIds[mKey]) delete masteredIds[mKey];
+  else masteredIds[mKey] = true;
+  localStorage.setItem('mrsg_mastered', JSON.stringify(masteredIds));
+  showToast(masteredIds[mKey] ? '✓ 완료 처리되었습니다' : '↩️ 완료 취소되었습니다');
+  render();
+}
+
+function clearAll() {
+  if (!confirm('모든 오답 기록을 초기화할까요?\n이 작업은 되돌릴 수 없습니다.')) return;
+  localStorage.removeItem(KEY);
+  localStorage.removeItem('mrsg_mastered');
+  masteredIds = {};
+  noteData = { answers: {}, catStats: {} };
+  showToast('🗑️ 초기화 완료');
+  render();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// =========================================
+// 8. 초기 실행
+// =========================================
+render();
+</script>
+</body>
+</html>

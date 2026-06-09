@@ -461,5 +461,80 @@ function resetExam(){
 renderExam(1);exams[1]._rendered=true;
 startTimer(1);
 </script>
+
+<script>
+// ============ 오답노트 트래킹 ============
+(function() {
+  function _hashQ(str) {
+    let h = 0;
+    for (let i = 0; i < Math.min(str.length, 40); i++) {
+      h = (h * 31 + str.charCodeAt(i)) & 0xFFFFFF;
+    }
+    return h.toString(16).padStart(6,'0');
+  }
+
+  function saveWrongToNote(subjectKey, subjectName, ei, s1, s2, answers) {
+    try {
+      const KEY = 'mrsg_odalNote';
+      let data = JSON.parse(localStorage.getItem(KEY) || '{"answers":{},"catStats":{}}');
+      const today = new Date().toISOString().split('T')[0];
+      const allQs = [...s1, ...s2];
+      allQs.forEach((q, i) => {
+        const qn = i + 1;
+        const userAns = (answers[ei+'-'+qn] !== undefined) ? answers[ei+'-'+qn] : -1;
+        if (userAns < 0 || userAns === q.a) return;
+        const qId = subjectKey + '_' + _hashQ(q.q);
+        const cat = q.cat || (qn <= 20 ? '과목1' : '과목2');
+        const catKey = subjectName + '_' + cat;
+        if (data.answers[qId]) {
+          data.answers[qId].wrongCount++;
+          data.answers[qId].lastWrong = today;
+          data.answers[qId].lastUserAns = userAns;
+        } else {
+          data.answers[qId] = {
+            subject: subjectKey, subjectName,
+            examNum: ei, qNum: qn, cat, catKey,
+            q: q.q, c: q.c, a: q.a, userAns, ex: q.ex,
+            wrongCount: 1, firstWrong: today, lastWrong: today
+          };
+        }
+        data.catStats[catKey] = (data.catStats[catKey] || 0) + 1;
+      });
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch(e) { console.warn('오답노트 저장 실패', e); }
+  }
+
+  // gradeExam 후킹
+  const SUBJ_KEY = 'life';
+  const SUBJ_NAME = '생명보험';
+  
+  window.addEventListener('load', function() {
+    const orig = window.gradeExam;
+    if (typeof orig !== 'function') return;
+    window.gradeExam = function() {
+      orig.apply(this, arguments);
+      const ei = typeof currentExam !== 'undefined' ? currentExam : 1;
+      const s1 = DATA['exam'+ei+'_s1'];
+      const s2 = DATA['exam'+ei+'_s2'];
+      const wrongCount = [...s1,...s2].filter((q,i)=>{
+        const ua = answers[ei+'-'+(i+1)];
+        return ua !== undefined && ua >= 0 && ua !== q.a;
+      }).length;
+      saveWrongToNote(SUBJ_KEY, SUBJ_NAME, ei, s1, s2, answers);
+      if (wrongCount > 0) {
+        const rc = document.getElementById('result'+ei);
+        if (rc && !rc.querySelector('.note-saved-msg')) {
+          const d = document.createElement('div');
+          d.className = 'note-saved-msg';
+          d.style.cssText = 'margin-top:14px;padding:12px 16px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);border-radius:8px;font-size:12px;color:#c9a96e;';
+          d.innerHTML = '📒 <strong>오답노트 저장 완료!</strong> 틀린 문제 '+wrongCount+'개가 기록되었습니다. <a href="../오답노트.html" target="_blank" style="color:#c9a96e;text-decoration:underline;font-weight:700;">오답노트 보기 →</a>';
+          rc.appendChild(d);
+        }
+      }
+    };
+  });
+})();
+</script>
+
 </body>
 </html>

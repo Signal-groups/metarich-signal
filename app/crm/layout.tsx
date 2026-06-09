@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 import { canAccessCrm, isApprovedUser, normalizeRole } from '../../lib/roles'
 import { ensureUserProfile } from '../../lib/userProfile'
+import { trackPageView } from '../../lib/trackActivity'
 
 type NavItem = {
   href: string
@@ -109,6 +110,13 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     checkAndLoad()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, router])
+
+  // 페이지 이동 시 활동 로그 기록 (fire-and-forget)
+  useEffect(() => {
+    if (user?.id && pathname) {
+      void trackPageView(user.id, pathname)
+    }
+  }, [user?.id, pathname])
 
 
   if (checking) {
