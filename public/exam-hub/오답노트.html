@@ -254,7 +254,10 @@ body {
 
 <!-- 네비게이션 -->
 <nav class="top-nav">
-  <h1>📒 오답노트</h1>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <h1>📒 오답노트</h1>
+    <span id="user-badge" style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.2);color:#c9a96e;display:none;"></span>
+  </div>
   <a href="index.html" class="back-btn">
     <iconify-icon icon="solar:arrow-left-linear" width="14"></iconify-icon>
     시험 허브로
@@ -997,11 +1000,14 @@ const CAT_NOTES = {
 // =========================================
 // 2. 상태 변수
 // =========================================
-const KEY = 'mrsg_odalNote';
+const _uid = (function(){ try{ return localStorage.getItem('mrsg_uid')||'guest'; }catch(e){ return 'guest'; } })();
+const _uname = (function(){ try{ return localStorage.getItem('mrsg_uname')||''; }catch(e){ return ''; } })();
+const KEY = 'mrsg_odalNote_' + _uid;
+const MASTERED_KEY = 'mrsg_mastered_' + _uid;
 let currentFilter = 'all';
 let currentSort = 'stars';
 let noteData = { answers: {}, catStats: {} };
-let masteredIds = JSON.parse(localStorage.getItem('mrsg_mastered') || '{}');
+let masteredIds = JSON.parse(localStorage.getItem(MASTERED_KEY) || '{}');
 
 // =========================================
 // 3. 데이터 로드
@@ -1203,7 +1209,7 @@ function setSort(v) {
 function toggleMaster(mKey, idx) {
   if (masteredIds[mKey]) delete masteredIds[mKey];
   else masteredIds[mKey] = true;
-  localStorage.setItem('mrsg_mastered', JSON.stringify(masteredIds));
+  localStorage.setItem(MASTERED_KEY, JSON.stringify(masteredIds));
   showToast(masteredIds[mKey] ? '✓ 완료 처리되었습니다' : '↩️ 완료 취소되었습니다');
   render();
 }
@@ -1211,7 +1217,7 @@ function toggleMaster(mKey, idx) {
 function clearAll() {
   if (!confirm('모든 오답 기록을 초기화할까요?\n이 작업은 되돌릴 수 없습니다.')) return;
   localStorage.removeItem(KEY);
-  localStorage.removeItem('mrsg_mastered');
+  localStorage.removeItem(MASTERED_KEY);
   masteredIds = {};
   noteData = { answers: {}, catStats: {} };
   showToast('🗑️ 초기화 완료');
@@ -1228,6 +1234,15 @@ function showToast(msg) {
 // =========================================
 // 8. 초기 실행
 // =========================================
+// 사용자 배지 표시
+(function() {
+  const badge = document.getElementById('user-badge');
+  if (badge && _uname && _uid !== 'guest') {
+    badge.textContent = '👤 ' + _uname;
+    badge.style.display = 'inline-block';
+  }
+})();
+
 render();
 </script>
 </body>

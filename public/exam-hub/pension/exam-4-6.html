@@ -87,6 +87,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
   .exam-tab{padding:12px 16px;font-size:12px;}
   .result-grid{grid-template-columns:1fr 1fr;}
 }
+
+.btn-home{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
+.btn-home:hover{border-color:var(--accent);color:var(--accent);}
+.btn-close{display:inline-flex;align-items:center;gap:5px;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
+.btn-close:hover{border-color:rgba(239,68,68,0.4);color:#f87171;}
 </style>
 </head>
 <body>
@@ -148,6 +153,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
   </div>
 </div>
 <div class="action-bar">
+  <a href="../index.html" class="btn-home">🏠 처음으로</a>
+  <button class="btn-close" onclick="window.close()">✕ 창닫기</button>
   <button class="btn btn-secondary" onclick="resetExam()">🔄 초기화</button>
   <button class="btn btn-primary" onclick="submitExam()">✅ 채점하기</button>
   <div class="score-display" id="score-display"></div>
@@ -412,7 +419,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   function saveWrongToNote(subjectKey, subjectName, ei, s1, s2, answers) {
     try {
-      const KEY = 'mrsg_odalNote';
+      const _uid = (function(){ try{ return localStorage.getItem('mrsg_uid')||'guest'; }catch(e){ return 'guest'; } })();
+      const KEY = 'mrsg_odalNote_' + _uid;
       let data = JSON.parse(localStorage.getItem(KEY) || '{"answers":{},"catStats":{}}');
       const today = new Date().toISOString().split('T')[0];
       const allQs = [...s1, ...s2];

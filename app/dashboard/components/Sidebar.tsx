@@ -113,6 +113,13 @@ export default function Sidebar({
       fetch3MonthAvg();
     }
     fetchMenuSettings();
+    // 시험 허브 오답노트가 사용자별로 분리되도록 localStorage에 사용자 정보 저장
+    if (user?.id) {
+      try {
+        localStorage.setItem('mrsg_uid', user.id);
+        localStorage.setItem('mrsg_uname', user?.name || '사용자');
+      } catch(e) { /* ignore */ }
+    }
   }, [dateStr, user?.id, isApproved]);
 
   useEffect(() => {
@@ -375,7 +382,8 @@ export default function Sidebar({
 
               <NavItem
                 icon="자료"
-                label="보험자료실"
+                iconNode={<Search className="h-5 w-5 opacity-80" />}
+                label="자료 검색"
                 active={false}
                 onClick={openInsuranceLibrary}
               />
@@ -602,7 +610,7 @@ function MobileNavButton({ children, label, active, disabled, onClick }: { child
   );
 }
 
-function NavItem({ icon, label, active, onClick, variant, badge }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" | "support", badge?: string }) {
+function NavItem({ icon, label, active, onClick, variant, badge, iconNode }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" | "support", badge?: string, iconNode?: React.ReactNode }) {
   const variantClass =
     variant === "naver"
       ? "bg-[#03c75a] text-white hover:bg-[#02b150] shadow-lg shadow-emerald-950/20"
@@ -628,7 +636,7 @@ function NavItem({ icon, label, active, onClick, variant, badge }: { icon: strin
       onClick={onClick} 
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${variantClass}`}
     >
-      <span className={iconClass}>{icon}</span>
+      <span className={iconClass}>{iconNode ?? icon}</span>
       <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
       <span className="ml-auto flex items-center gap-2">
         {badge && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-white/70">{badge}</span>}

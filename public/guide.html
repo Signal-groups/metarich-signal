@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사용 가이드 — 메타리치 시그널그룹</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif; background: #f8fafc; color: #111; word-break: keep-all; }
+::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+/* ── 헤더 ── */
+.top-bar {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  height: 64px;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-txt { font-family: 'Noto Serif KR', serif; font-size: 18px; font-weight: 900; color: #2d4a5a; }
+.brand-sub { font-size: 9px; color: #94a3b8; letter-spacing: 3px; font-weight: 600; }
+.close-btn { background: #f1f5f9; border: none; border-radius: 10px; padding: 8px 16px; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; transition: all .2s; font-family: inherit; }
+.close-btn:hover { background: #e2e8f0; color: #334155; }
+
+/* ── 탭 ── */
+.tab-bar { background: #fff; border-bottom: 2px solid #e2e8f0; padding: 0 32px; display: flex; gap: 0; }
+.tab-btn { padding: 16px 28px; font-size: 14px; font-weight: 700; color: #94a3b8; border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; font-family: inherit; display: flex; align-items: center; gap: 8px; }
+.tab-btn:hover { color: #475569; }
+.tab-btn.active-basic { color: #1a3a6e; border-bottom-color: #1a3a6e; }
+.tab-btn.active-pro { color: #b45309; border-bottom-color: #b45309; }
+
+/* ── 콘텐츠 ── */
+.content { max-width: 1000px; margin: 0 auto; padding: 40px 32px 80px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── 섹션 헤더 ── */
+.guide-hero {
+  border-radius: 20px; padding: 36px 40px; margin-bottom: 36px;
+  display: flex; align-items: center; gap: 24px;
+}
+.guide-hero.basic { background: linear-gradient(135deg, #1a3a6e 0%, #2563eb 100%); }
+.guide-hero.pro { background: linear-gradient(135deg, #78350f 0%, #d97706 100%); }
+.guide-hero-icon { font-size: 52px; flex-shrink: 0; }
+.guide-hero h2 { font-size: 28px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+.guide-hero p { font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.7; }
+.guide-hero .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #fff; font-weight: 700; margin-top: 10px; }
+
+/* ── 단계 흐름 ── */
+.flow-section { margin-bottom: 40px; }
+.flow-title { font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.flow-title::before { content: ''; display: block; width: 4px; height: 20px; border-radius: 2px; }
+.flow-title.basic::before { background: #1a3a6e; }
+.flow-title.pro::before { background: #d97706; }
+.flow-steps { display: flex; gap: 0; overflow-x: auto; padding-bottom: 8px; margin-bottom: 20px; }
+.flow-step { flex-shrink: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px 20px; min-width: 160px; text-align: center; position: relative; }
+.flow-step + .flow-step::before { content: '→'; position: absolute; left: -14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 16px; font-weight: 700; }
+.flow-step-num { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; margin: 0 auto 8px; }
+.flow-step-num.basic { background: #eff6ff; color: #1a3a6e; }
+.flow-step-num.pro { background: #fffbeb; color: #d97706; }
+.flow-step-label { font-size: 13px; font-weight: 700; color: #1e293b; }
+.flow-step-sub { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+/* ── 도구 카드 그리드 ── */
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 40px; }
+.tool-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; transition: all .2s; }
+.tool-card:hover { border-color: #bfdbfe; box-shadow: 0 4px 20px rgba(37,99,235,.06); }
+.tool-card.pro:hover { border-color: #fde68a; box-shadow: 0 4px 20px rgba(217,119,6,.06); }
+.tool-card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
+.tool-card-icon.basic { background: #eff6ff; }
+.tool-card-icon.pro { background: #fffbeb; }
+.tool-card h3 { font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
+.tool-card .desc { font-size: 12.5px; color: #64748b; line-height: 1.7; margin-bottom: 12px; }
+.tool-card .how { background: #f8fafc; border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #475569; line-height: 1.8; }
+.tool-card .how strong { color: #1a3a6e; font-weight: 700; }
+.tool-card.pro .how strong { color: #d97706; }
+.steps-tag { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.step-chip { padding: 2px 9px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+.step-chip.basic { background: #eff6ff; color: #1a3a6e; }
+.step-chip.pro { background: #fffbeb; color: #b45309; }
+
+/* ── 팁 박스 ── */
+.tip-box { border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; display: flex; gap: 14px; }
+.tip-box.basic { background: #f0f9ff; border: 1px solid #bae6fd; }
+.tip-box.pro { background: #fffbeb; border: 1px solid #fde68a; }
+.tip-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+.tip-body h4 { font-size: 13px; font-weight: 800; color: #0369a1; margin-bottom: 5px; }
+.tip-box.pro .tip-body h4 { color: #b45309; }
+.tip-body p { font-size: 12.5px; color: #475569; line-height: 1.8; }
+.tip-body ul { padding-left: 16px; margin-top: 6px; }
+.tip-body ul li { font-size: 12.5px; color: #475569; margin-bottom: 4px; line-height: 1.7; }
+
+/* ── 구분선 ── */
+.section-divider { border: none; border-top: 1px solid #e2e8f0; margin: 32px 0; }
+
+/* ── 모바일 ── */
+@media (max-width: 640px) {
+  .top-bar { padding: 0 16px; }
+  .tab-bar { padding: 0 16px; }
+  .content { padding: 24px 16px 60px; }
+  .guide-hero { padding: 24px 20px; flex-direction: column; text-align: center; }
+  .tab-btn { padding: 14px 16px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 상단 바 -->
+<div class="top-bar">
+  <div class="brand">
+    <svg width="36" height="36" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="26" cy="26" r="24" stroke="#2d4a5a" stroke-width="1.2" fill="none"/>
+      <circle cx="26" cy="26" r="18" stroke="#2d4a5a" stroke-width="0.6" stroke-dasharray="2 3" fill="none"/>
+      <text x="26" y="7.5" text-anchor="middle" font-size="5" font-weight="700" fill="#2d4a5a" font-family="sans-serif">N</text>
+      <text x="26" y="48.5" text-anchor="middle" font-size="5" font-weight="700" fill="#2d4a5a" font-family="sans-serif">S</text>
+      <text x="5.5" y="27.5" text-anchor="middle" font-size="5" font-weight="700" fill="#2d4a5a" font-family="sans-serif">W</text>
+      <text x="46.5" y="27.5" text-anchor="middle" font-size="5" font-weight="700" fill="#2d4a5a" font-family="sans-serif">E</text>
+      <polygon points="26,10 28,26 26,24 24,26" fill="#2d4a5a"/>
+      <polygon points="26,42 28,26 26,28 24,26" fill="#9aacb8"/>
+      <polygon points="10,26 26,24 24,26 26,28" fill="#9aacb8"/>
+      <polygon points="42,26 26,24 28,26 26,28" fill="#2d4a5a"/>
+      <circle cx="26" cy="26" r="2.5" fill="#2d4a5a"/>
+    </svg>
+    <div>
+      <div class="brand-txt">보험의기준</div>
+      <div class="brand-sub">USAGE GUIDE</div>
+    </div>
+  </div>
+  <button class="close-btn" onclick="window.close()">✕ 창닫기</button>
+</div>
+
+<!-- 탭 바 -->
+<div class="tab-bar">
+  <button class="tab-btn" id="tab-basic" onclick="switchTab('basic')">
+    📘 일반 사용자 가이드
+  </button>
+  <button class="tab-btn" id="tab-pro" onclick="switchTab('pro')">
+    ⭐ 프로 사용자 가이드
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     일반 사용자 가이드 (승인된 게스트 기준 — 메인화면)
+═══════════════════════════════════════════════════════ -->
+<div class="content">
+  <div class="tab-panel" id="panel-basic">
+
+    <div class="guide-hero basic">
+      <div class="guide-hero-icon">📘</div>
+      <div>
+        <h2>일반 사용자 가이드</h2>
+        <p>승인된 사용자라면 누구나 쓸 수 있는 <strong style="color:#fff;">메인화면 도구</strong>를 안내합니다.<br>
+        고객 상담 전·중에 필요한 정보확인부터 보장분석까지, 단계별로 활용하는 방법을 정리했습니다.</p>
+        <div class="badge">✅ 승인 후 즉시 이용 가능 · 별도 설치 불필요</div>
+      </div>
+    </div>
+
+    <!-- 시작 전 체크 -->
+    <div class="flow-section">
+      <div class="flow-title basic">📍 사용 시작 전 확인사항</div>
+      <div class="tip-box basic">
+        <div class="tip-icon">🔑</div>
+        <div class="tip-body">
+          <h4>로그인 & 승인 상태 확인</h4>
+          <ul>
+            <li>메타리치 시그널그룹 계정으로 로그인 후 <strong>관리자 승인</strong>이 완료되어야 전체 도구를 이용할 수 있습니다.</li>
+            <li>승인 전 게스트는 <strong>정보확인 3종</strong>(숨은보험금·진료기록·약학정보원)만 무료로 이용 가능합니다.</li>
+            <li>승인 요청은 카카오 오픈채팅 "보험의 기준"을 통해 팀장에게 직접 요청하세요.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상담 흐름 -->
+    <div class="flow-section">
+      <div class="flow-title basic">🗺️ 고객 상담 단계별 활용 흐름</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-step-num basic">1</div>
+          <div class="flow-step-label">가망 발굴</div>
+          <div class="flow-step-sub">DM · 카페 활용</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num basic">2</div>
+          <div class="flow-step-label">사전 접근</div>
+          <div class="flow-step-sub">숨은보험금 확인</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num basic">3</div>
+          <div class="flow-step-label">초회 면담</div>
+          <div class="flow-step-sub">정보확인 도구</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num basic">4</div>
+          <div class="flow-step-label">사실 확인</div>
+          <div class="flow-step-sub">보장분석 · 인수기준</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num basic">5</div>
+          <div class="flow-step-label">제안</div>
+          <div class="flow-step-sub">통계자료 · 비교</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num basic">6</div>
+          <div class="flow-step-label">클로징</div>
+          <div class="flow-step-sub">카드상담 · 공시</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- 정보확인 도구 -->
+    <div class="flow-section">
+      <div class="flow-title basic">🔍 정보확인 도구 (가장 자주 쓰는 도구)</div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-card-icon basic">🔎</div>
+          <h3>숨은보험금 찾기</h3>
+          <p class="desc">고객이 받을 수 있는 미청구 보험금을 조회합니다. 첫 접근 시 고객의 흥미를 즉각 끌어내는 강력한 도구입니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> "보험금 못 받은 게 있을 수도 있어요" 멘트와 함께 사전 접근 시<br>
+            <strong>주의</strong>: 크롬에서 접속 권장, 링크 복사 후 주소창에 직접 입력
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">사전접근</span>
+            <span class="step-chip basic">초회면담</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">🏥</div>
+          <h3>진료기록 확인</h3>
+          <p class="desc">건강e음 어플을 활용해 고객의 진료 이력을 확인하는 방법을 안내합니다. 고지의무 및 현재 건강 상태 파악에 활용합니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> 고객 고지의무 확인, 기존 질환·수술 이력 파악 시<br>
+            <strong>포인트</strong>: 직접 공유보다 고객이 직접 확인하게 안내
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">초회면담</span>
+            <span class="step-chip basic">사실확인</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">💊</div>
+          <h3>약학정보원</h3>
+          <p class="desc">고객의 복용 약을 검색해 성분·부작용·보험 가입 시 영향을 확인합니다. 가입 가능 여부 및 고지 필요 여부 판단에 사용합니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> "드시는 약이 있으세요?" 질문 후 약 이름 검색 시<br>
+            <strong>포인트</strong>: 예시 항암약 아닌지, 성분 확인
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">사실확인</span>
+            <span class="step-chip basic">제안</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">📋</div>
+          <h3>내보험 바로 알기</h3>
+          <p class="desc">고객이 가입된 보험을 한 번에 파악하고 보장 공백을 찾는 캠페인 도구입니다. 기존 보험 리뷰 상담의 시작점으로 활용합니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> "지금 가입된 보험이 뭔지 정확히 아세요?" 질문과 함께<br>
+            <strong>포인트</strong>: 보장 공백 발견 → 자연스러운 리뉴얼 제안으로 연결
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">사전접근</span>
+            <span class="step-chip basic">초회면담</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">💳</div>
+          <h3>고객상담 카드</h3>
+          <p class="desc">카드를 선택해 고객에게 맞는 보험이 설계되었는지, 필요한 것은 무엇인지 확인합니다. 상담의 방향을 잡는 전략 도구입니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> 상담 초반, 고객 니즈 파악 및 우선순위 정리 시<br>
+            <strong>포인트</strong>: 카드별 핵심 질문으로 대화 방향 설정
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">초회면담</span>
+            <span class="step-chip basic">사실확인</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">📢</div>
+          <h3>보험상품 공시</h3>
+          <p class="desc">각 보험사 상품 약관 공시를 바로 확인합니다. 상담 중 약관 내용, 면책 조항, 지급 기준 질문에 즉시 대응할 수 있습니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> "이 담보 정확히 어떻게 지급되나요?" 질문 시<br>
+            <strong>포인트</strong>: 회사별·상품별 공시 링크 직접 연결
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">제안</span>
+            <span class="step-chip basic">클로징</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- 보장분석 도구 -->
+    <div class="flow-section">
+      <div class="flow-title basic">📊 보장분석 도구</div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-card-icon basic">📈</div>
+          <h3>보장별 통계 자료</h3>
+          <p class="desc">암·뇌·심장·치매 등 질환별 통계 이미지를 상담 근거로 제시합니다. 고객이 필요성을 느끼지 못할 때 객관적 근거를 보여줍니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> "굳이 이게 필요한가요?" 반응을 보일 때<br>
+            카테고리 선택 → 키워드 검색 → 이미지 팝업 확대 제시
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">초회면담</span>
+            <span class="step-chip basic">사실확인</span>
+            <span class="step-chip basic">제안</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">🔄</div>
+          <h3>보험료 비교</h3>
+          <p class="desc">건강보험·종신·저축성 회사별 보험료와 담보 차이를 비교합니다. 제안 방향을 잡고, 고객에게 합리적 선택을 안내합니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> 특정 회사·상품이 왜 좋은지 설명할 때<br>
+            상품 선택 → 질환 검색 → 회사별 비교 결과 제시
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">사실확인</span>
+            <span class="step-chip basic">제안</span>
+            <span class="step-chip basic">클로징</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">🏢</div>
+          <h3>회사별 간편 인수 확인</h3>
+          <p class="desc">고객 병력·수술 이력에 따른 회사별 간편심사 기준을 빠르게 확인합니다. 상담 중 "가입 가능한가요?" 질문에 즉시 답변 가능합니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> 고지사항이나 기왕증 있는 고객 상담 시<br>
+            질환 검색 → 회사별 인수 기준 비교
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">사실확인</span>
+            <span class="step-chip basic">제안</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- 기타 도구 -->
+    <div class="flow-section">
+      <div class="flow-title basic">🛠️ 기타 유용한 도구</div>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-card-icon basic">📚</div>
+          <h3>자료 검색 (보험자료실)</h3>
+          <p class="desc">상담에 필요한 보험 관련 자료를 키워드로 검색합니다. 약관·약도·법령·통계 등을 빠르게 찾아 상담에 활용하세요.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> "정확한 약관 조항이 궁금해요" 등 자료 요청 시<br>
+            사이드바 → <strong>자료 검색</strong> 클릭
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">사실확인</span>
+            <span class="step-chip basic">제안</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">🎓</div>
+          <h3>자격시험 모의고사</h3>
+          <p class="desc">생명보험·손해보험·변액보험·퇴직연금 모집인 자격시험 모의고사를 과목별로 풀어볼 수 있습니다. 오답노트 자동 저장 기능 포함.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> 자격시험 준비 중이거나 보수교육 대비 시<br>
+            사이드바 → <strong>자격시험 모의고사(NEW)</strong> 클릭
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">자기계발</span>
+          </div>
+        </div>
+
+        <div class="tool-card">
+          <div class="tool-card-icon basic">📨</div>
+          <h3>고객 DM 발송</h3>
+          <p class="desc">설계사 이름·연락처가 포함된 보험 정보 이미지를 제작하고 고객에게 바로 발송합니다. 가망 고객 관리에 효과적입니다.</p>
+          <div class="how">
+            <strong>이런 때 사용 👉</strong> 정기적 고객 관리, 특정 이슈 관련 정보 발송 시<br>
+            사이드바 → <strong>고객 DM 발송</strong> 클릭
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip basic">가망발굴</span>
+            <span class="step-chip basic">사후관리</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 사이드바 안내 -->
+    <div class="flow-section">
+      <div class="flow-title basic">📌 사이드바 메뉴 안내</div>
+      <div class="tip-box basic">
+        <div class="tip-icon">🗂️</div>
+        <div class="tip-body">
+          <h4>사이드바 주요 메뉴</h4>
+          <ul>
+            <li><strong>홈</strong>: 메인 고객 상담 도구 화면으로 돌아옵니다.</li>
+            <li><strong>사무실 업무</strong>: 실적 입력, 교육 관리, 업무 달력 (프로 사용자)</li>
+            <li><strong>고객 CRM</strong>: 고객 정보 관리, 보장 분석, PDF 리포트</li>
+            <li><strong>자료 검색</strong>: 보험 관련 자료 키워드 검색 🔍</li>
+            <li><strong>자격시험 모의고사</strong>: 4개 과목 모의고사 허브 (NEW)</li>
+            <li><strong>고객 DM 발송</strong>: 이미지 DM 제작 및 발송</li>
+            <li><strong>보험의 기준 카페</strong>: 네이버 카페 바로가기</li>
+            <li><strong>보험의 기준 오픈채팅</strong>: 카카오 오픈채팅 참여</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end basic panel -->
+
+
+  <!-- ═══════════════════════════════════════════════════════
+       프로 사용자 가이드 (사무실 업무)
+  ═══════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-pro">
+
+    <div class="guide-hero pro">
+      <div class="guide-hero-icon">⭐</div>
+      <div>
+        <h2>프로 사용자 가이드</h2>
+        <p>시그널그룹 소속 설계사를 위한 <strong style="color:#fff;">사무실 업무 전용 기능</strong>을 안내합니다.<br>
+        실적 관리, 교육 이수, 고객 CRM, DM 발송 등 설계사의 일상 업무를 시스템화합니다.</p>
+        <div class="badge">🔒 시그널그룹 소속 설계사 전용 · 관리자 승인 필요</div>
+      </div>
+    </div>
+
+    <!-- 사무실 업무 접근 -->
+    <div class="flow-section">
+      <div class="flow-title pro">🚀 사무실 업무 시작하기</div>
+      <div class="tip-box pro">
+        <div class="tip-icon">💡</div>
+        <div class="tip-body">
+          <h4>사무실 업무 탭 진입 방법</h4>
+          <ul>
+            <li>사이드바 상단 <strong>"사무실 업무"</strong> 메뉴 클릭 (승인된 설계사 전용)</li>
+            <li>또는 모바일 하단 네비바의 <strong>"업무"</strong> 탭 탭</li>
+            <li>사무실 업무 탭에서는 <strong>달력, 실적 입력, 교육 관리</strong>가 통합 제공됩니다</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 핵심 기능 -->
+    <div class="flow-section">
+      <div class="flow-title pro">📊 사무실 업무 핵심 기능</div>
+      <div class="tool-grid">
+        <div class="tool-card pro">
+          <div class="tool-card-icon pro">📅</div>
+          <h3>월간 실적 입력</h3>
+          <p class="desc">월별 계약 건수·금액, 통화·미팅·프레젠테이션·소개 건수를 입력하고 목표 대비 달성률을 관리합니다.</p>
+          <div class="how">
+            <strong>사용 방법 👉</strong><br>
+            사무실 업무 탭 → <strong>이번 달 기록</strong> 탭 선택<br>
+            목표 입력 (관리자 잠금 해제 필요) → 실적 입력 → <strong>저장하기</strong><br>
+            <strong>포인트</strong>: 최근 3개월 평균은 사이드바 좌측 하단에 자동 표시
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip pro">매일/매월</span>
+          </div>
+        </div>
+
+        <div class="tool-card pro">
+          <div class="tool-card-icon pro">🎓</div>
+          <h3>교육 이수 관리</h3>
+          <p class="desc">주차별 교육 내용을 확인하고 이수 여부를 체크합니다. 관리자가 입력한 교육 커리큘럼을 확인하고 참여 현황을 기록합니다.</p>
+          <div class="how">
+            <strong>사용 방법 👉</strong><br>
+            사무실 업무 탭 → <strong>교육 관리</strong> 탭 선택<br>
+            주차별 교육 내용 확인 → 이수 체크박스 클릭 → 자동 저장
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip pro">주간</span>
+          </div>
+        </div>
+
+        <div class="tool-card pro">
+          <div class="tool-card-icon pro">👥</div>
+          <h3>고객 CRM</h3>
+          <p class="desc">고객 정보 등록, 보험 증권 업로드, 보장 분석, PDF 리포트 생성, 계약 이력 관리를 한 곳에서 처리합니다.</p>
+          <div class="how">
+            <strong>사용 방법 👉</strong><br>
+            사이드바 → <strong>고객 CRM</strong> 클릭<br>
+            고객 등록 → 증권 업로드 → 보장분석 → 리포트 생성<br>
+            <strong>포인트</strong>: GPTs 분석 JSON 업로드로 분석 자동화 가능
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip pro">상시</span>
+          </div>
+        </div>
+
+        <div class="tool-card pro">
+          <div class="tool-card-icon pro">📸</div>
+          <h3>DM 콘텐츠 제작</h3>
+          <p class="desc">설계사 이름·소속·연락처가 들어간 보험 정보 이미지를 제작합니다. 인스타그램용 4:5, DM용 9:16 규격을 지원합니다.</p>
+          <div class="how">
+            <strong>사용 방법 👉</strong><br>
+            사이드바 → <strong>고객 DM 발송</strong> 클릭 → 팝업창 오픈<br>
+            이미지 선택 → 문구·색상 설정 → PNG 다운로드 → 발송
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip pro">주간</span>
+          </div>
+        </div>
+
+        <div class="tool-card pro">
+          <div class="tool-card-icon pro">📈</div>
+          <h3>실적 분석 & 히스토리</h3>
+          <p class="desc">월별 실적 추이, 최고·최저 달성 월, 3개월 평균을 차트와 함께 확인합니다. 성과 분석으로 영업 패턴을 파악합니다.</p>
+          <div class="how">
+            <strong>사용 방법 👉</strong><br>
+            사무실 업무 탭 → 달력에서 <strong>월 선택</strong><br>
+            하단 실적 히스토리 카드 확인 → 클릭으로 상세 보기
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip pro">월간</span>
+          </div>
+        </div>
+
+        <div class="tool-card pro">
+          <div class="tool-card-icon pro">🤖</div>
+          <h3>설계사 브랜딩 AI</h3>
+          <p class="desc">AI를 활용해 설계사 개인 브랜드 컨셉, 자기소개 문구, SNS 프로필을 생성합니다. 전문가 이미지 구축에 활용하세요.</p>
+          <div class="how">
+            <strong>사용 방법 👉</strong><br>
+            사이드바 → <strong>설계사 브랜딩 AI(베타)</strong> 클릭<br>
+            질문에 답변 → AI가 브랜딩 컨셉 자동 생성
+          </div>
+          <div class="steps-tag">
+            <span class="step-chip pro">필요시</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- 관리자 전용 -->
+    <div class="flow-section">
+      <div class="flow-title pro">🔧 관리자·팀장 전용 기능</div>
+      <div class="tip-box pro">
+        <div class="tip-icon">⚙️</div>
+        <div class="tip-body">
+          <h4>마스터 계정 전용 기능</h4>
+          <ul>
+            <li><strong>직원 관리</strong>: 사이드바 하단 → 직원 목록, 승인/반려, 역할 변경</li>
+            <li><strong>전달사항 작성</strong>: 사이드바 달력 아래 → 날짜별 전달사항 직접 입력</li>
+            <li><strong>교육 커리큘럼</strong>: 교육 관리 탭 → 주차별 교육 내용 등록·수정</li>
+            <li><strong>도구 노출 편집</strong>: 메인화면 <strong>"노출 편집"</strong> 버튼 → 상담 도구 on/off 토글</li>
+            <li><strong>팀 목표 설정</strong>: 직원별 월 목표 건수·금액 잠금/해제</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- 권장 워크플로우 -->
+    <div class="flow-section">
+      <div class="flow-title pro">📅 프로 사용자 일일 권장 루틴</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-step-num pro">AM</div>
+          <div class="flow-step-label">전달사항 확인</div>
+          <div class="flow-step-sub">사이드바 달력</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num pro">오전</div>
+          <div class="flow-step-label">고객 CRM 확인</div>
+          <div class="flow-step-sub">신규·팔로업</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num pro">상담</div>
+          <div class="flow-step-label">도구 활용</div>
+          <div class="flow-step-sub">메인화면 도구</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num pro">오후</div>
+          <div class="flow-step-label">실적 입력</div>
+          <div class="flow-step-sub">사무실 업무탭</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num pro">PM</div>
+          <div class="flow-step-label">DM 발송</div>
+          <div class="flow-step-sub">고객관리·발굴</div>
+        </div>
+      </div>
+
+      <div class="tip-box pro">
+        <div class="tip-icon">📌</div>
+        <div class="tip-body">
+          <h4>실적 입력 권장 주기</h4>
+          <ul>
+            <li><strong>일일</strong>: 통화·미팅·프레젠테이션 건수는 매일 저녁 입력</li>
+            <li><strong>계약 체결 즉시</strong>: 계약 건수·금액은 체결 당일 바로 입력</li>
+            <li><strong>월초</strong>: 다음 달 목표 건수·금액 설정 (관리자 잠금 해제 후)</li>
+            <li><strong>주간</strong>: 교육 이수 체크 → 팀장에게 현황 보고</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end pro panel -->
+
+</div><!-- end content -->
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-basic', 'active-pro'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active-' + tab);
+}
+
+// URL 파라미터로 탭 결정
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab') || 'basic';
+  switchTab(tab);
+})();
+</script>
+</body>
+</html>

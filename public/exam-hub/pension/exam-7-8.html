@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>퇴직연금모집인 모의고사 7~10회</title>
+<title>퇴직연금모집인 모의고사 7~8회</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
 :root{
@@ -108,16 +108,20 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
   .exam-tab{padding:11px 14px;font-size:11px;}
   .result-grid{grid-template-columns:1fr 1fr;}
 }
+
+.btn-home{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
+.btn-home:hover{border-color:var(--accent);color:var(--accent);}
+.btn-close{display:inline-flex;align-items:center;gap:5px;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
+.btn-close:hover{border-color:rgba(239,68,68,0.4);color:#f87171;}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-badge">OFFICIAL MOCK EXAM</div>
-  <h1>퇴직연금모집인 검정시험<br>모의고사 7~10회</h1>
+  <h1>퇴직연금모집인 검정시험<br>모의고사 7~8회</h1>
   <div>
     <span class="pdf-badge">📄 7·8회 — PDF 원본 문제 (1유형·2유형)</span>
-    <span class="final-badge">🎯 9·10회 — 최종 종합 모의고사</span>
   </div>
   <div class="header-meta">
     <span>📋 총 <strong>40문항</strong>/회</span>
@@ -129,8 +133,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
 <div class="exam-selector">
   <div class="exam-tab active" onclick="showExam(7,this)">📝 제7회 (1유형 원본)</div>
   <div class="exam-tab" onclick="showExam(8,this)">📝 제8회 (2유형 원본)</div>
-  <div class="exam-tab" onclick="showExam(9,this)">🎯 제9회 최종①</div>
-  <div class="exam-tab" onclick="showExam(10,this)">🎯 제10회 최종②</div>
 </div>
 
 <div class="container">
@@ -161,13 +163,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
     <div id="q8-s2"></div>
     <div class="result-card" id="result8"><div class="result-icon" id="ri8"></div><div class="result-title" id="rt8"></div><div class="result-grid" id="rg8"></div></div>
   </div>
-
-  <div id="exam9" class="exam-section">
-    <div class="info-bar">
-      <div class="info-chip">🎯 제9회 최종 종합①</div>
-      <div class="info-chip" id="timer9-chip">⏱ <span id="timer9">50:00</span></div>
-      <div class="answered-count" id="ans9">답변: 0/40</div>
-    </div>
     <div class="progress-wrap"><div class="progress-bar" id="prog9" style="width:0%"></div></div>
     <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">근로자퇴직급여 보장법령의 이해</span><span class="sub-count">1~20번</span></div>
     <div id="q9-s1"></div>
@@ -175,13 +170,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
     <div id="q9-s2"></div>
     <div class="result-card" id="result9"><div class="result-icon" id="ri9"></div><div class="result-title" id="rt9"></div><div class="result-grid" id="rg9"></div></div>
   </div>
-
-  <div id="exam10" class="exam-section">
-    <div class="info-bar">
-      <div class="info-chip">🎯 제10회 최종 종합②</div>
-      <div class="info-chip" id="timer10-chip">⏱ <span id="timer10">50:00</span></div>
-      <div class="answered-count" id="ans10">답변: 0/40</div>
-    </div>
     <div class="progress-wrap"><div class="progress-bar" id="prog10" style="width:0%"></div></div>
     <div class="subject-divider"><span class="sub-num">과목 1</span><span class="sub-title">근로자퇴직급여 보장법령의 이해</span><span class="sub-count">1~20번</span></div>
     <div id="q10-s1"></div>
@@ -192,6 +180,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
 </div>
 
 <div class="action-bar">
+  <a href="../index.html" class="btn-home">🏠 처음으로</a>
+  <button class="btn-close" onclick="window.close()">✕ 창닫기</button>
   <button class="btn btn-secondary" onclick="resetExam()">🔄 초기화</button>
   <button class="btn btn-primary" onclick="submitExam()">✅ 채점하기</button>
   <div class="score-display" id="score-display"></div>
@@ -413,7 +403,8 @@ window.addEventListener('DOMContentLoaded',()=>{[7,8].forEach(n=>renderExam(n));
 
   function saveWrongToNote(subjectKey, subjectName, ei, s1, s2, answers) {
     try {
-      const KEY = 'mrsg_odalNote';
+      const _uid = (function(){ try{ return localStorage.getItem('mrsg_uid')||'guest'; }catch(e){ return 'guest'; } })();
+      const KEY = 'mrsg_odalNote_' + _uid;
       let data = JSON.parse(localStorage.getItem(KEY) || '{"answers":{},"catStats":{}}');
       const today = new Date().toISOString().split('T')[0];
       const allQs = [...s1, ...s2];

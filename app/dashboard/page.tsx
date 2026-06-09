@@ -337,19 +337,56 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <h1 className="text-3xl font-black text-[#1a3a6e] tracking-tight">고객 상담 도구</h1>
-                    <p className="text-[#94a3b8] font-bold text-sm mt-1 tracking-widest">
-                      {isApproved ? '승인된 상담 도구를 사용할 수 있습니다' : '공개 도구만 이용 가능합니다'}
-                    </p>
+                <div className="mb-10 bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100">
+                  {/* 보험의기준 브랜드 헤더 */}
+                  <div className="flex items-center gap-5 px-7 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                    {/* 나침반 로고 */}
+                    <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+                      <circle cx="26" cy="26" r="24" stroke="#2d4a5a" strokeWidth="1.2" fill="none"/>
+                      <circle cx="26" cy="26" r="18" stroke="#2d4a5a" strokeWidth="0.6" strokeDasharray="2 3" fill="none"/>
+                      <text x="26" y="7.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">N</text>
+                      <text x="26" y="48.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">S</text>
+                      <text x="5.5" y="27.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">W</text>
+                      <text x="46.5" y="27.5" textAnchor="middle" fontSize="5" fontWeight="700" fill="#2d4a5a" fontFamily="sans-serif">E</text>
+                      <polygon points="26,10 28,26 26,24 24,26" fill="#2d4a5a"/>
+                      <polygon points="26,42 28,26 26,28 24,26" fill="#9aacb8"/>
+                      <polygon points="10,26 26,24 24,26 26,28" fill="#9aacb8"/>
+                      <polygon points="42,26 26,24 28,26 26,28" fill="#2d4a5a"/>
+                      <circle cx="26" cy="26" r="2.5" fill="#2d4a5a"/>
+                    </svg>
+                    <div className="w-px h-10 bg-slate-300 flex-shrink-0" />
+                    <div>
+                      <p className="font-black text-[22px] text-[#2d4a5a] tracking-tight leading-none">보험의기준</p>
+                      <p className="text-[10px] text-slate-400 tracking-[3px] font-medium mt-1">STANDARD OF INSURANCE</p>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    {isMaster && (
-                      <button onClick={() => setIsConsultEditMode(!isConsultEditMode)} className={`rounded-xl px-4 py-3 text-xs font-black ${isConsultEditMode ? "bg-[#1a3a6e] text-white" : "bg-black text-[#d4af37]"}`}>
-                        {isConsultEditMode ? "편집 완료" : "노출 편집"}
+                  {/* 타이틀 + 버튼 */}
+                  <div className="px-7 py-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h1 className="text-2xl font-black text-[#1a3a6e] tracking-tight">설계사 업무 지원 프로그램</h1>
+                      <p className="text-[#94a3b8] font-bold text-sm mt-1">
+                        설계사를 위한 쉽고 편안한 시스템
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
+                        className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black bg-[#eff6ff] text-[#1a3a6e] border border-[#dbeafe] hover:bg-[#dbeafe] transition-all"
+                      >
+                        📘 일반 사용 가이드
                       </button>
-                    )}
+                      <button
+                        onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
+                        className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black bg-[#1a3a6e] text-white hover:bg-[#1e40af] transition-all"
+                      >
+                        ⭐ 프로 사용 가이드
+                      </button>
+                      {isMaster && (
+                        <button onClick={() => setIsConsultEditMode(!isConsultEditMode)} className={`rounded-xl px-4 py-2.5 text-xs font-black ${isConsultEditMode ? "bg-[#1a3a6e] text-white" : "bg-black text-[#d4af37]"}`}>
+                          {isConsultEditMode ? "편집 완료" : "노출 편집"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
