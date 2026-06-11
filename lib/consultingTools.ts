@@ -14,7 +14,7 @@ export type ConsultingTool = {
   highlight?: boolean;
   editable?: boolean;
   chromeRecommended?: boolean;
-  category?: "customer" | "coverage" | "financial" | "planning" | "claims";
+  category?: "customer" | "coverage" | "financial" | "planning" | "claims" | "face";
   placement?: "consulting" | "office";
 };
 
@@ -25,6 +25,7 @@ export const CONSULTING_TOOL_CATEGORIES: {
   tone: string;
   countTone: string;
 }[] = [
+  { id: "face", title: "대면상담", desc: "고객과 직접 만나 활용하는 핵심 상담 도구 5종", tone: "border-sky-500 text-sky-600", countTone: "bg-sky-50 text-sky-700" },
   { id: "customer", title: "고객 상담", desc: "고객 안내와 상담 근거 확인에 필요한 도구", tone: "border-sky-500 text-sky-600", countTone: "bg-sky-50 text-sky-700" },
   { id: "coverage", title: "보장 분석", desc: "보장 통계, 인수 기준, 교차설계 비교에 필요한 도구", tone: "border-sky-500 text-sky-600", countTone: "bg-sky-50 text-sky-700" },
   { id: "financial", title: "재무설계 상담", desc: "재무 분석, 현금흐름, 포트폴리오 제안에 필요한 상담 도구", tone: "border-indigo-500 text-indigo-600", countTone: "bg-indigo-50 text-indigo-700" },
@@ -45,9 +46,10 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     fixed: true,
     access: "public",
     guestVisible: true,
-    highlight: true,
+    highlight: false,
     editable: false,
     chromeRecommended: true,
+    category: "face",
   },
   {
     id: "show_hira",
@@ -61,8 +63,9 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     fixed: true,
     access: "public",
     guestVisible: true,
-    highlight: true,
+    highlight: false,
     editable: false,
+    category: "face",
   },
   {
     id: "show_health_kr",
@@ -76,8 +79,9 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     fixed: true,
     access: "public",
     guestVisible: true,
-    highlight: true,
+    highlight: false,
     editable: false,
+    category: "face",
   },
   {
     id: "show_insurance_survey",
@@ -90,8 +94,9 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-sky-500 text-sky-600",
     fixed: true,
     access: "public",
-    highlight: true,
+    highlight: false,
     editable: false,
+    category: "face",
   },
   {
     id: "show_card_consult",
@@ -104,8 +109,9 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-sky-500 text-sky-600",
     fixed: true,
     access: "public",
-    highlight: true,
+    highlight: false,
     editable: false,
+    category: "face",
   },
   {
     id: "show_knia",
@@ -233,7 +239,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     staffOnly: true,
     access: "approved",
     editable: true,
-    category: "planning",
+    category: "coverage",
   },
   {
     id: "show_calc",
@@ -288,8 +294,9 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-slate-400 text-slate-500",
     fixed: true,
     access: "public",
-    highlight: true,
+    highlight: false,
     editable: false,
+    category: "planning",
   },
   {
     id: "show_claim_docs",

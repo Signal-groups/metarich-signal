@@ -23,6 +23,7 @@ import {
   Scale,
   Search,
   ShieldCheck,
+  Star,
   Stethoscope,
   ScrollText,
 } from "lucide-react"
@@ -179,6 +180,9 @@ export default function DashboardPage() {
   // 공지사항
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
+  // 즐겨찾기
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [isFavEditMode, setIsFavEditMode] = useState(false);
 
   const init = useCallback(async () => {
     try {
@@ -229,6 +233,12 @@ export default function DashboardPage() {
       setMenuStatus(statusMap);
       setUser(hydratedUser);
 
+      // 즐겨찾기 로드 (사용자별 localStorage)
+      try {
+        const savedFavs = localStorage.getItem(`mr-favorites-${userId}`);
+        if (savedFavs) setFavorites(JSON.parse(savedFavs));
+      } catch { /* ignore */ }
+
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
       if (urlParams.get("tab") === "branding" && canAccessBranding(hydratedUser)) {
         setActiveTab("branding");
@@ -268,6 +278,14 @@ export default function DashboardPage() {
   }, [init, router]);
 
   // ✅ [네비게이션 통합 핸들러] 모든 도구는 새 창으로 열리도록 일치화
+  const toggleFavorite = (toolId: string) => {
+    setFavorites(prev => {
+      const next = prev.includes(toolId) ? prev.filter(id => id !== toolId) : [...prev, toolId];
+      if (user?.id) localStorage.setItem(`mr-favorites-${user.id}`, JSON.stringify(next));
+      return next;
+    });
+  };
+
   const toggleMenu = async (key: string) => {
     if (!isMaster) return;
     const nextStatus = { ...menuStatus, [key]: !menuStatus[key] };
@@ -333,7 +351,8 @@ export default function DashboardPage() {
           )
     )
   );
-  const highlightTools = visibleConsultingTools.filter((tool) => tool.highlight);
+  const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
+  const faceTools = visibleConsultingTools.filter(t => t.category === "face");
 
   const renderOfficeView = () => {
     if (isGuest || !isApproved) return (
@@ -430,38 +449,107 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 자주 사용하는 기능 */}
-          {highlightTools.length > 0 && (
+          {/* 즐겨찾기 */}
+          <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "15px 16px", marginBottom: 12, boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#1a2d42" }}>⭐ 즐겨찾기</p>
+              <button
+                onClick={() => setIsFavEditMode(!isFavEditMode)}
+                style={{ fontSize: 11, fontWeight: 600, color: isFavEditMode ? "#e24b4a" : "#185fa5", background: isFavEditMode ? "#fee2e2" : "#eef4fb", border: "none", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit" }}
+              >
+                {isFavEditMode ? "완료" : "편집"}
+              </button>
+            </div>
+            {favoriteTools.length === 0 && !isFavEditMode && (
+              <p style={{ fontSize: 12, color: "#b0c4d4", textAlign: "center", padding: "12px 0" }}>
+                즐겨찾기를 추가하려면 <strong>편집</strong>을 눌러 도구 옆 ★을 클릭하세요.
+              </p>
+            )}
+            {isFavEditMode && (
+              <p style={{ fontSize: 11, color: "#7a9ab2", marginBottom: 10 }}>★ 아이콘을 클릭해 즐겨찾기를 추가·제거하세요.</p>
+            )}
+            {(favoriteTools.length > 0 || isFavEditMode) && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }} className="sm:[grid-template-columns:repeat(6,1fr)] lg:[grid-template-columns:repeat(8,1fr)]">
+                {(isFavEditMode ? visibleConsultingTools : favoriteTools).map((menu) => {
+                  const isFav = favorites.includes(menu.id);
+                  return (
+                    <div key={menu.id} style={{ position: "relative" }}>
+                      <button
+                        type="button"
+                        onClick={() => !isFavEditMode && handleNavigation(menu)}
+                        className="group hover:-translate-y-[2px] hover:shadow-md"
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                          padding: "11px 5px", borderRadius: 10, width: "100%",
+                          border: `1px solid ${isFav ? "#b5d4f4" : "#e4edf5"}`,
+                          cursor: isFavEditMode ? "default" : "pointer",
+                          background: isFav ? "#f0f7fd" : "#fafcfe",
+                          fontFamily: "inherit", transition: "all 0.18s ease"
+                        }}
+                      >
+                        <div style={{ width: 34, height: 34, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef4fb", color: "#185fa5", transition: "transform 0.18s" }} className="group-hover:scale-110">
+                          <ToolIcon icon={menu.icon} className="h-4 w-4" />
+                        </div>
+                        <p style={{ fontSize: 11, color: "#2a3f55", textAlign: "center", lineHeight: 1.3, fontWeight: 500 }}>{menu.title}</p>
+                      </button>
+                      {isFavEditMode && (
+                        <button
+                          onClick={() => toggleFavorite(menu.id)}
+                          style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2, color: isFav ? "#f59e0b" : "#c0d4e4" }}
+                        >
+                          <Star className="h-3.5 w-3.5" fill={isFav ? "#f59e0b" : "none"} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 대면상담 카테고리 - 가로 5칸 */}
+          {faceTools.length > 0 && (
             <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "15px 16px", marginBottom: 12, boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#1a2d42", marginBottom: 12 }}>⭐ 자주 사용하는 기능</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }} className="sm:[grid-template-columns:repeat(6,1fr)]">
-                {highlightTools.slice(0, 6).map((menu) => (
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#1a2d42", marginBottom: 12 }}>🤝 대면상담</p>
+              <div style={{ display: "grid", gridTemplateColumns: `repeat(${faceTools.length}, 1fr)`, gap: 10 }}>
+                {faceTools.map((menu) => (
                   <button
                     key={menu.id}
                     type="button"
                     onClick={() => !isConsultEditMode && handleNavigation(menu)}
-                    className="group hover:-translate-y-[2px] hover:shadow-md"
+                    className="group hover:-translate-y-[2px] hover:shadow-lg"
                     style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
-                      padding: "12px 6px", borderRadius: 10,
-                      border: `1px solid ${menuStatus[menu.id] === false ? "#e4edf5" : "#c5d8ec"}`,
-                      cursor: "pointer", background: menuStatus[menu.id] === false ? "transparent" : "#f6fafd",
-                      fontFamily: "inherit", opacity: menuStatus[menu.id] === false ? 0.45 : 1,
-                      transition: "all 0.18s ease"
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                      padding: "16px 8px 14px", borderRadius: 12,
+                      border: "1px solid #dce9f5",
+                      cursor: "pointer", background: "#f4f8fd",
+                      fontFamily: "inherit", transition: "all 0.18s ease", position: "relative"
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "#e8f2fd";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#185fa5";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLButtonElement).style.background = "#f4f8fd";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#dce9f5";
                     }}
                   >
-                    <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef4fb", color: "#185fa5", transition: "transform 0.18s" }} className="group-hover:scale-110">
+                    <div style={{ width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "#daeaf8", color: "#185fa5", transition: "transform 0.18s, background 0.18s" }} className="group-hover:scale-110 group-hover:bg-[#185fa5] group-hover:text-white">
                       <ToolIcon icon={menu.icon} className="h-5 w-5" />
                     </div>
-                    <p style={{ fontSize: 12, color: "#2a3f55", textAlign: "center", lineHeight: 1.3, fontWeight: 500 }}>{menu.title}</p>
-                    {isConsultEditMode && menu.editable && (
-                      <input
-                        type="checkbox"
-                        checked={menuStatus[menu.id] !== false}
-                        onChange={() => toggleMenu(menu.id)}
-                        style={{ width: 13, height: 13, accentColor: "#1a2d42" }}
-                        onClick={e => e.stopPropagation()}
-                      />
+                    <p style={{ fontSize: 13, color: "#1a2d42", textAlign: "center", lineHeight: 1.3, fontWeight: 700, wordBreak: "keep-all" }}>{menu.title}</p>
+                    <span style={{ fontSize: 10, color: "#9ab4c8", lineHeight: 1.4, textAlign: "center", wordBreak: "keep-all" }}>{menu.desc}</span>
+                    {/* 즐겨찾기 별 표시 */}
+                    {favorites.includes(menu.id) && (
+                      <Star className="h-3 w-3 absolute top-2 right-2 text-amber-400" fill="#f59e0b" />
+                    )}
+                    {isFavEditMode && (
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleFavorite(menu.id); }}
+                        style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2, color: favorites.includes(menu.id) ? "#f59e0b" : "#c0d4e4" }}
+                      >
+                        <Star className="h-3.5 w-3.5" fill={favorites.includes(menu.id) ? "#f59e0b" : "none"} />
+                      </button>
                     )}
                   </button>
                 ))}
@@ -469,10 +557,10 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* 전체 메뉴 - 4컬럼 아코디언 (PC: 항상 열림, 모바일: 토글) */}
+          {/* 전체 메뉴 - 아코디언 (face 카테고리 제외, PC: 항상 열림, 모바일: 토글) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
-            {CONSULTING_TOOL_CATEGORIES.map((category) => {
-              const tools = visibleConsultingTools.filter((tool) => !tool.highlight && tool.category === category.id);
+            {CONSULTING_TOOL_CATEGORIES.filter(c => c.id !== "face").map((category) => {
+              const tools = visibleConsultingTools.filter((tool) => tool.category === category.id);
               if (tools.length === 0) return null;
               const isOpen = openConsultCategories[category.id] !== false;
               const catStyle: Record<string, { bg: string; color: string; accent: string; headerBg: string }> = {
