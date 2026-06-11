@@ -450,26 +450,33 @@ export default function DashboardPage() {
           </div>
 
           {/* 즐겨찾기 */}
-          <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "15px 16px", marginBottom: 12, boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#1a2d42" }}>⭐ 즐겨찾기</p>
+          <div style={{ background: "white", border: "2px solid #fde68a", borderRadius: 14, padding: "15px 16px", marginBottom: 12, boxShadow: "0 2px 8px rgba(245,158,11,0.07)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span style={{ fontSize: 16 }}>⭐</span>
+                <p style={{ fontSize: 14, fontWeight: 800, color: "#0f1f36" }}>즐겨찾기</p>
+                <span style={{ fontSize: 11, color: "#92400e", background: "#fef3c7", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>나만의 바로가기</span>
+              </div>
               <button
                 onClick={() => setIsFavEditMode(!isFavEditMode)}
-                style={{ fontSize: 11, fontWeight: 600, color: isFavEditMode ? "#e24b4a" : "#185fa5", background: isFavEditMode ? "#fee2e2" : "#eef4fb", border: "none", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit" }}
+                style={{ fontSize: 11, fontWeight: 700, color: isFavEditMode ? "#dc2626" : "#b45309", background: isFavEditMode ? "#fee2e2" : "#fef3c7", border: isFavEditMode ? "1px solid #fca5a5" : "1px solid #fde68a", borderRadius: 7, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}
               >
-                {isFavEditMode ? "완료" : "편집"}
+                {isFavEditMode ? "✓ 완료" : "★ 편집"}
               </button>
             </div>
             {favoriteTools.length === 0 && !isFavEditMode && (
-              <p style={{ fontSize: 12, color: "#b0c4d4", textAlign: "center", padding: "12px 0" }}>
-                즐겨찾기를 추가하려면 <strong>편집</strong>을 눌러 도구 옆 ★을 클릭하세요.
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: "#fffbeb", borderRadius: 9, border: "1px dashed #fcd34d" }}>
+                <span style={{ fontSize: 14 }}>💡</span>
+                <p style={{ fontSize: 12, color: "#92400e", fontWeight: 600 }}>
+                  <strong>편집</strong>을 눌러 자주 쓰는 도구에 ★을 클릭하면 여기에 모입니다.
+                </p>
+              </div>
             )}
             {isFavEditMode && (
-              <p style={{ fontSize: 11, color: "#7a9ab2", marginBottom: 10 }}>★ 아이콘을 클릭해 즐겨찾기를 추가·제거하세요.</p>
+              <p style={{ fontSize: 11, color: "#a16207", background: "#fefce8", padding: "5px 10px", borderRadius: 7, marginBottom: 10, fontWeight: 600 }}>★ 아이콘 클릭으로 즐겨찾기를 추가·제거하세요.</p>
             )}
             {(favoriteTools.length > 0 || isFavEditMode) && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }} className="sm:[grid-template-columns:repeat(6,1fr)] lg:[grid-template-columns:repeat(8,1fr)]">
+              <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-2" style={{ marginTop: favoriteTools.length > 0 || isFavEditMode ? 8 : 0 }}>
                 {(isFavEditMode ? visibleConsultingTools : favoriteTools).map((menu) => {
                   const isFav = favorites.includes(menu.id);
                   return (
@@ -480,24 +487,24 @@ export default function DashboardPage() {
                         className="group hover:-translate-y-[2px] hover:shadow-md"
                         style={{
                           display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                          padding: "11px 5px", borderRadius: 10, width: "100%",
-                          border: `1px solid ${isFav ? "#b5d4f4" : "#e4edf5"}`,
+                          padding: "11px 5px", borderRadius: 11, width: "100%",
+                          border: `1.5px solid ${isFav ? "#fcd34d" : "#e2e8f0"}`,
                           cursor: isFavEditMode ? "default" : "pointer",
-                          background: isFav ? "#f0f7fd" : "#fafcfe",
+                          background: isFav ? "#fffbeb" : "#f8fafc",
                           fontFamily: "inherit", transition: "all 0.18s ease"
                         }}
                       >
-                        <div style={{ width: 34, height: 34, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef4fb", color: "#185fa5", transition: "transform 0.18s" }} className="group-hover:scale-110">
+                        <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: isFav ? "#fef3c7" : "#eef4fb", color: isFav ? "#b45309" : "#185fa5", transition: "transform 0.18s" }} className="group-hover:scale-110">
                           <ToolIcon icon={menu.icon} className="h-4 w-4" />
                         </div>
-                        <p style={{ fontSize: 11, color: "#2a3f55", textAlign: "center", lineHeight: 1.3, fontWeight: 500 }}>{menu.title}</p>
+                        <p style={{ fontSize: 11, color: "#1e293b", textAlign: "center", lineHeight: 1.3, fontWeight: 700, wordBreak: "keep-all" }}>{menu.title}</p>
                       </button>
                       {isFavEditMode && (
                         <button
                           onClick={() => toggleFavorite(menu.id)}
-                          style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2, color: isFav ? "#f59e0b" : "#c0d4e4" }}
+                          style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2 }}
                         >
-                          <Star className="h-3.5 w-3.5" fill={isFav ? "#f59e0b" : "none"} />
+                          <Star className="h-3.5 w-3.5" style={{ color: isFav ? "#f59e0b" : "#cbd5e1", fill: isFav ? "#f59e0b" : "none" }} />
                         </button>
                       )}
                     </div>
@@ -507,48 +514,51 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* 대면상담 카테고리 - 가로 5칸 */}
+          {/* 대면상담 카테고리 - PC 5칸 / 모바일 2~3칸 */}
           {faceTools.length > 0 && (
-            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "15px 16px", marginBottom: 12, boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#1a2d42", marginBottom: 12 }}>🤝 대면상담</p>
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${faceTools.length}, 1fr)`, gap: 10 }}>
+            <div style={{ background: "white", border: "2px solid #d0e8f8", borderRadius: 14, padding: "16px 16px 14px", marginBottom: 12, boxShadow: "0 2px 8px rgba(24,95,165,0.07)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 13 }}>
+                <span style={{ fontSize: 16 }}>🤝</span>
+                <p style={{ fontSize: 14, fontWeight: 800, color: "#0f2d55" }}>대면상담</p>
+                <span style={{ fontSize: 11, color: "#185fa5", background: "#e8f2fd", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>고객 현장 활용 핵심 도구</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                 {faceTools.map((menu) => (
                   <button
                     key={menu.id}
                     type="button"
                     onClick={() => !isConsultEditMode && handleNavigation(menu)}
-                    className="group hover:-translate-y-[2px] hover:shadow-lg"
+                    className="group hover:-translate-y-[3px] hover:shadow-lg"
                     style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                      padding: "16px 8px 14px", borderRadius: 12,
-                      border: "1px solid #dce9f5",
-                      cursor: "pointer", background: "#f4f8fd",
-                      fontFamily: "inherit", transition: "all 0.18s ease", position: "relative"
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
+                      padding: "14px 8px 12px", borderRadius: 12,
+                      border: "1.5px solid #c2def5",
+                      cursor: "pointer", background: "linear-gradient(145deg,#f0f7fd,#e8f2fb)",
+                      fontFamily: "inherit", transition: "all 0.2s ease", position: "relative"
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "#e8f2fd";
+                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(145deg,#dbeeff,#cfe4f8)";
                       (e.currentTarget as HTMLButtonElement).style.borderColor = "#185fa5";
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "#f4f8fd";
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#dce9f5";
+                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(145deg,#f0f7fd,#e8f2fb)";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#c2def5";
                     }}
                   >
-                    <div style={{ width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "#daeaf8", color: "#185fa5", transition: "transform 0.18s, background 0.18s" }} className="group-hover:scale-110 group-hover:bg-[#185fa5] group-hover:text-white">
+                    <div style={{ width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "#185fa5", color: "white", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(24,95,165,0.25)" }} className="group-hover:scale-110 group-hover:shadow-[0_4px_14px_rgba(24,95,165,0.4)]">
                       <ToolIcon icon={menu.icon} className="h-5 w-5" />
                     </div>
-                    <p style={{ fontSize: 13, color: "#1a2d42", textAlign: "center", lineHeight: 1.3, fontWeight: 700, wordBreak: "keep-all" }}>{menu.title}</p>
-                    <span style={{ fontSize: 10, color: "#9ab4c8", lineHeight: 1.4, textAlign: "center", wordBreak: "keep-all" }}>{menu.desc}</span>
-                    {/* 즐겨찾기 별 표시 */}
-                    {favorites.includes(menu.id) && (
-                      <Star className="h-3 w-3 absolute top-2 right-2 text-amber-400" fill="#f59e0b" />
+                    <p style={{ fontSize: 13, color: "#0f2d55", textAlign: "center", lineHeight: 1.35, fontWeight: 800, wordBreak: "keep-all" }}>{menu.title}</p>
+                    <span style={{ fontSize: 10, color: "#5a7a92", lineHeight: 1.4, textAlign: "center", wordBreak: "keep-all" }}>{menu.desc}</span>
+                    {favorites.includes(menu.id) && !isFavEditMode && (
+                      <Star className="h-3 w-3" style={{ position: "absolute", top: 6, right: 6, color: "#f59e0b", fill: "#f59e0b" }} />
                     )}
                     {isFavEditMode && (
                       <button
                         onClick={e => { e.stopPropagation(); toggleFavorite(menu.id); }}
-                        style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2, color: favorites.includes(menu.id) ? "#f59e0b" : "#c0d4e4" }}
+                        style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2 }}
                       >
-                        <Star className="h-3.5 w-3.5" fill={favorites.includes(menu.id) ? "#f59e0b" : "none"} />
+                        <Star className="h-3.5 w-3.5" style={{ color: favorites.includes(menu.id) ? "#f59e0b" : "#c0d4e4", fill: favorites.includes(menu.id) ? "#f59e0b" : "none" }} />
                       </button>
                     )}
                   </button>
@@ -557,76 +567,84 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* 전체 메뉴 - 아코디언 (face 카테고리 제외, PC: 항상 열림, 모바일: 토글) */}
+          {/* 전체 메뉴 - 아코디언 (face 제외, PC: 항상 열림, 모바일: 토글) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
             {CONSULTING_TOOL_CATEGORIES.filter(c => c.id !== "face").map((category) => {
               const tools = visibleConsultingTools.filter((tool) => tool.category === category.id);
               if (tools.length === 0) return null;
               const isOpen = openConsultCategories[category.id] !== false;
-              const catStyle: Record<string, { bg: string; color: string; accent: string; headerBg: string }> = {
-                customer: { bg: "#eef4fb", color: "#185fa5", accent: "#2563eb", headerBg: "#f4f8fd" },
-                analysis: { bg: "#e1f5ee", color: "#0f6e56", accent: "#16a34a", headerBg: "#f2fbf6" },
-                claim:    { bg: "#faece7", color: "#993c1d", accent: "#ea580c", headerBg: "#fdf5f2" },
-                support:  { bg: "#eeedfe", color: "#534ab7", accent: "#7c3aed", headerBg: "#f5f4fe" },
+
+              // ✅ 실제 category.id 기준으로 색상 매핑
+              const catStyle: Record<string, { bg: string; color: string; border: string; headerBg: string; iconBg: string }> = {
+                customer: { bg: "#dbeeff", color: "#1053b5", border: "#93c5fd", headerBg: "#eff6ff", iconBg: "#bfdbfe" },
+                coverage: { bg: "#d1fae5", color: "#065f46", border: "#6ee7b7", headerBg: "#ecfdf5", iconBg: "#a7f3d0" },
+                financial:{ bg: "#e0e7ff", color: "#3730a3", border: "#a5b4fc", headerBg: "#eef2ff", iconBg: "#c7d2fe" },
+                planning: { bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd", headerBg: "#f5f3ff", iconBg: "#ddd6fe" },
+                claims:   { bg: "#ffe4e6", color: "#9f1239", border: "#fca5a5", headerBg: "#fff1f2", iconBg: "#fecdd3" },
               };
               const catEmoji: Record<string, string> = {
-                customer: "👥", analysis: "🛡", claim: "📋", support: "📁",
+                customer: "👥", coverage: "🛡️", financial: "💰", planning: "📋", claims: "🏥",
               };
-              const cs = catStyle[category.id] || { bg: "#f0f4f8", color: "#5a7a92", accent: "#5a7a92", headerBg: "#f5f7fa" };
+              const cs = catStyle[category.id] || { bg: "#f0f4f8", color: "#374151", border: "#d1d5db", headerBg: "#f9fafb", iconBg: "#e5e7eb" };
+
               return (
-                <div key={category.id} style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
+                <div key={category.id} style={{ background: "white", border: `2px solid ${cs.border}`, borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                   {/* 카테고리 헤더 */}
                   <button
                     type="button"
                     onClick={() => toggleConsultCategory(category.id)}
                     className="w-full xl:pointer-events-none"
                     style={{
-                      display: "flex", alignItems: "center", gap: 10, padding: "14px 15px",
+                      display: "flex", alignItems: "center", gap: 10, padding: "13px 14px",
                       cursor: "pointer", background: cs.headerBg, border: "none",
                       fontFamily: "inherit", width: "100%", textAlign: "left",
-                      borderBottom: isOpen ? `1px solid ${cs.bg}` : "none"
+                      borderBottom: isOpen ? `1px solid ${cs.border}` : "none"
                     }}
                   >
-                    <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: cs.bg, color: cs.color, flexShrink: 0, fontSize: 18 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: cs.iconBg, color: cs.color, flexShrink: 0, fontSize: 19 }}>
                       {catEmoji[category.id] || "•"}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 15, fontWeight: 700, color: "#1a2d42" }}>{category.title}</p>
-                      <p style={{ fontSize: 11, color: "#9ab4c8", marginTop: 2 }}>{category.desc}</p>
+                      <p style={{ fontSize: 15, fontWeight: 800, color: "#0f1f36" }}>{category.title}</p>
+                      <p style={{ fontSize: 11, color: "#64748b", marginTop: 2, fontWeight: 500 }}>{category.desc}</p>
                     </div>
-                    <ChevronDown className={`h-4 w-4 text-[#b0c4d4] transition-transform xl:hidden ${isOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 transition-transform xl:hidden ${isOpen ? "rotate-180" : ""}`} style={{ color: cs.color, opacity: 0.6 }} />
                   </button>
                   {/* 툴 목록 */}
                   <div className={`xl:block ${isOpen ? "" : "hidden"}`}>
-                    <div style={{ padding: "10px 10px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: 5 }}>
                       {tools.map((tool) => (
                         <div
                           key={tool.id}
                           onClick={() => !isConsultEditMode && handleNavigation(tool)}
-                          className="group flex items-center gap-3 rounded-lg cursor-pointer hover:-translate-y-[1px] hover:shadow-md"
+                          className="group flex items-center gap-3 rounded-xl cursor-pointer"
                           style={{
                             padding: "10px 12px",
-                            border: `1px solid ${cs.bg}`,
-                            background: "#fafcfe",
+                            border: `1.5px solid ${cs.bg}`,
+                            background: "white",
                             transition: "all 0.18s ease",
                             opacity: (isConsultEditMode && menuStatus[tool.id] === false) ? 0.4 : 1,
                           }}
                           onMouseEnter={e => {
-                            (e.currentTarget as HTMLDivElement).style.borderColor = cs.color + "55";
-                            (e.currentTarget as HTMLDivElement).style.background = cs.bg;
+                            (e.currentTarget as HTMLDivElement).style.borderColor = cs.border;
+                            (e.currentTarget as HTMLDivElement).style.background = cs.headerBg;
+                            (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
+                            (e.currentTarget as HTMLDivElement).style.boxShadow = "0 3px 10px rgba(0,0,0,0.07)";
                           }}
                           onMouseLeave={e => {
                             (e.currentTarget as HTMLDivElement).style.borderColor = cs.bg;
-                            (e.currentTarget as HTMLDivElement).style.background = "#fafcfe";
+                            (e.currentTarget as HTMLDivElement).style.background = "white";
+                            (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                            (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
                           }}
                         >
-                          <div style={{ width: 30, height: 30, borderRadius: 7, background: cs.bg, color: cs.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "transform 0.18s" }} className="group-hover:scale-110">
+                          <div style={{ width: 32, height: 32, borderRadius: 8, background: cs.iconBg, color: cs.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "transform 0.18s" }} className="group-hover:scale-110">
                             <ToolIcon icon={tool.icon} className="h-4 w-4" />
                           </div>
-                          <p style={{ fontSize: 13, color: "#2a3f55", flex: 1, fontWeight: 500 }}>{tool.title}</p>
+                          <p style={{ fontSize: 13, color: "#1e293b", flex: 1, fontWeight: 700, wordBreak: "keep-all" }}>{tool.title}</p>
                           {isConsultEditMode && tool.editable
-                            ? <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} style={{ width: 13, height: 13, accentColor: "#1a2d42", flexShrink: 0 }} onClick={e => e.stopPropagation()} />
-                            : <span style={{ fontSize: 16, color: "#c0d4e4", transition: "transform 0.18s, color 0.18s", flexShrink: 0 }} className="group-hover:translate-x-0.5 group-hover:text-[#5a7a92]">›</span>
+                            ? <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} style={{ width: 14, height: 14, accentColor: "#1a2d42", flexShrink: 0 }} onClick={e => e.stopPropagation()} />
+                            : <span style={{ fontSize: 18, fontWeight: 300, color: cs.color, opacity: 0.5, transition: "all 0.18s", flexShrink: 0 }} className="group-hover:opacity-100 group-hover:translate-x-0.5">›</span>
                           }
                         </div>
                       ))}

@@ -594,7 +594,7 @@ export default function FinancialPortfolioPage() {
               </div>
               <div>
                 <p style={{ fontWeight:900,fontSize:13,color:"#10233e",marginBottom:8 }}>월 지출 합계: {money(totals.totalExpense)}원</p>
-                <div style={{ display:"flex",justifyContent:"space-between",padding:"4px 0",background:"#fff7ed",borderRadius:6,padding:"6px 10px",marginBottom:6 }}>
+                <div style={{ display:"flex",justifyContent:"space-between",background:"#fff7ed",borderRadius:6,padding:"6px 10px",marginBottom:6 }}>
                   <span style={{ fontSize:12,fontWeight:800,color:"#b45309" }}>소비지출 소계</span>
                   <span style={{ fontSize:12,fontWeight:900,color:"#b45309" }}>{money(totals.consumptionTotal)}원</span>
                 </div>
