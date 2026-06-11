@@ -115,9 +115,62 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
 .btn-print:hover{border-color:var(--accent);color:var(--accent);}
 .btn-close{display:inline-flex;align-items:center;gap:5px;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
 .btn-close:hover{border-color:rgba(239,68,68,0.4);color:#f87171;}
+
+/* ── 라이트/다크 모드 ── */
+.theme-toggle{position:fixed;top:14px;right:14px;z-index:9999;width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,0.3);}
+body:not(.light-mode) .theme-toggle{background:#1f3352;color:#fbbf24;}
+body.light-mode .theme-toggle{background:#fff;color:#1e293b;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+body.light-mode{
+  --navy:#f8fafc;
+  --navy2:#f1f5f9;
+  --text:#1e293b;
+  --muted:#64748b;
+  --surface:#ffffff;
+  --surface2:#f1f5f9;
+  --border:rgba(0,0,0,0.1);
+  background:var(--navy);
+  color:var(--text);
+}
+body.light-mode .header{background:linear-gradient(135deg,#e8f0fe 0%,#dbeafe 50%,#c7d2fe 100%)!important;}
+body.light-mode .header h1{color:#1e3a8a!important;}
+body.light-mode .header-badge{filter:brightness(0.9);}
+body.light-mode .header-meta{color:#374151!important;}
+body.light-mode .header-meta strong{color:var(--accent)!important;}
+body.light-mode .exam-selector{background:var(--navy2);border-bottom-color:rgba(0,0,0,0.1);}
+body.light-mode .exam-tab{color:#64748b;}
+body.light-mode .exam-tab.active{color:var(--accent);}
+body.light-mode .q-block{background:#fff;border-color:rgba(0,0,0,0.08);box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+body.light-mode .q-block:hover{border-color:rgba(37,99,235,0.25);}
+body.light-mode .q-num{color:#fff;}
+body.light-mode .q-text{color:#1e293b;}
+body.light-mode .choice-label{background:#f8fafc;border-color:rgba(0,0,0,0.1);color:#374151;}
+body.light-mode .choice-label:hover{background:#eff6ff;border-color:rgba(37,99,235,0.3);}
+body.light-mode .choice-label.selected{background:#eff6ff;border-color:var(--accent);}
+body.light-mode .choice-idx{color:#94a3b8;}
+body.light-mode .choice-text{color:#374151;}
+body.light-mode .q-explain{background:rgba(37,99,235,0.04);color:#374151;}
+body.light-mode .action-bar{background:#f1f5f9;border-top-color:rgba(0,0,0,0.1);}
+body.light-mode .btn-secondary{background:#fff;color:#374151;border-color:rgba(0,0,0,0.15);}
+body.light-mode .btn-home{background:#fff;color:#374151;border-color:rgba(0,0,0,0.15);}
+body.light-mode .btn-close{background:#fff;color:#64748b;border-color:rgba(0,0,0,0.12);}
+body.light-mode .btn-print{background:#fff;color:#374151;border-color:rgba(0,0,0,0.15);}
+body.light-mode .info-chip{background:#fff;border-color:rgba(0,0,0,0.1);color:#64748b;}
+body.light-mode .info-chip strong{color:var(--accent);}
+body.light-mode .subject-divider{background:linear-gradient(90deg,rgba(37,99,235,0.08),rgba(37,99,235,0.02))!important;}
+body.light-mode .subject-divider .sub-title{color:#1e3a8a!important;}
+body.light-mode .subject-divider .sub-num{background:var(--accent);}
+body.light-mode .progress-wrap{background:#e2e8f0;}
+body.light-mode .timer-display{background:#fff;border-color:rgba(0,0,0,0.1);color:#1e293b;}
+body.light-mode .result-card{background:#fff;border-color:rgba(0,0,0,0.1);}
+body.light-mode .result-item{background:#f8fafc;}
+body.light-mode .result-item-label{color:#64748b;}
+body.light-mode .score-display{color:#374151;}
+body.light-mode ::-webkit-scrollbar-track{background:#f1f5f9;}
+body.light-mode ::-webkit-scrollbar-thumb{background:#cbd5e1;}
 </style>
 </head>
 <body>
+<button class="theme-toggle" id="themeBtn" onclick="toggleTheme()" title="라이트/다크 모드 전환">☀️</button>
 
 <div class="header">
   <div class="header-badge">OFFICIAL MOCK EXAM</div>
@@ -447,7 +500,23 @@ function printExamQuestions(allQs, title) {
     '<div class="print-header"><h1>' + title + '</h1><p>총 ' + allQs.length + '문항 | 10문항/페이지 | 마지막 페이지 정답·해설</p></div>' +
     questionsHtml + ansHtml +
     '<button class="print-btn" onclick="window.print()">🖨️ 인쇄하기</button>' +
-    '</body></html>');
+    '
+<script>
+// ── 테마 토글 ──
+(function(){
+  var saved = localStorage.getItem('mrsg-exam-theme') || 'dark';
+  if(saved==='light') document.body.classList.add('light-mode');
+  var btn = document.getElementById('themeBtn');
+  if(btn) btn.textContent = saved==='light' ? '🌙' : '☀️';
+})();
+function toggleTheme(){
+  var isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('mrsg-exam-theme', isLight?'light':'dark');
+  var btn = document.getElementById('themeBtn');
+  if(btn) btn.textContent = isLight ? '🌙' : '☀️';
+}
+</script>
+</body></html>');
   w.document.close();
 }
 function printExam() {
@@ -558,5 +627,21 @@ function printExam() {
 })();})();
 </script>
 
+
+<script>
+// ── 테마 토글 ──
+(function(){
+  var saved = localStorage.getItem('mrsg-exam-theme') || 'dark';
+  if(saved==='light') document.body.classList.add('light-mode');
+  var btn = document.getElementById('themeBtn');
+  if(btn) btn.textContent = saved==='light' ? '🌙' : '☀️';
+})();
+function toggleTheme(){
+  var isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('mrsg-exam-theme', isLight?'light':'dark');
+  var btn = document.getElementById('themeBtn');
+  if(btn) btn.textContent = isLight ? '🌙' : '☀️';
+}
+</script>
 </body>
 </html>
