@@ -119,8 +119,8 @@ function ConsultingBox({
 // 2. Main Dashboard Page Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ── 공지사항 팝업 모달 ────────────────────────────────────────────────────
-function AnnouncementModal({ item, onClose, onSave, isMaster }: {
-  item: any; onClose: () => void; onSave?: (id: string, title: string, content: string) => void; isMaster: boolean
+function AnnouncementModal({ item, onClose, onSave, onDelete, isMaster }: {
+  item: any; onClose: () => void; onSave?: (id: string, title: string, content: string) => void; onDelete?: (id: string) => void; isMaster: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(item.title)
@@ -152,10 +152,20 @@ function AnnouncementModal({ item, onClose, onSave, isMaster }: {
             <p style={{ fontSize: 13, color: "#2a3f55", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{content}</p>
             <p style={{ fontSize: 11, color: "#9ab4c8", marginTop: 16 }}>{item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : ''}</p>
             {isMaster && (
-              <button onClick={() => setEditing(true)}
-                style={{ marginTop: 16, padding: "7px 16px", borderRadius: 8, border: "1px solid #c5d8ec", background: "#f4f8fd", color: "#185fa5", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>
-                ✏️ 수정
-              </button>
+              <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                <button onClick={() => setEditing(true)}
+                  style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid #c5d8ec", background: "#f4f8fd", color: "#185fa5", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>
+                  ✏️ 수정
+                </button>
+                <button onClick={() => {
+                    if (!confirm("정말 삭제하시겠습니까?")) return;
+                    onDelete?.(item.id);
+                    onClose();
+                  }}
+                  style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid #fcc", background: "#fff5f5", color: "#c0392b", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>
+                  🗑️ 삭제
+                </button>
+              </div>
             )}
           </>
         )}
@@ -297,6 +307,24 @@ export default function DashboardPage() {
     await supabase.from("announcements").update({ title, content, updated_at: new Date().toISOString() }).eq("id", id);
     setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, title, content } : a));
     setSelectedAnnouncement((prev: any) => prev?.id === id ? { ...prev, title, content } : prev);
+  };
+
+  const deleteAnnouncement = async (id: string) => {
+    if (id.startsWith('new-')) {
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+      return;
+    }
+    await supabase.from("announcements").update({ is_active: false }).eq("id", id);
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
+  };
+
+  const addAnnouncement = async (category: 'notice' | 'update') => {
+    const defaultTitle = category === 'notice' ? '새 공지사항' : '새 업데이트 소식';
+    const { data } = await supabase.from("announcements").insert({ title: defaultTitle, content: '내용을 입력하세요.', category, created_by: user?.id, is_active: true }).select().single();
+    if (data) {
+      setAnnouncements(prev => [data, ...prev]);
+      setSelectedAnnouncement(data);
+    }
   };
 
   const handleNavigation = (item: ConsultingTool) => {
@@ -673,6 +701,14 @@ export default function DashboardPage() {
               {announcements.filter(a => a.category === 'notice').length === 0 && (
                 <p style={{ fontSize: 12, color: "#b0c4d4" }}>공지사항이 없습니다.</p>
               )}
+              {isMaster && (
+                <button
+                  onClick={() => addAnnouncement('notice')}
+                  style={{ marginTop: 10, width: "100%", padding: "6px 0", borderRadius: 7, border: "1px dashed #c5d8ec", background: "none", color: "#185fa5", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
+                >
+                  + 공지 추가
+                </button>
+              )}
             </div>
             {/* 업데이트 소식 */}
             <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
@@ -695,15 +731,10 @@ export default function DashboardPage() {
               )}
               {isMaster && (
                 <button
-                  onClick={() => {
-                    const newAnn = { id: 'new-' + Date.now(), title: '새 공지사항', content: '내용을 입력하세요.', category: 'notice', created_at: new Date().toISOString(), is_active: true }
-                    supabase.from("announcements").insert({ title: newAnn.title, content: newAnn.content, category: newAnn.category, created_by: user.id }).select().single().then(({ data }) => {
-                      if (data) setAnnouncements(prev => [data, ...prev])
-                    })
-                  }}
-                  style={{ marginTop: 10, width: "100%", padding: "6px 0", borderRadius: 7, border: "1px dashed #c5d8ec", background: "none", color: "#185fa5", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
+                  onClick={() => addAnnouncement('update')}
+                  style={{ marginTop: 10, width: "100%", padding: "6px 0", borderRadius: 7, border: "1px dashed #b8e6d5", background: "none", color: "#0f6e56", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
                 >
-                  + 공지 추가
+                  + 소식 추가
                 </button>
               )}
             </div>
@@ -743,6 +774,7 @@ export default function DashboardPage() {
               item={selectedAnnouncement}
               onClose={() => setSelectedAnnouncement(null)}
               onSave={saveAnnouncement}
+              onDelete={deleteAnnouncement}
               isMaster={isMaster}
             />
           )}
