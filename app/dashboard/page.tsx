@@ -6,7 +6,7 @@
 // Dashboard Page (Main Entry) - Sidebar Sync & Route Fix
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeftRight,
@@ -117,6 +117,52 @@ function ConsultingBox({
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 2. Main Dashboard Page Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ── 공지사항 팝업 모달 ────────────────────────────────────────────────────
+function AnnouncementModal({ item, onClose, onSave, isMaster }: {
+  item: any; onClose: () => void; onSave?: (id: string, title: string, content: string) => void; isMaster: boolean
+}) {
+  const [editing, setEditing] = useState(false)
+  const [title, setTitle] = useState(item.title)
+  const [content, setContent] = useState(item.content)
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(10,20,40,0.45)" }}
+      onClick={onClose}>
+      <div style={{ background: "white", borderRadius: 14, maxWidth: 520, width: "calc(100% - 32px)", padding: "28px 28px 24px", boxShadow: "0 8px 40px rgba(0,0,0,0.18)", position: "relative", maxHeight: "80vh", overflowY: "auto" }}
+        onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#9ab4c8" }}>×</button>
+        {editing ? (
+          <>
+            <input value={title} onChange={e => setTitle(e.target.value)}
+              style={{ width: "100%", fontSize: 16, fontWeight: 700, color: "#1a2d42", border: "1px solid #c5d8ec", borderRadius: 8, padding: "8px 10px", marginBottom: 12, fontFamily: "inherit", boxSizing: "border-box" }} />
+            <textarea value={content} onChange={e => setContent(e.target.value)} rows={8}
+              style={{ width: "100%", fontSize: 13, color: "#2a3f55", border: "1px solid #c5d8ec", borderRadius: 8, padding: "8px 10px", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", lineHeight: 1.7 }} />
+            <div style={{ display: "flex", gap: 8, marginTop: 16, justifyContent: "flex-end" }}>
+              <button onClick={() => setEditing(false)} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid #d4e0eb", background: "white", color: "#5a7a92", cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>취소</button>
+              <button onClick={() => { onSave?.(item.id, title, content); setEditing(false) }}
+                style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#1a2744", color: "white", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>저장</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p style={{ fontSize: 11, color: item.category === 'update' ? "#0f6e56" : "#185fa5", fontWeight: 600, marginBottom: 8, background: item.category === 'update' ? "#e1f5ee" : "#eef4fb", display: "inline-block", padding: "2px 8px", borderRadius: 12 }}>
+              {item.category === 'update' ? '업데이트' : '공지사항'}
+            </p>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1a2d42", marginBottom: 14 }}>{title}</h3>
+            <p style={{ fontSize: 13, color: "#2a3f55", lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{content}</p>
+            <p style={{ fontSize: 11, color: "#9ab4c8", marginTop: 16 }}>{item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : ''}</p>
+            {isMaster && (
+              <button onClick={() => setEditing(true)}
+                style={{ marginTop: 16, padding: "7px 16px", borderRadius: 8, border: "1px solid #c5d8ec", background: "#f4f8fd", color: "#185fa5", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>
+                ✏️ 수정
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -130,6 +176,9 @@ export default function DashboardPage() {
   const [openConsultCategories, setOpenConsultCategories] = useState<Record<string, boolean>>({
     customer: true,
   });
+  // 공지사항
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
 
   const init = useCallback(async () => {
     try {
@@ -168,7 +217,11 @@ export default function DashboardPage() {
       }
       if (!userInfo) return router.replace("/login");
 
-      const { data: settings } = await supabase.from("team_settings").select("key, value");
+      const [{ data: settings }, { data: annData }] = await Promise.all([
+        supabase.from("team_settings").select("key, value"),
+        supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }),
+      ]);
+      if (annData) setAnnouncements(annData);
       const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };
 
       const effectiveRole = normalizeRole(userInfo);
@@ -222,6 +275,12 @@ export default function DashboardPage() {
     await supabase.from("team_settings").upsert({ key, value: String(nextStatus[key]) }, { onConflict: "key" });
   };
 
+  const saveAnnouncement = async (id: string, title: string, content: string) => {
+    await supabase.from("announcements").update({ title, content, updated_at: new Date().toISOString() }).eq("id", id);
+    setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, title, content } : a));
+    setSelectedAnnouncement((prev: any) => prev?.id === id ? { ...prev, title, content } : prev);
+  };
+
   const handleNavigation = (item: ConsultingTool) => {
     const { url } = item;
     if (!url) return;
@@ -269,7 +328,8 @@ export default function DashboardPage() {
         ? m.guestVisible === true
         : (
             m.access === "public" ||
-            (m.access === "approved" && (menuStatus[m.id] || isConsultEditMode))
+            // 편집모드: 비활성 항목도 표시(노출 토글 가능하도록), 일반모드: 활성만 표시
+            (m.access === "approved" && (isConsultEditMode || menuStatus[m.id] !== false))
           )
     )
   );
@@ -340,12 +400,12 @@ export default function DashboardPage() {
           )}
 
           {/* 인사 / 날짜 / 가이드 */}
-          <div style={{ background: "white", borderRadius: 10, border: "0.5px solid #e4edf5", padding: "13px 16px", marginBottom: 10, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ background: "white", borderRadius: 12, border: "0.5px solid #e4edf5", padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8, boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
             <div>
-              <h2 style={{ fontSize: 16, fontWeight: 500, color: "#1a2d42" }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1a2d42" }}>
                 {(user.name || user.email?.split('@')[0] || '')}님, 오늘도 좋은 하루 되세요!
               </h2>
-              <p style={{ fontSize: 12, color: "#7a9ab2", marginTop: 2 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
+              <p style={{ fontSize: 13, color: "#7a9ab2", marginTop: 4 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
               <span style={{ background: "#f0f4f8", border: "0.5px solid #d4e0eb", borderRadius: 7, padding: "4px 9px", fontSize: 11, color: "#7a9ab2" }}>
@@ -372,32 +432,34 @@ export default function DashboardPage() {
 
           {/* 자주 사용하는 기능 */}
           {highlightTools.length > 0 && (
-            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, padding: "13px 15px", marginBottom: 10 }}>
-              <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42", marginBottom: 10 }}>⭐ 자주 사용하는 기능</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }} className="sm:[grid-template-columns:repeat(6,1fr)]">
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "15px 16px", marginBottom: 12, boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1a2d42", marginBottom: 12 }}>⭐ 자주 사용하는 기능</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }} className="sm:[grid-template-columns:repeat(6,1fr)]">
                 {highlightTools.slice(0, 6).map((menu) => (
                   <button
                     key={menu.id}
                     type="button"
                     onClick={() => !isConsultEditMode && handleNavigation(menu)}
+                    className="group hover:-translate-y-[2px] hover:shadow-md"
                     style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
-                      padding: "9px 4px", borderRadius: 7,
-                      border: `0.5px solid ${menuStatus[menu.id] === false ? "#e4edf5" : "#c5d8ec"}`,
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
+                      padding: "12px 6px", borderRadius: 10,
+                      border: `1px solid ${menuStatus[menu.id] === false ? "#e4edf5" : "#c5d8ec"}`,
                       cursor: "pointer", background: menuStatus[menu.id] === false ? "transparent" : "#f6fafd",
-                      fontFamily: "inherit", opacity: menuStatus[menu.id] === false ? 0.45 : 1, transition: "all 0.1s"
+                      fontFamily: "inherit", opacity: menuStatus[menu.id] === false ? 0.45 : 1,
+                      transition: "all 0.18s ease"
                     }}
                   >
-                    <div style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef4fb", color: "#185fa5" }}>
-                      <ToolIcon icon={menu.icon} className="h-4 w-4" />
+                    <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef4fb", color: "#185fa5", transition: "transform 0.18s" }} className="group-hover:scale-110">
+                      <ToolIcon icon={menu.icon} className="h-5 w-5" />
                     </div>
-                    <p style={{ fontSize: 10, color: "#2a3f55", textAlign: "center", lineHeight: 1.3 }}>{menu.title}</p>
+                    <p style={{ fontSize: 12, color: "#2a3f55", textAlign: "center", lineHeight: 1.3, fontWeight: 500 }}>{menu.title}</p>
                     {isConsultEditMode && menu.editable && (
                       <input
                         type="checkbox"
                         checked={menuStatus[menu.id] !== false}
                         onChange={() => toggleMenu(menu.id)}
-                        style={{ width: 12, height: 12, accentColor: "#1a2d42" }}
+                        style={{ width: 13, height: 13, accentColor: "#1a2d42" }}
                         onClick={e => e.stopPropagation()}
                       />
                     )}
@@ -408,57 +470,75 @@ export default function DashboardPage() {
           )}
 
           {/* 전체 메뉴 - 4컬럼 아코디언 (PC: 항상 열림, 모바일: 토글) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 mb-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
             {CONSULTING_TOOL_CATEGORIES.map((category) => {
               const tools = visibleConsultingTools.filter((tool) => !tool.highlight && tool.category === category.id);
               if (tools.length === 0) return null;
               const isOpen = openConsultCategories[category.id] !== false;
-              const catStyle: Record<string, { bg: string; color: string }> = {
-                customer: { bg: "#eef4fb", color: "#185fa5" },
-                analysis: { bg: "#e1f5ee", color: "#0f6e56" },
-                claim:    { bg: "#faece7", color: "#993c1d" },
-                support:  { bg: "#eeedfe", color: "#534ab7" },
+              const catStyle: Record<string, { bg: string; color: string; accent: string; headerBg: string }> = {
+                customer: { bg: "#eef4fb", color: "#185fa5", accent: "#2563eb", headerBg: "#f4f8fd" },
+                analysis: { bg: "#e1f5ee", color: "#0f6e56", accent: "#16a34a", headerBg: "#f2fbf6" },
+                claim:    { bg: "#faece7", color: "#993c1d", accent: "#ea580c", headerBg: "#fdf5f2" },
+                support:  { bg: "#eeedfe", color: "#534ab7", accent: "#7c3aed", headerBg: "#f5f4fe" },
               };
               const catEmoji: Record<string, string> = {
                 customer: "👥", analysis: "🛡", claim: "📋", support: "📁",
               };
-              const cs = catStyle[category.id] || { bg: "#f0f4f8", color: "#5a7a92" };
+              const cs = catStyle[category.id] || { bg: "#f0f4f8", color: "#5a7a92", accent: "#5a7a92", headerBg: "#f5f7fa" };
               return (
-                <div key={category.id} style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, overflow: "hidden" }}>
+                <div key={category.id} style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
+                  {/* 카테고리 헤더 */}
                   <button
                     type="button"
                     onClick={() => toggleConsultCategory(category.id)}
                     className="w-full xl:pointer-events-none"
                     style={{
-                      display: "flex", alignItems: "center", gap: 8, padding: "12px 13px",
-                      cursor: "pointer", background: "transparent", border: "none",
+                      display: "flex", alignItems: "center", gap: 10, padding: "14px 15px",
+                      cursor: "pointer", background: cs.headerBg, border: "none",
                       fontFamily: "inherit", width: "100%", textAlign: "left",
-                      borderBottom: isOpen ? "0.5px solid #e4edf5" : "none"
+                      borderBottom: isOpen ? `1px solid ${cs.bg}` : "none"
                     }}
                   >
-                    <div style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: cs.bg, color: cs.color, flexShrink: 0 }}>
-                      <span style={{ fontSize: 13 }}>{catEmoji[category.id] || "•"}</span>
+                    <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: cs.bg, color: cs.color, flexShrink: 0, fontSize: 18 }}>
+                      {catEmoji[category.id] || "•"}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42" }}>{category.title}</p>
-                      <p style={{ fontSize: 10, color: "#9ab4c8", marginTop: 1 }}>{category.desc}</p>
+                      <p style={{ fontSize: 15, fontWeight: 700, color: "#1a2d42" }}>{category.title}</p>
+                      <p style={{ fontSize: 11, color: "#9ab4c8", marginTop: 2 }}>{category.desc}</p>
                     </div>
-                    <ChevronDown className={`h-3.5 w-3.5 text-[#b0c4d4] transition-transform xl:hidden ${isOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-4 w-4 text-[#b0c4d4] transition-transform xl:hidden ${isOpen ? "rotate-180" : ""}`} />
                   </button>
+                  {/* 툴 목록 */}
                   <div className={`xl:block ${isOpen ? "" : "hidden"}`}>
-                    <div style={{ padding: "6px 8px 8px" }}>
+                    <div style={{ padding: "10px 10px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
                       {tools.map((tool) => (
                         <div
                           key={tool.id}
                           onClick={() => !isConsultEditMode && handleNavigation(tool)}
-                          className="flex items-center gap-1.5 rounded cursor-pointer hover:bg-[#f0f6fb]"
-                          style={{ padding: "6px 6px", transition: "background 0.1s", opacity: (isConsultEditMode && menuStatus[tool.id] === false) ? 0.4 : 1 }}
+                          className="group flex items-center gap-3 rounded-lg cursor-pointer hover:-translate-y-[1px] hover:shadow-md"
+                          style={{
+                            padding: "10px 12px",
+                            border: `1px solid ${cs.bg}`,
+                            background: "#fafcfe",
+                            transition: "all 0.18s ease",
+                            opacity: (isConsultEditMode && menuStatus[tool.id] === false) ? 0.4 : 1,
+                          }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLDivElement).style.borderColor = cs.color + "55";
+                            (e.currentTarget as HTMLDivElement).style.background = cs.bg;
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLDivElement).style.borderColor = cs.bg;
+                            (e.currentTarget as HTMLDivElement).style.background = "#fafcfe";
+                          }}
                         >
-                          <span style={{ fontSize: 12, color: "#8aabcc", width: 16, textAlign: "center", flexShrink: 0 }}>·</span>
-                          <p style={{ fontSize: 11, color: "#2a3f55", flex: 1 }}>{tool.title}</p>
+                          <div style={{ width: 30, height: 30, borderRadius: 7, background: cs.bg, color: cs.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "transform 0.18s" }} className="group-hover:scale-110">
+                            <ToolIcon icon={tool.icon} className="h-4 w-4" />
+                          </div>
+                          <p style={{ fontSize: 13, color: "#2a3f55", flex: 1, fontWeight: 500 }}>{tool.title}</p>
                           {isConsultEditMode && tool.editable
-                            ? <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} style={{ width: 12, height: 12, accentColor: "#1a2d42", flexShrink: 0 }} onClick={e => e.stopPropagation()} />
-                            : <span style={{ fontSize: 10, color: "#c0d4e4" }}>›</span>
+                            ? <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} style={{ width: 13, height: 13, accentColor: "#1a2d42", flexShrink: 0 }} onClick={e => e.stopPropagation()} />
+                            : <span style={{ fontSize: 16, color: "#c0d4e4", transition: "transform 0.18s, color 0.18s", flexShrink: 0 }} className="group-hover:translate-x-0.5 group-hover:text-[#5a7a92]">›</span>
                           }
                         </div>
                       ))}
@@ -469,59 +549,97 @@ export default function DashboardPage() {
             })}
           </div>
 
-          {/* 하단: 공지사항 + 업데이트 + 외부 링크 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, padding: "12px 14px" }}>
-              <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42", marginBottom: 8 }}>공지사항</p>
-              <div style={{ paddingBottom: 7, borderBottom: "0.5px solid #e4edf5", marginBottom: 7 }}>
-                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>[안내] 시스템 이용 안내</p>
-                <p style={{ fontSize: 10, color: "#9ab4c8" }}>관리자 공지</p>
-              </div>
-              <div>
-                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>[업데이트] 보장분석 PRO 개선</p>
-                <p style={{ fontSize: 10, color: "#9ab4c8" }}>최근 업데이트</p>
-              </div>
+          {/* 하단: 공지사항 + 외부 링크 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* 공지사항 */}
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1a2d42", marginBottom: 10 }}>📢 공지사항</p>
+              {announcements.filter(a => a.category === 'notice').slice(0, 3).map((ann, i, arr) => (
+                <div key={ann.id}
+                  onClick={() => setSelectedAnnouncement(ann)}
+                  style={{ paddingBottom: i < arr.length - 1 ? 8 : 0, borderBottom: i < arr.length - 1 ? "0.5px solid #e4edf5" : "none", marginBottom: i < arr.length - 1 ? 8 : 0, cursor: "pointer" }}
+                  className="hover:opacity-70 transition-opacity"
+                >
+                  <p style={{ fontSize: 12, color: "#2a3f55", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>{ann.title}</p>
+                  <p style={{ fontSize: 11, color: "#9ab4c8" }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+                </div>
+              ))}
+              {announcements.filter(a => a.category === 'notice').length === 0 && (
+                <p style={{ fontSize: 12, color: "#b0c4d4" }}>공지사항이 없습니다.</p>
+              )}
             </div>
-            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, padding: "12px 14px" }}>
-              <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42", marginBottom: 8 }}>업데이트 소식</p>
-              <div style={{ paddingBottom: 7, borderBottom: "0.5px solid #e4edf5", marginBottom: 7 }}>
-                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2 }}>
-                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 8, background: "#e1f5ee", color: "#0f6e56", fontWeight: 500, marginRight: 3 }}>NEW</span>
-                  보장분석 PRO 기능 추가
-                </p>
-                <p style={{ fontSize: 10, color: "#9ab4c8" }}>최근 업데이트</p>
-              </div>
-              <div>
-                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2 }}>
-                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 8, background: "#eef4fb", color: "#185fa5", fontWeight: 500, marginRight: 3 }}>UPDATE</span>
-                  질병코드 데이터 업데이트
-                </p>
-                <p style={{ fontSize: 10, color: "#9ab4c8" }}>시스템 업데이트</p>
-              </div>
+            {/* 업데이트 소식 */}
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1a2d42", marginBottom: 10 }}>🔔 업데이트 소식</p>
+              {announcements.filter(a => a.category === 'update').slice(0, 3).map((ann, i, arr) => (
+                <div key={ann.id}
+                  onClick={() => setSelectedAnnouncement(ann)}
+                  style={{ paddingBottom: i < arr.length - 1 ? 8 : 0, borderBottom: i < arr.length - 1 ? "0.5px solid #e4edf5" : "none", marginBottom: i < arr.length - 1 ? 8 : 0, cursor: "pointer" }}
+                  className="hover:opacity-70 transition-opacity"
+                >
+                  <p style={{ fontSize: 12, color: "#2a3f55", marginBottom: 2, fontWeight: 500 }}>
+                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#e1f5ee", color: "#0f6e56", fontWeight: 600, marginRight: 4 }}>NEW</span>
+                    {ann.title.replace(/^\[.*?\]\s*/, '')}
+                  </p>
+                  <p style={{ fontSize: 11, color: "#9ab4c8" }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+                </div>
+              ))}
+              {announcements.filter(a => a.category === 'update').length === 0 && (
+                <p style={{ fontSize: 12, color: "#b0c4d4" }}>업데이트 소식이 없습니다.</p>
+              )}
+              {isMaster && (
+                <button
+                  onClick={() => {
+                    const newAnn = { id: 'new-' + Date.now(), title: '새 공지사항', content: '내용을 입력하세요.', category: 'notice', created_at: new Date().toISOString(), is_active: true }
+                    supabase.from("announcements").insert({ title: newAnn.title, content: newAnn.content, category: newAnn.category, created_by: user.id }).select().single().then(({ data }) => {
+                      if (data) setAnnouncements(prev => [data, ...prev])
+                    })
+                  }}
+                  style={{ marginTop: 10, width: "100%", padding: "6px 0", borderRadius: 7, border: "1px dashed #c5d8ec", background: "none", color: "#185fa5", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
+                >
+                  + 공지 추가
+                </button>
+              )}
             </div>
+            {/* 외부 링크 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <button
-                onClick={() => window.open("https://cafe.naver.com/insuranceguide", "_blank")}
-                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, background: "#16a34a", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                onClick={() => {
+                  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+                  window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank")
+                }}
+                className="hover:-translate-y-[1px] hover:shadow-lg transition-all"
+                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderRadius: 12, background: "#16a34a", border: "none", cursor: "pointer", fontFamily: "inherit" }}
               >
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: "white", flexShrink: 0 }}>N</div>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "white", flexShrink: 0 }}>N</div>
                 <div style={{ flex: 1, textAlign: "left" }}>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3 }}>커뮤니티</p>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "white" }}>보험의 기준 카페</p>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3 }}>커뮤니티</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의 기준 카페</p>
                 </div>
               </button>
               <button
-                onClick={() => window.open("https://open.kakao.com/o/insuranceguide", "_blank")}
-                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, background: "#b45309", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
+                className="hover:-translate-y-[1px] hover:shadow-lg transition-all"
+                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderRadius: 12, background: "#b45309", border: "none", cursor: "pointer", fontFamily: "inherit" }}
               >
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: "white", flexShrink: 0 }}>O</div>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "white", flexShrink: 0 }}>O</div>
                 <div style={{ flex: 1, textAlign: "left" }}>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3 }}>실시간 소통</p>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: "white" }}>보험의 기준 오픈채팅</p>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3 }}>실시간 소통</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의 기준 오픈채팅</p>
                 </div>
               </button>
             </div>
           </div>
+
+          {/* 공지사항 상세 팝업 */}
+          {selectedAnnouncement && (
+            <AnnouncementModal
+              item={selectedAnnouncement}
+              onClose={() => setSelectedAnnouncement(null)}
+              onSave={saveAnnouncement}
+              isMaster={isMaster}
+            />
+          )}
 
         </div>
       )
