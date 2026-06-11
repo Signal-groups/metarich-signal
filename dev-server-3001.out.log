@@ -54,3 +54,6 @@
  GET /financial-portfolio 200 in 354ms (compile: 155ms, render: 200ms)
  GET /financial-portfolio 200 in 38ms (compile: 5ms, render: 34ms)
  GET /financial-portfolio 200 in 38ms (compile: 6ms, render: 32ms)
+✓ Compiled in 3.2s
+✓ Compiled in 256ms
+✓ Compiled in 134ms

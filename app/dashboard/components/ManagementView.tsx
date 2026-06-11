@@ -402,17 +402,3 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   )
 }
 
-function MonitorBar({ label, rate, target, actual }: { label: string; rate: number; target: number; actual: number }) {
-  const barColor = rate >= 80 ? "#1d9e75" : rate >= 65 ? "#f0a500" : "#e24b4a";
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ fontSize: 11, color: "#5a7a92" }}>{label}</span>
-        <span style={{ fontSize: 11, color: "#1a2d42", fontWeight: 500 }}>{actual.toLocaleString()} / {target.toLocaleString()} ({rate}%)</span>
-      </div>
-      <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: barColor, borderRadius: 3, transition: "width 0.8s ease" }} />
-      </div>
-    </div>
-  )
-}
