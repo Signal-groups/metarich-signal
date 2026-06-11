@@ -66,6 +66,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
 
 .btn-home{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
 .btn-home:hover{border-color:var(--accent);color:var(--accent);}
+.btn-print{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
+.btn-print:hover{border-color:var(--accent);color:var(--accent);}
 .btn-close{display:inline-flex;align-items:center;gap:5px;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.04);color:var(--muted);border:1px solid var(--border);transition:all .15s;font-family:inherit;}
 .btn-close:hover{border-color:rgba(239,68,68,0.4);color:#f87171;}
 </style>
@@ -125,6 +127,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--te
   <a href="../index.html" class="btn-home">🏠 처음으로</a>
   <button class="btn-close" onclick="window.close()">✕ 창닫기</button>
   <button class="btn btn-secondary" onclick="resetExam()">🔄 초기화</button>
+  <button class="btn-print" onclick="printExam()">🖨️ 출력</button>
   <button class="btn btn-primary" onclick="submitExam()">✅ 채점하기</button>
   <div class="score-display" id="score-display"></div>
 </div>
@@ -290,6 +293,71 @@ renderExam(7);exams[7]._rendered=true;startTimer(7);
 </script>
 
 <script>
+// ============ 출력 공통 함수 ============
+function printExamQuestions(allQs, title) {
+  const nums = ['①','②','③','④'];
+  let questionsHtml = '';
+  allQs.forEach(function(q, i) {
+    if (i > 0 && i % 10 === 0) questionsHtml += '<div class="page-break"></div>';
+    questionsHtml += '<div class="print-q"><div class="print-q-num">문 ' + (i+1) + '.</div>' +
+      '<div class="print-q-body"><div class="print-q-text">' + (q.q||'') + '</div>' +
+      '<div class="print-choices">' +
+      (q.c||[]).map(function(c,ci){ return '<div class="print-choice">' + (nums[ci]||ci+1) + ' ' + c + '</div>'; }).join('') +
+      '</div></div></div>';
+  });
+  let ansHtml = '<div class="page-break"></div><h2 class="ans-title">▣ 정답 및 해설</h2>';
+  ansHtml += '<table class="ans-table"><tr>';
+  allQs.forEach(function(q,i) {
+    if (i>0 && i%10===0) ansHtml += '</tr><tr>';
+    ansHtml += '<td><span class="an-num">' + (i+1) + '</span>' + (nums[q.a]||q.a+1) + '</td>';
+  });
+  ansHtml += '</tr></table><div class="ex-section">';
+  allQs.forEach(function(q,i) {
+    if (q.ex) ansHtml += '<div class="print-ex"><strong>' + (i+1) + '번:</strong> ' + q.ex + '</div>';
+  });
+  ansHtml += '</div>';
+  var w = window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">' +
+    '<title>' + title + ' - 출력</title>' +
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap">' +
+    '<style>' +
+    '*{margin:0;padding:0;box-sizing:border-box;}' +
+    'body{font-family:\'Noto Sans KR\',sans-serif;color:#111;background:#fff;font-size:11pt;line-height:1.8;}' +
+    '.print-header{padding:16px 20px 12px;border-bottom:2px solid #1a3f6f;margin-bottom:20px;}' +
+    '.print-header h1{font-size:16pt;font-weight:700;color:#1a3f6f;}' +
+    '.print-header p{font-size:9pt;color:#555;margin-top:3px;}' +
+    '.print-q{display:flex;gap:10px;margin-bottom:16px;page-break-inside:avoid;}' +
+    '.print-q-num{font-weight:700;color:#1a3f6f;white-space:nowrap;min-width:40px;}' +
+    '.print-q-body{flex:1;}' +
+    '.print-q-text{font-size:10.5pt;margin-bottom:6px;}' +
+    '.print-choices{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;}' +
+    '.print-choice{font-size:10pt;color:#333;}' +
+    '.page-break{page-break-before:always;margin-top:8px;}' +
+    '.ans-title{font-size:13pt;font-weight:700;color:#1a3f6f;margin:16px 0 10px;}' +
+    '.ans-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:10pt;}' +
+    '.ans-table td{border:1px solid #ccc;padding:7px 10px;text-align:center;min-width:50px;}' +
+    '.an-num{display:block;font-size:8pt;color:#888;}' +
+    '.ex-section{margin-top:8px;}' +
+    '.print-ex{margin:6px 0;font-size:10pt;line-height:1.7;padding:7px 12px;background:#f5f8ff;border-left:3px solid #1a3f6f;page-break-inside:avoid;}' +
+    '.print-ex strong{color:#1a3f6f;margin-right:6px;}' +
+    '.print-btn{position:fixed;bottom:20px;right:20px;padding:10px 22px;background:#1a3f6f;color:#fff;border:none;border-radius:6px;font-size:12pt;cursor:pointer;font-family:inherit;z-index:9999;}' +
+    '@media print{.print-btn{display:none;}.page-break{page-break-before:always;}}' +
+    '</style></head><body>' +
+    '<div class="print-header"><h1>' + title + '</h1><p>총 ' + allQs.length + '문항 | 10문항/페이지 | 마지막 페이지 정답·해설</p></div>' +
+    questionsHtml + ansHtml +
+    '<button class="print-btn" onclick="window.print()">🖨️ 인쇄하기</button>' +
+    '</body></html>');
+  w.document.close();
+}
+function printExam() {
+  var ei = typeof currentExam !== 'undefined' ? currentExam : 1;
+  if (!exams || !exams[ei]) { alert('문제 데이터를 불러오지 못했습니다.'); return; }
+  var allQs = [].concat(exams[ei].s1, exams[ei].s2);
+  printExamQuestions(allQs, '생명보험 모집인 제'+ei+'회 모의고사');
+}
+</script>
+
+<script>
 // ============ 오답노트 트래킹 ============
 (function() {
   function _hashQ(str) {
@@ -332,36 +400,61 @@ renderExam(7);exams[7]._rendered=true;startTimer(7);
     } catch(e) { console.warn('오답노트 저장 실패', e); }
   }
 
-  // gradeExam 후킹
+  // submitExam 후킹 (오답노트 저장)
   const SUBJ_KEY = 'life';
   const SUBJ_NAME = '생명보험';
   
   window.addEventListener('load', function() {
-    const orig = window.gradeExam;
+    const orig = window.submitExam;
     if (typeof orig !== 'function') return;
-    window.gradeExam = function() {
+    window.submitExam = function() {
       orig.apply(this, arguments);
-      const ei = typeof currentExam !== 'undefined' ? currentExam : 1;
-      const s1 = DATA['exam'+ei+'_s1'];
-      const s2 = DATA['exam'+ei+'_s2'];
-      const wrongCount = [...s1,...s2].filter((q,i)=>{
-        const ua = answers[ei+'-'+(i+1)];
-        return ua !== undefined && ua >= 0 && ua !== q.a;
-      }).length;
-      saveWrongToNote(SUBJ_KEY, SUBJ_NAME, ei, s1, s2, answers);
-      if (wrongCount > 0) {
-        const rc = document.getElementById('result'+ei);
-        if (rc && !rc.querySelector('.note-saved-msg')) {
-          const d = document.createElement('div');
-          d.className = 'note-saved-msg';
-          d.style.cssText = 'margin-top:14px;padding:12px 16px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);border-radius:8px;font-size:12px;color:#c9a96e;';
-          d.innerHTML = '📒 <strong>오답노트 저장 완료!</strong> 틀린 문제 '+wrongCount+'개가 기록되었습니다. <a href="../오답노트.html" target="_blank" style="color:#c9a96e;text-decoration:underline;font-weight:700;">오답노트 보기 →</a>';
-          rc.appendChild(d);
+      try {
+        const ei = typeof currentExam !== 'undefined' ? currentExam : 1;
+        if (!exams || !exams[ei]) return;
+        const s1 = exams[ei].s1, s2 = exams[ei].s2;
+        const allQs = [...s1, ...s2];
+        const _uid2 = (function(){ try{ return localStorage.getItem('mrsg_uid')||'guest'; }catch(e){ return 'guest'; } })();
+        const KEY2 = 'mrsg_odalNote_' + _uid2;
+        let data = JSON.parse(localStorage.getItem(KEY2) || '{"answers":{},"catStats":{}}');
+        const today = new Date().toISOString().split('T')[0];
+        let wrongCount = 0;
+        allQs.forEach((q, i) => {
+          const userAns = (answered && answered[ei] !== undefined && answered[ei][q.n] !== undefined) ? answered[ei][q.n] : -1;
+          if (userAns < 0 || userAns === q.a) return;
+          wrongCount++;
+          const qId = SUBJ_KEY + '_' + _hashQ(q.q);
+          const cat = q.cat || (i < s1.length ? '과목1' : '과목2');
+          const catKey = SUBJ_NAME + '_' + cat;
+          if (data.answers[qId]) {
+            data.answers[qId].wrongCount++;
+            data.answers[qId].lastWrong = today;
+            data.answers[qId].lastUserAns = userAns;
+          } else {
+            data.answers[qId] = {
+              subject: SUBJ_KEY, subjectName: SUBJ_NAME,
+              examNum: ei, qNum: q.n, cat, catKey,
+              q: q.q, c: q.c, a: q.a, userAns, ex: q.ex,
+              wrongCount: 1, firstWrong: today, lastWrong: today
+            };
+          }
+          data.catStats[catKey] = (data.catStats[catKey] || 0) + 1;
+        });
+        localStorage.setItem(KEY2, JSON.stringify(data));
+        if (wrongCount > 0) {
+          const rc = document.getElementById('result'+ei);
+          if (rc && !rc.querySelector('.note-saved-msg')) {
+            const d = document.createElement('div');
+            d.className = 'note-saved-msg';
+            d.style.cssText = 'margin-top:14px;padding:12px 16px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.25);border-radius:8px;font-size:12px;color:#c9a96e;';
+            d.innerHTML = '📒 <strong>오답노트 저장 완료!</strong> 틀린 문제 '+wrongCount+'개가 기록되었습니다. <a href="../오답노트.html" target="_blank" style="color:#c9a96e;text-decoration:underline;font-weight:700;">오답노트 보기 →</a>';
+            rc.appendChild(d);
+          }
         }
-      }
+      } catch(e) { console.warn('오답노트 저장 실패', e); }
     };
   });
-})();
+})();})();
 </script>
 
 </body>
