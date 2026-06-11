@@ -360,7 +360,13 @@ export default function CustomerDetailPage() {
               </>
             ) : (
               <>
-                <Link href={`/crm/analysis?customerId=${id}`} className="btn btn-primary" style={{ textDecoration: 'none' }}>보장분석</Link>
+                <Link
+                  href={`/coverage-pro?customerId=${id}&customerName=${encodeURIComponent(customer.name || '')}`}
+                  className="btn btn-primary"
+                  style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+                >
+                  보장분석 PRO
+                </Link>
                 <button className="btn btn-secondary" onClick={() => setEditing(true)}>수정</button>
                 <button className="btn" style={{ background: '#fef2f2', color: '#dc2626' }} onClick={deleteCustomer}>삭제</button>
               </>

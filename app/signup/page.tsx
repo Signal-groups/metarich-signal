@@ -174,15 +174,22 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#eef3fb] px-5 py-8 text-slate-900">
-      <div className="mx-auto w-full max-w-3xl rounded-[2rem] bg-white p-6 shadow-2xl md:p-10">
-        <div className="mb-8 flex flex-col gap-4 border-b border-slate-100 pb-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-bold tracking-[0.25em] text-[#2563eb]">SIGN UP</p>
-            <h1 className="mt-2 text-3xl font-black text-[#1a3a6e]">회원가입 신청</h1>
-            <p className="mt-2 text-sm font-medium text-slate-500">승인 후 시그널 워크센터를 이용할 수 있습니다.</p>
+    <div style={{ minHeight: "100vh", background: "#0a1628", padding: "32px 20px" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        {/* 브랜드 헤더 */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#378add" }} />
+            <span style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.6)", letterSpacing: "0.04em" }}>Insu-Work Center</span>
           </div>
-          <button onClick={() => router.push("/login")} className="rounded-xl bg-slate-100 px-4 py-3 text-xs font-black text-slate-500 hover:bg-slate-200">
+          <h1 style={{ fontSize: 22, fontWeight: 600, color: "white", margin: 0 }}>회원가입 신청</h1>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", marginTop: 6 }}>승인 후 시그널 워크센터를 이용할 수 있습니다.</p>
+        </div>
+
+      <div style={{ background: "white", borderRadius: 16, padding: "28px 24px" }}>
+        <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "0.5px solid #e4edf5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: "#1a2d42" }}>계정 정보 입력</p>
+          <button onClick={() => router.push("/login")} style={{ fontSize: 12, color: "#7a9ab2", background: "none", border: "0.5px solid #d4e0eb", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>
             로그인으로 돌아가기
           </button>
         </div>
@@ -332,10 +339,11 @@ export default function SignupPage() {
             />
           </label>
 
-          <button type="submit" disabled={loading} className="mt-2 w-full rounded-2xl bg-[#1a3a6e] py-5 text-lg font-black text-white transition hover:bg-[#2563eb] disabled:opacity-60">
+          <button type="submit" disabled={loading} style={{ width: "100%", marginTop: 8, borderRadius: 8, background: "#1a2540", color: "#e8f1f8", border: "none", padding: "14px", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", opacity: loading ? 0.6 : 1 }}>
             {loading ? "가입 신청 중..." : "가입 신청하기"}
           </button>
         </form>
+      </div>
       </div>
     </div>
   )

@@ -34,10 +34,6 @@ const NAV: NavItem[] = [
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 16V4m0 0L7 9m5-5l5 5"/><path strokeWidth="2" d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
   },
   {
-    href: '/crm/analysis', label: '보장분석', exact: false,
-    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-  },
-  {
     href: '/crm/alerts', label: '알림관리', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
   },
@@ -52,6 +48,11 @@ const NAV: NavItem[] = [
   {
     href: '/crm/settings', label: '설정', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path strokeWidth="2" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06A1.65 1.65 0 0015 19.4a1.65 1.65 0 00-1 .6 1.65 1.65 0 00-.4 1.08V21a2 2 0 01-4 0v-.09A1.65 1.65 0 008.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-.6-1 1.65 1.65 0 00-1.08-.4H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-.6A1.65 1.65 0 0010.4 2.9V3a2 2 0 014 0v-.09A1.65 1.65 0 0015 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.22.38.6.6 1 .6H21a2 2 0 010 4h-.09A1.65 1.65 0 0019.4 15z"/></svg>
+  },
+  // ── 보장분석 PRO (신규) ───────────────────────────────────────────────
+  {
+    href: '/coverage-pro', label: '보장분석 PRO', exact: false,
+    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
   },
 ]
 
@@ -243,16 +244,17 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 99 }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+            zIndex: 39, backdropFilter: 'blur(2px)',
+          }}
         />
       )}
 
-      {/* ── MAIN ── */}
-      <div className="crm-main">
-        <div className="crm-page">
-          {children}
-        </div>
-      </div>
+      {/* ── MAIN CONTENT ── */}
+      <main className="crm-main">
+        {children}
+      </main>
     </div>
   )
-}
+} 

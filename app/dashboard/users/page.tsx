@@ -147,10 +147,19 @@ export default function StaffManagementPage() {
 
     setDeletingId(user.id)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        alert("로그인 세션을 확인하지 못했습니다. 다시 로그인 후 삭제해주세요.")
+        return
+      }
+
       const res = await fetch("/api/admin/delete-user", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUserId: user.id, requesterId: viewer?.id }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ targetUserId: user.id }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) { alert("삭제 실패: " + (json.error || "알 수 없는 오류")); return }

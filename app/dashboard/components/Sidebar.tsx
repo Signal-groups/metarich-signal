@@ -174,6 +174,7 @@ export default function Sidebar({
 
   const consultTools = CONSULTING_TOOLS.filter((tool) => tool.placement !== "office");
   const visibleConsultTools = consultTools.filter((tool) =>
+    (!tool.staffOnly || isStaff) &&
     // 미승인·게스트: guestVisible 도구만 표시
     !isApproved
       ? tool.guestVisible === true
@@ -299,12 +300,13 @@ export default function Sidebar({
       <aside className={`fixed inset-y-0 left-0 z-50 bg-[#1a3a6e] flex flex-col shadow-xl transition-all duration-300 ${isOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full lg:w-[300px] lg:translate-x-0'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden lg:flex'}`}>
           {/* Brand Logo Section */}
-          <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-1 mt-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-montserrat font-black text-2xl bg-gradient-to-br from-white to-[#0ea5e9] bg-clip-text text-transparent">MR<span className="text-[#0ea5e9]">SG</span></span>
-            </div>
-            <p className="text-[10px] text-white/50 font-light tracking-widest uppercase">MetaRich Signal Group</p>
-            <div className="h-[1px] bg-white/10 w-full mt-4"></div>
+          <div className="px-5 pt-5 pb-2 flex-shrink-0 flex flex-col gap-1">
+            <img
+              src="/bohum-logo.jpg"
+              alt="보험의기준"
+              className="w-full max-w-[220px] mx-auto rounded-xl object-contain"
+            />
+            <div className="h-[1px] bg-white/10 w-full mt-3"></div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6 no-scrollbar">
@@ -411,22 +413,6 @@ export default function Sidebar({
                 variant="support"
               />
 
-              <NavItem
-                icon="N"
-                label="보험의 기준 카페"
-                active={false}
-                onClick={openInsuranceCafe}
-                variant="naver"
-              />
-
-              <NavItem
-                icon="●"
-                label="보험의 기준 오픈채팅"
-                active={false}
-                onClick={openInsuranceChat}
-                variant="kakao"
-              />
-
               {isMaster && (
                 <NavItem
                   icon="직원관리"
@@ -482,29 +468,31 @@ export default function Sidebar({
 
           {/* Sidebar Footer */}
           <div className="p-4 flex-shrink-0 space-y-2">
+            <button
+              onClick={() => router.push("/dashboard/settings")}
+              style={{ width: "100%", padding: "7px 12px", borderRadius: 8, background: "rgba(55,138,221,0.1)", border: "0.5px solid rgba(55,138,221,0.2)", color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}
+            >⚙️ 설정</button>
             <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-white/5 text-white/40 py-3 rounded-xl font-bold text-[10px] uppercase hover:bg-white/10 transition-colors">
               로그아웃
             </button>
             <div className="text-[10px] text-white/20 text-center font-light">
-              배진우 팀장 AFPK<br/>메타리치 시그널그룹
+              {user?.name || ""}<br/>{user?.department_name || user?.headquarter_name || "메타리치 시그널그룹"}
             </div>
           </div>
         </div>
       </aside>
 
-      <div className={`${isOpen ? 'hidden' : 'block'} fixed inset-x-0 bottom-0 z-[55] border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,.12)] backdrop-blur lg:hidden`}>
-        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-          <MobileNavButton label="홈" active={mode === 'consulting'} onClick={openConsulting}>
-            <MessageSquareText className="h-5 w-5" />
-          </MobileNavButton>
-          <MobileNavButton label="업무" active={mode === 'office'} onClick={openOffice} disabled={!canUseOffice}>
+      <div
+        className={`${isOpen ? 'hidden' : 'block'} fixed inset-x-0 bottom-0 z-[55] border-t border-slate-200 bg-white/95 px-3 pt-2 shadow-[0_-8px_24px_rgba(15,23,42,.12)] backdrop-blur lg:hidden`}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}
+      >
+        <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
+          <MobileNavButton label="홈" active={mode === 'consulting' && !isOpen} onClick={openConsulting}>
             <Home className="h-5 w-5" />
           </MobileNavButton>
-          {canUseCrm && (
-            <MobileNavButton label="CRM" onClick={openCrm}>
-              <Users className="h-5 w-5" />
-            </MobileNavButton>
-          )}
+          <MobileNavButton label="업무" active={mode === 'office' && !isOpen} onClick={openOffice} disabled={!canUseOffice}>
+            <MessageSquareText className="h-5 w-5" />
+          </MobileNavButton>
           <MobileNavButton label="DM" onClick={openContentStudio} disabled={!isApproved}>
             <ClipboardCheck className="h-5 w-5" />
           </MobileNavButton>

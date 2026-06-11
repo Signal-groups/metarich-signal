@@ -6,21 +6,20 @@ import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
 import { canAccessCrm } from "../../../lib/roles"
 import CustomerManagerModal from "./CustomerManagerModal"
-// import CalcModal from "./CalcModal" // 파일 존재 여부에 따라 주석 해제 가능
 
 export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {
   const [mainTab, setMainTab] = useState<'input' | 'edu'>('input');
-  
+
   const [perfInput, setPerfInput] = useState({
     call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
-    contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
+    contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300,
     edu_status: "미참여", is_approved: false,
     edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
   });
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
-  const [isCustOpen, setIsCustOpen] = useState(false); 
-  const [avgTab, setAvgTab] = useState<'perf' | 'act'>('perf'); 
+  const [isCustOpen, setIsCustOpen] = useState(false);
+  const [avgTab, setAvgTab] = useState<'perf' | 'act'>('perf');
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [viewDetail, setViewDetail] = useState<any>(null);
 
@@ -28,9 +27,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
   const monthKey = `${year}-${month}-01`;
 
-  const LINKS = { 
-    metaon: "https://meta-on.kr/#/login", 
-    insu: "https://xn--on3bi2e18htop.com/", 
+  const LINKS = {
+    metaon: "https://meta-on.kr/#/login",
+    insu: "https://xn--on3bi2e18htop.com/",
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm",
     customerCrm: "/crm",
     salesMaster: "/sales-master",
@@ -42,14 +41,12 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const handleGoogleSync = async (customers: any[]) => {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxQVSM9jB0lubHWSEBNUcRT_OFwU4QS9AOjNOzQwPjW9FOif3izSVWxOwuXpUXhGZ0IEQ/exec";
     if (customers.length === 0) return alert("전송할 데이터가 없습니다.");
-
     const mappedData = customers.map(c => ({
       name: c.name || "", phone: c.phone || "", contract_date: c.contract_date || "",
       payment_day: c.payment_day || "", birth: c.birth || "", family: c.family || "",
       etc1: "", relation: "", status: c.status || "유지", monthly_pay: c.monthly_pay || 0,
       insu_company: c.insu_company || "", gift: c.gift || "", contract_type: c.contract_type || "체결"
     }));
-
     try {
       await fetch(GAS_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mappedData) });
       alert(`🚀 성공! ${customers.length}명의 고객 데이터를 구글 시트에 기록했습니다.`);
@@ -60,7 +57,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     }
   };
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchData();
     fetchAllHistory();
   }, [monthKey, user.id]);
@@ -74,9 +71,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     }
     const { data: perf } = await supabase.from("daily_perf").select("*").eq("user_id", user.id).eq("date", monthKey).maybeSingle();
     if (perf) setPerfInput(prev => ({ ...prev, ...perf }));
-    else setPerfInput({ 
-      call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0, 
-      contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
+    else setPerfInput({
+      call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
+      contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300,
       edu_status: "미참여", is_approved: false,
       edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
     });
@@ -89,7 +86,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   const avgData = useMemo(() => {
     const d = new Date(selectedDate);
-    const startRange = new Date(d.getFullYear(), d.getMonth() - 2, 1); 
+    const startRange = new Date(d.getFullYear(), d.getMonth() - 2, 1);
     const endRange = new Date(d.getFullYear(), d.getMonth() + 1, 1);
     const filtered = historyData.filter(item => {
       const itemDate = new Date(item.date);
@@ -120,7 +117,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     if (historyData.length === 0) return { best: null, worst: null };
     const activeMonths = historyData.filter(item => {
       const hasPerf = (Number(item.contract_amt) || 0) > 0 || (Number(item.contract_cnt) || 0) > 0;
-      const hasActivity = (Number(item.call) || 0) > 0 || (Number(item.meet) || 0) > 0 || (Number(item.pt) || 0) > 0 || (Number(item.intro) || 0) > 0;
+      const hasActivity = (Number(item.call) || 0) > 0 || (Number(item.meet) || 0) > 0;
       return hasPerf || hasActivity;
     });
     if (activeMonths.length === 0) return { best: null, worst: null };
@@ -151,223 +148,314 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     };
     const { error } = await supabase.from("daily_perf").upsert({ ...payload, user_id: user.id, date: monthKey }, { onConflict: 'user_id, date' });
     if (error) alert("저장 실패: " + error.message);
-    else { 
-      if(!customField) alert(`${month}월 실적이 업데이트되었습니다.`); 
+    else {
+      if(!customField) alert(`${month}월 실적이 업데이트되었습니다.`);
       await fetchData(); await fetchAllHistory();
     }
   };
 
+  const amtRate = calculateRate(perfInput.contract_amt, perfInput.target_amt);
+  const cntRate = calculateRate(perfInput.contract_cnt, perfInput.target_cnt);
+
   return (
-    <div className="min-w-0 space-y-6 animate-in slide-in-from-bottom-4 pb-20 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
-      {/* Upper Notice Banner */}
-      <div className="bg-[#1a3a6e] p-4 rounded-2xl flex items-center gap-4 overflow-hidden shadow-lg border border-white/10">
-        <span className="bg-[#0ea5e9] text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-widest shrink-0 uppercase">Notice</span>
-        <div className="relative flex-1 overflow-hidden h-5">
-          <div className="absolute whitespace-nowrap animate-marquee text-[13px] text-white/90 font-medium">{globalNotice}</div>
+    <div className="agent-work-view min-w-0 space-y-4 pb-20 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
+
+      {/* 공지 배너 */}
+      <div style={{ background: "#1a2540", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, borderRadius: 10 }}>
+        <span style={{ background: "#378add", color: "white", fontSize: 10, fontWeight: 500, padding: "3px 8px", borderRadius: 4, flexShrink: 0 }}>NOTICE</span>
+        <div style={{ overflow: "hidden", flex: 1, height: 18 }}>
+          <div className="animate-marquee" style={{ whiteSpace: "nowrap", fontSize: 12, color: "rgba(255,255,255,0.85)" }}>{globalNotice}</div>
         </div>
       </div>
 
-      {/* Quick Links Section */}
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-white flex flex-col md:flex-row justify-between items-center gap-6 min-w-0">
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="w-12 h-12 rounded-full bg-[#eff6ff] flex items-center justify-center text-[#2563eb] text-xl">👤</div>
-          <div>
-            <p className="text-xl font-black text-[#1a3a6e] leading-none">{user.name}</p>
-            <p className="text-[11px] text-[#94a3b8] font-bold uppercase mt-1 tracking-widest">Insurance Agent</p>
-          </div>
+      {/* 사용자 카드 + 퀵링크 */}
+      <div style={{ background: "white", borderRadius: 12, border: "0.5px solid #e4edf5", padding: "13px 16px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#eef4fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 500, color: "#185fa5", flexShrink: 0 }}>
+          {user?.name?.[0] || "U"}
         </div>
-        <div className="flex min-w-0 flex-wrap gap-2 w-full md:w-auto justify-center">
-          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-[#f8fafc] text-[#475569]" />
-          <QuickBtn label="보험사" url={LINKS.insu} color="bg-[#f8fafc] text-[#475569]" />
-          <QuickBtn label="자료실" url={LINKS.archive} color="bg-[#f8fafc] text-[#475569]" />
-          <QuickBtn label="세일즈 마스터" url={LINKS.salesMaster} color="bg-[#1a3a6e] text-white" />
-          <QuickBtn label="세일즈 북" url={LINKS.salesBook} color="bg-[#2563eb] text-white" />
-          <QuickBtn label="상품의 모든것" url={LINKS.productAll} color="bg-[#f59e0b] text-white" />
-          {canUseCrm && (
-            <QuickBtn
-              label="고객관리"
-              url={LINKS.customerCrm}
-              color="bg-[#10b981] text-white"
-            />
-          )}
+        <div style={{ flex: 1, minWidth: 80 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: "#1a2d42" }}>{user?.name}</p>
+          <p style={{ fontSize: 11, color: "#7a9ab2", letterSpacing: "0.04em", marginTop: 1 }}>INSURANCE AGENT</p>
+        </div>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+          {[
+            { label: "메타온", url: LINKS.metaon, style: {} },
+            { label: "보험사", url: LINKS.insu, style: {} },
+            { label: "자료실", url: LINKS.archive, style: {} },
+            { label: "세일즈 마스터", url: LINKS.salesMaster, style: { background: "#1a2540", color: "#e8f1f8", borderColor: "#1a2540" } },
+            { label: "세일즈 북", url: LINKS.salesBook, style: { background: "#eef4fb", color: "#185fa5", borderColor: "#b5d4f4" } },
+            { label: "상품의 모든것", url: LINKS.productAll, style: { background: "#fff7e6", color: "#854f0b", borderColor: "#fcd588" } },
+            ...(canUseCrm ? [{ label: "고객관리", url: LINKS.customerCrm, style: { background: "#e1f5ee", color: "#0f6e56", borderColor: "#9fe1cb" } }] : []),
+          ].map(btn => (
+            <button
+              key={btn.label}
+              onClick={() => btn.url && window.open(btn.url, "_blank")}
+              style={{ padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: "pointer", border: "0.5px solid #d4e0eb", color: "#4a6275", background: "white", whiteSpace: "nowrap", fontFamily: "inherit", ...btn.style }}
+            >
+              {btn.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Tab Navigation */}
-      <div className="flex p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20">
-        <button 
-          onClick={() => setMainTab('input')} 
-          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mainTab === 'input' ? 'bg-[#1a3a6e] text-white shadow-md' : 'text-[#64748b] hover:bg-white/50'}`}
-        >
-          PERFORMANCE
-        </button>
-        <button 
-          onClick={() => setMainTab('edu')} 
-          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${mainTab === 'edu' ? 'bg-[#1a3a6e] text-white shadow-md' : 'text-[#64748b] hover:bg-white/50'}`}
-        >
-          EDUCATION
-        </button>
+      {/* 탭 */}
+      <div style={{ display: "flex", gap: 2, background: "#eef2f7", borderRadius: 10, padding: 3, alignSelf: "flex-start", width: "fit-content" }}>
+        {[{ id: "input", label: "PERFORMANCE" }, { id: "edu", label: "EDUCATION" }].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setMainTab(t.id as any)}
+            style={{
+              padding: "6px 20px", borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: "pointer", border: mainTab === t.id ? "0.5px solid #d4e0eb" : "none",
+              background: mainTab === t.id ? "white" : "transparent",
+              color: mainTab === t.id ? "#1a2d42" : "#7a9ab2",
+              fontFamily: "inherit",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {mainTab === 'input' && (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Performance Input Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-white space-y-6">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[11px] text-[#94a3b8] uppercase font-bold tracking-widest">{month}월 실적액(만)</p>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-black text-[#1a3a6e]">{perfInput.contract_amt.toLocaleString()}</span>
-                    <span className="text-[#94a3b8] text-sm">/ {perfInput.target_amt.toLocaleString()}</span>
-                  </div>
-                </div>
-                <p className={`text-4xl font-montserrat font-black ${getRateStyles(calculateRate(perfInput.contract_amt, perfInput.target_amt)).text}`}>
-                  {calculateRate(perfInput.contract_amt, perfInput.target_amt)}%
-                </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+          {/* 실적 카드 2열 */}
+          <div className="agent-perf-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {/* 실적액 */}
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <p style={{ fontSize: 12, color: "#7a9ab2" }}>{month}월 실적액 (만)</p>
+                <p style={{ fontSize: 28, fontWeight: 500, color: getRateColor(amtRate) }}>{amtRate}%</p>
               </div>
-              <div className="flex gap-3">
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] text-[#94a3b8] font-bold uppercase ml-1">Target</label>
-                  <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-full p-4 bg-[#f8fafc] rounded-2xl text-center text-lg font-bold outline-none focus:ring-2 ring-[#2563eb]/20" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>TARGET</p>
+                  <input
+                    type="number"
+                    disabled={perfInput.is_approved}
+                    value={perfInput.target_amt}
+                    onChange={e => setPerfInput({ ...perfInput, target_amt: Number(e.target.value) })}
+                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#1a2d42", fontFamily: "inherit", cursor: perfInput.is_approved ? "not-allowed" : "text" }}
+                  />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] text-[#94a3b8] font-bold uppercase ml-1">Actual</label>
-                  <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-full p-4 bg-[#eff6ff] text-[#2563eb] rounded-2xl text-center text-lg font-bold border border-[#dbeafe] outline-none focus:ring-2 ring-[#2563eb]/20" />
+                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>ACTUAL</p>
+                  <input
+                    type="number"
+                    value={perfInput.contract_amt}
+                    onChange={e => setPerfInput({ ...perfInput, contract_amt: Number(e.target.value) })}
+                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#378add", fontFamily: "inherit" }}
+                  />
                 </div>
               </div>
-              <ProgressBar rate={calculateRate(perfInput.contract_amt, perfInput.target_amt)} />
+              <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(amtRate, 100)}%`, background: getBarColor(amtRate), borderRadius: 3, transition: "width 0.8s ease" }} />
+              </div>
             </div>
 
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-white space-y-6">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[11px] text-[#94a3b8] uppercase font-bold tracking-widest">{month}월 실적건수</p>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-black text-[#1a3a6e]">{perfInput.contract_cnt.toLocaleString()}</span>
-                    <span className="text-[#94a3b8] text-sm">/ {perfInput.target_cnt.toLocaleString()}</span>
-                  </div>
-                </div>
-                <p className={`text-4xl font-montserrat font-black ${getRateStyles(calculateRate(perfInput.contract_cnt, perfInput.target_cnt)).text}`}>
-                  {calculateRate(perfInput.contract_cnt, perfInput.target_cnt)}%
-                </p>
+            {/* 실적건수 */}
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <p style={{ fontSize: 12, color: "#7a9ab2" }}>{month}월 실적건수</p>
+                <p style={{ fontSize: 28, fontWeight: 500, color: getRateColor(cntRate) }}>{cntRate}%</p>
               </div>
-              <div className="flex gap-3">
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] text-[#94a3b8] font-bold uppercase ml-1">Target</label>
-                  <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-full p-4 bg-[#f8fafc] rounded-2xl text-center text-lg font-bold outline-none focus:ring-2 ring-[#2563eb]/20" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>TARGET</p>
+                  <input
+                    type="number"
+                    disabled={perfInput.is_approved}
+                    value={perfInput.target_cnt}
+                    onChange={e => setPerfInput({ ...perfInput, target_cnt: Number(e.target.value) })}
+                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#1a2d42", fontFamily: "inherit", cursor: perfInput.is_approved ? "not-allowed" : "text" }}
+                  />
                 </div>
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] text-[#94a3b8] font-bold uppercase ml-1">Actual</label>
-                  <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-full p-4 bg-[#ecfdf5] text-[#059669] rounded-2xl text-center text-lg font-bold border border-[#d1fae5] outline-none focus:ring-2 ring-[#10b981]/20" />
+                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>ACTUAL</p>
+                  <input
+                    type="number"
+                    value={perfInput.contract_cnt}
+                    onChange={e => setPerfInput({ ...perfInput, contract_cnt: Number(e.target.value) })}
+                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#378add", fontFamily: "inherit" }}
+                  />
                 </div>
               </div>
-              <ProgressBar rate={calculateRate(perfInput.contract_cnt, perfInput.target_cnt)} />
+              <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(cntRate, 100)}%`, background: getBarColor(cntRate), borderRadius: 3, transition: "width 0.8s ease" }} />
+              </div>
             </div>
           </div>
 
-          {/* Metric Details Grid */}
-          <div className="bg-white p-8 rounded-3xl shadow-sm border border-white grid grid-cols-3 md:grid-cols-6 gap-6">
-            <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
-            <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
-            <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
-            <MetricInput label="소개" val={perfInput.intro} onChange={(v:any)=>setPerfInput({...perfInput, intro:v})} />
-            <MetricInput label="배정" val={perfInput.db_assigned} onChange={(v:any)=>setPerfInput({...perfInput, db_assigned:v})} color="text-[#2563eb]" />
-            <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-[#ef4444]" />
+          {/* 활동 지표 */}
+          <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px" }}>
+            <p style={{ fontSize: 12, color: "#7a9ab2", marginBottom: 12, letterSpacing: "0.04em" }}>활동 지표</p>
+            <div className="agent-activity-grid" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+              {[
+                { label: "전화", key: "call", color: "#1a2d42" },
+                { label: "만남", key: "meet", color: "#1a2d42" },
+                { label: "제안", key: "pt", color: "#1a2d42" },
+                { label: "소개", key: "intro", color: "#1a2d42" },
+                { label: "배정", key: "db_assigned", color: "#378add" },
+                { label: "반품", key: "db_returned", color: "#e24b4a" },
+              ].map(({ label, key, color }) => (
+                <div key={key} style={{ textAlign: "center", padding: "10px 4px", background: "#f7fafc", borderRadius: 8 }}>
+                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 5 }}>{label}</p>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={(perfInput as any)[key] === 0 ? "" : (perfInput as any)[key]}
+                    placeholder="0"
+                    onChange={e => setPerfInput({ ...perfInput, [key]: Number(e.target.value) })}
+                    style={{ width: "100%", background: "none", border: "none", outline: "none", textAlign: "center", fontSize: 20, fontWeight: 500, color, fontFamily: "inherit" }}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* 3-Month Stats & Guinness */}
-          <div className="bg-gradient-to-br from-[#1a3a6e] to-[#1e40af] p-8 rounded-[2.5rem] text-white shadow-xl space-y-10">
-            <div>
-              <div className="flex gap-6 mb-8 border-b border-white/10 pb-4">
-                <button onClick={()=>setAvgTab('perf')} className={`text-[13px] font-bold tracking-widest uppercase transition-all ${avgTab==='perf' ? 'text-[#0ea5e9] border-b-2 border-[#0ea5e9]' : 'text-white/40'}`}>3-Month Perf</button>
-                <button onClick={()=>setAvgTab('act')} className={`text-[13px] font-bold tracking-widest uppercase transition-all ${avgTab==='act' ? 'text-[#0ea5e9] border-b-2 border-[#0ea5e9]' : 'text-white/40'}`}>3-Month Activity</button>
+          {/* 3개월 추이 + HOF */}
+          <div className="agent-history-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42" }}>3개월 추이</p>
+                <div style={{ display: "flex", gap: 2, background: "#f7fafc", borderRadius: 6, padding: 2 }}>
+                  {[{ id: "perf", label: "실적" }, { id: "act", label: "활동" }].map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setAvgTab(t.id as any)}
+                      style={{ padding: "4px 10px", borderRadius: 4, fontSize: 10, fontWeight: 500, cursor: "pointer", border: "none", background: avgTab === t.id ? "white" : "transparent", color: avgTab === t.id ? "#1a2d42" : "#9ab4c8", fontFamily: "inherit" }}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               {avgTab === 'perf' ? (
-                <div className="grid grid-cols-3 gap-4">
-                  <AvgBox label="평균 매출" val={`${avgData.amt.toLocaleString()}만`} />
-                  <AvgBox label="평균 건수" val={`${avgData.cnt}건`} />
-                  <AvgBox label="건당 매출" val={`${avgData.perAmt.toLocaleString()}만`} />
+                <div className="agent-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
+                  {[{ label: "평균 매출", val: `${avgData.amt.toLocaleString()}만` }, { label: "평균 건수", val: `${avgData.cnt}건` }, { label: "건당 매출", val: `${avgData.perAmt.toLocaleString()}만` }].map(item => (
+                    <div key={item.label} style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                      <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4 }}>{item.label}</p>
+                      <p style={{ fontSize: 15, fontWeight: 500, color: "#378add" }}>{item.val}</p>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <AvgBox label="전화" val={`${avgData.call}회`} />
-                  <AvgBox label="만남" val={`${avgData.meet}회`} />
-                  <AvgBox label="제안" val={`${avgData.pt}회`} />
-                  <AvgBox label="소개" val={`${avgData.intro}회`} />
+                <div className="agent-summary-grid-four" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 12 }}>
+                  {[{ label: "전화", val: `${avgData.call}회` }, { label: "만남", val: `${avgData.meet}회` }, { label: "제안", val: `${avgData.pt}회` }, { label: "소개", val: `${avgData.intro}회` }].map(item => (
+                    <div key={item.label} style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+                      <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4 }}>{item.label}</p>
+                      <p style={{ fontSize: 15, fontWeight: 500, color: "#378add" }}>{item.val}</p>
+                    </div>
+                  ))}
                 </div>
               )}
-            </div>
-
-            <div className="space-y-6">
-              <p className="text-[10px] text-white/30 uppercase font-bold tracking-[0.2em]">Personal Hall of Fame</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div onClick={() => setViewDetail(records.best)} className={`p-6 rounded-3xl border transition-all cursor-pointer hover:shadow-lg ${viewDetail?.date === records.best?.date ? 'bg-white text-[#1a3a6e] border-white' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${viewDetail?.date === records.best?.date ? 'text-[#2563eb]' : 'text-[#0ea5e9]'}`}>🏆 Guinness</p>
-                  <p className="text-2xl font-black font-montserrat italic">{records.best ? `${new Date(records.best.date).getFullYear()}.${String(new Date(records.best.date).getMonth() + 1).padStart(2,'0')}` : '-'}</p>
-                  <p className={`text-sm font-bold opacity-60 ${viewDetail?.date === records.best?.date ? 'text-[#1a3a6e]' : 'text-white'}`}>{records.best ? `${records.best.contract_amt.toLocaleString()}만` : 'No Data'}</p>
+              <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 7, letterSpacing: "0.04em" }}>PERSONAL HALL OF FAME</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div
+                  onClick={() => setViewDetail(records.best)}
+                  style={{ borderRadius: 8, padding: "11px 13px", background: "#eef4fb", border: "0.5px solid #b5d4f4", cursor: "pointer" }}
+                >
+                  <p style={{ fontSize: 10, fontWeight: 500, color: "#185fa5", marginBottom: 4, letterSpacing: "0.04em" }}>🏆 GUINNESS</p>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#1a2d42" }}>
+                    {records.best ? `${new Date(records.best.date).getFullYear()}.${String(new Date(records.best.date).getMonth() + 1).padStart(2, '0')}` : '-'}
+                  </p>
+                  <p style={{ fontSize: 12, color: "#378add", marginTop: 2 }}>{records.best ? `${records.best.contract_amt.toLocaleString()}만` : 'No Data'}</p>
                 </div>
-                <div onClick={() => setViewDetail(records.worst)} className={`p-6 rounded-3xl border transition-all cursor-pointer hover:shadow-lg ${viewDetail?.date === records.worst?.date ? 'bg-[#ef4444] text-white border-[#ef4444]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${viewDetail?.date === records.worst?.date ? 'text-white' : 'text-[#ef4444]'}`}>📉 Lowest</p>
-                  <p className="text-2xl font-black font-montserrat italic">{records.worst ? `${new Date(records.worst.date).getFullYear()}.${String(new Date(records.worst.date).getMonth() + 1).padStart(2,'0')}` : '-'}</p>
-                  <p className={`text-sm font-bold opacity-60 ${viewDetail?.date === records.worst?.date ? 'text-white' : 'text-white'}`}>{records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : 'No Data'}</p>
+                <div
+                  onClick={() => setViewDetail(records.worst)}
+                  style={{ borderRadius: 8, padding: "11px 13px", background: "#fcebeb", border: "0.5px solid #f7c1c1", cursor: "pointer" }}
+                >
+                  <p style={{ fontSize: 10, fontWeight: 500, color: "#a32d2d", marginBottom: 4, letterSpacing: "0.04em" }}>📉 LOWEST</p>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#1a2d42" }}>
+                    {records.worst ? `${new Date(records.worst.date).getFullYear()}.${String(new Date(records.worst.date).getMonth() + 1).padStart(2, '0')}` : '-'}
+                  </p>
+                  <p style={{ fontSize: 12, color: "#e24b4a", marginTop: 2 }}>{records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : 'No Data'}</p>
                 </div>
               </div>
-
               {viewDetail && (
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/10 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between items-center mb-8">
-                    <h4 className="text-lg font-black text-[#0ea5e9] tracking-tight">{new Date(viewDetail.date).getFullYear()}년 {new Date(viewDetail.date).getMonth() + 1}월 상세 리포트</h4>
-                    <button onClick={() => setViewDetail(null)} className="text-[10px] font-bold uppercase px-3 py-1 bg-white/10 rounded-full hover:bg-white/20 transition-all">Close</button>
+                <div style={{ marginTop: 10, background: "#f7fafc", borderRadius: 8, padding: "12px 14px", border: "0.5px solid #e4edf5" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42" }}>
+                      {new Date(viewDetail.date).getFullYear()}년 {new Date(viewDetail.date).getMonth() + 1}월 상세
+                    </p>
+                    <button onClick={() => setViewDetail(null)} style={{ fontSize: 10, color: "#9ab4c8", background: "none", border: "0.5px solid #d4e0eb", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit" }}>닫기</button>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <DetailBox label="매출액" val={`${viewDetail.contract_amt.toLocaleString()}만`} highlight />
-                    <DetailBox label="계약건" val={`${viewDetail.contract_cnt}건`} highlight />
-                    <DetailBox label="전화" val={`${viewDetail.call}회`} />
-                    <DetailBox label="만남" val={`${viewDetail.meet}회`} />
-                    <DetailBox label="제안" val={`${viewDetail.pt}회`} />
-                    <DetailBox label="소개" val={`${viewDetail.intro}회`} />
-                    <DetailBox label="DB배정" val={`${viewDetail.db_assigned}개`} color="text-[#0ea5e9]" />
-                    <DetailBox label="DB반품" val={`${viewDetail.db_returned}개`} color="text-[#ef4444]" />
+                  <div className="agent-detail-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                    {[
+                      { label: "매출액", val: `${viewDetail.contract_amt.toLocaleString()}만`, highlight: true },
+                      { label: "계약건", val: `${viewDetail.contract_cnt}건`, highlight: true },
+                      { label: "전화", val: `${viewDetail.call}회` },
+                      { label: "만남", val: `${viewDetail.meet}회` },
+                      { label: "제안", val: `${viewDetail.pt}회` },
+                      { label: "소개", val: `${viewDetail.intro}회` },
+                      { label: "DB배정", val: `${viewDetail.db_assigned}개` },
+                      { label: "DB반품", val: `${viewDetail.db_returned}개` },
+                    ].map(item => (
+                      <div key={item.label} style={{ background: "white", borderRadius: 6, padding: "8px 10px", textAlign: "center", border: "0.5px solid #e4edf5" }}>
+                        <p style={{ fontSize: 9, color: "#9ab4c8", marginBottom: 3 }}>{item.label}</p>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: item.highlight ? "#378add" : "#1a2d42" }}>{item.val}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
             </div>
+
+            {/* 저장 버튼 */}
+            <div>
+              <button
+                onClick={() => handleSave()}
+                style={{ width: "100%", background: "#1a2540", color: "#e8f1f8", border: "none", borderRadius: 10, padding: 14, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", letterSpacing: "0.04em", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}
+              >
+                💾 SAVE & UPDATE RECORD
+              </button>
+            </div>
           </div>
-          
-          <button onClick={() => handleSave()} className="w-full bg-[#1a3a6e] text-white py-6 rounded-3xl font-black text-xl shadow-lg hover:bg-[#1e40af] hover:-translate-y-1 transition-all uppercase tracking-widest">
-            Save & Update Record
-          </button>
         </div>
       )}
 
       {mainTab === 'edu' && (
-        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-white space-y-8 animate-in slide-in-from-right-4 duration-300">
-          <div className="border-b-2 border-[#f1f5f9] pb-6">
-            <h2 className="text-3xl font-black text-[#1a3a6e] tracking-tight">Weekly Training</h2>
-            <p className="text-sm text-[#94a3b8] font-bold uppercase mt-1 tracking-widest">Professional Skill Enhancement</p>
+        <div style={{ background: "white", borderRadius: 12, border: "0.5px solid #e4edf5", padding: "20px 20px" }}>
+          <div style={{ borderBottom: "0.5px solid #e4edf5", paddingBottom: 16, marginBottom: 20 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: "#1a2d42" }}>Weekly Training</h2>
+            <p style={{ fontSize: 11, color: "#9ab4c8", marginTop: 4, letterSpacing: "0.08em", textTransform: "uppercase" }}>Professional Skill Enhancement</p>
           </div>
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[1, 2, 3, 4, 5].map((w) => {
               const fieldName = `edu_${w}` as keyof typeof perfInput;
               const isChecked = perfInput[fieldName];
               return (
-                <div 
-                  key={w} 
-                  onClick={() => handleSave({ [fieldName]: !isChecked })} 
-                  className={`flex items-center gap-6 p-6 rounded-2xl border-2 transition-all cursor-pointer group hover:shadow-md ${isChecked ? 'bg-[#f0fdf4] border-[#10b981]' : 'bg-[#f8fafc] border-transparent hover:border-[#cbd5e1]'}`}
+                <div
+                  key={w}
+                  onClick={() => handleSave({ [fieldName]: !isChecked })}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 14, padding: "14px 16px",
+                    borderRadius: 10, border: isChecked ? "0.5px solid #9fe1cb" : "0.5px solid #e4edf5",
+                    background: isChecked ? "#f0fdf8" : "#f7fafc", cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
                 >
-                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-montserrat font-black text-lg transition-all ${isChecked ? 'bg-[#10b981] text-white shadow-lg shadow-[#10b981]/20' : 'bg-[#e2e8f0] text-[#64748b] group-hover:bg-[#cbd5e1]'}`}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 700, fontSize: 13,
+                    background: isChecked ? "#10b981" : "#e2e8f0",
+                    color: isChecked ? "white" : "#64748b",
+                    flexShrink: 0,
+                  }}>
                     {w === 5 ? "+" : `${w}W`}
                   </div>
-                  <div className="flex-1">
-                    <p className={`text-lg font-bold leading-snug break-keep ${isChecked ? 'text-[#064e3b]' : 'text-[#334155]'}`}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: isChecked ? "#064e3b" : "#1a2d42" }}>
                       {eduWeeks[w as keyof typeof eduWeeks] || "등록된 교육 내용이 없습니다."}
                     </p>
-                    {isChecked && <span className="text-[10px] font-bold text-[#10b981] uppercase tracking-widest">Training Completed</span>}
+                    {isChecked && <p style={{ fontSize: 10, color: "#10b981", marginTop: 2, letterSpacing: "0.06em" }}>COMPLETED ✓</p>}
                   </div>
-                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-[#10b981] border-[#10b981] text-white' : 'bg-white border-[#cbd5e1] text-transparent'}`}>
-                    <span className="text-sm">✓</span>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%", border: isChecked ? "none" : "1.5px solid #d4e0eb",
+                    background: isChecked ? "#10b981" : "white", display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "white", fontSize: 12, flexShrink: 0,
+                  }}>
+                    {isChecked ? "✓" : ""}
                   </div>
                 </div>
               );
@@ -376,7 +464,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 🟢 모달 영역 */}
       {isCustOpen && (
         <CustomerManagerModal onClose={() => setIsCustOpen(false)} onSaveToGoogle={handleGoogleSync} />
       )}
@@ -384,65 +471,26 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
-/** 하위 컴포넌트 **/
-function getRateStyles(rate: number) {
-  if (rate >= 80) return { bar: "bg-[#2563eb]", text: "text-[#2563eb]" };
-  if (rate >= 65) return { bar: "bg-[#f59e0b]", text: "text-[#f59e0b]" };
-  if (rate >= 30) return { bar: "bg-[#fbbf24]", text: "text-[#fbbf24]" };
-  return { bar: "bg-[#ef4444]", text: "text-[#ef4444]" };
+function getRateColor(rate: number) {
+  if (rate >= 80) return "#0f6e56";
+  if (rate >= 65) return "#ba7517";
+  if (rate >= 30) return "#ba7517";
+  return "#e24b4a";
 }
 
-function ProgressBar({ rate }: { rate: number }) {
-  const { bar } = getRateStyles(rate);
-  return (
-    <div className="w-full bg-[#f1f5f9] h-3 rounded-full overflow-hidden">
-      <div className={`${bar} h-full transition-all duration-1000 ease-out`} style={{ width: `${Math.min(rate, 100)}%` }} />
-    </div>
-  );
+function getBarColor(rate: number) {
+  if (rate >= 80) return "#1d9e75";
+  if (rate >= 65) return "#f0a500";
+  if (rate >= 30) return "#f0a500";
+  return "#e24b4a";
 }
 
-function DetailBox({ label, val, color = "text-white", highlight }: any) {
+function MonitorBar({ rate }: { rate: number }) {
   return (
-    <div className="bg-black/20 p-5 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center">
-      <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mb-1">{label}</p>
-      <p className={`text-lg font-black italic ${highlight ? 'text-[#0ea5e9]' : color}`}>{val}</p>
+    <div>
+      <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: getBarColor(rate), borderRadius: 3, transition: "width 0.8s ease" }} />
+      </div>
     </div>
   )
-}
-
-function AvgBox({ label, val }: any) { 
-  return (
-    <div className="text-center bg-white/5 p-6 rounded-2xl border border-white/5 flex flex-col justify-center items-center min-h-[90px] transition-all hover:bg-white/10">
-      <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mb-2">{label}</p>
-      <p className="text-xl text-[#0ea5e9] font-black italic">{val}</p>
-    </div>
-  ) 
-}
-
-function QuickBtn({ label, url, onClick, color, className }: any) { 
-  const handleClick = () => { if (onClick) onClick(); else if (url && url !== "#") window.open(url, "_blank"); };
-  return (
-    <button 
-      onClick={handleClick} 
-      className={`${color} ${className || ""} min-w-0 max-w-full px-5 py-3 rounded-xl font-bold text-[12px] leading-snug shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 hover:shadow-md [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]`}
-    >
-      {label}
-    </button> 
-  )
-}
-
-function MetricInput({ label, val, onChange, color }: any) { 
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <label className="text-[11px] text-[#94a3b8] font-bold uppercase tracking-widest">{label}</label>
-      <input 
-        type="number" 
-        inputMode="numeric" 
-        value={val === 0 ? '' : val} 
-        placeholder="0" 
-        onChange={e=>onChange(Number(e.target.value))} 
-        className={`w-full p-4 bg-[#f8fafc] border border-transparent focus:border-[#2563eb] focus:bg-white rounded-2xl text-center text-xl font-black outline-none transition-all ${color}`} 
-      />
-    </div>
-  ) 
 }

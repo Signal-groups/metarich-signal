@@ -14,6 +14,7 @@ import {
   BookOpen,
   Calculator,
   CarFront,
+  ChevronDown,
   ClipboardCheck,
   FileSearch,
   Hospital,
@@ -37,8 +38,7 @@ import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_M
 import { normalizeRole, isApprovedUser, canAccessBranding } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
-function ToolIcon({ icon }: { icon: string }) {
-  const className = "h-7 w-7"
+function ToolIcon({ icon, className = "h-7 w-7" }: { icon: string; className?: string }) {
   switch (icon) {
     case "cafe":
       return <BookOpen className={className} />
@@ -91,7 +91,7 @@ function ConsultingBox({
     <div className="relative min-w-0 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <button 
         onClick={() => !isEditMode && onClick(menu)} 
-        className={`h-40 w-full min-w-0 bg-white rounded-2xl flex flex-col p-5 shadow-sm border text-left transition-all group [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all] ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
+        className={`min-h-[168px] w-full min-w-0 bg-white rounded-2xl flex flex-col p-5 shadow-sm border text-left transition-all group sm:p-6 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all] ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
       >
         <div className="mb-3 transition-transform group-hover:scale-110">
           <ToolIcon icon={menu.icon} />
@@ -127,6 +127,9 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
   const [isConsultEditMode, setIsConsultEditMode] = useState(false);
+  const [openConsultCategories, setOpenConsultCategories] = useState<Record<string, boolean>>({
+    customer: true,
+  });
 
   const init = useCallback(async () => {
     try {
@@ -244,6 +247,10 @@ export default function DashboardPage() {
     window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
+  const toggleConsultCategory = (id: string) => {
+    setOpenConsultCategories((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
   const userRole = normalizeRole(user);
@@ -291,7 +298,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f4ff] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
+    <div className="min-h-screen bg-[#eef3f8] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <Sidebar 
         user={user} 
         selectedDate={selectedDate} 
@@ -308,155 +315,216 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 lg:ml-[300px] lg:p-10">
-        <div className="mx-auto max-w-[1400px] min-w-0">
+      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-10">
+        <div className="mx-auto max-w-[1680px] min-w-0">
           {(
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
       viewMode === 'office' ? renderOfficeView() : (
-              <div className="mx-auto max-w-5xl min-w-0 py-6 md:py-8">
+        <div className="mx-auto max-w-7xl min-w-0 pb-6">
 
-                {/* ── 미승인 / 게스트 안내 배너 ───────────────────────────── */}
-                {!isApproved && (
-                  <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 px-7 py-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 text-3xl">{isGuest ? '🪪' : '⏳'}</div>
-                      <div>
-                        <p className="font-black text-amber-800 text-base">
-                          {isGuest ? '타사 게스트 계정입니다' : '관리자 승인 대기 중입니다'}
-                        </p>
-                        <p className="mt-1 text-sm font-bold text-amber-700 leading-relaxed">
-                          {isGuest
-                            ? '기본 공개 도구(아래)만 이용 가능합니다. 추가 기능은 시그널그룹 소속 가입 후 승인을 받아야 합니다.'
-                            : '승인 후 사무실 업무·전체 상담 도구를 이용할 수 있습니다. 관리자에게 승인을 요청하세요.'}
-                        </p>
-                        <p className="mt-2 text-xs font-bold text-amber-500">
-                          현재 이용 가능 : 숨은보험금 찾기 · 진료기록 확인 · 약학정보원 (공개 도구 3종)
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+          {/* 미승인/게스트 배너 */}
+          {!isApproved && (
+            <div style={{ marginBottom: 12, borderRadius: 10, border: "0.5px solid #fde68a", background: "#fffbeb", padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <div style={{ flexShrink: 0, fontSize: 22 }}>{isGuest ? '🪪' : '⏳'}</div>
+              <div>
+                <p style={{ fontWeight: 700, color: "#92400e", fontSize: 14 }}>
+                  {isGuest ? '타사 게스트 계정입니다' : '관리자 승인 대기 중입니다'}
+                </p>
+                <p style={{ marginTop: 4, fontSize: 12, color: "#b45309", lineHeight: 1.5 }}>
+                  {isGuest
+                    ? '기본 공개 도구(아래)만 이용 가능합니다. 추가 기능은 시그널그룹 소속 가입 후 승인을 받아야 합니다.'
+                    : '승인 후 사무실 업무·전체 상담 도구를 이용할 수 있습니다. 관리자에게 승인을 요청하세요.'}
+                </p>
+              </div>
+            </div>
+          )}
 
-                <div className="mb-10 bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100">
-                  {/* 보험의기준 브랜드 헤더 */}
-                  <div className="flex items-center gap-5 px-7 py-5 border-b border-slate-100 bg-gradient-to-r from-[#f0f4f8] to-white">
-                    {/* 나침반 로고 — compass rose */}
-                    <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0 drop-shadow-sm">
-                      {/* 배경 원 */}
-                      <circle cx="34" cy="34" r="33" fill="#e8eef4" stroke="#2d4a5a" strokeWidth="1.5"/>
-                      {/* 내부 장식 원 */}
-                      <circle cx="34" cy="34" r="24" stroke="#2d4a5a" strokeWidth="0.8" strokeDasharray="3 4" fill="none" opacity="0.5"/>
-                      {/* 45° 방향 점 4개 */}
-                      <circle cx="57.4" cy="10.6" r="1.5" fill="#2d4a5a" opacity="0.35"/>
-                      <circle cx="57.4" cy="57.4" r="1.5" fill="#2d4a5a" opacity="0.35"/>
-                      <circle cx="10.6" cy="57.4" r="1.5" fill="#2d4a5a" opacity="0.35"/>
-                      <circle cx="10.6" cy="10.6" r="1.5" fill="#2d4a5a" opacity="0.35"/>
-                      {/* NORTH 침 (진남색, 위쪽) */}
-                      <path d="M34 5 L37.5 31 L34 34 L30.5 31 Z" fill="#1a3a6e"/>
-                      {/* N 레이블 (북쪽 침 위) */}
-                      <text x="34" y="20" textAnchor="middle" fontSize="7" fontWeight="900" fill="white" fontFamily="Arial, sans-serif" letterSpacing="0">N</text>
-                      {/* SOUTH 침 (연한 색, 아래쪽) */}
-                      <path d="M34 63 L37.5 37 L34 34 L30.5 37 Z" fill="#7a9bb0"/>
-                      {/* EAST 침 (진남색, 오른쪽) */}
-                      <path d="M63 34 L37 30.5 L34 34 L37 37.5 Z" fill="#1a3a6e"/>
-                      {/* WEST 침 (연한 색, 왼쪽) */}
-                      <path d="M5 34 L31 30.5 L34 34 L31 37.5 Z" fill="#7a9bb0"/>
-                      {/* 중심 허브 */}
-                      <circle cx="34" cy="34" r="5" fill="#1a3a6e"/>
-                      <circle cx="34" cy="34" r="2.8" fill="#e8eef4"/>
-                      <circle cx="34" cy="34" r="1.2" fill="#1a3a6e"/>
-                    </svg>
-                    <div className="w-px h-12 bg-slate-300 flex-shrink-0" />
-                    <div>
-                      <p className="font-black text-[24px] text-[#1a3a6e] tracking-tight leading-none">보험의기준</p>
-                      <p className="text-[10px] text-slate-400 tracking-[3px] font-semibold mt-1.5">STANDARD OF INSURANCE</p>
+          {/* 인사 / 날짜 / 가이드 */}
+          <div style={{ background: "white", borderRadius: 10, border: "0.5px solid #e4edf5", padding: "13px 16px", marginBottom: 10, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <h2 style={{ fontSize: 16, fontWeight: 500, color: "#1a2d42" }}>
+                {(user.name || user.email?.split('@')[0] || '')}님, 오늘도 좋은 하루 되세요!
+              </h2>
+              <p style={{ fontSize: 12, color: "#7a9ab2", marginTop: 2 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+              <span style={{ background: "#f0f4f8", border: "0.5px solid #d4e0eb", borderRadius: 7, padding: "4px 9px", fontSize: 11, color: "#7a9ab2" }}>
+                📅 {selectedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}
+              </span>
+              <button
+                onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
+                style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 500, background: "#eef4fb", color: "#185fa5", border: "0.5px solid #b5d4f4", cursor: "pointer", fontFamily: "inherit" }}
+              >📘 일반 가이드</button>
+              <button
+                onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
+                style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 500, background: "#1a2540", color: "#e8f1f8", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+              >⭐ 프로 가이드</button>
+              {isMaster && (
+                <button
+                  onClick={() => setIsConsultEditMode(!isConsultEditMode)}
+                  style={{ borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 500, background: isConsultEditMode ? "#e24b4a" : "#1a2d42", color: "#e8f1f8", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  {isConsultEditMode ? "편집 완료" : "노출 편집"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 자주 사용하는 기능 */}
+          {highlightTools.length > 0 && (
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, padding: "13px 15px", marginBottom: 10 }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42", marginBottom: 10 }}>⭐ 자주 사용하는 기능</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }} className="sm:[grid-template-columns:repeat(6,1fr)]">
+                {highlightTools.slice(0, 6).map((menu) => (
+                  <button
+                    key={menu.id}
+                    type="button"
+                    onClick={() => !isConsultEditMode && handleNavigation(menu)}
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                      padding: "9px 4px", borderRadius: 7,
+                      border: `0.5px solid ${menuStatus[menu.id] === false ? "#e4edf5" : "#c5d8ec"}`,
+                      cursor: "pointer", background: menuStatus[menu.id] === false ? "transparent" : "#f6fafd",
+                      fontFamily: "inherit", opacity: menuStatus[menu.id] === false ? 0.45 : 1, transition: "all 0.1s"
+                    }}
+                  >
+                    <div style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", background: "#eef4fb", color: "#185fa5" }}>
+                      <ToolIcon icon={menu.icon} className="h-4 w-4" />
                     </div>
-                  </div>
-                  {/* 타이틀 + 버튼 */}
-                  <div className="px-7 py-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h1 className="text-2xl font-black text-[#1a3a6e] tracking-tight">설계사 업무 지원 프로그램</h1>
-                      <p className="text-[#94a3b8] font-bold text-sm mt-1">
-                        설계사를 위한 쉽고 편안한 시스템
-                      </p>
+                    <p style={{ fontSize: 10, color: "#2a3f55", textAlign: "center", lineHeight: 1.3 }}>{menu.title}</p>
+                    {isConsultEditMode && menu.editable && (
+                      <input
+                        type="checkbox"
+                        checked={menuStatus[menu.id] !== false}
+                        onChange={() => toggleMenu(menu.id)}
+                        style={{ width: 12, height: 12, accentColor: "#1a2d42" }}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 전체 메뉴 - 4컬럼 아코디언 (PC: 항상 열림, 모바일: 토글) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 mb-2.5">
+            {CONSULTING_TOOL_CATEGORIES.map((category) => {
+              const tools = visibleConsultingTools.filter((tool) => !tool.highlight && tool.category === category.id);
+              if (tools.length === 0) return null;
+              const isOpen = openConsultCategories[category.id] !== false;
+              const catStyle: Record<string, { bg: string; color: string }> = {
+                customer: { bg: "#eef4fb", color: "#185fa5" },
+                analysis: { bg: "#e1f5ee", color: "#0f6e56" },
+                claim:    { bg: "#faece7", color: "#993c1d" },
+                support:  { bg: "#eeedfe", color: "#534ab7" },
+              };
+              const catEmoji: Record<string, string> = {
+                customer: "👥", analysis: "🛡", claim: "📋", support: "📁",
+              };
+              const cs = catStyle[category.id] || { bg: "#f0f4f8", color: "#5a7a92" };
+              return (
+                <div key={category.id} style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, overflow: "hidden" }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleConsultCategory(category.id)}
+                    className="w-full xl:pointer-events-none"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "12px 13px",
+                      cursor: "pointer", background: "transparent", border: "none",
+                      fontFamily: "inherit", width: "100%", textAlign: "left",
+                      borderBottom: isOpen ? "0.5px solid #e4edf5" : "none"
+                    }}
+                  >
+                    <div style={{ width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: cs.bg, color: cs.color, flexShrink: 0 }}>
+                      <span style={{ fontSize: 13 }}>{catEmoji[category.id] || "•"}</span>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                        className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black bg-[#eff6ff] text-[#1a3a6e] border border-[#dbeafe] hover:bg-[#dbeafe] transition-all"
-                      >
-                        📘 일반 사용 가이드
-                      </button>
-                      <button
-                        onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                        className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black bg-[#1a3a6e] text-white hover:bg-[#1e40af] transition-all"
-                      >
-                        ⭐ 프로 사용 가이드
-                      </button>
-                      {isMaster && (
-                        <button onClick={() => setIsConsultEditMode(!isConsultEditMode)} className={`rounded-xl px-4 py-2.5 text-xs font-black ${isConsultEditMode ? "bg-[#1a3a6e] text-white" : "bg-black text-[#d4af37]"}`}>
-                          {isConsultEditMode ? "편집 완료" : "노출 편집"}
-                        </button>
-                      )}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42" }}>{category.title}</p>
+                      <p style={{ fontSize: 10, color: "#9ab4c8", marginTop: 1 }}>{category.desc}</p>
                     </div>
-                  </div>
-                </div>
-                
-                {highlightTools.length > 0 && (
-                  <section className="mb-8 space-y-4">
-                    <div className="flex items-end justify-between border-b border-slate-200 pb-3">
-                      <div>
-                        <h2 className="text-xl font-black text-[#1a3a6e]">정보확인</h2>
-                        <p className="mt-1 text-[12px] font-bold text-slate-400">고객의 정보를 확인합니다.</p>
-                      </div>
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">{highlightTools.length}개</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      {highlightTools.map((menu) => (
-                        <ConsultingBox
-                          key={menu.id}
-                          menu={menu}
-                          onClick={handleNavigation}
-                          isEditMode={false}
-                          checked
-                          onToggle={toggleMenu}
-                        />
+                    <ChevronDown className={`h-3.5 w-3.5 text-[#b0c4d4] transition-transform xl:hidden ${isOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  <div className={`xl:block ${isOpen ? "" : "hidden"}`}>
+                    <div style={{ padding: "6px 8px 8px" }}>
+                      {tools.map((tool) => (
+                        <div
+                          key={tool.id}
+                          onClick={() => !isConsultEditMode && handleNavigation(tool)}
+                          className="flex items-center gap-1.5 rounded cursor-pointer hover:bg-[#f0f6fb]"
+                          style={{ padding: "6px 6px", transition: "background 0.1s", opacity: (isConsultEditMode && menuStatus[tool.id] === false) ? 0.4 : 1 }}
+                        >
+                          <span style={{ fontSize: 12, color: "#8aabcc", width: 16, textAlign: "center", flexShrink: 0 }}>·</span>
+                          <p style={{ fontSize: 11, color: "#2a3f55", flex: 1 }}>{tool.title}</p>
+                          {isConsultEditMode && tool.editable
+                            ? <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} style={{ width: 12, height: 12, accentColor: "#1a2d42", flexShrink: 0 }} onClick={e => e.stopPropagation()} />
+                            : <span style={{ fontSize: 10, color: "#c0d4e4" }}>›</span>
+                          }
+                        </div>
                       ))}
                     </div>
-                  </section>
-                )}
-
-                <div className="space-y-8">
-                  {CONSULTING_TOOL_CATEGORIES.map((category) => {
-                    const tools = visibleConsultingTools.filter((tool) => !tool.highlight && tool.category === category.id);
-                    if (tools.length === 0) return null;
-                    return (
-                      <section key={category.id} className="space-y-4">
-                        <div className="flex items-end justify-between border-b border-slate-200 pb-3">
-                          <div>
-                            <h2 className="text-xl font-black text-[#1a3a6e]">{category.title}</h2>
-                            <p className="mt-1 text-[12px] font-bold text-slate-400">{category.desc}</p>
-                          </div>
-                          <span className={`rounded-full px-3 py-1 text-[11px] font-black ${category.countTone}`}>{tools.length}개</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {tools.map((menu) => (
-                            <ConsultingBox
-                              key={menu.id}
-                              menu={menu}
-                              onClick={handleNavigation}
-                              isEditMode={isConsultEditMode}
-              checked={menuStatus[menu.id] !== false}
-                              onToggle={toggleMenu}
-                            />
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  })}
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+
+          {/* 하단: 공지사항 + 업데이트 + 외부 링크 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, padding: "12px 14px" }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42", marginBottom: 8 }}>공지사항</p>
+              <div style={{ paddingBottom: 7, borderBottom: "0.5px solid #e4edf5", marginBottom: 7 }}>
+                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>[안내] 시스템 이용 안내</p>
+                <p style={{ fontSize: 10, color: "#9ab4c8" }}>관리자 공지</p>
               </div>
-            )
+              <div>
+                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>[업데이트] 보장분석 PRO 개선</p>
+                <p style={{ fontSize: 10, color: "#9ab4c8" }}>최근 업데이트</p>
+              </div>
+            </div>
+            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 10, padding: "12px 14px" }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: "#1a2d42", marginBottom: 8 }}>업데이트 소식</p>
+              <div style={{ paddingBottom: 7, borderBottom: "0.5px solid #e4edf5", marginBottom: 7 }}>
+                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2 }}>
+                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 8, background: "#e1f5ee", color: "#0f6e56", fontWeight: 500, marginRight: 3 }}>NEW</span>
+                  보장분석 PRO 기능 추가
+                </p>
+                <p style={{ fontSize: 10, color: "#9ab4c8" }}>최근 업데이트</p>
+              </div>
+              <div>
+                <p style={{ fontSize: 11, color: "#2a3f55", marginBottom: 2 }}>
+                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 8, background: "#eef4fb", color: "#185fa5", fontWeight: 500, marginRight: 3 }}>UPDATE</span>
+                  질병코드 데이터 업데이트
+                </p>
+                <p style={{ fontSize: 10, color: "#9ab4c8" }}>시스템 업데이트</p>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button
+                onClick={() => window.open("https://cafe.naver.com/insuranceguide", "_blank")}
+                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, background: "#16a34a", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: "white", flexShrink: 0 }}>N</div>
+                <div style={{ flex: 1, textAlign: "left" }}>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3 }}>커뮤니티</p>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "white" }}>보험의 기준 카페</p>
+                </div>
+              </button>
+              <button
+                onClick={() => window.open("https://open.kakao.com/o/insuranceguide", "_blank")}
+                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 10, background: "#b45309", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: "white", flexShrink: 0 }}>O</div>
+                <div style={{ flex: 1, textAlign: "left" }}>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3 }}>실시간 소통</p>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "white" }}>보험의 기준 오픈채팅</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      )
           )}
         </div>
       </main>
