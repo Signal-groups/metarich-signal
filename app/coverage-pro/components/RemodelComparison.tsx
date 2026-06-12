@@ -4,8 +4,50 @@ import { useState } from 'react'
 import type { ProContract, ProCoverage, RemodelProposal } from '../../../lib/coverageAnalysis/types'
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 
-// ── 담보 선택 목록 (ROW_KEY_LABEL 기반) ─────────────────────────────────
-const COVERAGE_OPTIONS = Object.entries(ROW_KEY_LABEL).map(([rowKey, label]) => ({ rowKey, label }))
+// ── 담보 탭 카테고리 정의 ────────────────────────────────────────────────
+type CoverageTab = '진단' | '수술' | '입원' | '간병' | '재가' | '기타' | '운전자' | '실손'
+
+const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
+  진단: [
+    'cancer_general', 'cancer_similar', 'cancer_metastasis',
+    'brain_vascular', 'brain_stroke', 'brain_hemorrhage',
+    'heart_vascular', 'heart_ischemic', 'heart_acute_mi',
+    'disability_disease_80', 'disability_disease',
+    'disability_injury_80', 'disability_injury',
+    'death_general', 'death_disease', 'death_injury',
+    'fracture_diagnosis', 'burn_diagnosis',
+  ],
+  수술: [
+    'cancer_surgery', 'cancer_davinci',
+    'cancer_targeted', 'cancer_cart',
+    'cancer_chemo', 'cancer_hadron', 'cancer_proton',
+    'cancer_imrt', 'cancer_radiation',
+    'two_major_surgery', 'two_major_thrombolysis', 'two_major_icu',
+    'surgery_disease', 'surgery_injury', 'surgery_1_5', 'surgery_n_major',
+  ],
+  입원: [
+    'hospital_disease_daily', 'hospital_injury_daily',
+  ],
+  간병: [
+    'nursing_hospital',
+  ],
+  재가: [
+    'nursing_care_hospital', 'nursing_integrated',
+  ],
+  기타: [
+    'other_liability',
+  ],
+  운전자: [
+    'driver_accident', 'driver_fine', 'driver_lawyer',
+  ],
+  실손: [
+    'silson_disease_inpatient', 'silson_disease_outpatient',
+    'silson_injury_inpatient', 'silson_injury_outpatient',
+    'silson_3major',
+  ],
+}
+
+const COVERAGE_TABS: CoverageTab[] = ['진단', '수술', '입원', '간병', '재가', '기타', '운전자', '실손']
 
 // ── 신규 상품 추가 폼 초기값 ───────────────────────────────────────────
 function emptyAddForm() {
@@ -13,7 +55,8 @@ function emptyAddForm() {
     company: '',
     productName: '',
     monthlyPremium: '',
-    paymentPeriod: '',
+    paymentYears: '',   // 납입기간(숫자) — 예: 20
+    expiryAge: '',      // 만기나이(숫자) — 예: 80
     coverageInputs: [] as { rowKey: string; amount: string }[],
   }
 }
@@ -29,7 +72,7 @@ export default function RemodelComparison({
 }) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [form, setForm] = useState(emptyAddForm)
-  const [coverageSearch, setCoverageSearch] = useState('')
+  const [coverageTab, setCoverageTab] = useState<CoverageTab>('진단')
 
   const currentPremium = contracts.reduce((sum, c) => sum + Number(c.monthlyPremium || 0), 0)
   const removedPremium = contracts
@@ -72,6 +115,16 @@ export default function RemodelComparison({
     }))
   }
 
+  // ── 납입기간 문자열 생성 ─────────────────────────────────────────────
+  function buildPaymentPeriod(years: string, age: string): string | undefined {
+    const y = years.trim()
+    const a = age.trim()
+    if (y && a) return `${y}년납/${a}세만기`
+    if (y) return `${y}년납`
+    if (a) return `${a}세만기`
+    return undefined
+  }
+
   // ── 신규 상품 저장 ────────────────────────────────────────────────────
   const saveAddedContract = () => {
     if (!form.company.trim() || !form.productName.trim()) {
@@ -93,7 +146,7 @@ export default function RemodelComparison({
       id: `remodel-${Date.now()}`,
       company: form.company.trim(),
       productName: form.productName.trim(),
-      paymentPeriod: form.paymentPeriod.trim() || undefined,
+      paymentPeriod: buildPaymentPeriod(form.paymentYears, form.expiryAge),
       monthlyPremium: premium,
       coverages,
       status: 'active',
@@ -101,13 +154,14 @@ export default function RemodelComparison({
 
     onChange({ ...proposal, addContracts: [...proposal.addContracts, newContract] })
     setForm(emptyAddForm())
-    setCoverageSearch('')
+    setCoverageTab('진단')
     setShowAddForm(false)
   }
 
-  const filteredCoverages = COVERAGE_OPTIONS.filter(
-    ({ label }) => !coverageSearch || label.includes(coverageSearch)
-  )
+  // 현재 탭의 담보 목록
+  const tabCoverages = COVERAGE_TAB_KEYS[coverageTab]
+    .filter((rk) => rk in ROW_KEY_LABEL)
+    .map((rk) => ({ rowKey: rk, label: ROW_KEY_LABEL[rk] }))
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -170,13 +224,14 @@ export default function RemodelComparison({
           <div className="coverage-pro-table-wrap">
             <table className="coverage-pro-table">
               <thead>
-                <tr><th>보험사</th><th>상품명</th><th>월 보험료</th><th>담보 수</th><th>삭제</th></tr>
+                <tr><th>보험사</th><th>상품명</th><th>납입/만기</th><th>월 보험료</th><th>담보 수</th><th>삭제</th></tr>
               </thead>
               <tbody>
                 {proposal.addContracts.map((contract) => (
                   <tr key={contract.id}>
                     <td>{contract.company}</td>
                     <td>{contract.productName}</td>
+                    <td style={{ fontSize: 12, color: '#64748b' }}>{contract.paymentPeriod || '—'}</td>
                     <td style={{ color: '#10b981', fontWeight: 700 }}>{formatWon(contract.monthlyPremium)}</td>
                     <td>{contract.coverages.length}개</td>
                     <td>
@@ -214,7 +269,8 @@ export default function RemodelComparison({
         <div className="coverage-pro-card coverage-pro-card-pad" style={{ border: '2px solid #c9a96e' }}>
           <div className="coverage-pro-section-title" style={{ color: '#c9a96e' }}>신규 상품 정보 입력</div>
 
-          <div className="coverage-pro-grid-2" style={{ marginBottom: 12 }}>
+          {/* 기본 정보 */}
+          <div className="coverage-pro-grid-2" style={{ marginBottom: 16 }}>
             <div className="coverage-pro-field">
               <label>보험사 <span style={{ color: '#ef4444' }}>*</span></label>
               <input
@@ -243,65 +299,116 @@ export default function RemodelComparison({
                 onChange={(e) => setForm((p) => ({ ...p, monthlyPremium: e.target.value }))}
               />
             </div>
+            {/* 납입기간 + 만기 — 숫자 입력 */}
             <div className="coverage-pro-field">
-              <label>납입기간/보장기간</label>
-              <input
-                className="coverage-pro-input"
-                placeholder="예: 20년납/80세만기"
-                value={form.paymentPeriod}
-                onChange={(e) => setForm((p) => ({ ...p, paymentPeriod: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          {/* 담보 선택 */}
-          <div className="coverage-pro-section-title" style={{ fontSize: 13, marginTop: 8 }}>
-            담보 선택 ({form.coverageInputs.length}개 선택됨)
-          </div>
-          <input
-            className="coverage-pro-input"
-            placeholder="담보명 검색..."
-            value={coverageSearch}
-            onChange={(e) => setCoverageSearch(e.target.value)}
-            style={{ marginBottom: 10 }}
-          />
-
-          {/* 선택된 담보 — 금액 입력 */}
-          {form.coverageInputs.length > 0 && (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>선택된 담보 금액 입력</div>
-              {form.coverageInputs.map((ci) => (
-                <div key={ci.rowKey} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ flex: 1, fontSize: 13, color: '#1a2744' }}>{ROW_KEY_LABEL[ci.rowKey]}</span>
+              <label>납입기간 / 만기</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
                   <input
                     className="coverage-pro-input"
                     type="number"
-                    placeholder="금액(원)"
-                    value={ci.amount}
-                    onChange={(e) => updateCoverageAmount(ci.rowKey, e.target.value)}
-                    style={{ width: 140 }}
+                    min={1}
+                    max={100}
+                    placeholder="20"
+                    value={form.paymentYears}
+                    onChange={(e) => setForm((p) => ({ ...p, paymentYears: e.target.value }))}
+                    style={{ width: '100%' }}
                   />
-                  <button
-                    type="button"
-                    className="coverage-pro-btn"
-                    style={{ padding: '4px 10px', fontSize: 12, color: '#ef4444' }}
-                    onClick={() => toggleCoverageInput(ci.rowKey)}
-                  >✕</button>
+                  <span style={{ fontSize: 13, color: '#4b5563', whiteSpace: 'nowrap' }}>년납</span>
                 </div>
-              ))}
+                <span style={{ color: '#94a3b8' }}>/</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+                  <input
+                    className="coverage-pro-input"
+                    type="number"
+                    min={1}
+                    max={120}
+                    placeholder="80"
+                    value={form.expiryAge}
+                    onChange={(e) => setForm((p) => ({ ...p, expiryAge: e.target.value }))}
+                    style={{ width: '100%' }}
+                  />
+                  <span style={{ fontSize: 13, color: '#4b5563', whiteSpace: 'nowrap' }}>세만기</span>
+                </div>
+              </div>
+              {(form.paymentYears || form.expiryAge) && (
+                <div style={{ fontSize: 11, color: '#c9a96e', marginTop: 4 }}>
+                  → {buildPaymentPeriod(form.paymentYears, form.expiryAge)}
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
-          {/* 담보 선택 체크리스트 */}
+          {/* ── 담보 선택 — 탭 ─────────────────────────────────────── */}
+          <div className="coverage-pro-section-title" style={{ fontSize: 13, marginTop: 8 }}>
+            담보 선택 ({form.coverageInputs.length}개 선택됨)
+          </div>
+
+          {/* 탭 버튼 */}
           <div style={{
-            maxHeight: 280,
+            display: 'flex',
+            gap: 4,
+            flexWrap: 'wrap',
+            marginBottom: 12,
+            borderBottom: '2px solid #e2e8f0',
+            paddingBottom: 0,
+          }}>
+            {COVERAGE_TABS.map((tab) => {
+              const count = COVERAGE_TAB_KEYS[tab].filter((rk) =>
+                form.coverageInputs.some((ci) => ci.rowKey === rk)
+              ).length
+              const isActive = coverageTab === tab
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setCoverageTab(tab)}
+                  style={{
+                    padding: '7px 14px',
+                    fontSize: 13,
+                    fontWeight: isActive ? 700 : 500,
+                    border: 'none',
+                    borderBottom: isActive ? '2px solid #1a2744' : '2px solid transparent',
+                    background: 'transparent',
+                    color: isActive ? '#1a2744' : '#64748b',
+                    cursor: 'pointer',
+                    marginBottom: -2,
+                    transition: 'all 0.15s',
+                    position: 'relative',
+                  }}
+                >
+                  {tab}
+                  {count > 0 && (
+                    <span style={{
+                      marginLeft: 4,
+                      background: '#1a2744',
+                      color: '#fff',
+                      borderRadius: 9,
+                      fontSize: 10,
+                      padding: '1px 6px',
+                      fontWeight: 700,
+                    }}>{count}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* 탭 내 담보 체크리스트 */}
+          <div style={{
+            maxHeight: 240,
             overflowY: 'auto',
             border: '1px solid #e2e8f0',
             borderRadius: 8,
             padding: '6px 0',
             background: '#fafaf8',
+            marginBottom: 12,
           }}>
-            {filteredCoverages.map(({ rowKey, label }) => {
+            {tabCoverages.length === 0 ? (
+              <div style={{ padding: 20, color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
+                이 카테고리에 담보가 없습니다.
+              </div>
+            ) : tabCoverages.map(({ rowKey, label }) => {
               const selected = form.coverageInputs.some((ci) => ci.rowKey === rowKey)
               return (
                 <label
@@ -322,16 +429,51 @@ export default function RemodelComparison({
                     onChange={() => toggleCoverageInput(rowKey)}
                     style={{ accentColor: '#1a2744' }}
                   />
-                  <span style={{ fontSize: 13, color: selected ? '#1a2744' : '#4b5563' }}>{label}</span>
+                  <span style={{ fontSize: 13, color: selected ? '#1a2744' : '#4b5563' }}>
+                    {/* 카테고리 접두어 제거하여 깔끔하게 표시 */}
+                    {label.replace(/^[^—]+ — /, '')}
+                  </span>
                 </label>
               )
             })}
-            {filteredCoverages.length === 0 && (
-              <div style={{ padding: 14, color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
-                검색 결과가 없습니다.
-              </div>
-            )}
           </div>
+
+          {/* 선택된 담보 — 금액 입력 */}
+          {form.coverageInputs.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: '#64748b', marginBottom: 6, fontWeight: 600 }}>
+                ✓ 선택된 담보 금액 입력 (만원 단위)
+              </div>
+              <div style={{
+                maxHeight: 220,
+                overflowY: 'auto',
+                display: 'grid',
+                gap: 6,
+              }}>
+                {form.coverageInputs.map((ci) => (
+                  <div key={ci.rowKey} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ flex: 1, fontSize: 13, color: '#1a2744', fontWeight: 500 }}>
+                      {ROW_KEY_LABEL[ci.rowKey]}
+                    </span>
+                    <input
+                      className="coverage-pro-input"
+                      type="number"
+                      placeholder="금액(만원)"
+                      value={ci.amount}
+                      onChange={(e) => updateCoverageAmount(ci.rowKey, e.target.value)}
+                      style={{ width: 130 }}
+                    />
+                    <button
+                      type="button"
+                      className="coverage-pro-btn"
+                      style={{ padding: '4px 10px', fontSize: 12, color: '#ef4444' }}
+                      onClick={() => toggleCoverageInput(ci.rowKey)}
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="coverage-pro-actions" style={{ marginTop: 16, justifyContent: 'flex-start' }}>
             <button type="button" className="coverage-pro-btn primary" onClick={saveAddedContract}>
@@ -340,7 +482,7 @@ export default function RemodelComparison({
             <button
               type="button"
               className="coverage-pro-btn"
-              onClick={() => { setShowAddForm(false); setForm(emptyAddForm()); setCoverageSearch('') }}
+              onClick={() => { setShowAddForm(false); setForm(emptyAddForm()); setCoverageTab('진단') }}
             >
               취소
             </button>
@@ -364,4 +506,13 @@ export default function RemodelComparison({
 
 function formatWon(value: number) {
   return value ? `${Math.round(value).toLocaleString()}원` : '-'
+}
+
+function buildPaymentPeriod(years: string, age: string): string | undefined {
+  const y = years.trim()
+  const a = age.trim()
+  if (y && a) return `${y}년납/${a}세만기`
+  if (y) return `${y}년납`
+  if (a) return `${a}세만기`
+  return undefined
 }
