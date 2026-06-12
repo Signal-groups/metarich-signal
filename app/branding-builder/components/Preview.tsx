@@ -111,8 +111,8 @@ const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(
         if (typeof event.data.html === 'string') setExtHtmlState({ key: externalLoadKey, html: event.data.html })
         return
       }
-      if (event.data?.type !== '__BAI_CHANGE__' || typeof event.data.html !== 'string') return
-      setExtHtmlState({ key: externalLoadKey, html: event.data.html })
+      // __BAI_CHANGE__: 텍스트 편집 시 srcDoc 갱신하지 않음 (iframe 재로드 방지)
+      // 다운로드 시 iframe.contentDocument에서 직접 읽음
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -310,4 +310,5 @@ function EditableSection({ id, onDelete, children }: { id: string; onDelete: (id
       {children}
     </div>
   )
+}
 }

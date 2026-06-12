@@ -158,23 +158,7 @@ function exitEdit(){
   if(toolbar)toolbar.style.top='-80px';
 }
 
-// ── 섹션 삭제 버튼 ──
-function addSectionBtns(){
-  var sels='section,[class*="section"],[class*="-sec"],[class*="block"],[class*="-block"],[class*="hero"],[class*="features"],[class*="cta"],[class*="footer"]';
-  document.querySelectorAll(sels).forEach(function(s){
-    if(s.querySelector('[id*="bai-d"]'))return;
-    var pos=getComputedStyle(s).position;
-    if(pos==='static')s.style.position='relative';
-    var btn=document.createElement('button');
-    btn.id='__bai-d'+Math.random().toString(36).slice(2,7)+'__';
-    btn.textContent='✕ 이 섹션 삭제';
-    btn.style.cssText='position:absolute;top:10px;right:10px;z-index:9999;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;display:none;font-family:system-ui;backdrop-filter:blur(4px);';
-    btn.onclick=function(e){e.stopPropagation();if(confirm('이 섹션을 삭제할까요?')){s.remove();send();}};
-    s.appendChild(btn);
-    s.addEventListener('mouseenter',function(){btn.style.display='block';});
-    s.addEventListener('mouseleave',function(){btn.style.display='none';});
-  });
-}
+// ── 섹션 삭제 버튼: buildBridgeScript에서 처리하므로 여기서는 생략 ──
 
 // ── 이미지 교체 ──
 function addImgBtns(){
@@ -238,9 +222,14 @@ document.addEventListener('keydown',function(e){
   if(cur)setTimeout(send,400);
 });
 
+// ── iframe 외부 클릭 시 툴바 숨김 ──
+window.addEventListener('blur',function(){
+  if(cur)exitEdit();
+});
+
 function init(){
   isDark=detectDark();
-  setTimeout(function(){addSectionBtns();addImgBtns();},600);
+  setTimeout(function(){addImgBtns();},600);
 }
 init();
 
