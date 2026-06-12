@@ -19,6 +19,7 @@ import RemodelComparison from './RemodelComparison'
 import ExcelDownloadBtn from './ExcelDownloadBtn'
 import PdfExportBtn from './PdfExportBtn'
 import SessionList from './SessionList'
+import BenchmarkSettings from './BenchmarkSettings'
 
 const STORAGE_KEY   = 'coverage-pro-draft-session'
 const SESSION_ID_KEY = 'coverage-pro-session-id'
@@ -173,6 +174,9 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
   const [proposal,     setProposal]     = useState<RemodelProposal>(() => draft?.proposal || defaultProposal)
   const [outputConfig, setOutputConfig] = useState<OutputConfig>(() => draft?.outputConfig || defaultOutputConfig)
   const [saveStatus,   setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  // ── 기준금액 설정 모달 ──────────────────────────────────────────────
+  const [showBenchmark, setShowBenchmark] = useState(false)
 
   // ── 신규 고객 등록 폼 상태 ──────────────────────────────────────────
   const [showNewCustomer, setShowNewCustomer] = useState(false)
@@ -341,7 +345,13 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
 
   return (
     <div className="coverage-pro-layout">
-      <ProSidebar currentStep={currentStep} stepStatus={stepStatus} onMove={moveStep} />
+      {showBenchmark && <BenchmarkSettings onClose={() => setShowBenchmark(false)} />}
+      <ProSidebar
+        currentStep={currentStep}
+        stepStatus={stepStatus}
+        onMove={moveStep}
+        onSettingsClick={() => setShowBenchmark(true)}
+      />
       <main className="coverage-pro-main">
         <div className="coverage-pro-inner">
           <StepIndicator stepStatus={stepStatus} />

@@ -8,29 +8,34 @@ import type { ExcelExportInput, ProContract } from './types'
 
 const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   // ──────────────────────────────────────────────────────────────────────
-  // 주의: 패턴은 "더 구체적인 것"이 반드시 먼저 와야 합니다.
-  // "간병인질병입원일당"이 "질병입원" 패턴에 먼저 걸리는 충돌 방지.
+  // 주의: "더 구체적인 패턴"이 반드시 먼저 와야 충돌을 방지합니다.
+  // 예: "질병입원일당"이 "질병입원"보다 먼저, "허혈성심장"이 "심장질환"보다 먼저.
   // ──────────────────────────────────────────────────────────────────────
 
-  // 간병인 (실비 패턴보다 반드시 앞에 위치)
-  { patterns: ['간병인사용', '간병인질병', '간병인상해', '간병인간호', '병원사용간병', '병원간병', '간병인'], rowKey: 'nursing_hospital' },
-  { patterns: ['요양병원간병', '요양간병'], rowKey: 'nursing_care_hospital' },
+  // ── 간병인·재가 (입원일당/실비 패턴보다 반드시 앞에) ─────────────────
+  { patterns: ['간병인사용', '간병인질병', '간병인상해', '간병인간호', '병원사용간병', '병원간병', '간병인서비스', '간병인'], rowKey: 'nursing_hospital' },
+  { patterns: ['요양병원간병', '요양병원입원', '요양병원재가', '요양간병', '요양병원'], rowKey: 'nursing_care_hospital' },
   { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
 
-  // 실비 (간병인 다음에 위치)
-  { patterns: ['질병입원의료비', '질병+상해입원', '상해+질병입원', '질병입원'], rowKey: 'silson_disease_inpatient' },
-  { patterns: ['질병통원의료비', '질병외래의료비', '질병처방조제료', '질병통원'], rowKey: 'silson_disease_outpatient' },
-  { patterns: ['상해입원의료비', '해외진료입원', '상해입원'], rowKey: 'silson_injury_inpatient' },
-  { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '상해통원', '실손의료비', '실손'], rowKey: 'silson_injury_outpatient' },
+  // ── 입원일당 (실비 "입원" 패턴보다 앞에 위치해야 함) ─────────────────
+  // "질병입원일당"이 실비 "질병입원" 패턴에 걸리지 않도록 먼저 처리
+  { patterns: ['질병입원일당', '질병 입원일당', '상급종합병원질병입원일당', '종합병원이하질병입원일당'], rowKey: 'hospital_disease_daily' },
+  { patterns: ['상해입원일당', '상해 입원일당', '상급종합병원상해입원일당', '종합병원이하상해입원일당', '입원일당'], rowKey: 'hospital_injury_daily' },
+
+  // ── 실비 (간병인·입원일당 다음) ──────────────────────────────────────
+  { patterns: ['질병입원의료비', '질병+상해입원', '상해+질병입원', '실손질병입원', '질병입원실손'], rowKey: 'silson_disease_inpatient' },
+  { patterns: ['질병통원의료비', '질병외래의료비', '질병처방조제료', '질병통원실손', '실손질병통원', '질병통원'], rowKey: 'silson_disease_outpatient' },
+  { patterns: ['상해입원의료비', '해외진료입원', '실손상해입원', '상해입원실손'], rowKey: 'silson_injury_inpatient' },
+  { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '실손상해통원', '상해통원실손', '상해통원', '실손의료비', '실손'], rowKey: 'silson_injury_outpatient' },
   { patterns: ['3대비급여'], rowKey: 'silson_3major' },
 
-  // 암 — 고액·표적 먼저 (일반 "암진단"보다 구체적)
+  // ── 암 — 고액·표적 먼저 (일반 "암진단"보다 구체적) ───────────────────
   { patterns: ['고액항암치료비', '고액항암', '표적항암', '중입자항암'], rowKey: 'cancer_targeted' },
   { patterns: ['항암중입자', '중입자치료', '중입자방사선', '중입자'], rowKey: 'cancer_hadron' },
   { patterns: ['양성자방사선', '양성자치료', '양성자'], rowKey: 'cancer_proton' },
   { patterns: ['세기조절방사선', 'imrt'], rowKey: 'cancer_imrt' },
   { patterns: ['항암방사선약물', '항암방사선', '방사선약물치료', '방사선치료'], rowKey: 'cancer_radiation' },
-  { patterns: ['항암약물', '항암 약물'], rowKey: 'cancer_chemo' },
+  { patterns: ['항암약물', '항암 약물', '항암치료비', '항암치료'], rowKey: 'cancer_chemo' },
   { patterns: ['카티', 'cart'], rowKey: 'cancer_cart' },
   { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
   { patterns: ['암수술'], rowKey: 'cancer_surgery' },
@@ -40,54 +45,72 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   // 일반암 — 가장 넓은 패턴을 마지막에
   { patterns: ['암단', '암진단', '일반암', '통합암', 'cancer'], rowKey: 'cancer_general' },
 
-  // 2대질병 — 뇌/심장
+  // ── 2대질병 — 구체적(허혈성·급성심근경색)이 앞에 위치 ─────────────────
   { patterns: ['뇌혈관진단', '뇌혈관질환'], rowKey: 'brain_vascular' },
   { patterns: ['뇌졸중', '뇌졸증'], rowKey: 'brain_stroke' },
   { patterns: ['뇌출혈'], rowKey: 'brain_hemorrhage' },
-  { patterns: ['심장질환진단', '심혈관질환'], rowKey: 'heart_vascular' },
-  { patterns: ['허혈성심장'], rowKey: 'heart_ischemic' },
+  { patterns: ['허혈성심장'], rowKey: 'heart_ischemic' },            // 심장질환보다 먼저!
   { patterns: ['급성심근경색', '심근경색'], rowKey: 'heart_acute_mi' },
+  { patterns: ['심장질환진단', '심혈관질환'], rowKey: 'heart_vascular' },
   { patterns: ['수술/시술비', '뇌심수술', '심뇌수술'], rowKey: 'two_major_surgery' },
   { patterns: ['혈전용해'], rowKey: 'two_major_thrombolysis' },
   { patterns: ['중환자실'], rowKey: 'two_major_icu' },
 
-  // 후유장해 — 80% 이상 먼저 (더 구체적)
-  { patterns: ['질병후유장해80', '질병80%', '질병80미만후유'], rowKey: 'disability_disease_80' },
+  // ── 후유장해 — "80% 이상" 먼저 ──────────────────────────────────────
+  // (주의: 80% 판별은 inferClientRowKey 함수 내 선행 로직으로 처리)
+  { patterns: ['질병후유장해80', '질병80%', '질병80%이상', '질병80미만후유'], rowKey: 'disability_disease_80' },
   { patterns: ['질병후유장해', '질병 후유'], rowKey: 'disability_disease' },
-  { patterns: ['상해후유장해80', '상해80%', '재해80%', '상해80미만후유'], rowKey: 'disability_injury_80' },
+  { patterns: ['상해후유장해80', '상해80%', '재해80%', '상해80%이상', '상해80미만후유'], rowKey: 'disability_injury_80' },
   { patterns: ['상해후유장해', '재해후유장해', '상해 후유', '상해후유'], rowKey: 'disability_injury' },
 
-  // 사망
-  { patterns: ['암사망'], rowKey: 'death_disease' },               // 암사망은 질병사망으로 분류
+  // ── 사망 ─────────────────────────────────────────────────────────────
+  { patterns: ['암사망'], rowKey: 'death_disease' },               // 암사망 → 질병사망
   { patterns: ['질병사망'], rowKey: 'death_disease' },
   { patterns: ['재해사망', '상해사망', '일반사망재해'], rowKey: 'death_injury' },
   { patterns: ['일반사망', '사망보험금', '사망급여금'], rowKey: 'death_general' },
 
-  // 수술비
+  // ── 수술비 — 1-5종/111대 먼저 (질병수술비보다 구체적) ─────────────────
+  { patterns: ['1-5종', '1~5종', '종수술'], rowKey: 'surgery_1_5' },           // surgery_disease보다 앞에!
+  { patterns: ['111대', '100대', '64대', '32대', 'n대수술'], rowKey: 'surgery_n_major' },
   { patterns: ['질병수술비', '질병수술(유병자)', '질병중수술', '질병수술'], rowKey: 'surgery_disease' },
   { patterns: ['상해수술비', '상해중수술', '특정상해수술', '상해수술'], rowKey: 'surgery_injury' },
-  { patterns: ['1-5종', '1~5종', '종수술'], rowKey: 'surgery_1_5' },
-  { patterns: ['111대', '100대', '64대', '32대', 'n대수술'], rowKey: 'surgery_n_major' },
 
-  // 상해진단
+  // ── 상해진단 ─────────────────────────────────────────────────────────
   { patterns: ['골절'], rowKey: 'fracture_diagnosis' },
   { patterns: ['화상'], rowKey: 'burn_diagnosis' },
 
-  // 입원일당 — 상급종합/종합병원 포함
-  { patterns: ['상급종합병원질병입원', '종합병원이하질병입원', '질병입원일당', '질병 입원일당'], rowKey: 'hospital_disease_daily' },
-  { patterns: ['상급종합병원상해입원', '종합병원이하상해입원', '상해입원일당', '상해 입원일당', '입원일당'], rowKey: 'hospital_injury_daily' },
-
-  // 운전자
-  { patterns: ['교통사고처리지원금', '교통사고처리지원', '교통사고처리', '대물대인'], rowKey: 'driver_accident' },
-  { patterns: ['벌금'], rowKey: 'driver_fine' },
+  // ── 운전자 ───────────────────────────────────────────────────────────
+  { patterns: ['교통사고처리지원금', '교통사고처리지원', '교통사고처리', '자동차사고피해', '자동차사고', '대물대인'], rowKey: 'driver_accident' },
+  { patterns: ['운전자벌금', '벌금'], rowKey: 'driver_fine' },
   { patterns: ['변호사선임', '법률비용', '소송법률'], rowKey: 'driver_lawyer' },
 
-  // 기타
+  // ── 기타 ─────────────────────────────────────────────────────────────
   { patterns: ['가족생활배상', '배상책임', '일상배상', '가족배상'], rowKey: 'other_liability' },
 ]
 
 export function inferClientRowKey(coverageName: string): string | undefined {
   const normalized = coverageName.replace(/\s+/g, '').toLowerCase()
+
+  // ── 후유장해 80% 선행 판별 ──────────────────────────────────────────────
+  // "(80%이상)" 표기가 질병/상해 양쪽에 나타나므로 컨텍스트로 구분
+  if (normalized.includes('후유장해') || normalized.includes('후유')) {
+    const is80 =
+      normalized.includes('80%이상') ||
+      normalized.includes('80%') ||
+      normalized.includes('80이상') ||
+      normalized.includes('(80')
+    const isInjury = normalized.includes('상해') || normalized.includes('재해')
+    const isDisease = normalized.includes('질병')
+    if (is80) {
+      if (isInjury) return 'disability_injury_80'
+      if (isDisease) return 'disability_disease_80'
+      return 'disability_disease_80'
+    }
+    if (isInjury) return 'disability_injury'
+    if (isDisease) return 'disability_disease'
+    // 질병/상해 미표기 시 폴스루
+  }
+
   for (const { patterns, rowKey } of NAME_TO_ROW_KEY) {
     if (patterns.some((pattern) => normalized.includes(pattern.replace(/\s+/g, '').toLowerCase()))) {
       return rowKey
@@ -175,4 +198,8 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   driver_lawyer:             '운전자 — 변호사선임',
   driver_accident:           '운전자 — 교통사고처리지원',
   other_liability:           '기타 — 일상생활배상책임',
+  // 주요치료비
+  cancer_major_benefit:      '주요치료비 — 암주요치료비(급여)',
+  cancer_major_nonbenefit:   '주요치료비 — 암주요치료비(비급여)',
+  vascular_major:            '주요치료비 — 뇌심(순환계)주요치료비',
 }

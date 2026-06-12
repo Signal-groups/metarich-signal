@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
-import { Check, ClipboardCopy, FileText, HeartPulse, Search, ShieldPlus, Stethoscope } from "lucide-react"
+import { Check, ClipboardCopy, FileText, HeartPulse, Search, ShieldPlus, Star, Stethoscope } from "lucide-react"
 import {
   BASE_DOCUMENTS,
   COVERAGES,
@@ -15,6 +15,7 @@ import { supabase } from "../../lib/supabase"
 
 type GuideMode = "claim" | "notice" | "monitoring"
 type CoverageFilter = "all" | "care" | "diagnosis" | "special"
+type FavoriteDocsByVisit = Record<VisitType, string[]>
 
 const GUIDE_MODES: { id: GuideMode; label: string; desc: string }[] = [
   { id: "claim", label: "보험금 청구", desc: "청구 유형과 담보를 선택해 고객 안내 문구를 완성합니다." },
@@ -51,6 +52,53 @@ const COVERAGE_GROUP_LABELS: Record<Exclude<CoverageFilter, "all">, string> = {
 }
 
 const GUIDE_MESSAGE_STORAGE_KEY = "claim_documents_custom_messages_v1"
+const FAVORITE_DOCUMENTS_STORAGE_PREFIX = "claim_document_favorites"
+
+const DEFAULT_FAVORITE_DOCUMENTS: FavoriteDocsByVisit = {
+  hospitalization: [
+    "진료비 영수증 / 진료비 세부내역서",
+    "진단서",
+    "입퇴원확인서",
+  ],
+  outpatient: [
+    "진료비 영수증",
+    "진료비 세부내역서",
+    "약제비 영수증",
+  ],
+}
+
+const FAVORITE_DOCUMENT_CANDIDATES: FavoriteDocsByVisit = {
+  hospitalization: [
+    "진료비 영수증 / 진료비 세부내역서",
+    "진단서",
+    "입퇴원확인서",
+    "보험금 청구서",
+    "신분증 사본",
+    "통장 사본",
+  ],
+  outpatient: [
+    "진료비 영수증",
+    "진료비 세부내역서",
+    "약제비 영수증",
+    "진료확인서",
+    "처방전",
+    "보험금 청구서",
+    "신분증 사본",
+    "통장 사본",
+  ],
+}
+
+const normalizeFavoriteDocuments = (value: unknown): FavoriteDocsByVisit => {
+  const source = value && typeof value === "object" ? value as Partial<FavoriteDocsByVisit> : {}
+  return {
+    hospitalization: Array.isArray(source.hospitalization) && source.hospitalization.length > 0
+      ? source.hospitalization
+      : DEFAULT_FAVORITE_DOCUMENTS.hospitalization,
+    outpatient: Array.isArray(source.outpatient) && source.outpatient.length > 0
+      ? source.outpatient
+      : DEFAULT_FAVORITE_DOCUMENTS.outpatient,
+  }
+}
 
 const onlyDigits = (value: string) => value.replace(/[^\d]/g, "")
 
@@ -74,8 +122,11 @@ const formatMonitoringMaturity = (value: string) => {
 }
 
 export default function ClaimDocumentsPage() {
+  const [userId, setUserId] = useState<string | null>(null)
   const [guideMode, setGuideMode] = useState<GuideMode>("claim")
   const [visitType, setVisitType] = useState<VisitType>("hospitalization")
+  const [favoriteDocuments, setFavoriteDocuments] = useState<FavoriteDocsByVisit>(DEFAULT_FAVORITE_DOCUMENTS)
+  const [favoriteSaved, setFavoriteSaved] = useState(false)
   const [selectedCoverageIds, setSelectedCoverageIds] = useState<string[]>([])
   const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all")
   const [coverageSearchText, setCoverageSearchText] = useState("")
@@ -134,12 +185,28 @@ export default function ClaimDocumentsPage() {
     async function loadAdvisorProfile() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
+      if (mounted) setUserId(session.user.id)
 
       const { data } = await supabase
         .from("users")
         .select("name, phone")
         .eq("id", session.user.id)
         .maybeSingle()
+
+      const { data: favoriteData } = await supabase
+        .from("team_settings")
+        .select("value")
+        .eq("key", `user_${session.user.id}_${FAVORITE_DOCUMENTS_STORAGE_PREFIX}`)
+        .maybeSingle()
+
+      if (mounted && favoriteData?.value) {
+        try {
+          const parsed = typeof favoriteData.value === "string" ? JSON.parse(favoriteData.value) : favoriteData.value
+          setFavoriteDocuments(normalizeFavoriteDocuments(parsed))
+        } catch {
+          setFavoriteDocuments(DEFAULT_FAVORITE_DOCUMENTS)
+        }
+      }
 
       if (!mounted || !data) return
       if (!advisorLabel.trim() && data.name) setAdvisorLabel(`${data.name} 보험 전문가`)
@@ -163,6 +230,7 @@ export default function ClaimDocumentsPage() {
 
   const extraDocs = Array.from(new Set(selectedCoverages.flatMap((coverage) => coverage.docs)))
   const notes = selectedCoverages.map((coverage) => coverage.note).filter(Boolean) as string[]
+  const pinnedDocs = useMemo(() => favoriteDocuments[visitType] || [], [favoriteDocuments, visitType])
 
   const previewText = useMemo(() => {
     const commonClosing = [
@@ -244,7 +312,10 @@ export default function ClaimDocumentsPage() {
     const coverageLabels = selectedCoverages.length > 0
       ? selectedCoverages.map((coverage) => coverage.label).join(", ")
       : "선택된 담보 없음"
-    const baseDocs = BASE_DOCUMENTS[visitType].map((doc) => `- ${doc}`)
+    const baseDocs = [
+      ...pinnedDocs,
+      ...BASE_DOCUMENTS[visitType].filter((doc) => !pinnedDocs.includes(doc)),
+    ].map((doc) => `- ${doc}`)
     const detailDocs = extraDocs.length > 0
       ? extraDocs.map((doc) => `- ${doc}`)
       : ["- 선택한 담보에 따른 추가 서류가 있으면 보험사 안내에 맞춰 준비해주세요."]
@@ -303,6 +374,7 @@ export default function ClaimDocumentsPage() {
     monitoringSignMethod,
     notes,
     noticeText,
+    pinnedDocs,
     selectedCoverages,
     selectedInsurers,
     visitType,
@@ -314,6 +386,39 @@ export default function ClaimDocumentsPage() {
     setSelectedCoverageIds((prev) => prev.includes(coverageId)
       ? prev.filter((id) => id !== coverageId)
       : [...prev, coverageId])
+  }
+
+  const saveFavoriteDocuments = async (nextFavorites: FavoriteDocsByVisit) => {
+    setFavoriteDocuments(nextFavorites)
+    setFavoriteSaved(true)
+    window.setTimeout(() => setFavoriteSaved(false), 1600)
+    if (!userId) return
+
+    await supabase.from("team_settings").upsert(
+      {
+        key: `user_${userId}_${FAVORITE_DOCUMENTS_STORAGE_PREFIX}`,
+        value: JSON.stringify(nextFavorites),
+      },
+      { onConflict: "key" }
+    )
+  }
+
+  const toggleFavoriteDocument = (doc: string) => {
+    const current = favoriteDocuments[visitType] || []
+    const nextForVisit = current.includes(doc)
+      ? current.filter((item) => item !== doc)
+      : [...current, doc]
+    void saveFavoriteDocuments({
+      ...favoriteDocuments,
+      [visitType]: nextForVisit,
+    })
+  }
+
+  const resetFavoriteDocuments = () => {
+    void saveFavoriteDocuments({
+      ...favoriteDocuments,
+      [visitType]: DEFAULT_FAVORITE_DOCUMENTS[visitType],
+    })
   }
 
   const toggleInsurer = (insurerId: string) => {
@@ -514,7 +619,55 @@ export default function ClaimDocumentsPage() {
                   </div>
                 </Panel>
 
-                <Panel title="4. 담보 선택" icon={<Stethoscope className="h-5 w-5" />}>
+                <Panel
+                  title="4. 자주 쓰는 서류 고정"
+                  icon={<Star className="h-5 w-5" />}
+                  action={(
+                    <button
+                      type="button"
+                      onClick={resetFavoriteDocuments}
+                      className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-[13px] font-black text-amber-700 transition hover:bg-amber-100"
+                    >
+                      기본값 복원
+                    </button>
+                  )}
+                >
+                  <div className="mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
+                    <p className="text-[13px] font-black text-amber-900">
+                      {visitType === "hospitalization" ? "입원" : "통원"}에서 자주 쓰는 서류가 고객 안내 문구 상단에 먼저 고정됩니다.
+                    </p>
+                    <p className="mt-1 text-[12px] font-bold text-amber-700">
+                      {favoriteSaved ? "계정별 즐겨찾기가 저장되었습니다." : "별표를 눌러 자주 쓰는 서류를 추가하거나 제외할 수 있습니다."}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {FAVORITE_DOCUMENT_CANDIDATES[visitType].map((doc) => {
+                      const active = pinnedDocs.includes(doc)
+                      return (
+                        <button
+                          key={doc}
+                          type="button"
+                          onClick={() => toggleFavoriteDocument(doc)}
+                          className={`flex min-h-[72px] items-center gap-3 rounded-2xl border-2 p-4 text-left transition ${
+                            active
+                              ? "border-amber-400 bg-amber-50 text-amber-950"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-amber-200"
+                          }`}
+                        >
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                            active ? "bg-amber-400 text-white" : "bg-slate-100 text-slate-400"
+                          }`}>
+                            <Star className={`h-5 w-5 ${active ? "fill-current" : ""}`} />
+                          </span>
+                          <span className="text-[14px] font-black leading-snug">{doc}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </Panel>
+
+                <Panel title="5. 담보 선택" icon={<Stethoscope className="h-5 w-5" />}>
                   <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex flex-wrap gap-2">
                       {COVERAGE_FILTERS.map((filter) => (

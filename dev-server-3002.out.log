@@ -1,0 +1,13 @@
+
+> insurance-manager@0.1.0 dev
+> next dev -p 3002
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://192.168.0.59:3002
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 4.1s
+  Using external babel configuration from C:\Users\hoo\Documents\metarich-signal-projec\insurance-manager\.babelrc
+○ Compiling /claim-documents ...

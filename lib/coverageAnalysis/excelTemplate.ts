@@ -117,6 +117,11 @@ export const COVERAGE_ROW_MAP: Record<string, number> = {
 
   // ── 기타 ─────────────────────────────────────────────────────────────
   other_liability:           59,  // 일상생활배상책임
+
+  // ── 주요치료비 ────────────────────────────────────────────────────────
+  cancer_major_benefit:      61,  // 암주요치료비(급여)
+  cancer_major_nonbenefit:   62,  // 암주요치료비(비급여)
+  vascular_major:            63,  // 뇌심(순환계)주요치료비
 }
 
 // ── rowKey → 한국어 담보명 (UI 표시용) ──────────────────────────────────
@@ -169,6 +174,10 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   driver_lawyer:             '운전자 — 변호사선임',
   driver_accident:           '운전자 — 교통사고처리지원',
   other_liability:           '기타 — 일상생활배상책임',
+  // 주요치료비
+  cancer_major_benefit:      '주요치료비 — 암주요치료비(급여)',
+  cancer_major_nonbenefit:   '주요치료비 — 암주요치료비(비급여)',
+  vascular_major:            '주요치료비 — 뇌심(순환계)주요치료비',
 }
 
 // ── 담보명 → rowKey 자동 추론 (CRM 데이터 연동용) ─────────────────────

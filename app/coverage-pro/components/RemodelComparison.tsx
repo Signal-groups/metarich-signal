@@ -5,7 +5,7 @@ import type { ProContract, ProCoverage, RemodelProposal } from '../../../lib/cov
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 
 // ── 담보 탭 카테고리 정의 ────────────────────────────────────────────────
-type CoverageTab = '진단' | '수술' | '입원' | '간병' | '재가' | '기타' | '운전자' | '실손'
+type CoverageTab = '진단' | '수술' | '입원' | '간병' | '재가' | '기타' | '운전자' | '실손' | '주요치료비'
 
 // ── 엑셀 COVERAGE_ROW_MAP 행 순서 기준으로 정확히 매핑 ─────────────────
 // 실손(12-16) / 암진단·치료(17-28) / 2대질병(29-37) / 후유장해(38-41) /
@@ -107,9 +107,17 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
   기타: [
     'other_liability',        // 행59 일상생활배상책임
   ],
+
+  // ── 주요치료비 ───────────────────────────────────────────────────────────
+  // 암/뇌심 주요치료비(61-63)
+  주요치료비: [
+    'cancer_major_benefit',     // 행61 암주요치료비(급여)
+    'cancer_major_nonbenefit',  // 행62 암주요치료비(비급여)
+    'vascular_major',           // 행63 뇌심(순환계)주요치료비
+  ],
 }
 
-const COVERAGE_TABS: CoverageTab[] = ['진단', '수술', '입원', '간병', '재가', '기타', '운전자', '실손']
+const COVERAGE_TABS: CoverageTab[] = ['진단', '수술', '입원', '간병', '재가', '기타', '운전자', '실손', '주요치료비']
 
 // ── 신규 상품 추가 폼 초기값 ───────────────────────────────────────────
 function emptyAddForm() {
