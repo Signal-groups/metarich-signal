@@ -90,6 +90,13 @@ export default function LoginPage() {
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
         if (!session) return
+        // 자동 로그인 OFF + 새 브라우저 세션 → 기존 세션 파기
+        const autoLoginSaved = localStorage.getItem(autoLoginKey) === "true"
+        const activeSession = sessionStorage.getItem("insu-active-session") === "true"
+        if (!autoLoginSaved && !activeSession) {
+          await supabase.auth.signOut()
+          return
+        }
         const { data: userData, error: userError } = await supabase.auth.getUser()
         if (userError || !userData.user) { await supabase.auth.signOut(); return }
         router.replace(nextRedirect)
@@ -109,7 +116,10 @@ export default function LoginPage() {
       await supabase.auth.signOut().catch(() => {})
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
       if (error) alert("로그인에 실패했습니다: " + error.message)
-      else router.push(redirectPath)
+      else {
+        sessionStorage.setItem("insu-active-session", "true")
+        router.push(redirectPath)
+      }
     } finally {
       setLoading(false)
     }

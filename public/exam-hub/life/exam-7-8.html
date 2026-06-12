@@ -399,23 +399,7 @@ function printExamQuestions(allQs, title) {
     '<div class="print-header"><h1>' + title + '</h1><p>총 ' + allQs.length + '문항 | 10문항/페이지 | 마지막 페이지 정답·해설</p></div>' +
     questionsHtml + ansHtml +
     '<button class="print-btn" onclick="window.print()">🖨️ 인쇄하기</button>' +
-    '
-<script>
-// ── 테마 토글 ──
-(function(){
-  var saved = localStorage.getItem('mrsg-exam-theme') || 'dark';
-  if(saved==='light') document.body.classList.add('light-mode');
-  var btn = document.getElementById('themeBtn');
-  if(btn) btn.textContent = saved==='light' ? '🌙' : '☀️';
-})();
-function toggleTheme(){
-  var isLight = document.body.classList.toggle('light-mode');
-  localStorage.setItem('mrsg-exam-theme', isLight?'light':'dark');
-  var btn = document.getElementById('themeBtn');
-  if(btn) btn.textContent = isLight ? '🌙' : '☀️';
-}
-</script>
-</body></html>');
+    '</body></html>');
   w.document.close();
 }
 function printExam() {

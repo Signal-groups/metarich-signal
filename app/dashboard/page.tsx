@@ -314,8 +314,14 @@ export default function DashboardPage() {
       setAnnouncements(prev => prev.filter(a => a.id !== id));
       return;
     }
-    await supabase.from("announcements").update({ is_active: false }).eq("id", id);
-    setAnnouncements(prev => prev.filter(a => a.id !== id));
+    const { error } = await supabase.from("announcements").delete().eq("id", id);
+    if (!error) {
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+    } else {
+      // delete 권한 없을 때 is_active=false 폴백
+      await supabase.from("announcements").update({ is_active: false }).eq("id", id);
+      setAnnouncements(prev => prev.filter(a => a.id !== id));
+    }
   };
 
   const addAnnouncement = async (category: 'notice' | 'update') => {
