@@ -44,6 +44,43 @@ function readDraft() {
 function parseGptsJson(raw: string): ProContract[] | null {
   try {
     const parsed = JSON.parse(raw)
+
+    // ── v5 포맷: { version: "insurance_analysis_v5", policies: [...] } ──
+    if (parsed.version === 'insurance_analysis_v5' && Array.isArray(parsed.policies)) {
+      if (parsed.policies.length === 0) return null
+      return parsed.policies.map((item: Record<string, unknown>, idx: number) => {
+        const coverages = Array.isArray(item.coverages)
+          ? (item.coverages as Array<Record<string, unknown>>).map((cov, ci) => {
+              // v5: coverage_name 필드, amount는 만원 단위
+              const name = String(cov.coverage_name ?? cov.name ?? cov.담보명 ?? '')
+              return {
+                id: `json-cov-${idx}-${ci}`,
+                contractId: '',
+                rowKey: inferClientRowKey(name) ?? 'unknown',
+                name,
+                amount: Number(cov.amount ?? cov.가입금액 ?? 0), // 만원 단위 그대로
+                expiryDate: String(cov.end_date ?? cov.expiryDate ?? cov.만기 ?? ''),
+                isRenewal: cov.coverage_type === '갱신형' || Boolean(cov.isRenewal ?? false),
+              }
+            })
+          : []
+        return {
+          id: `json-${idx}-${Date.now()}`,
+          company: String(item.company ?? item.보험사 ?? ''),
+          productName: String(item.product_name ?? item.productName ?? item.상품명 ?? ''),
+          policyHolder: String(item.policyHolder ?? item.계약자 ?? ''),
+          contractDate: String(item.start_date ?? item.contractDate ?? item.계약일 ?? ''),
+          paymentPeriod: String(item.payment_period ?? item.paymentPeriod ?? item.납입기간 ?? ''),
+          // v5: monthly_premium은 만원 단위 → 원으로 변환
+          monthlyPremium: Math.round(Number(item.monthly_premium ?? item.monthlyPremium ?? item.월보험료 ?? 0) * 10000),
+          isRenewal: Boolean(item.isRenewal ?? false),
+          status: (['active','lapsed','expired'].includes(String(item.policy_status)) ? item.policy_status : 'active') as 'active' | 'lapsed' | 'expired',
+          coverages,
+        }
+      })
+    }
+
+    // ── 레거시 포맷: 배열 또는 { contracts: [...] } ──
     const arr = Array.isArray(parsed) ? parsed : parsed.contracts ?? parsed.data ?? []
     if (!Array.isArray(arr) || arr.length === 0) return null
     return arr.map((item: Record<string, unknown>, idx: number) => {
@@ -415,7 +452,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                     <textarea
                       className="coverage-pro-textarea"
                       style={{ minHeight: 160, fontFamily: 'monospace', fontSize: 12 }}
-                      placeholder={'[\n  {\n    "company": "삼성화재",\n    "productName": "실손보험",\n    "monthlyPremium": 35000,\n    "coverages": [\n      { "name": "질병입원의료비", "amount": 50000000 }\n    ]\n  }\n]'}
+                      placeholder={'GPTs에서 복사한 JSON을 붙여넣으세요.\n\n▶ v5 형식 (insurance_analysis_v5):\n{\n  "version": "insurance_analysis_v5",\n  "policies": [\n    {\n      "company": "삼성화재",\n      "product_name": "실손보험",\n      "monthly_premium": 3.5,\n      "payment_period": "20년납100세만기",\n      "coverages": [\n        { "coverage_name": "질병입원의료비", "amount": null, "category": "실손", "coverage_type": "갱신형" }\n      ]\n    }\n  ]\n}'}
                       value={jsonText}
                       onChange={(e) => { setJsonText(e.target.value); setJsonError('') }}
                     />

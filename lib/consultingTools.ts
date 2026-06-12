@@ -304,7 +304,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     label: "서류 안내",
     desc:  "보험금 청구 필요 서류 안내",
     icon: "document-check",
-    url: "/claim-docs.html",
+    url: "/claim-documents",
     color: "border-green-400",
     cardColor: "border-green-400 text-green-600",
     fixed: true,
