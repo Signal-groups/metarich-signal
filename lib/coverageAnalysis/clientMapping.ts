@@ -7,26 +7,40 @@
 import type { ExcelExportInput, ProContract } from './types'
 
 const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
-  // 실비
-  { patterns: ['질병입원의료비', '질병입원'], rowKey: 'silson_disease_inpatient' },
-  { patterns: ['질병통원의료비', '질병통원'], rowKey: 'silson_disease_outpatient' },
-  { patterns: ['상해입원의료비', '상해입원'], rowKey: 'silson_injury_inpatient' },
-  { patterns: ['상해통원의료비', '상해통원', '실손의료비', '실손'], rowKey: 'silson_injury_outpatient' },
+  // ──────────────────────────────────────────────────────────────────────
+  // 주의: 패턴은 "더 구체적인 것"이 반드시 먼저 와야 합니다.
+  // "간병인질병입원일당"이 "질병입원" 패턴에 먼저 걸리는 충돌 방지.
+  // ──────────────────────────────────────────────────────────────────────
+
+  // 간병인 (실비 패턴보다 반드시 앞에 위치)
+  { patterns: ['간병인사용', '간병인질병', '간병인상해', '간병인간호', '병원사용간병', '병원간병', '간병인'], rowKey: 'nursing_hospital' },
+  { patterns: ['요양병원간병', '요양간병'], rowKey: 'nursing_care_hospital' },
+  { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
+
+  // 실비 (간병인 다음에 위치)
+  { patterns: ['질병입원의료비', '질병+상해입원', '상해+질병입원', '질병입원'], rowKey: 'silson_disease_inpatient' },
+  { patterns: ['질병통원의료비', '질병외래의료비', '질병처방조제료', '질병통원'], rowKey: 'silson_disease_outpatient' },
+  { patterns: ['상해입원의료비', '해외진료입원', '상해입원'], rowKey: 'silson_injury_inpatient' },
+  { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '상해통원', '실손의료비', '실손'], rowKey: 'silson_injury_outpatient' },
   { patterns: ['3대비급여'], rowKey: 'silson_3major' },
-  // 암
-  { patterns: ['암진단', '일반암', '통합암', 'cancer'], rowKey: 'cancer_general' },
-  { patterns: ['유사암', '소액암', '갑상선암', '경계성암'], rowKey: 'cancer_similar' },
-  { patterns: ['전이암'], rowKey: 'cancer_metastasis' },
-  { patterns: ['암수술'], rowKey: 'cancer_surgery' },
-  { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
-  { patterns: ['항암방사선', '방사선치료'], rowKey: 'cancer_radiation' },
-  { patterns: ['중입자'], rowKey: 'cancer_hadron' },
-  { patterns: ['양성자'], rowKey: 'cancer_proton' },
+
+  // 암 — 고액·표적 먼저 (일반 "암진단"보다 구체적)
+  { patterns: ['고액항암치료비', '고액항암', '표적항암', '중입자항암'], rowKey: 'cancer_targeted' },
+  { patterns: ['항암중입자', '중입자치료', '중입자방사선', '중입자'], rowKey: 'cancer_hadron' },
+  { patterns: ['양성자방사선', '양성자치료', '양성자'], rowKey: 'cancer_proton' },
   { patterns: ['세기조절방사선', 'imrt'], rowKey: 'cancer_imrt' },
+  { patterns: ['항암방사선약물', '항암방사선', '방사선약물치료', '방사선치료'], rowKey: 'cancer_radiation' },
   { patterns: ['항암약물', '항암 약물'], rowKey: 'cancer_chemo' },
-  { patterns: ['표적항암'], rowKey: 'cancer_targeted' },
   { patterns: ['카티', 'cart'], rowKey: 'cancer_cart' },
-  // 2대질병
+  { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
+  { patterns: ['암수술'], rowKey: 'cancer_surgery' },
+  { patterns: ['전이암'], rowKey: 'cancer_metastasis' },
+  // 유사암 — "소액암", "유사암" 포함 담보 (일반암보다 먼저)
+  { patterns: ['유사암진단', '소액암진단', '소액암', '유사암', '갑상선암', '경계성암'], rowKey: 'cancer_similar' },
+  // 일반암 — 가장 넓은 패턴을 마지막에
+  { patterns: ['암단', '암진단', '일반암', '통합암', 'cancer'], rowKey: 'cancer_general' },
+
+  // 2대질병 — 뇌/심장
   { patterns: ['뇌혈관진단', '뇌혈관질환'], rowKey: 'brain_vascular' },
   { patterns: ['뇌졸중', '뇌졸증'], rowKey: 'brain_stroke' },
   { patterns: ['뇌출혈'], rowKey: 'brain_hemorrhage' },
@@ -36,36 +50,40 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['수술/시술비', '뇌심수술', '심뇌수술'], rowKey: 'two_major_surgery' },
   { patterns: ['혈전용해'], rowKey: 'two_major_thrombolysis' },
   { patterns: ['중환자실'], rowKey: 'two_major_icu' },
-  // 후유장해
-  { patterns: ['질병후유장해80', '질병80%'], rowKey: 'disability_disease_80' },
+
+  // 후유장해 — 80% 이상 먼저 (더 구체적)
+  { patterns: ['질병후유장해80', '질병80%', '질병80미만후유'], rowKey: 'disability_disease_80' },
   { patterns: ['질병후유장해', '질병 후유'], rowKey: 'disability_disease' },
-  { patterns: ['상해후유장해80', '상해80%', '재해80%'], rowKey: 'disability_injury_80' },
-  { patterns: ['상해후유장해', '재해후유장해', '상해 후유'], rowKey: 'disability_injury' },
+  { patterns: ['상해후유장해80', '상해80%', '재해80%', '상해80미만후유'], rowKey: 'disability_injury_80' },
+  { patterns: ['상해후유장해', '재해후유장해', '상해 후유', '상해후유'], rowKey: 'disability_injury' },
+
   // 사망
-  { patterns: ['일반사망', '사망보험금', '사망급여금'], rowKey: 'death_general' },
+  { patterns: ['암사망'], rowKey: 'death_disease' },               // 암사망은 질병사망으로 분류
   { patterns: ['질병사망'], rowKey: 'death_disease' },
-  { patterns: ['재해사망', '상해사망'], rowKey: 'death_injury' },
+  { patterns: ['재해사망', '상해사망', '일반사망재해'], rowKey: 'death_injury' },
+  { patterns: ['일반사망', '사망보험금', '사망급여금'], rowKey: 'death_general' },
+
   // 수술비
-  { patterns: ['질병수술비', '질병 수술'], rowKey: 'surgery_disease' },
-  { patterns: ['상해수술비', '상해 수술'], rowKey: 'surgery_injury' },
+  { patterns: ['질병수술비', '질병수술(유병자)', '질병중수술', '질병수술'], rowKey: 'surgery_disease' },
+  { patterns: ['상해수술비', '상해중수술', '특정상해수술', '상해수술'], rowKey: 'surgery_injury' },
   { patterns: ['1-5종', '1~5종', '종수술'], rowKey: 'surgery_1_5' },
   { patterns: ['111대', '100대', '64대', '32대', 'n대수술'], rowKey: 'surgery_n_major' },
+
   // 상해진단
   { patterns: ['골절'], rowKey: 'fracture_diagnosis' },
   { patterns: ['화상'], rowKey: 'burn_diagnosis' },
-  // 입원비
-  { patterns: ['질병입원일당', '질병 입원일당'], rowKey: 'hospital_disease_daily' },
-  { patterns: ['상해입원일당', '상해 입원일당', '입원일당'], rowKey: 'hospital_injury_daily' },
-  // 간병인
-  { patterns: ['병원사용간병', '병원간병'], rowKey: 'nursing_hospital' },
-  { patterns: ['요양병원'], rowKey: 'nursing_care_hospital' },
-  { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
+
+  // 입원일당 — 상급종합/종합병원 포함
+  { patterns: ['상급종합병원질병입원', '종합병원이하질병입원', '질병입원일당', '질병 입원일당'], rowKey: 'hospital_disease_daily' },
+  { patterns: ['상급종합병원상해입원', '종합병원이하상해입원', '상해입원일당', '상해 입원일당', '입원일당'], rowKey: 'hospital_injury_daily' },
+
   // 운전자
+  { patterns: ['교통사고처리지원금', '교통사고처리지원', '교통사고처리', '대물대인'], rowKey: 'driver_accident' },
   { patterns: ['벌금'], rowKey: 'driver_fine' },
-  { patterns: ['변호사선임'], rowKey: 'driver_lawyer' },
-  { patterns: ['교통사고처리지원', '교통사고처리', '대물대인'], rowKey: 'driver_accident' },
+  { patterns: ['변호사선임', '법률비용', '소송법률'], rowKey: 'driver_lawyer' },
+
   // 기타
-  { patterns: ['배상책임', '일상배상', '가족배상'], rowKey: 'other_liability' },
+  { patterns: ['가족생활배상', '배상책임', '일상배상', '가족배상'], rowKey: 'other_liability' },
 ]
 
 export function inferClientRowKey(coverageName: string): string | undefined {

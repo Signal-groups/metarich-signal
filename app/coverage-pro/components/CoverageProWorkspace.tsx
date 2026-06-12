@@ -40,6 +40,49 @@ function readDraft() {
   } catch { return null }
 }
 
+// ── 금액 파싱 헬퍼 (만원 단위로 정규화) ─────────────────────────────────
+// GPTs 출력이 "1억", "3억5000만", 30000(만원 숫자), "30000만원" 등 혼재할 수 있음
+function parseAmountToMan(val: unknown): number {
+  if (val === null || val === undefined) return 0
+
+  // 숫자 타입: 그대로 만원으로 사용
+  if (typeof val === 'number') {
+    if (isNaN(val)) return 0
+    // 방어: 억 단위로 잘못 들어온 경우 감지 (소수점이 있고 1~200 범위면 억 단위 의심)
+    // 예: amount: 1.5 → 1억5천만원 → 15000만원
+    if (val > 0 && val < 200 && !Number.isInteger(val)) {
+      return Math.round(val * 10000)
+    }
+    return val
+  }
+
+  if (typeof val === 'string') {
+    const s = val.trim().replace(/,/g, '').replace(/원$/, '').replace(/\s/g, '')
+    if (!s) return 0
+
+    // 억 단위 포함: "1억", "3억5000만", "3억5천만", "1억5백만"
+    const eokRegex = /^(\d+\.?\d*)억/
+    const eokMatch = s.match(eokRegex)
+    if (eokMatch) {
+      const eok = parseFloat(eokMatch[1]) * 10000
+      // 억 뒤에 만원 단위 있는지 확인: "3억5000만" → 5000
+      const manAfterEok = s.match(/억(\d+)만/)
+      const man = manAfterEok ? parseInt(manAfterEok[1]) : 0
+      return Math.round(eok + man)
+    }
+
+    // 만 단위: "5000만", "100만"
+    const manMatch = s.match(/^(\d+\.?\d*)만/)
+    if (manMatch) return Math.round(parseFloat(manMatch[1]))
+
+    // 일반 숫자 문자열
+    const num = parseFloat(s)
+    return isNaN(num) ? 0 : num
+  }
+
+  return 0
+}
+
 // ── GPTs JSON 파서 ──────────────────────────────────────────────────────
 function parseGptsJson(raw: string): ProContract[] | null {
   try {
@@ -58,7 +101,8 @@ function parseGptsJson(raw: string): ProContract[] | null {
                 contractId: '',
                 rowKey: inferClientRowKey(name) ?? 'unknown',
                 name,
-                amount: Number(cov.amount ?? cov.가입금액 ?? 0), // 만원 단위 그대로
+                // parseAmountToMan으로 "1억", "5000만", 30000 등 모두 정규화
+                amount: parseAmountToMan(cov.amount ?? cov.가입금액 ?? 0),
                 expiryDate: String(cov.end_date ?? cov.expiryDate ?? cov.만기 ?? ''),
                 isRenewal: cov.coverage_type === '갱신형' || Boolean(cov.isRenewal ?? false),
               }
@@ -92,7 +136,7 @@ function parseGptsJson(raw: string): ProContract[] | null {
               contractId: '',
               rowKey: inferClientRowKey(name) ?? 'unknown',
               name,
-              amount: Number(cov.amount ?? cov.가입금액 ?? 0),
+              amount: parseAmountToMan(cov.amount ?? cov.가입금액 ?? 0),
               expiryDate: String(cov.expiryDate ?? cov.만기 ?? ''),
               isRenewal: Boolean(cov.isRenewal ?? false),
             }
