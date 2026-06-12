@@ -7,43 +7,105 @@ import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 // ── 담보 탭 카테고리 정의 ────────────────────────────────────────────────
 type CoverageTab = '진단' | '수술' | '입원' | '간병' | '재가' | '기타' | '운전자' | '실손'
 
+// ── 엑셀 COVERAGE_ROW_MAP 행 순서 기준으로 정확히 매핑 ─────────────────
+// 실손(12-16) / 암진단·치료(17-28) / 2대질병(29-37) / 후유장해(38-41) /
+// 사망(42-44) / 수술비(45-48) / 상해진단(49-50) / 입원(51-52) /
+// 간병(53) / 재가(54-55) / 운전자(56-58) / 기타(59)
 const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
+  // ── 진단 ─────────────────────────────────────────────────────────────────
+  // 암진단(17-19) + 2대질병진단(29-34) + 후유장해(38-41) + 사망(42-44) + 상해진단(49-50)
   진단: [
-    'cancer_general', 'cancer_similar', 'cancer_metastasis',
-    'brain_vascular', 'brain_stroke', 'brain_hemorrhage',
-    'heart_vascular', 'heart_ischemic', 'heart_acute_mi',
-    'disability_disease_80', 'disability_disease',
-    'disability_injury_80', 'disability_injury',
-    'death_general', 'death_disease', 'death_injury',
-    'fracture_diagnosis', 'burn_diagnosis',
+    // 암 진단
+    'cancer_general',        // 행17 암진단
+    'cancer_similar',        // 행18 유사암진단
+    'cancer_metastasis',     // 행19 전이암진단
+    // 뇌혈관/심장 진단
+    'brain_vascular',        // 행29 뇌혈관진단
+    'brain_stroke',          // 행30 뇌졸증진단
+    'brain_hemorrhage',      // 행31 뇌출혈진단
+    'heart_vascular',        // 행32 심장질환진단
+    'heart_ischemic',        // 행33 허혈성심장진단
+    'heart_acute_mi',        // 행34 급성심근경색진단
+    // 후유장해
+    'disability_disease_80', // 행38 질병 80% 이상
+    'disability_disease',    // 행39 질병 3%~80%
+    'disability_injury_80',  // 행40 상해 80% 이상
+    'disability_injury',     // 행41 상해 3%~80%
+    // 사망
+    'death_general',         // 행42 일반사망
+    'death_disease',         // 행43 질병사망
+    'death_injury',          // 행44 상해사망
+    // 상해진단
+    'fracture_diagnosis',    // 행49 골절
+    'burn_diagnosis',        // 행50 화상
   ],
+
+  // ── 수술 ─────────────────────────────────────────────────────────────────
+  // 암치료(20-28) + 2대질병 수술/처치(35-37) + 수술비(45-48)
   수술: [
-    'cancer_surgery', 'cancer_davinci',
-    'cancer_targeted', 'cancer_cart',
-    'cancer_chemo', 'cancer_hadron', 'cancer_proton',
-    'cancer_imrt', 'cancer_radiation',
-    'two_major_surgery', 'two_major_thrombolysis', 'two_major_icu',
-    'surgery_disease', 'surgery_injury', 'surgery_1_5', 'surgery_n_major',
+    // 암 수술·치료
+    'cancer_surgery',        // 행20 암수술
+    'cancer_davinci',        // 행21 다빈치로봇수술
+    'cancer_radiation',      // 행22 항암방사선
+    'cancer_hadron',         // 행23 중입자방사선
+    'cancer_proton',         // 행24 양성자방사선
+    'cancer_imrt',           // 행25 세기조절방사선
+    'cancer_chemo',          // 행26 항암약물
+    'cancer_targeted',       // 행27 표적항암약물
+    'cancer_cart',           // 행28 카티항암약물
+    // 2대질병 수술·처치
+    'two_major_surgery',     // 행35 수술/시술비
+    'two_major_thrombolysis',// 행36 혈전용해치료
+    'two_major_icu',         // 행37 중환자실치료
+    // 수술비
+    'surgery_disease',       // 행45 질병 수술비
+    'surgery_injury',        // 행46 상해 수술비
+    'surgery_1_5',           // 행47 1-5종 수술비
+    'surgery_n_major',       // 행48 111대질병 수술비
   ],
+
+  // ── 입원 ─────────────────────────────────────────────────────────────────
+  // 입원일당(51-52)
   입원: [
-    'hospital_disease_daily', 'hospital_injury_daily',
+    'hospital_disease_daily', // 행51 질병 입원일당
+    'hospital_injury_daily',  // 행52 상해 입원일당
   ],
+
+  // ── 간병 ─────────────────────────────────────────────────────────────────
+  // 병원 간병인 사용(53) — 급성기 병원 입원 중 간병인 비용
   간병: [
-    'nursing_hospital',
+    'nursing_hospital',       // 행53 병원 간병인 사용
   ],
+
+  // ── 재가 ─────────────────────────────────────────────────────────────────
+  // 요양병원(54) + 간호간병통합(55) — 장기 요양·통합 간병 서비스
   재가: [
-    'nursing_care_hospital', 'nursing_integrated',
+    'nursing_care_hospital',  // 행54 요양병원 간병인
+    'nursing_integrated',     // 행55 간호간병통합서비스
   ],
-  기타: [
-    'other_liability',
-  ],
+
+  // ── 운전자 ───────────────────────────────────────────────────────────────
+  // 운전자 특약(56-58)
   운전자: [
-    'driver_accident', 'driver_fine', 'driver_lawyer',
+    'driver_fine',            // 행56 벌금
+    'driver_lawyer',          // 행57 변호사선임비용
+    'driver_accident',        // 행58 교통사고처리지원금
   ],
+
+  // ── 실손 ─────────────────────────────────────────────────────────────────
+  // 실손의료비(12-16)
   실손: [
-    'silson_disease_inpatient', 'silson_disease_outpatient',
-    'silson_injury_inpatient', 'silson_injury_outpatient',
-    'silson_3major',
+    'silson_disease_inpatient',  // 행12 질병입원의료비
+    'silson_disease_outpatient', // 행13 질병통원의료비
+    'silson_injury_inpatient',   // 행14 상해입원의료비
+    'silson_injury_outpatient',  // 행15 상해통원의료비
+    'silson_3major',             // 행16 3대비급여 의료비
+  ],
+
+  // ── 기타 ─────────────────────────────────────────────────────────────────
+  // 배상책임(59)
+  기타: [
+    'other_liability',        // 행59 일상생활배상책임
   ],
 }
 
@@ -430,8 +492,7 @@ export default function RemodelComparison({
                     style={{ accentColor: '#1a2744' }}
                   />
                   <span style={{ fontSize: 13, color: selected ? '#1a2744' : '#4b5563' }}>
-                    {/* 카테고리 접두어 제거하여 깔끔하게 표시 */}
-                    {label.replace(/^[^—]+ — /, '')}
+                    {label}
                   </span>
                 </label>
               )
