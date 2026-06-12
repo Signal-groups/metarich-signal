@@ -311,4 +311,3 @@ function EditableSection({ id, onDelete, children }: { id: string; onDelete: (id
     </div>
   )
 }
-}
