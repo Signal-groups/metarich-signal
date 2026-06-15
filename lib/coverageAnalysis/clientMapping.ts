@@ -84,6 +84,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['운전자벌금', '벌금'], rowKey: 'driver_fine' },
   { patterns: ['변호사선임', '법률비용', '소송법률'], rowKey: 'driver_lawyer' },
 
+  // ── 주요치료비 — 비급여 먼저 체크 (급여 패턴이 비급여도 매핑하는 것 방지) ──
+  { patterns: ['암주요치료비(비급여)', '암주요치료비비급여', '암비급여주요치료', '비급여암주요'], rowKey: 'cancer_major_nonbenefit' },
+  { patterns: ['암주요치료비(급여)', '암주요치료비급여', '급여암주요치료', '암주요치료비'], rowKey: 'cancer_major_benefit' },
+  { patterns: ['뇌심주요치료비', '순환계주요치료비', '뇌혈관주요치료비', '심혈관주요치료비', '순환계주요', '뇌심주요', '주요치료비'], rowKey: 'vascular_major' },
+
   // ── 기타 ─────────────────────────────────────────────────────────────
   { patterns: ['가족생활배상', '배상책임', '일상배상', '가족배상'], rowKey: 'other_liability' },
 ]

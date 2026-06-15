@@ -6,7 +6,7 @@ const COVERAGE_GROUPS = [
   { key: 'death',    label: '사망',     match: ['death_'],          recommend: 100_000_000 },
   { key: 'cancer',   label: '암(진단)', match: ['cancer_general'],  recommend: 30_000_000 },
   { key: 'brain',    label: '뇌졸중',   match: ['brain_stroke'],    recommend: 20_000_000 },
-  { key: 'heart',    label: '심근경색', match: ['heart_infarction'], recommend: 20_000_000 },
+  { key: 'heart',    label: '심장진단(허혈성 포함)', match: ['heart_infarction', 'heart_ischemic'], recommend: 20_000_000 },
   { key: 'surgery',  label: '수술비',   match: ['surgery_'],        recommend: 3_000_000 },
   { key: 'hospital', label: '입원일당', match: ['hospital_daily'],  recommend: 100_000 },
 ]
@@ -65,7 +65,7 @@ export default function AnalysisChart({ contracts }: { contracts: ProContract[] 
     ...group,
     amount: contracts.flatMap((contract) => contract.coverages)
       .filter((cov) => group.match.some((kw) => cov.rowKey.includes(kw)))
-      .reduce((sum, cov) => sum + Number(cov.amount || 0), 0),
+      .reduce((sum, cov) => sum + Number(cov.amount || 0) * 10000, 0), // cov.amount는 만원 단위 → 원으로 변환
   }))
   const coverageMax = Math.max(...coverageRows.flatMap((row) => [row.amount, row.recommend]), 1)
 

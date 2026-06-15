@@ -45,6 +45,13 @@ const templateNameFallback: Record<string, string> = {
   'ext-14': '설계사 업무 플랫폼형',
   'ext-15': '청구 컨시어지 서비스형',
   'ext-16': '전문가 매칭 상담형',
+  'ext-17': '보험증권 무료점검형',
+  'ext-18': '보험 우선순위 진단형',
+  'ext-19': '정착지원금 강조형',
+  'ext-20': '월소득 성장 리쿠르팅형',
+  'ext-21': '검증 조직 리쿠르팅형',
+  'ext-22': '지원금 진단 리쿠르팅형',
+  'ext-23': '커리어 스토리 리쿠르팅형',
 }
 
 const Preview = forwardRef<HTMLDivElement, PreviewProps>(function Preview(

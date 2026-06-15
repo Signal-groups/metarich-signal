@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메타리치 보험점검 | 무료 보험증권 정리</title>
+<meta name="description" content="내 보험이 지금 상황에 맞는지, 중복 보장과 누락 보장은 없는지 무료로 점검 신청하세요.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --navy:#1A2744;
+  --navy-mid:#2D4A8A;
+  --navy-deep:#0F1A30;
+  --gold:#C9A96E;
+  --gold-w:#E8A84B;
+  --cream:#FAFAF8;
+  --cream-m:#F5F2ED;
+  --cream-d:#EDE8E0;
+  --text:#111111;
+  --ink-text:#241C30;
+  --text-m:#4B5563;
+  --text-s:#8A94A6;
+  --white:#FFFFFF;
+  --kakao:#FEE500;
+  --kakao-t:#3C1E1E;
+  --green:#03C75A;
+  --red:#C8362F;
+  --purple-deep:#6E4DB6;
+  --r:16px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--cream);color:var(--text);overflow-x:hidden;word-break:keep-all;
+  overflow-wrap:break-word;-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.7;
+}
+a{text-decoration:none;color:inherit}
+button,input,select{font-family:inherit}
+.fu{opacity:0;transform:translateY(28px);transition:opacity .65s cubic-bezier(.16,1,.3,1),transform .65s cubic-bezier(.16,1,.3,1)}
+.fu.on{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
+
+.nav{
+  position:sticky;top:0;z-index:200;height:58px;padding:0 20px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--cream-d);
+}
+.nav-logo{font-weight:900;font-size:15px;letter-spacing:0;color:var(--navy)}
+.nav-logo em{color:var(--gold);font-style:normal}
+
+.hero-wrap{position:relative;overflow:hidden;min-height:620px;display:flex;align-items:center}
+.hero-bg{
+  position:absolute;inset:0;
+  background:url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1600&q=80') center 45%/cover;
+}
+.hero-ov{position:absolute;inset:0;background:linear-gradient(120deg,rgba(15,26,48,.9),rgba(15,26,48,.62))}
+.hero-in{position:relative;z-index:1;padding:90px 24px;text-align:center;max-width:780px;margin:0 auto;width:100%}
+.hero-pill{
+  display:inline-block;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.4);
+  border-radius:100px;padding:5px 18px;font-size:13px;font-weight:800;letter-spacing:.06em;
+  color:var(--gold);margin-bottom:28px;
+}
+.hero-h1{
+  font-weight:900;font-size:clamp(36px,7.5vw,72px);color:#fff;line-height:1.12;
+  letter-spacing:0;margin-bottom:18px;
+}
+.hero-h1 em{color:var(--gold);font-style:normal}
+.hero-sub{font-size:clamp(16px,2.4vw,20px);font-weight:700;color:rgba(255,255,255,.86);line-height:1.6;margin-bottom:8px}
+.hero-body{font-size:14px;color:rgba(255,255,255,.62);line-height:1.9;margin:0 auto 44px;max-width:520px}
+.hero-btns{display:flex;flex-direction:column;gap:10px;max-width:420px;margin:0 auto}
+.btn-lg,.btn-submit{
+  display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:54px;
+  padding:17px 20px;border-radius:13px;font-size:15px;font-weight:900;border:none;cursor:pointer;
+  transition:all .25s cubic-bezier(.16,1,.3,1);letter-spacing:0;
+}
+.btn-main{background:var(--gold-w);color:#211506;box-shadow:0 4px 20px rgba(232,168,75,.4)}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(232,168,75,.55)}
+.btn-ghost{background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.35);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.22);transform:translateY(-2px)}
+
+.trust-strip{background:var(--navy-deep);padding:18px 24px}
+.trust-in{max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:8px 24px;flex-wrap:wrap}
+.trust-item{font-size:13px;font-weight:800;color:rgba(255,255,255,.75);white-space:nowrap}
+.trust-item strong{color:var(--gold)}
+.trust-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.25);flex-shrink:0}
+@media(max-width:600px){.trust-dot{display:none}}
+
+.pain-sec{padding:80px 20px;background:var(--white)}
+.inner{max-width:1060px;margin:0 auto}
+.sec-label{font-size:13px;font-weight:800;letter-spacing:.1em;color:var(--gold);margin-bottom:10px}
+.sec-title{font-weight:900;font-size:clamp(24px,4vw,38px);color:var(--navy);line-height:1.25;letter-spacing:0;margin-bottom:48px}
+.pain-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:768px){.pain-grid{grid-template-columns:1fr}}
+@media(min-width:769px) and (max-width:1024px){.pain-grid{grid-template-columns:repeat(2,1fr)}}
+.pain-card{position:relative;overflow:hidden;border-radius:20px;min-height:320px;display:flex;flex-direction:column;justify-content:flex-end}
+.pain-card-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(2px) brightness(.38);transform:scale(1.06);transition:transform .5s ease}
+.pain-card:hover .pain-card-bg{transform:scale(1.09)}
+.pain-card-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,18,36,.95) 0%,rgba(10,18,36,.45) 60%,transparent 100%)}
+.pain-card-body{position:relative;z-index:1;padding:28px 26px}
+.pain-tag{display:inline-block;background:rgba(201,169,110,.25);border:1px solid rgba(201,169,110,.45);border-radius:100px;padding:3px 12px;font-size:13px;font-weight:800;color:var(--gold);margin-bottom:14px}
+.pain-q{font-size:clamp(16px,2.2vw,20px);font-weight:900;color:#fff;line-height:1.45;letter-spacing:0;margin-bottom:10px}
+.pain-a{font-size:13px;color:rgba(255,255,255,.68);line-height:1.75}
+
+.why-sec{background:var(--navy);padding:82px 20px;color:#fff}
+.why-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:center}
+.why-sec .sec-title{color:#fff;margin-bottom:22px}
+.why-copy{font-size:16px;line-height:1.9;color:rgba(255,255,255,.74);font-weight:600}
+.why-copy b{color:var(--gold);font-weight:900}
+.list{display:grid;gap:12px}
+.list-item{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:18px 20px}
+.list-item strong{display:block;color:#fff;font-size:16px;font-weight:900;margin-bottom:5px}
+.list-item span{font-size:13px;color:rgba(255,255,255,.66)}
+@media(max-width:800px){.why-grid{grid-template-columns:1fr}}
+
+.process-sec{padding:80px 20px;background:var(--cream)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step{background:#fff;border:1px solid var(--cream-d);border-radius:18px;padding:24px 22px;box-shadow:0 6px 22px rgba(26,39,68,.06)}
+.step-num{width:34px;height:34px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;margin-bottom:18px}
+.step h3{font-size:18px;color:var(--navy);font-weight:900;margin-bottom:8px}
+.step p{font-size:14px;color:var(--text-m);line-height:1.75}
+@media(max-width:768px){.steps{grid-template-columns:1fr}}
+
+.form-sec{padding:84px 20px;background:linear-gradient(180deg,#fff 0%,var(--cream-m) 100%)}
+.form-card{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--cream-d);border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(26,39,68,.13)}
+.form-head{background:var(--navy);padding:34px 28px;text-align:center;color:#fff}
+.form-head h2{font-size:clamp(24px,4vw,34px);line-height:1.3;font-weight:900;letter-spacing:0;margin-bottom:10px}
+.form-head p{font-size:14px;color:rgba(255,255,255,.72);line-height:1.7}
+.form-body{padding:28px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.row2{grid-template-columns:1fr}}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:13px;font-weight:900;color:var(--navy);margin-bottom:7px}
+.req{color:var(--gold-w)}
+.fg input,.fg select{
+  width:100%;height:52px;border:1.5px solid var(--cream-d);border-radius:12px;padding:0 15px;
+  font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none;transition:.2s;
+}
+.fg input:focus,.fg select:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(201,169,110,.16)}
+.fg input.err,.fg select.err{border-color:var(--red);box-shadow:0 0 0 4px rgba(200,54,47,.12)}
+.consent-box{border:1px solid var(--cream-d);border-radius:14px;background:var(--cream);padding:16px;margin:6px 0 20px}
+.consent-box.err{border-color:var(--red);background:#fff7f6}
+.consent-check{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.consent-check input{width:20px;height:20px;margin-top:2px;accent-color:var(--navy);flex-shrink:0}
+.consent-text{font-size:13px;font-weight:700;color:var(--text);line-height:1.55}
+.consent-sub{font-size:12px;color:var(--text-s);line-height:1.55;margin-top:5px}
+.btn-submit{background:var(--gold-w);color:#211506;box-shadow:0 8px 24px rgba(232,168,75,.32)}
+.btn-submit:disabled{opacity:.65;cursor:not-allowed}
+
+.legal{background:#F1EFF2;padding:30px 22px 36px;border-top:1px solid #E2DEE8;text-align:left;}
+.legal .badge{display:inline-block;background:#E7E2EF;color:var(--purple-deep);
+     font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:5px 12px;border-radius:999px;}
+.legal h4{margin-top:12px;font-weight:900;font-size:14.5px;letter-spacing:-.01em;color:var(--ink-text);}
+.legal .rule{height:2px;background:#2C2436;margin:11px 0 14px;}
+.legal .sec{margin-bottom:14px;}
+.legal .sec .h{display:flex;gap:5px;font-weight:700;font-size:11.5px;color:var(--ink-text);margin-bottom:5px;}
+.legal .sec .h::before{content:"※";color:var(--purple-deep);}
+.legal .sec p{font-size:11px;line-height:1.6;color:#5A5365;font-weight:400;}
+.legal .sec p .n{color:var(--purple-deep);font-weight:700;}
+.legal .red{color:var(--red);font-weight:700;font-size:11px;line-height:1.5;margin:14px 0 8px;}
+.legal .simui{color:#776E83;font-size:11px;font-weight:500;line-height:1.5;}
+.legal .black{background:#18131F;border-radius:12px;padding:18px 18px;margin-top:18px;
+     display:flex;flex-direction:column;gap:5px;}
+.legal .black .name{color:#fff;font-weight:900;font-size:16px;letter-spacing:-.01em;margin-bottom:4px;}
+.legal .black .r{color:rgba(255,255,255,.74);font-size:11px;line-height:1.4;font-weight:400;}
+
+footer{background:var(--navy-deep);padding:36px 20px 90px;color:rgba(255,255,255,.7);text-align:center}
+.ft-logo{font-size:18px;font-weight:900;color:#fff;letter-spacing:0;margin-bottom:12px}
+.ft-logo em{font-style:normal;color:var(--gold)}
+.ft-info{font-size:12px;color:rgba(255,255,255,.45);line-height:1.6}
+
+.float-btn{position:fixed;left:16px;right:16px;bottom:16px;z-index:180;max-width:440px;margin:0 auto;background:var(--gold-w);color:#211506;border:none;border-radius:14px;padding:17px 22px;font-size:16px;font-weight:900;box-shadow:0 10px 32px rgba(26,39,68,.24);cursor:pointer;transition:.25s}
+.float-btn.hidden{opacity:0;transform:translateY(80px);pointer-events:none}
+
+.modal-wrap{position:fixed;inset:0;background:rgba(10,18,36,.62);z-index:300;display:none;align-items:center;justify-content:center;padding:24px}
+.modal-wrap.show{display:flex}
+.modal{background:#fff;border-radius:22px;padding:34px 26px;text-align:center;max-width:360px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.25)}
+.modal-icon{width:64px;height:64px;border-radius:50%;background:var(--navy);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 18px;font-weight:900}
+.modal h3{font-size:24px;font-weight:900;color:var(--navy);margin-bottom:8px}
+.modal p{font-size:14px;color:var(--text-m);line-height:1.7;margin-bottom:22px}
+.modal-btn{width:100%;height:48px;border:none;border-radius:12px;background:var(--navy);color:#fff;font-weight:900;font-size:15px;cursor:pointer}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-logo">METARICH <em>SIGNAL GROUP</em></div>
+</nav>
+
+<section class="hero-wrap">
+  <div class="hero-bg"></div>
+  <div class="hero-ov"></div>
+  <div class="hero-in">
+    <span class="hero-pill fu">무료 보험증권 정리</span>
+    <h1 class="hero-h1 fu d1">보험료는 매달 나가는데<br><em>내 보장</em>은 알고 계신가요?</h1>
+    <p class="hero-sub fu d2">중복 보장, 빠진 보장, 오래된 보장까지<br>한 번에 정리해드립니다.</p>
+    <p class="hero-body fu d3">새로 가입하라는 이야기를 먼저 하지 않습니다. 지금 가진 보험이 내 상황에 맞는지부터 차분히 확인합니다.</p>
+    <div class="hero-btns fu d3">
+      <a class="btn-lg btn-main" href="#formSection">무료 보험점검 신청하기</a>
+      <a class="btn-lg btn-ghost" href="#checkPoint">점검 포인트 보기</a>
+    </div>
+  </div>
+</section>
+
+<section class="trust-strip">
+  <div class="trust-in">
+    <div class="trust-item"><strong>무료</strong> 보험증권 정리</div>
+    <span class="trust-dot"></span>
+    <div class="trust-item"><strong>24시간 내</strong> 직접 연락</div>
+    <span class="trust-dot"></span>
+    <div class="trust-item"><strong>중복·누락</strong> 보장 확인</div>
+    <span class="trust-dot"></span>
+    <div class="trust-item"><strong>메타리치</strong> 보험대리점</div>
+  </div>
+</section>
+
+<section class="pain-sec" id="checkPoint">
+  <div class="inner">
+    <div class="sec-label fu">CHECK POINT</div>
+    <h2 class="sec-title fu d1">보험을 오래 유지할수록<br>다시 봐야 하는 이유가 있습니다.</h2>
+    <div class="pain-grid">
+      <div class="pain-card fu">
+        <div class="pain-card-bg" style="background-image:url('https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=900&q=80')"></div>
+        <div class="pain-card-ov"></div>
+        <div class="pain-card-body">
+          <span class="pain-tag">01 상황 변화</span>
+          <div class="pain-q">가입할 때와 지금의 생활이 달라졌다면?</div>
+          <p class="pain-a">결혼, 출산, 이직, 소득 변화가 생기면 필요한 보장도 달라집니다.</p>
+        </div>
+      </div>
+      <div class="pain-card fu d1">
+        <div class="pain-card-bg" style="background-image:url('https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=900&q=80')"></div>
+        <div class="pain-card-ov"></div>
+        <div class="pain-card-body">
+          <span class="pain-tag">02 중복 보장</span>
+          <div class="pain-q">같은 보장을 여러 번 내고 있지는 않을까요?</div>
+          <p class="pain-a">보장은 비슷한데 보험료만 겹치는 항목이 없는지 확인합니다.</p>
+        </div>
+      </div>
+      <div class="pain-card fu d2">
+        <div class="pain-card-bg" style="background-image:url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=900&q=80')"></div>
+        <div class="pain-card-ov"></div>
+        <div class="pain-card-body">
+          <span class="pain-tag">03 누락 보장</span>
+          <div class="pain-q">정작 필요할 때 비어 있는 보장은 없을까요?</div>
+          <p class="pain-a">간병, 진단, 수술, 입원처럼 놓치기 쉬운 보장 흐름을 함께 봅니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="why-sec">
+  <div class="inner why-grid">
+    <div class="fu">
+      <div class="sec-label">WHY CHECK</div>
+      <h2 class="sec-title">좋은 보험보다 먼저,<br>나에게 맞는 보험인지 봐야 합니다.</h2>
+      <p class="why-copy">보험은 한 번 가입하고 끝나는 상품이 아닙니다. <b>내 상황, 가족 구성, 소득, 병력, 기존 보장</b>에 따라 점검 기준이 달라집니다.</p>
+    </div>
+    <div class="list">
+      <div class="list-item fu d1"><strong>보험료 부담 확인</strong><span>지금 보험료가 소득 대비 무리 없는지 확인합니다.</span></div>
+      <div class="list-item fu d2"><strong>보장 구조 확인</strong><span>진단비, 실손, 수술비, 입원비의 흐름을 정리합니다.</span></div>
+      <div class="list-item fu d3"><strong>유지·조정 방향 안내</strong><span>무조건 해지나 추가 가입이 아닌 유지 기준부터 안내합니다.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="process-sec">
+  <div class="inner">
+    <div class="sec-label fu">PROCESS</div>
+    <h2 class="sec-title fu d1">신청 후 이렇게 진행됩니다.</h2>
+    <div class="steps">
+      <div class="step fu"><div class="step-num">1</div><h3>신청 접수</h3><p>이름과 연락처를 남겨주시면 담당자가 직접 확인합니다.</p></div>
+      <div class="step fu d1"><div class="step-num">2</div><h3>현재 상황 확인</h3><p>보유 보험과 고민되는 부분을 먼저 듣고 정리합니다.</p></div>
+      <div class="step fu d2"><div class="step-num">3</div><h3>점검 방향 안내</h3><p>중복, 누락, 유지 필요성을 기준으로 이해하기 쉽게 안내합니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="form-sec" id="formSection">
+  <div class="form-card fu">
+    <div class="form-head">
+      <h2>무료 보험점검 신청</h2>
+      <p>아래 정보를 남겨주시면 24시간 내 직접 연락드립니다.</p>
+    </div>
+    <div class="form-body">
+      <form id="landingForm" novalidate>
+        <div class="row2">
+          <div class="fg">
+            <label for="fname">성함 <span class="req">*</span></label>
+            <input type="text" id="fname" name="name" placeholder="성함" autocomplete="name" required>
+          </div>
+          <div class="fg">
+            <label for="fphone">연락처 <span class="req">*</span></label>
+            <input type="tel" id="fphone" name="phone" placeholder="010-0000-0000" autocomplete="tel" required>
+          </div>
+        </div>
+        <div class="fg">
+          <label for="ftype">상담 유형 <span class="req">*</span></label>
+          <select id="ftype" name="type" required>
+            <option value="">선택해주세요</option>
+            <option value="보험증권 정리">보험증권 정리</option>
+            <option value="중복 보장 점검">중복 보장 점검</option>
+            <option value="누락 보장 점검">누락 보장 점검</option>
+            <option value="보험료 부담 점검">보험료 부담 점검</option>
+            <option value="기타 상담">기타 상담</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label for="fage">연령대</label>
+          <select id="fage" name="age">
+            <option value="">선택해주세요</option>
+            <option>20대</option>
+            <option>30대</option>
+            <option>40대</option>
+            <option>50대</option>
+            <option>60대 이상</option>
+          </select>
+        </div>
+        <div class="consent-box" id="consentBox">
+          <label class="consent-check" for="consentCheck">
+            <input type="checkbox" id="consentCheck">
+            <div>
+              <p class="consent-text">보험점검 상담 연락을 위한 개인정보 수집·이용에 동의합니다. <span class="req">(필수)</span></p>
+              <p class="consent-sub">수집 항목: 성함, 연락처 · 수집 목적: 보험점검 상담 제공 · 보유 기간: 상담 완료 후 즉시 폐기</p>
+            </div>
+          </label>
+        </div>
+        <button type="submit" class="btn-submit" id="sbtn">무료 보험점검 신청하기</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+  <!-- ============ 7. LEGAL FOOTER ============ -->
+  <footer class="legal" data-screen-label="08 금소법 고지" style="background-color: rgb(245, 244, 246); color: rgba(250, 2, 2, 0.976)">
+    <span class="badge">안내 사항</span>
+    <h4>금융 소비자 보호에 관한 법률 필수안내사항</h4>
+    <div class="rule"></div>
+    <div class="sec">
+      <div class="h">승환계약 불이익사항 안내</div>
+      <p style="color: rgb(248, 0, 0)">보험계약자가 기존 보험계약을 해지하고<br>새로운 보험계약을 체결하는 과정에서<br>
+      <span class="n">①</span> 질병 이력, 연령증가 등으로 가입이 거절되거나 보험료가 인상될 수 있습니다.<br>
+      <span class="n">②</span> 가입 상품에 따라 새로운 면책기간 적용 및 보장 제한 등 기타 불이익이 발생할 수 있습니다.</p>
+    </div>
+    <div class="sec">
+      <div class="h">모집종사자 개인의견</div>
+      <p>상기 내용은 모집종사자 개인의 의견이며,<br>보험 계약 체결에 따른 이익 또는 손실은<br>보험계약자 및 피보험자에게 귀속됩니다.</p>
+    </div>
+    <p class="red">본 광고는 광고심의 기준을 준수하였으며, 유효기간은 심의일로부터 1년입니다.</p>
+    <p class="simui">(주)메타리치 심의필 26050000호(0000.00.00~0000.00.00)</p>
+    <div class="black">
+      <div class="name">보험설계사 배진우</div>
+      <div class="r">(주)메타리치 보험대리점</div>
+      <div class="r">보험대리점 등록번호 : 2023070016</div>
+      <div class="r">손해/생명 협회 등록번호 : 20151185060013</div>
+    </div>
+  </footer>
+
+<footer>
+  <div class="ft-logo">METARICH <em>SIGNAL GROUP</em></div>
+  <p class="ft-info">보험설계사 배진우 · (주)메타리치 보험대리점<br>보험대리점 등록번호: 2023070016 · 손해/생명 협회 등록번호: 20151185060013</p>
+</footer>
+
+<button class="float-btn" id="floatBtn" onclick="scrollToForm()">무료 보험점검 신청하기</button>
+
+<div class="modal-wrap" id="successModal">
+  <div class="modal">
+    <div class="modal-icon">✓</div>
+    <h3>신청 완료</h3>
+    <p>보험점검 신청이 접수되었습니다.<br><strong>24시간 내</strong> 직접 연락드리겠습니다.</p>
+    <button class="modal-btn" onclick="closeModal()">확인</button>
+  </div>
+</div>
+
+<script>
+var io = new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){ if(entry.isIntersecting) entry.target.classList.add('on'); });
+},{threshold:.08});
+document.querySelectorAll('.fu').forEach(function(el){ io.observe(el); });
+
+var floatBtn = document.getElementById('floatBtn');
+var formSection = document.getElementById('formSection');
+if(floatBtn && formSection){
+  var fObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){ floatBtn.classList.toggle('hidden',entry.isIntersecting); });
+  },{threshold:.1});
+  fObs.observe(formSection);
+}
+function scrollToForm(){ if(formSection) formSection.scrollIntoView({behavior:'smooth',block:'start'}); }
+function closeModal(){document.getElementById('successModal').classList.remove('show');}
+
+var phoneInput = document.getElementById('fphone');
+if(phoneInput){
+  phoneInput.addEventListener('input',function(){
+    var v=this.value.replace(/\D/g,'').slice(0,11);
+    if(v.length>7) v=v.slice(0,3)+'-'+v.slice(3,7)+'-'+v.slice(7);
+    else if(v.length>3) v=v.slice(0,3)+'-'+v.slice(3);
+    this.value=v;
+    this.classList.remove('err');
+  });
+}
+['fname','ftype'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el) el.addEventListener('input',function(){ this.classList.remove('err'); });
+  if(el) el.addEventListener('change',function(){ this.classList.remove('err'); });
+});
+var consentCheck=document.getElementById('consentCheck');
+if(consentCheck){
+  consentCheck.addEventListener('change',function(){
+    document.getElementById('consentBox').classList.toggle('err',!this.checked);
+  });
+}
+var landingForm=document.getElementById('landingForm');
+if(landingForm){
+  landingForm.addEventListener('submit',function(e){
+    e.preventDefault();
+    var name=document.getElementById('fname');
+    var phone=document.getElementById('fphone');
+    var type=document.getElementById('ftype');
+    var consent=document.getElementById('consentCheck');
+    var consentBox=document.getElementById('consentBox');
+    var ok=true;
+    if(name && name.value.trim().length<2){name.classList.add('err');ok=false}
+    if(phone && phone.value.replace(/\D/g,'').length<10){phone.classList.add('err');ok=false}
+    if(type && !type.value){type.classList.add('err');ok=false}
+    if(consent && !consent.checked){consentBox.classList.add('err');ok=false}
+    if(!ok){ var first=document.querySelector('.err'); if(first) first.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    document.getElementById('successModal').classList.add('show');
+    this.reset();
+  });
+}
+var successModal=document.getElementById('successModal');
+if(successModal) successModal.addEventListener('click',function(e){if(e.target===this)closeModal();});
+</script>
+</body>
+</html>

@@ -20,6 +20,7 @@ import ExcelDownloadBtn from './ExcelDownloadBtn'
 import PdfExportBtn from './PdfExportBtn'
 import SessionList from './SessionList'
 import BenchmarkSettings from './BenchmarkSettings'
+import BenchmarkSummary from './BenchmarkSummary'
 
 const STORAGE_KEY   = 'coverage-pro-draft-session'
 const SESSION_ID_KEY = 'coverage-pro-session-id'
@@ -624,6 +625,12 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
           {/* ══════════════ STEP 7 — 출력 · 다운로드 ════════════════ */}
           {currentStep === 7 && (
             <div style={{ display: 'grid', gap: 14 }}>
+              {/* 기준금액 대비 현황 */}
+              <BenchmarkSummary
+                contracts={contracts}
+                onOpenSettings={() => setShowBenchmark(true)}
+              />
+
               {/* 출력 형식 선택 */}
               <div className="coverage-pro-card coverage-pro-card-pad">
                 <div className="coverage-pro-section-title">출력 형식 선택</div>

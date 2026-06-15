@@ -142,5 +142,68 @@
     "style": "emerald",
     "dp_remaining": 0,
     "size_kb": 185
+  },
+  {
+    "id": "ext-17",
+    "file": "template-17.html",
+    "name": "보험증권 무료점검형",
+    "category": "보장분석",
+    "style": "checkup-cream",
+    "dp_remaining": 0,
+    "size_kb": 25
+  },
+  {
+    "id": "ext-18",
+    "file": "template-18.html",
+    "name": "보험 우선순위 진단형",
+    "category": "보험상담",
+    "style": "priority-dark",
+    "dp_remaining": 0,
+    "size_kb": 29
+  },
+  {
+    "id": "ext-19",
+    "file": "template-19.html",
+    "name": "정착지원금 강조형",
+    "category": "리쿠르팅",
+    "style": "recruit-support",
+    "dp_remaining": 0,
+    "size_kb": 30
+  },
+  {
+    "id": "ext-20",
+    "file": "template-20.html",
+    "name": "월소득 성장 리쿠르팅형",
+    "category": "리쿠르팅",
+    "style": "recruit-income",
+    "dp_remaining": 0,
+    "size_kb": 29
+  },
+  {
+    "id": "ext-21",
+    "file": "template-21.html",
+    "name": "검증 조직 리쿠르팅형",
+    "category": "리쿠르팅",
+    "style": "recruit-proof",
+    "dp_remaining": 0,
+    "size_kb": 27
+  },
+  {
+    "id": "ext-22",
+    "file": "template-22.html",
+    "name": "지원금 진단 리쿠르팅형",
+    "category": "리쿠르팅",
+    "style": "recruit-diagnosis",
+    "dp_remaining": 0,
+    "size_kb": 25
+  },
+  {
+    "id": "ext-23",
+    "file": "template-23.html",
+    "name": "커리어 스토리 리쿠르팅형",
+    "category": "리쿠르팅",
+    "style": "recruit-story",
+    "dp_remaining": 0,
+    "size_kb": 25
   }
 ]

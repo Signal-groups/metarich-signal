@@ -11,3 +11,4 @@
 ✓ Ready in 4.1s
   Using external babel configuration from C:\Users\hoo\Documents\metarich-signal-projec\insurance-manager\.babelrc
 ○ Compiling /claim-documents ...
+ GET /claim-documents 200 in 7.0s (compile: 6.6s, render: 320ms)
