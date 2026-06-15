@@ -92,26 +92,10 @@ function BRow({
                 background: c.bar, borderRadius: 2, transition: 'width 0.4s',
               }} />
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                color: c.badge, background: c.badgeBg,
-                padding: '1px 6px', borderRadius: 10,
-              }}>
-                {pct}% {c.text}
-              </span>
-            </div>
+
           </>
         )}
-        {pct === null && (
-          <span style={{
-            fontSize: 10, fontWeight: 700, textAlign: 'center',
-            color: c.badge, background: c.badgeBg,
-            padding: '1px 6px', borderRadius: 10,
-          }}>
-            {c.text}
-          </span>
-        )}
+
       </div>
     </div>
   )

@@ -128,8 +128,6 @@ export const CONCEPT_PALETTES: Record<LandingConcept, ConceptPalette> = {
 export type LandingTemplateId =
   | 'ins-navy' | 'ins-blue' | 'ins-purple' | 'ins-green'
   | 'ins-consult-real' | 'ins-recruit-real' | 'ins-consult-simple' | 'ins-recruit-simple'
-  | 'ext-01' | 'ext-02' | 'ext-03' | 'ext-04' | 'ext-05' | 'ext-06' | 'ext-07' | 'ext-08'
-  | 'ext-09' | 'ext-10' | 'ext-11' | 'ext-12' | 'ext-13' | 'ext-14' | 'ext-15' | 'ext-16'
   | 'ext-17' | 'ext-18' | 'ext-19' | 'ext-20' | 'ext-21' | 'ext-22' | 'ext-23'
 
 export interface LandingTemplateMeta {
@@ -149,22 +147,7 @@ export const LANDING_TEMPLATES: LandingTemplateMeta[] = [
   { id: 'ins-recruit-real',   name: '리쿠르팅 풀버전',   category: '보험 전용', accentColor: '#1a3a9f', type: 'external', file: '/branding-templates/ins-recruit-real.html' },
   { id: 'ins-consult-simple', name: '보험상담 심플',      category: '보험 전용', accentColor: '#1d4ed8', type: 'external', file: '/branding-templates/ins-consult-simple.html' },
   { id: 'ins-recruit-simple', name: '리쿠르팅 심플',      category: '보험 전용', accentColor: '#1e3a8a', type: 'external', file: '/branding-templates/ins-recruit-simple.html' },
-  { id: 'ext-01', name: '프리미엄 보험상담형', category: '보험상담',   accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-01.html' },
-  { id: 'ext-02', name: '보험금 청구 도움형',  category: '보험청구',   accentColor: '#0a0f1e', type: 'external', file: '/branding-templates/template-02.html' },
-  { id: 'ext-03', name: '보험 교육 세미나형',  category: '교육/전문',  accentColor: '#e8f0fe', type: 'external', file: '/branding-templates/template-03.html' },
-  { id: 'ext-04', name: '연금·노후 설계형',   category: '연금/은퇴',  accentColor: '#0a0820', type: 'external', file: '/branding-templates/template-04.html' },
-  { id: 'ext-05', name: '보장분석 리포트형',  category: '보장분석',   accentColor: '#f5f8fc', type: 'external', file: '/branding-templates/template-05.html' },
-  { id: 'ext-06', name: '보험 리모델링 제안형', category: '리모델링', accentColor: '#fffaf5', type: 'external', file: '/branding-templates/template-06.html' },
-  { id: 'ext-07', name: '개인 홈페이지 프로필형', category: '명함/프로필', accentColor: '#f9f7f4', type: 'external', file: '/branding-templates/template-07.html' },
-  { id: 'ext-08', name: '무료 보장분석 임팩트형', category: '보험상담', accentColor: '#f5f0eb', type: 'external', file: '/branding-templates/template-08.html' },
-  { id: 'ext-09', name: '보험료 절감 랜딩형', category: '리모델링',   accentColor: '#0a0d12', type: 'external', file: '/branding-templates/template-09.html' },
-  { id: 'ext-10', name: '무료 보장진단 전문형', category: '보장분석', accentColor: '#0d1424', type: 'external', file: '/branding-templates/template-10.html' },
-  { id: 'ext-11', name: '보험 콘텐츠 광고형', category: '보험상담',   accentColor: '#0f0820', type: 'external', file: '/branding-templates/template-11.html' },
-  { id: 'ext-12', name: '연금 재무설계 데이터형', category: '연금/은퇴', accentColor: '#f5f8fc', type: 'external', file: '/branding-templates/template-12.html' },
-  { id: 'ext-13', name: '보험청구 컨설팅형',  category: '보험청구',   accentColor: '#f7f7f4', type: 'external', file: '/branding-templates/template-13.html' },
-  { id: 'ext-14', name: '설계사 업무 플랫폼형', category: '리쿠르팅', accentColor: '#f5f8ff', type: 'external', file: '/branding-templates/template-14.html' },
-  { id: 'ext-15', name: '청구 컨시어지 서비스형', category: '보험청구', accentColor: '#e6faf6', type: 'external', file: '/branding-templates/template-15.html' },
-  { id: 'ext-16', name: '전문가 매칭 상담형', category: '보험상담',   accentColor: '#f5fcfa', type: 'external', file: '/branding-templates/template-16.html' },
+  // 예전 샘플(ext-01~ext-16)은 편집 안정성이 낮아 선택 목록에서 제외.
   { id: 'ext-17', name: '보험증권 무료점검형', category: '보장분석', accentColor: '#FAFAF8', type: 'external', file: '/branding-templates/template-17.html' },
   { id: 'ext-18', name: '보험 우선순위 진단형', category: '보험상담', accentColor: '#0f172a', type: 'external', file: '/branding-templates/template-18.html' },
   { id: 'ext-19', name: '정착지원금 강조형', category: '리쿠르팅', accentColor: '#071b3d', type: 'external', file: '/branding-templates/template-19.html' },

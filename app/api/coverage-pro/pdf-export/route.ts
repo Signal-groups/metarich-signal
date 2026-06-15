@@ -9,6 +9,7 @@ type PdfExportInput = {
   customerName: string
   contracts: ProContract[]
   type: 'full' | 'key'
+  selectedImages?: string[]
 }
 
 export async function POST(req: NextRequest) {
@@ -31,7 +32,7 @@ function sumAmount(contracts: ProContract[], ...rowKeys: string[]): number {
   return contracts
     .flatMap((c) => c.coverages)
     .filter((cov) => rowKeys.includes(cov.rowKey))
-    .reduce((sum, cov) => sum + Number(cov.amount || 0), 0)
+    .reduce((sum, cov) => sum + Number(cov.amount || 0) * 10000, 0)
 }
 
 function formatWon(v: number): string {
@@ -49,6 +50,54 @@ function formatMonthly(v: number): string {
 function escHtml(s: string | number | undefined): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
+
+// 방사형 차트 SVG
+function radarChartSvg(contracts: ProContract[]): string {
+  const AXES = [
+    { label: '암진단비', keys: ['cancer_general'],                                                   rec: 50_000_000 },
+    { label: '뇌진단비', keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],                 rec: 40_000_000 },
+    { label: '심장진단비', keys: ['heart_acute_mi', 'heart_ischemic'],                      rec: 40_000_000 },
+    { label: '수술비', keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],                    rec:  5_000_000 },
+    { label: '실손', keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],                       rec: 50_000_000 },
+    { label: '사망', keys: ['death_general', 'death_disease', 'death_injury'],                           rec: 100_000_000 },
+  ]
+  const N = AXES.length
+  const cx = 140, cy = 140, R = 100
+  const ratios = AXES.map(a => Math.min(1, sumAmount(contracts, ...a.keys) / a.rec))
+
+  function pt(ratio: number, i: number): [number, number] {
+    const angle = (i * 2 * Math.PI / N) - Math.PI / 2
+    return [cx + ratio * R * Math.cos(angle), cy + ratio * R * Math.sin(angle)]
+  }
+
+  const gridLines = [0.25, 0.5, 0.75, 1.0].map(r => {
+    const pts = Array.from({length: N}, (_, i) => pt(r, i))
+    return `<polygon points="${pts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`
+  }).join('')
+
+  const axisLines = Array.from({length: N}, (_, i) => {
+    const [x, y] = pt(1, i)
+    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`
+  }).join('')
+
+  const actualPts = Array.from({length: N}, (_, i) => pt(ratios[i], i))
+  const actualPolygon = `<polygon points="${actualPts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')}" fill="rgba(26,39,68,0.15)" stroke="#1a2744" stroke-width="2"/>`
+  const dots = actualPts.map(([x,y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#1a2744"/>`).join('')
+
+  const labels = AXES.map((a, i) => {
+    const angle = (i * 2 * Math.PI / N) - Math.PI / 2
+    const lr = R + 24
+    const lx = cx + lr * Math.cos(angle)
+    const ly = cy + lr * Math.sin(angle)
+    const anchor = Math.cos(angle) > 0.15 ? 'start' : Math.cos(angle) < -0.15 ? 'end' : 'middle'
+    const pct = Math.round(ratios[i] * 100)
+    return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" font-size="10" fill="#1a2744" font-weight="700">${escHtml(a.label)}</text><text x="${lx.toFixed(1)}" y="${(ly+12).toFixed(1)}" text-anchor="${anchor}" font-size="9" fill="#64748b">${pct}%</text>`
+  }).join('')
+
+  return `<svg viewBox="0 0 280 280" width="220" height="220">${gridLines}${axisLines}${actualPolygon}${dots}${labels}</svg>`
+}
+
+
 
 // 보험 유형 분류 (보장성 / 저축성 / 실손)
 function classifyType(contract: ProContract): '보장성' | '저축성' | '실손' {
@@ -108,7 +157,7 @@ function buildRecommendations(contracts: ProContract[]) {
 
 // ── 메인 HTML 생성 ────────────────────────────────────────────────────────
 function buildPrintHtml(input: PdfExportInput): string {
-  const { customerName, contracts } = input
+  const { customerName, contracts, selectedImages = [] } = input
   const isKey = input.type === 'key'
 
   const totalPremium   = contracts.reduce((sum, c) => sum + Number(c.monthlyPremium || 0), 0)
@@ -193,7 +242,10 @@ function buildPrintHtml(input: PdfExportInput): string {
   // 회사별 비교표 (담보 × 보험사)
   const KEY_ROWS: Array<{ label: string; rowKey: string }> = [
     { label: '암진단', rowKey: 'cancer_general' },
-    { label: '뇌졸증진단', rowKey: 'brain_stroke' },
+    { label: '뇌혈관질환진단', rowKey: 'brain_vascular' },
+    { label: '뇌졸중진단', rowKey: 'brain_stroke' },
+    { label: '뇌출혈진단', rowKey: 'brain_hemorrhage' },
+    { label: '허혈성심장진단', rowKey: 'heart_ischemic' },
     { label: '급성심근경색', rowKey: 'heart_acute_mi' },
     { label: '수술비(질병)', rowKey: 'surgery_disease' },
     { label: '실손입원(질병)', rowKey: 'silson_disease_inpatient' },
@@ -214,12 +266,12 @@ function buildPrintHtml(input: PdfExportInput): string {
   const tableRows = KEY_ROWS.map(({ label, rowKey }) => {
     const cells = displayContracts.map((c) => {
       const cov = c.coverages.find((cv) => cv.rowKey === rowKey)
-      const amt = cov ? Number(cov.amount) : 0
+      const amt = cov ? Number(cov.amount) * 10000 : 0
       return `<td>${amt ? formatWon(amt) : '<span class="empty-cell">-</span>'}</td>`
     }).join('')
     const total = displayContracts.reduce((sum, c) => {
       const cov = c.coverages.find((cv) => cv.rowKey === rowKey)
-      return sum + (cov ? Number(cov.amount) : 0)
+      return sum + (cov ? Number(cov.amount) * 10000 : 0)
     }, 0)
     return `<tr>
       <td class="row-label">${escHtml(label)}</td>
@@ -337,6 +389,11 @@ function buildPrintHtml(input: PdfExportInput): string {
     .empty-cell{color:#94a3b8}
     .compare-table td{text-align:right}
 
+    /* ─ 이미지 그리드 */
+    .img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .img-wrap{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fafaf8}
+    .img-wrap img{width:100%;height:auto;display:block}
+
     /* ─ 인쇄 */
     .print-bar{position:sticky;top:0;display:flex;justify-content:flex-end;gap:8px;padding:8px 0;background:#fff;z-index:10}
     .print-bar button{background:#1a2744;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
@@ -366,10 +423,18 @@ function buildPrintHtml(input: PdfExportInput): string {
     </div>
   </div>
 
-  <!-- 1. 주요 보장 현황 게이지 -->
+  <!-- 1. 주요 보장 현황 게이지 + 방사형 차트 -->
   <div class="section">
     <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
-    <div class="gauge-grid">${gaugesHtml}</div>
+    <div style="display:flex;gap:20px;align-items:flex-start;background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:16px">
+      <div style="flex:1">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${gaugesHtml}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em">보장 달성도</div>
+        ${radarChartSvg(contracts)}
+      </div>
+    </div>
   </div>
 
   <!-- 2. 치료비 카드 -->
@@ -437,6 +502,15 @@ function buildPrintHtml(input: PdfExportInput): string {
       </table>
     </div>` : '<div style="color:#94a3b8;padding:20px;text-align:center">계약 데이터가 없습니다.</div>'}
   </div>
+
+  \${selectedImages.length > 0 ? \`
+  <!-- 6. 자료실 이미지 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">6</span>참고 자료</div>
+    <div class="img-grid">
+      \${selectedImages.map(src => \`<div class="img-wrap"><img src="\${escHtml(src)}" alt="참고자료" loading="lazy"/></div>\`).join('')}
+    </div>
+  </div>\` : ''}
 
   <div style="margin-top:28px;padding-top:14px;border-top:1px solid #e2e8f0;text-align:center;color:#94a3b8;font-size:11px">
     본 분석 리포트는 고객 상담용 참고 자료이며, 보험 계약의 법적 효력을 대체하지 않습니다.<br/>

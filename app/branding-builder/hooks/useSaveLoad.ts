@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useMemo, useState } from 'react'
-import type { BrandingState } from '../templates/types'
+import { DEFAULT_STATE, LANDING_TEMPLATES, type BrandingState } from '../templates/types'
 
 export interface BrandingSaveSlot {
   id: string
@@ -13,6 +13,16 @@ export interface BrandingSaveSlot {
 const safeName = (name: string) => name.trim() || '이름없음'
 const latestKey = (name: string) => `branding3_${safeName(name)}_latest`
 const listKey = (name: string) => `branding3_${safeName(name)}_list`
+const validLandingTemplateIds = new Set(LANDING_TEMPLATES.map((template) => template.id))
+
+function normalizeLoadedState(loaded: BrandingState): BrandingState {
+  if (validLandingTemplateIds.has(loaded.landingTemplateId)) return loaded
+  return {
+    ...loaded,
+    landingTemplateId: DEFAULT_STATE.landingTemplateId,
+    deletedSecs: [],
+  }
+}
 
 export function useSaveLoad(state: BrandingState, setState: React.Dispatch<React.SetStateAction<BrandingState>>) {
   const [userName, setUserName] = useState('')
@@ -25,8 +35,11 @@ export function useSaveLoad(state: BrandingState, setState: React.Dispatch<React
       if (typeof window === 'undefined') return []
       try {
         const parsed = JSON.parse(window.localStorage.getItem(listKey(name)) || '[]') as BrandingSaveSlot[]
-        setSlots(Array.isArray(parsed) ? parsed : [])
-        return Array.isArray(parsed) ? parsed : []
+        const normalized = Array.isArray(parsed)
+          ? parsed.map((slot) => ({ ...slot, state: normalizeLoadedState(slot.state) }))
+          : []
+        setSlots(normalized)
+        return normalized
       } catch {
         setSlots([])
         return []
@@ -41,7 +54,7 @@ export function useSaveLoad(state: BrandingState, setState: React.Dispatch<React
       try {
         const raw = window.localStorage.getItem(latestKey(name))
         if (!raw) return false
-        const parsed = JSON.parse(raw) as BrandingState
+        const parsed = normalizeLoadedState(JSON.parse(raw) as BrandingState)
         setState(parsed)
         return true
       } catch {
@@ -97,9 +110,10 @@ export function useSaveLoad(state: BrandingState, setState: React.Dispatch<React
     (slotId: string) => {
       const slot = slots.find((item) => item.id === slotId)
       if (!slot) return
-      setState(slot.state)
+      const normalizedState = normalizeLoadedState(slot.state)
+      setState(normalizedState)
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(latestKey(storageName), JSON.stringify(slot.state))
+        window.localStorage.setItem(latestKey(storageName), JSON.stringify(normalizedState))
       }
     },
     [setState, slots, storageName],
