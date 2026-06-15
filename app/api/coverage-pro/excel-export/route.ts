@@ -12,8 +12,9 @@ import type { ExcelExportInput } from '../../../../lib/coverageAnalysis/types'
 
 export async function POST(req: NextRequest) {
   if (!templateExists()) {
+    console.error('[excel-export] template not found at expected path')
     return NextResponse.json(
-      { error: '엑셀 템플릿 파일을 찾을 수 없습니다.' },
+      { error: '엑셀 템플릿 파일을 찾을 수 없습니다. (서버 경로 확인 필요)' },
       { status: 500 }
     )
   }
@@ -46,9 +47,10 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('[excel-export] error:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[excel-export] error:', msg)
     return NextResponse.json(
-      { error: '엑셀 생성 중 오류가 발생했습니다.' },
+      { error: '엑셀 생성 중 오류가 발생했습니다: ' + msg },
       { status: 500 }
     )
   }
