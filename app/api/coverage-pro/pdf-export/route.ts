@@ -322,13 +322,13 @@ function buildPrintHtml(input: PdfExportInput): string {
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>${escHtml(customerName)} 보장분석 리포트</title>
   <style>
-    @page { size: A4; margin: 14mm; }
+    @page { size: A4 landscape; margin: 12mm; }
     *{box-sizing:border-box;margin:0;padding:0}
     body{
       font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;
       color:#111;background:#f5f7fb;word-break:keep-all;font-size:13px;
     }
-    .page{max-width:980px;margin:0 auto;padding:24px;background:#fff}
+    .page{max-width:1160px;margin:0 auto;padding:20px;background:#fff}
 
     /* ─ 헤더 */
     .report-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1a2744}
@@ -390,7 +390,7 @@ function buildPrintHtml(input: PdfExportInput): string {
     .compare-table td{text-align:right}
 
     /* ─ 이미지 그리드 */
-    .img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
     .img-wrap{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fafaf8}
     .img-wrap img{width:100%;height:auto;display:block}
 
@@ -428,7 +428,7 @@ function buildPrintHtml(input: PdfExportInput): string {
     <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
     <div style="display:flex;gap:20px;align-items:flex-start;background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:16px">
       <div style="flex:1">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${gaugesHtml}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">${gaugesHtml}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
         <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em">보장 달성도</div>
@@ -503,14 +503,14 @@ function buildPrintHtml(input: PdfExportInput): string {
     </div>` : '<div style="color:#94a3b8;padding:20px;text-align:center">계약 데이터가 없습니다.</div>'}
   </div>
 
-  \${selectedImages.length > 0 ? \`
+  ${selectedImages.length > 0 ? `
   <!-- 6. 자료실 이미지 -->
   <div class="section">
     <div class="section-title"><span class="section-num">6</span>참고 자료</div>
     <div class="img-grid">
-      \${selectedImages.map(src => \`<div class="img-wrap"><img src="\${escHtml(src)}" alt="참고자료" loading="lazy"/></div>\`).join('')}
+      ${selectedImages.map(src => `<div class="img-wrap"><img src="${escHtml(src)}" alt="참고자료" loading="lazy"/></div>`).join('')}
     </div>
-  </div>\` : ''}
+  </div>` : ''}
 
   <div style="margin-top:28px;padding-top:14px;border-top:1px solid #e2e8f0;text-align:center;color:#94a3b8;font-size:11px">
     본 분석 리포트는 고객 상담용 참고 자료이며, 보험 계약의 법적 효력을 대체하지 않습니다.<br/>
