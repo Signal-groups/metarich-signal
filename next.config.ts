@@ -4,8 +4,10 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  // ExcelJS uses Node.js fs/path directly - exclude from webpack bundling
-  serverExternalPackages: ['exceljs'],
+  serverExternalPackages: ["exceljs"],
+  outputFileTracingIncludes: {
+    "/api/coverage-pro/excel-export": ["./public/templates/coverage/*.xlsx"],
+  },
 };
 
 export default nextConfig;

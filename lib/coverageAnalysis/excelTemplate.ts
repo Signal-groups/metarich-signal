@@ -275,6 +275,14 @@ export async function fillCoverageTemplate(input: ExcelExportInput): Promise<Buf
   }
   if (!ws) throw new Error('엑셀 템플릿 시트를 찾을 수 없습니다.')
 
+  // 빈양식 외 시트 제거 — 다른 고객 데이터가 포함된 시트 제거
+  const sheetsToRemove = wb.worksheets
+    .filter((s) => s.name !== TEMPLATE_SHEET)
+    .map((s) => s.name)
+  for (const name of sheetsToRemove) {
+    wb.removeWorksheet(wb.getWorksheet(name)!.id)
+  }
+
   // 고객명: A1 셀
   ws.getRow(ROW.CUSTOMER_NAME).getCell(1).value = `${input.customerName}님 보장분석`
 
@@ -292,12 +300,16 @@ export async function fillCoverageTemplate(input: ExcelExportInput): Promise<Buf
     ws.getRow(ROW.PREMIUM).getCell(col).value         = contract.monthlyPremium ?? 0
 
     // 담보별 금액 입력 (T열 수식 절대 건드리지 않음)
+    // amount는 이미 원 단위 (clientMapping에서 만원 × 10000 변환 완료)
     for (const [rowKey, amount] of Object.entries(contract.coverages)) {
       const rowNum = COVERAGE_ROW_MAP[rowKey]
       if (!rowNum) continue
       ws.getRow(rowNum).getCell(col).value = amount > 0 ? amount : null
     }
   }
+
+  // 빈양식 시트를 활성 시트로 설정
+  ws.state = 'visible'
 
   const buffer = await wb.xlsx.writeBuffer()
   return Buffer.from(buffer)

@@ -328,195 +328,268 @@ function buildPrintHtml(input: PdfExportInput): string {
       font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;
       color:#111;background:#f5f7fb;word-break:keep-all;font-size:13px;
     }
-    .page{max-width:1160px;margin:0 auto;padding:20px;background:#fff}
+
+    /* ─ 페이지 컨테이너 */
+    .pdf-page{
+      background:#fff;
+      padding:0;
+      break-after:page;
+      page-break-after:always;
+    }
+    .pdf-page:last-child{
+      break-after:avoid;
+      page-break-after:avoid;
+    }
+    .page-inner{
+      max-width:1160px;
+      margin:0 auto;
+      padding:16px 20px;
+    }
+
+    /* ─ 인쇄바 */
+    .print-bar{position:sticky;top:0;display:flex;justify-content:flex-end;
+      gap:8px;padding:8px 12px;background:#fff;z-index:10;
+      border-bottom:1px solid #e2e8f0}
+    .print-bar button{background:#1a2744;color:#fff;border:none;border-radius:8px;
+      padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
 
     /* ─ 헤더 */
-    .report-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #1a2744}
+    .report-header{display:flex;justify-content:space-between;align-items:flex-end;
+      margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #1a2744}
     .report-kicker{color:#c9a96e;font-size:11px;font-weight:900;letter-spacing:.08em}
-    .report-title{font-size:22px;font-weight:900;color:#1a2744;margin-top:4px}
+    .report-title{font-size:20px;font-weight:900;color:#1a2744;margin-top:4px}
     .report-meta{font-size:11px;color:#64748b;text-align:right}
 
+    /* ─ 페이지 소제목 */
+    .page-label{font-size:11px;font-weight:900;color:#c9a96e;letter-spacing:.08em;
+      margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
+
     /* ─ 섹션 타이틀 */
-    .section{margin-top:22px}
+    .section-title{font-size:14px;font-weight:900;color:#1a2744;margin-bottom:10px;
+      display:flex;align-items:center}
     .section-num{display:inline-flex;align-items:center;justify-content:center;
-      width:22px;height:22px;border-radius:50%;background:#1a2744;color:#fff;
-      font-size:11px;font-weight:900;margin-right:8px;flex-shrink:0}
-    .section-title{font-size:15px;font-weight:900;color:#1a2744;margin-bottom:12px;display:flex;align-items:center}
+      width:20px;height:20px;border-radius:50%;background:#1a2744;color:#fff;
+      font-size:10px;font-weight:900;margin-right:7px;flex-shrink:0}
 
     /* ─ 게이지 그리드 */
     .gauge-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
-      background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:16px}
+      background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:14px}
     .gauge-wrap{text-align:center}
-    .gauge-value{font-size:12px;font-weight:700;color:#1a2744;margin-top:2px}
-    .gauge-status{font-size:11px;font-weight:700;margin-top:1px}
-
-    /* ─ 치료비 카드 */
-    .tc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .tc-card{background:#fafaf8;border:1px solid #e2e8f0;border-radius:10px;padding:14px}
-    .tc-head{font-weight:900;color:#1a2744;font-size:13px;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px}
-    .tc-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;color:#374151}
-    .tc-val{font-weight:700;color:#1a2744}
-    .tc-empty{color:#94a3b8;font-weight:400}
-    .tc-total{margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:12px;color:#64748b}
-    .tc-total b{color:#c9a96e;font-size:13px}
+    .gauge-value{font-size:11px;font-weight:700;color:#1a2744;margin-top:2px}
+    .gauge-status{font-size:10px;font-weight:700;margin-top:1px}
 
     /* ─ 보험료 비율 */
-    .ratio-wrap{display:flex;align-items:center;gap:24px;background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:16px}
+    .ratio-wrap{display:flex;align-items:center;gap:24px;background:#fafaf8;
+      border:1px solid #e2e8f0;border-radius:12px;padding:14px}
     .ratio-legend{display:grid;gap:8px;flex:1}
-    .ratio-row{display:flex;align-items:center;gap:10px;font-size:13px}
+    .ratio-row{display:flex;align-items:center;gap:10px;font-size:12px}
     .ratio-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
     .ratio-label{flex:1;color:#4b5563}
     .ratio-val{font-weight:700;color:#1a2744}
-    .ratio-pct{font-size:12px;color:#94a3b8;margin-left:4px}
-    .ratio-total{font-size:14px;font-weight:900;color:#1a2744;padding-top:8px;border-top:1px solid #e2e8f0}
+    .ratio-pct{font-size:11px;color:#94a3b8;margin-left:4px}
+    .ratio-total{font-size:13px;font-weight:900;color:#1a2744;
+      padding-top:8px;border-top:1px solid #e2e8f0}
+
+    /* ─ 치료비 카드 */
+    .tc-grid{display:flex;flex-direction:column;gap:10px}
+    .tc-card{background:#fafaf8;border:1px solid #e2e8f0;border-radius:10px;padding:12px}
+    .tc-head{font-weight:900;color:#1a2744;font-size:12px;margin-bottom:8px;
+      border-bottom:1px solid #e2e8f0;padding-bottom:5px}
+    .tc-row{display:flex;justify-content:space-between;align-items:center;
+      padding:3px 0;font-size:11px;color:#374151}
+    .tc-val{font-weight:700;color:#1a2744}
+    .tc-empty{color:#94a3b8;font-weight:400}
+    .tc-total{margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;
+      display:flex;justify-content:space-between;font-size:11px;color:#64748b}
+    .tc-total b{color:#c9a96e;font-size:12px}
 
     /* ─ 추천 제안 */
-    .rec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-    .rec-card{display:flex;gap:14px;align-items:flex-start;border-radius:10px;padding:14px;border-left:4px solid}
+    .rec-grid{display:grid;grid-template-columns:1fr;gap:10px}
+    .rec-card{display:flex;gap:12px;align-items:flex-start;border-radius:10px;
+      padding:12px;border-left:4px solid}
     .rec-protect{background:#eff6ff;border-color:#1a2744}
     .rec-save{background:#fffbeb;border-color:#c9a96e}
-    .rec-icon{font-size:22px;flex-shrink:0;margin-top:2px}
-    .rec-type{font-size:10px;font-weight:900;letter-spacing:.06em;color:#64748b;margin-bottom:3px}
-    .rec-title{font-size:13px;font-weight:900;color:#1a2744;margin-bottom:4px}
-    .rec-desc{font-size:12px;color:#4b5563;line-height:1.5}
+    .rec-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+    .rec-type{font-size:10px;font-weight:900;letter-spacing:.06em;color:#64748b;margin-bottom:2px}
+    .rec-title{font-size:12px;font-weight:900;color:#1a2744;margin-bottom:3px}
+    .rec-desc{font-size:11px;color:#4b5563;line-height:1.5}
 
     /* ─ 비교표 */
-    .compare-table{width:100%;border-collapse:collapse;font-size:12px}
-    .compare-table th,.compare-table td{border:1px solid #e2e8f0;padding:7px 8px;vertical-align:middle}
-    .compare-table th{background:#1a2744;color:#fff;text-align:center;font-size:11px;font-weight:700}
+    .compare-table{width:100%;border-collapse:collapse;font-size:11px}
+    .compare-table th,.compare-table td{border:1px solid #e2e8f0;padding:6px 7px;vertical-align:middle}
+    .compare-table th{background:#1a2744;color:#fff;text-align:center;
+      font-size:10px;font-weight:700}
     .row-label{background:#fafaf8;font-weight:700;color:#1a2744;white-space:nowrap}
     .row-total{background:#eff6ff;font-weight:700;color:#1a2744;text-align:right}
     .empty-cell{color:#94a3b8}
     .compare-table td{text-align:right}
 
-    /* ─ 이미지 그리드 */
-    .img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    .img-wrap{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fafaf8}
-    .img-wrap img{width:100%;height:auto;display:block}
+    /* ─ 이미지 전체 페이지 */
+    .img-fullpage{
+      background:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:180mm;
+      break-after:page;
+      page-break-after:always;
+    }
+    .img-fullpage:last-child{
+      break-after:avoid;
+      page-break-after:avoid;
+    }
+    .img-fullpage img{
+      max-width:100%;
+      max-height:180mm;
+      object-fit:contain;
+    }
 
     /* ─ 인쇄 */
-    .print-bar{position:sticky;top:0;display:flex;justify-content:flex-end;gap:8px;padding:8px 0;background:#fff;z-index:10}
-    .print-bar button{background:#1a2744;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
     @media print{
-      body{background:#fff}.page{max-width:none;padding:0}
-      .print-bar{display:none}table{page-break-inside:auto}tr{page-break-inside:avoid}
-      .section{page-break-inside:avoid}
+      body{background:#fff}
+      .print-bar{display:none}
+      .pdf-page{background:#fff}
+      table{page-break-inside:auto}
+      tr{page-break-inside:avoid}
     }
   </style>
 </head>
 <body>
-<div class="page">
-  <div class="print-bar">
-    <button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
-  </div>
+<div class="print-bar">
+  <button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+</div>
 
-  <!-- 헤더 -->
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 1: 주요보장현황 + 보험료 구성비율
+     ═══════════════════════════════════════════════════════════ -->
+<div class="pdf-page">
+<div class="page-inner">
   <div class="report-header">
     <div>
       <div class="report-kicker">METARICH SIGNAL GROUP · 보장분석 리포트</div>
       <div class="report-title">${escHtml(customerName)} 고객 보장분석 ${isKey ? '(주요보장)' : '(전체)'}</div>
     </div>
     <div class="report-meta">
-      계약 수: ${contracts.length}건<br/>
-      월 보험료: ${formatMonthly(totalPremium)}<br/>
+      계약 수: ${contracts.length}건 &nbsp;|&nbsp;
+      월 보험료: ${formatMonthly(totalPremium)}&nbsp;|&nbsp;
       분석일: ${new Date().toLocaleDateString('ko-KR')}
     </div>
   </div>
 
-  <!-- 1. 주요 보장 현황 게이지 + 방사형 차트 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
-    <div style="display:flex;gap:20px;align-items:flex-start;background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:16px">
-      <div style="flex:1">
-        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">${gaugesHtml}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em">보장 달성도</div>
-        ${radarChartSvg(contracts)}
-      </div>
-    </div>
-  </div>
+  <!-- 섹션 1 + 섹션 3 나란히 -->
+  <div style="display:grid;grid-template-columns:62% 38%;gap:16px;align-items:start">
 
-  <!-- 2. 치료비 카드 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">2</span>치료비 · 간병 상세</div>
-    <div class="tc-grid">${treatmentHtml}</div>
-  </div>
-
-  <!-- 3. 보험료 비율 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">3</span>보험료 구성 비율</div>
-    <div class="ratio-wrap">
-      ${pieHtml}
-      <div class="ratio-legend">
-        <div class="ratio-row">
-          <div class="ratio-dot" style="background:#1a2744"></div>
-          <span class="ratio-label">보장성</span>
-          <span class="ratio-val">${formatMonthly(보장성Premium)}</span>
-          <span class="ratio-pct">(${보장비율}%)</span>
+    <!-- 1. 주요 보장 현황 -->
+    <div>
+      <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
+      <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:14px">
+        <div class="gauge-grid">${gaugesHtml}</div>
+        <div style="display:flex;justify-content:center;margin-top:12px">
+          ${radarChartSvg(contracts)}
         </div>
-        <div class="ratio-row">
-          <div class="ratio-dot" style="background:#c9a96e"></div>
-          <span class="ratio-label">저축성</span>
-          <span class="ratio-val">${formatMonthly(저축성Premium)}</span>
-          <span class="ratio-pct">(${저축비율}%)</span>
-        </div>
-        <div class="ratio-row">
-          <div class="ratio-dot" style="background:#10b981"></div>
-          <span class="ratio-label">실손의료비</span>
-          <span class="ratio-val">${formatMonthly(실손Premium)}</span>
-          <span class="ratio-pct">(${실손비율}%)</span>
-        </div>
-        <div class="ratio-total">월 합계 ${formatMonthly(totalPremium)}</div>
       </div>
     </div>
-  </div>
 
-  <!-- 4. 추천 제안 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">4</span>추천 제안</div>
-    <div class="rec-grid">${recsHtml}</div>
-  </div>
-
-  <!-- 5. 회사별 담보 비교 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">5</span>회사별 · 담보별 비교</div>
-    ${displayContracts.length > 0 ? `
-    <div style="overflow-x:auto">
-      <table class="compare-table">
-        <thead>
-          <tr>
-            <th style="width:120px">담보</th>
-            ${colHeaders}
-            <th style="background:#2d4a8a">합산</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="row-label">월 보험료</td>
-            ${premiumRow}
-            <td class="row-total">${formatMonthly(totalPremium)}</td>
-          </tr>
-          ${tableRows}
-        </tbody>
-      </table>
-    </div>` : '<div style="color:#94a3b8;padding:20px;text-align:center">계약 데이터가 없습니다.</div>'}
-  </div>
-
-  ${selectedImages.length > 0 ? `
-  <!-- 6. 자료실 이미지 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">6</span>참고 자료</div>
-    <div class="img-grid">
-      ${selectedImages.map(src => `<div class="img-wrap"><img src="${escHtml(src)}" alt="참고자료" loading="lazy"/></div>`).join('')}
+    <!-- 3. 보험료 구성 비율 -->
+    <div>
+      <div class="section-title"><span class="section-num">2</span>보험료 구성 비율</div>
+      <div class="ratio-wrap" style="flex-direction:column;align-items:center">
+        ${pieHtml}
+        <div class="ratio-legend" style="width:100%;margin-top:12px">
+          <div class="ratio-row">
+            <div class="ratio-dot" style="background:#1a2744"></div>
+            <span class="ratio-label">보장성</span>
+            <span class="ratio-val">${formatMonthly(보장성Premium)}</span>
+            <span class="ratio-pct">(${보장비율}%)</span>
+          </div>
+          <div class="ratio-row">
+            <div class="ratio-dot" style="background:#c9a96e"></div>
+            <span class="ratio-label">저축성</span>
+            <span class="ratio-val">${formatMonthly(저축성Premium)}</span>
+            <span class="ratio-pct">(${저축비율}%)</span>
+          </div>
+          <div class="ratio-row">
+            <div class="ratio-dot" style="background:#10b981"></div>
+            <span class="ratio-label">실손의료비</span>
+            <span class="ratio-val">${formatMonthly(실손Premium)}</span>
+            <span class="ratio-pct">(${실손비율}%)</span>
+          </div>
+          <div class="ratio-total">월 합계 ${formatMonthly(totalPremium)}</div>
+        </div>
+      </div>
     </div>
-  </div>` : ''}
 
-  <div style="margin-top:28px;padding-top:14px;border-top:1px solid #e2e8f0;text-align:center;color:#94a3b8;font-size:11px">
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 2: 치료비·간병 상세 + 추천 제안
+     ═══════════════════════════════════════════════════════════ -->
+<div class="pdf-page">
+<div class="page-inner">
+  <div class="page-label">치료비 · 간병 상세 &amp; 추천 제안</div>
+  <div style="display:grid;grid-template-columns:55% 45%;gap:20px;align-items:start">
+
+    <!-- 2. 치료비 카드 -->
+    <div>
+      <div class="section-title"><span class="section-num">3</span>치료비 · 간병 상세</div>
+      <div class="tc-grid">${treatmentHtml}</div>
+    </div>
+
+    <!-- 4. 추천 제안 -->
+    <div>
+      <div class="section-title"><span class="section-num">4</span>추천 제안</div>
+      <div class="rec-grid">${recsHtml}</div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 3: 회사별·담보별 비교
+     ═══════════════════════════════════════════════════════════ -->
+<div class="pdf-page">
+<div class="page-inner">
+  <div class="page-label">회사별 · 담보별 비교</div>
+  <div class="section-title"><span class="section-num">5</span>회사별 · 담보별 비교</div>
+  ${displayContracts.length > 0 ? `
+  <div style="overflow-x:auto">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th style="width:110px">담보</th>
+          ${colHeaders}
+          <th style="background:#2d4a8a">합산</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-label">월 보험료</td>
+          ${premiumRow}
+          <td class="row-total">${formatMonthly(totalPremium)}</td>
+        </tr>
+        ${tableRows}
+      </tbody>
+    </table>
+  </div>` : '<div style="color:#94a3b8;padding:20px;text-align:center">계약 데이터가 없습니다.</div>'}
+  <div style="margin-top:20px;padding-top:12px;border-top:1px solid #e2e8f0;
+    text-align:center;color:#94a3b8;font-size:11px">
     본 분석 리포트는 고객 상담용 참고 자료이며, 보험 계약의 법적 효력을 대체하지 않습니다.<br/>
     메타리치 시그널그룹 | ${new Date().toLocaleDateString('ko-KR')} 작성
   </div>
 </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE 4+: 참고 자료 이미지 (1페이지당 1개)
+     ═══════════════════════════════════════════════════════════ -->
+${selectedImages.map((src, idx) => `
+<div class="img-fullpage">
+  <img src="${escHtml(src)}" alt="참고자료 ${idx + 1}" loading="lazy"/>
+</div>`).join('')}
+
 <script>
   window.addEventListener('load', function() {
     window.setTimeout(function(){ window.print(); }, 500);

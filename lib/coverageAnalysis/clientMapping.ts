@@ -136,7 +136,8 @@ export function proContractsToExcelInputClient(
       const coverages: Record<string, number> = {}
       contract.coverages.forEach((coverage) => {
         if (coverage.rowKey && coverage.rowKey !== 'unknown') {
-          coverages[coverage.rowKey] = (coverages[coverage.rowKey] || 0) + Number(coverage.amount || 0)
+          // amount는 만원 단위 → 템플릿은 원 단위이므로 ×10000
+          coverages[coverage.rowKey] = (coverages[coverage.rowKey] || 0) + Number(coverage.amount || 0) * 10000
         }
       })
       return {
