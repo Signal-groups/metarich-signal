@@ -123,9 +123,8 @@ export default function AnalysisChart({ contracts }: { contracts: ProContract[] 
             const color = statusColor(status)
             return (
               <div key={item.key}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ marginBottom: 6 }}>
                   <span style={{ fontWeight: 600, fontSize: 14 }}>{item.label}</span>
-                  <span style={{ fontSize: 12, color, fontWeight: 700 }}>{status}</span>
                 </div>
 
                 {/* 현재 */}

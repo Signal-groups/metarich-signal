@@ -41,10 +41,10 @@ function BRow({
   isChild?: boolean
 }) {
   const palette = {
-    ok:   { bg: '#f0fdf4', border: '#bbf7d0', bar: '#22c55e', badge: '#16a34a', badgeBg: '#dcfce7', text: '달성' },
-    warn: { bg: '#fffbeb', border: '#fde68a', bar: '#f59e0b', badge: '#b45309', badgeBg: '#fef3c7', text: '부족' },
-    miss: { bg: '#fef2f2', border: '#fecaca', bar: '#ef4444', badge: '#dc2626', badgeBg: '#fee2e2', text: '미가입' },
-    skip: { bg: '#f8fafc', border: '#e2e8f0', bar: '#cbd5e1', badge: '#94a3b8', badgeBg: '#f1f5f9', text: '해당없음' },
+    ok:   { bg: '#f8fafc', border: '#e2e8f0', bar: '#64748b', badge: '#64748b', badgeBg: '#f1f5f9', text: '달성' },
+    warn: { bg: '#f8fafc', border: '#e2e8f0', bar: '#94a3b8', badge: '#94a3b8', badgeBg: '#f1f5f9', text: '부족' },
+    miss: { bg: '#f8fafc', border: '#e2e8f0', bar: '#cbd5e1', badge: '#cbd5e1', badgeBg: '#f1f5f9', text: '미가입' },
+    skip: { bg: '#f8fafc', border: '#e2e8f0', bar: '#e2e8f0', badge: '#e2e8f0', badgeBg: '#f1f5f9', text: '해당없음' },
   }
   const c = palette[status]
   const pct = ratio !== null ? Math.min(100, Math.round(ratio * 100)) : null
