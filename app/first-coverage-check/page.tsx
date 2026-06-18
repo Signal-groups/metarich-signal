@@ -21,6 +21,7 @@ type FormState = {
   actualLossCoverageRate: number
   cancerDiagnosis: number
   similarCancer: number
+  cancerCaseId: string
   cancerTreatment: number
   targetCancer: number
   radiationCancer: number
@@ -71,6 +72,7 @@ const initialForm: FormState = {
   actualLossCoverageRate: 70,
   cancerDiagnosis: 3000,
   similarCancer: 300,
+  cancerCaseId: "prostate",
   cancerTreatment: 300,
   targetCancer: 0,
   radiationCancer: 0,
@@ -95,6 +97,8 @@ const initialForm: FormState = {
 
 const clampRate = (value: number) => Math.max(0, Math.min(100, Math.round(value)))
 const man = (value: number) => `${Math.max(0, Math.round(value)).toLocaleString("ko-KR")}만원`
+const money = (value: number) => `${Math.round(Math.abs(value)).toLocaleString("ko-KR")}만원`
+const balanceText = (gap: number) => gap > 0 ? `-${money(gap)}` : `+${money(gap)}`
 
 function status(rate: number) {
   if (rate >= 70) return { label: "안정", color: "#0f8a5f", bg: "#e8f8f1", border: "#83d9b3" }
@@ -117,6 +121,24 @@ const SURGERY_CASES = [
     coverageType: "급여 중심",
     actualLossFactor: 1,
     note: "건강보험 급여 기준에 맞는 슬관절 인공관절치환술은 법정 본인부담 중심으로 봅니다. 비급여, 간병비, 상급병실료 등은 별도 확인이 필요합니다.",
+  },
+  {
+    id: "knee-arthroscopy",
+    name: "무릎 관절경/연골수술",
+    costMin: 120,
+    costMax: 350,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.75,
+    note: "반월상연골, 관절경, 연골 손상 수술은 급여 인정 기준에 맞으면 보완 가능성이 있으나, 치료재료와 병원별 비급여 항목을 함께 확인해야 합니다.",
+  },
+  {
+    id: "knee-regeneration",
+    name: "무릎 연골재생",
+    costMin: 1200,
+    costMax: 1900,
+    coverageType: "비급여 중심",
+    actualLossFactor: 0.25,
+    note: "카티스템, 카티라이프 같은 연골재생 치료는 비급여 부담이 큰 항목입니다. 실손 가입 시기와 약관, 치료 목적, 신의료기술·재료대 인정 여부에 따라 보완 가능액이 크게 달라질 수 있습니다.",
   },
   {
     id: "cataract",
@@ -147,6 +169,89 @@ const SURGERY_CASES = [
   },
 ]
 
+const CANCER_CASES = [
+  {
+    id: "prostate",
+    group: "male",
+    name: "전립선암",
+    category: "general",
+    treatment: 3200,
+    outpatientSelfPay: 700,
+    nonCovered: 900,
+    note: "남성 대표암 기준입니다. 방사선, 호르몬치료, 로봇수술 여부에 따라 비급여와 장기 통원 부담이 달라질 수 있습니다.",
+  },
+  {
+    id: "breast",
+    group: "female",
+    name: "유방암",
+    category: "general",
+    treatment: 3900,
+    outpatientSelfPay: 900,
+    nonCovered: 1200,
+    note: "여성 대표암 기준입니다. 수술, 방사선, 항호르몬·표적치료, 재건·검사 관련 비급여 가능성을 확인합니다.",
+  },
+  {
+    id: "thyroid",
+    group: "female",
+    name: "갑상선암",
+    category: "similar",
+    treatment: 1300,
+    outpatientSelfPay: 300,
+    nonCovered: 500,
+    note: "유사·소액암으로 분류되는 경우가 많아 진단비가 작게 준비되어 있을 수 있습니다. 치료비는 낮아도 추적검사와 약 복용이 길어질 수 있습니다.",
+  },
+  {
+    id: "stomach",
+    group: "common",
+    name: "위암",
+    category: "general",
+    treatment: 3600,
+    outpatientSelfPay: 700,
+    nonCovered: 900,
+    note: "공통 주요암 기준입니다. 수술, 항암, 추적검사와 회복 기간 식사·영양 관리 비용을 함께 봅니다.",
+  },
+  {
+    id: "liver",
+    group: "common",
+    name: "간암",
+    category: "general",
+    treatment: 4800,
+    outpatientSelfPay: 900,
+    nonCovered: 1200,
+    note: "공통 주요암 기준입니다. 고주파·색전술·항암, 재발 관리와 장기 추적 비용을 확인합니다.",
+  },
+  {
+    id: "lung",
+    group: "common",
+    name: "폐암",
+    category: "general",
+    treatment: 4600,
+    outpatientSelfPay: 1000,
+    nonCovered: 1600,
+    note: "공통 주요암 기준입니다. 표적항암·면역항암, 유전자검사, 통원 항암치료 공백을 함께 확인합니다.",
+  },
+  {
+    id: "pancreas",
+    group: "common",
+    name: "췌장암",
+    category: "general",
+    treatment: 5000,
+    outpatientSelfPay: 1100,
+    nonCovered: 1700,
+    note: "공통 주요암 기준입니다. 치료 기간과 항암 부담이 커질 수 있어 진단비와 치료비 공백을 강하게 확인합니다.",
+  },
+  {
+    id: "colon",
+    group: "common",
+    name: "대장암",
+    category: "general",
+    treatment: 3800,
+    outpatientSelfPay: 800,
+    nonCovered: 1100,
+    note: "공통 주요암 기준입니다. 수술, 항암, 장루·영양 관리, 통원 치료 부담을 함께 확인합니다.",
+  },
+]
+
 function averageCost(item: typeof SURGERY_CASES[number]) {
   return Math.round((item.costMin + item.costMax) / 2)
 }
@@ -154,6 +259,19 @@ function averageCost(item: typeof SURGERY_CASES[number]) {
 function surgeryActualLossAmount(form: FormState, item: typeof SURGERY_CASES[number]) {
   if (!form.hasActualLoss) return 0
   return Math.round(averageCost(item) * (form.actualLossCoverageRate / 100) * item.actualLossFactor)
+}
+
+function genderCancerCases(gender: FormState["gender"]) {
+  return CANCER_CASES.filter((item) => item.group === gender || item.group === "common")
+}
+
+function selectedCancerCase(form: FormState) {
+  const cases = genderCancerCases(form.gender)
+  return cases.find((item) => item.id === form.cancerCaseId) || cases[0] || CANCER_CASES[0]
+}
+
+function cancerBaseBenefit(form: FormState, cancerCase: typeof CANCER_CASES[number]) {
+  return cancerCase.category === "similar" ? form.similarCancer : form.cancerDiagnosis
 }
 
 export default function FirstCoverageCheckPage() {
@@ -197,11 +315,19 @@ export default function FirstCoverageCheckPage() {
 
   const result = useMemo(() => {
     const livingNeed = form.monthlyLivingCost * 12
-    const cancerTreatmentNeed = 3500
+    const cancerCase = selectedCancerCase(form)
+    const cancerDirectTreatmentNeed = cancerCase.treatment
+    const cancerOutpatientSelfPayNeed = cancerCase.outpatientSelfPay
+    const cancerNonCoveredNeed = cancerCase.nonCovered
+    const cancerTreatmentNeed = cancerDirectTreatmentNeed + cancerOutpatientSelfPayNeed + cancerNonCoveredNeed
     const cancerCareNeed = form.careDailyCost * form.cancerCareDays
     const cancerIndirectNeed = form.cancerIndirectMonthlyCost * 12
-    const cancerReady = form.cancerDiagnosis + form.cancerTreatment + form.targetCancer + form.radiationCancer
-    const cancerActualLoss = form.hasActualLoss ? cancerTreatmentNeed * (form.actualLossCoverageRate / 100) : 0
+    const cancerDiagnosisBenefit = cancerBaseBenefit(form, cancerCase)
+    const cancerDiagnosisAfterLiving = Math.max(0, cancerDiagnosisBenefit - livingNeed)
+    const cancerLivingShortage = Math.max(0, livingNeed - cancerDiagnosisBenefit)
+    const cancerTreatmentBenefits = form.cancerTreatment + form.targetCancer + form.radiationCancer
+    const cancerActualLoss = form.hasActualLoss ? cancerDirectTreatmentNeed * (form.actualLossCoverageRate / 100) * 0.55 : 0
+    const cancerReady = Math.round(cancerDiagnosisAfterLiving + cancerTreatmentBenefits + cancerActualLoss)
     const cancerNeed = livingNeed + cancerTreatmentNeed + cancerCareNeed + cancerIndirectNeed
 
     const brainLivingNeed = form.monthlyLivingCost * 6
@@ -235,10 +361,10 @@ export default function FirstCoverageCheckPage() {
       cancer: {
         title: "암",
         need: cancerNeed,
-        ready: cancerReady + cancerActualLoss,
-        rate: clampRate(((cancerReady + cancerActualLoss) / cancerNeed) * 100),
-        gap: cancerNeed - (cancerReady + cancerActualLoss),
-        note: `암의 집중치료 기간은 최소 1년으로 산정합니다. 생활비 ${man(livingNeed)}와 교통비·식사·용품 등 직접치료 외 비용 ${man(cancerIndirectNeed)}까지 별도 부담으로 확인합니다.`,
+        ready: cancerReady,
+        rate: clampRate((cancerReady / cancerNeed) * 100),
+        gap: cancerNeed - cancerReady,
+        note: `${cancerCase.name} 기준입니다. ${cancerCase.category === "similar" ? "유사·소액암 진단비" : "일반암 진단비"}는 먼저 1년 생활비 ${man(livingNeed)}에 배정합니다. 생활비 부족은 ${balanceText(cancerLivingShortage)}이고, 남는 진단비 ${man(cancerDiagnosisAfterLiving)}만 치료비 준비금으로 봅니다.`,
       },
       brain: {
         title: "뇌",
@@ -282,6 +408,20 @@ export default function FirstCoverageCheckPage() {
   }, [form])
 
   const resultList = Object.values(result)
+  const currentCancerCase = selectedCancerCase(form)
+  const currentCancerCases = genderCancerCases(form.gender)
+  const cancerLivingNeed = form.monthlyLivingCost * 12
+  const cancerDiagnosisBenefit = cancerBaseBenefit(form, currentCancerCase)
+  const cancerBenefitLabel = currentCancerCase.category === "similar" ? "유사·소액암 진단비" : "일반암 진단비"
+  const cancerDiagnosisAfterLiving = Math.max(0, cancerDiagnosisBenefit - cancerLivingNeed)
+  const cancerLivingShortage = Math.max(0, cancerLivingNeed - cancerDiagnosisBenefit)
+  const cancerDirectTreatmentNeed = currentCancerCase.treatment
+  const cancerOutpatientSelfPayNeed = currentCancerCase.outpatientSelfPay
+  const cancerNonCoveredNeed = currentCancerCase.nonCovered
+  const cancerTreatmentNeedTotal = cancerDirectTreatmentNeed + cancerOutpatientSelfPayNeed + cancerNonCoveredNeed
+  const cancerActualLossExpected = form.hasActualLoss ? Math.round(cancerDirectTreatmentNeed * (form.actualLossCoverageRate / 100) * 0.55) : 0
+  const cancerTreatmentReady = cancerDiagnosisAfterLiving + form.cancerTreatment + form.targetCancer + form.radiationCancer + cancerActualLossExpected
+  const cancerTreatmentGap = cancerTreatmentNeedTotal - cancerTreatmentReady
   const selectedSurgeryCases = SURGERY_CASES.filter((item) => form.selectedSurgeryCases.includes(item.id))
   const surgeryFixedCoveragePerCase = form.diseaseSurgery + form.majorSurgery + form.nsurgery
   const surgeryNeedTotal = selectedSurgeryCases.reduce((sum, item) => sum + averageCost(item), 0)
@@ -437,6 +577,7 @@ export default function FirstCoverageCheckPage() {
                 <FieldGrid>
                   <NumberInput label="암 진단비" value={form.cancerDiagnosis} onChange={(v) => update("cancerDiagnosis", v)} suffix="만원" />
                   <NumberInput label="유사암/소액암" value={form.similarCancer} onChange={(v) => update("similarCancer", v)} suffix="만원" />
+                  <SelectInput label="대표 암 기준" value={currentCancerCase.id} onChange={(v) => update("cancerCaseId", v)} options={currentCancerCases.map((item) => [item.id, item.name])} />
                   <NumberInput label="항암약물 치료비" value={form.cancerTreatment} onChange={(v) => update("cancerTreatment", v)} suffix="만원" />
                   <NumberInput label="표적항암/신약" value={form.targetCancer} onChange={(v) => update("targetCancer", v)} suffix="만원" />
                   <NumberInput label="방사선/양성자/중입자" value={form.radiationCancer} onChange={(v) => update("radiationCancer", v)} suffix="만원" />
@@ -468,7 +609,7 @@ export default function FirstCoverageCheckPage() {
                 <div className="grid gap-4">
                   <div>
                     <p className="mb-3 text-sm font-black text-slate-800">수술 항목 선택</p>
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                       {SURGERY_CASES.map((item) => {
                         const checked = form.selectedSurgeryCases.includes(item.id)
                         return (
@@ -532,23 +673,40 @@ export default function FirstCoverageCheckPage() {
                 </div>
                 <div className="mt-4 grid gap-3 lg:grid-cols-3">
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 lg:col-span-2">
-                    <p className="text-sm font-black text-amber-800">암 1년 집중치료 비용 구조</p>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-black text-amber-800">암 1년 집중치료 비용 구조</p>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-amber-800">{currentCancerCase.name} · {cancerBenefitLabel} 기준</span>
+                    </div>
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
                       <CostBox label="1년 생활비" value={form.monthlyLivingCost * 12} desc="소득 공백과 가족 생활 유지 비용" />
-                      <CostBox label="직접 치료비" value={3500} desc="산정특례 이후 비급여·신약·검사 가능 비용" />
+                      <CostBox label="직접 치료비" value={cancerDirectTreatmentNeed} desc="수술, 항암, 방사선, 검사 등 치료 기준" />
                       <CostBox label="직접치료 외 비용" value={form.cancerIndirectMonthlyCost * 12} desc="교통비, 식사, 영양식, 위생용품 등" />
                     </div>
+                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                      <CostBox label="통원항암 본인부담" value={cancerOutpatientSelfPayNeed} desc="반복 통원, 주사·처치, 외래 부담 기준" />
+                      <CostBox label="전액본인부담·선별급여" value={cancerNonCoveredNeed} desc="실손 보완율에서 제외될 수 있는 항목" />
+                      <SmallTextCost label="치료비 부족 가능" value={balanceText(cancerTreatmentGap)} tone="text-amber-900" />
+                    </div>
                     <p className="mt-4 text-sm font-bold leading-7 text-amber-900">
-                      암 진단비와 치료비가 있어도 1년 동안 생활비와 직접치료 외 비용이 함께 빠져나가기 때문에,
-                      결과의 부족 가능 금액에는 이 비용을 포함해 계산합니다.
+                      암 진단비는 먼저 1년 생활비에 배정합니다. 예를 들어 월 생활비가 300만원이면 1년 기준은 3,600만원이고,
+                      현재 {cancerBenefitLabel} {man(cancerDiagnosisBenefit)} 기준으로 생활비에서 이미 {balanceText(cancerLivingShortage)} 부족합니다. 남는 진단비 {man(cancerDiagnosisAfterLiving)}만 치료비 준비금으로 보고,
+                      실손은 전액본인부담금·선별급여·약관상 제외 항목을 보완하지 못할 수 있어 별도로 계산합니다.
+                      {currentCancerCase.category === "similar" && " 유사·소액암은 치료비 기준이 낮아 보여도 진단비가 작고 추적검사·약 복용이 길어질 수 있어 장기 관리 비용을 따로 봅니다."}
                     </p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                     <p className="text-sm font-black text-slate-800">암 현재 준비</p>
                     <p className="mt-3 text-3xl font-black text-[#1a3a6e]">{man(result.cancer.ready)}</p>
                     <p className="mt-3 text-sm font-bold leading-7 text-slate-500">
-                      암 진단비, 항암 치료비, 표적항암·방사선 보장, 실손 예상 보완액을 합산한 상담용 기준입니다.
+                      생활비 차감 후 남은 진단비, 항암 치료비, 표적항암·방사선 보장, 실손 예상 보완액 {man(cancerActualLossExpected)}을 합산한 상담용 기준입니다.
                     </p>
+                    <div className="mt-4 rounded-xl bg-white p-4 text-xs font-black leading-6 text-slate-600">
+                      <p>선택 기준: {currentCancerCase.name}</p>
+                      <p>{cancerBenefitLabel}: {man(cancerDiagnosisBenefit)}</p>
+                      <p>진단비 생활비 차감 후: {man(cancerDiagnosisAfterLiving)}</p>
+                      <p>치료비 준비 부족: {balanceText(cancerTreatmentGap)}</p>
+                      <p className="mt-2 font-bold">{currentCancerCase.note}</p>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -586,13 +744,13 @@ export default function FirstCoverageCheckPage() {
                       <p className="text-sm font-black text-indigo-900">수술비 체크 항목 합산</p>
                       <p className="mt-2 text-3xl font-black text-indigo-700">{selectedSurgeryCases.length}개 항목</p>
                     </div>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-indigo-700">현재 부족 가능 {man(surgeryGapTotal)}</span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-indigo-700">현재 부족 가능 {balanceText(surgeryGapTotal)}</span>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-4">
                     <SmallCost label="체크 수술 예상비용" value={surgeryNeedTotal} tone="text-indigo-700" />
                     <SmallCost label="수술비 정액 합산" value={surgeryFixedCoverageTotal} tone="text-indigo-700" />
                     <SmallCost label="실손 예상 보완" value={surgeryActualLossTotal} tone="text-indigo-700" />
-                    <SmallCost label="부족 가능 금액" value={surgeryGapTotal} tone="text-indigo-700" />
+                    <SmallTextCost label="부족 가능 금액" value={balanceText(surgeryGapTotal)} tone="text-indigo-700" />
                   </div>
                   {selectedSurgeryCases.length === 0 ? (
                     <p className="mt-4 rounded-xl bg-white/80 p-4 text-sm font-bold leading-7 text-indigo-900">수술비 탭에서 확인할 수술 항목을 체크하면 항목별 비용과 보장 예상액이 표시됩니다.</p>
@@ -614,7 +772,7 @@ export default function FirstCoverageCheckPage() {
                               <p>상담 기준 {man(itemNeed)}</p>
                               <p>수술비 보장 {man(surgeryFixedCoveragePerCase)}</p>
                               <p>실손 예상 {man(itemActualLoss)}</p>
-                              <p className="sm:col-span-2">부족 가능 {man(itemGap)}</p>
+                              <p className="sm:col-span-2">부족 가능 {balanceText(itemGap)}</p>
                             </div>
                             <p className="mt-3 text-xs font-bold leading-5 text-indigo-900">{item.note}</p>
                           </div>
@@ -750,7 +908,7 @@ function ResultCard({ item }: { item: { title: string; need: number; ready: numb
       <div className="mt-4 space-y-1 text-xs font-black text-slate-600">
         <p>기준 {man(item.need)}</p>
         <p>현재 {man(item.ready)}</p>
-        <p>부족 가능 {man(item.gap)}</p>
+        <p>부족 가능 {balanceText(item.gap)}</p>
       </div>
     </div>
   )
