@@ -27,6 +27,7 @@ export interface ProContract {
   monthlyPremium: number  // 월 보험료 (원)
   isRenewal?: boolean
   status?: 'active' | 'lapsed' | 'expired'
+  policyType?: 'protection' | 'savings'  // 보장성 / 저축성
   coverages: ProCoverage[]
 }
 
@@ -89,6 +90,7 @@ export interface ExcelContractInput {
   contractDate?: string
   paymentPeriod?: string
   monthlyPremium: number
+  policyType?: 'protection' | 'savings'
   /** key: COVERAGE_ROW_MAP의 rowKey, value: 원 단위 금액 */
   coverages: Record<string, number>
 }

@@ -9,6 +9,7 @@ interface BulkActionsProps {
 }
 
 const ranks = [
+  { value: "guest", label: "게스트 (타사/미승인)" },
   { value: "agent", label: "설계사" },
   { value: "manager", label: "지점장" },
   { value: "leader", label: "사업부장" },

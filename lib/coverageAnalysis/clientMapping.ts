@@ -148,6 +148,7 @@ export function proContractsToExcelInputClient(
         contractDate: contract.contractDate,
         paymentPeriod: contract.paymentPeriod,
         monthlyPremium: contract.monthlyPremium,
+        policyType: contract.policyType,
         coverages,
       }
     }),

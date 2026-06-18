@@ -1,6 +1,6 @@
 "use client"
 
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
@@ -13,8 +13,15 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const [perfInput, setPerfInput] = useState({
     call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
     contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300,
+    life_amt: 0, life_cnt: 0, nonlife_amt: 0, nonlife_cnt: 0,
+    target_life_amt: 150, target_life_cnt: 5, target_nonlife_amt: 150, target_nonlife_cnt: 5,
+    target_call: 100, target_meet: 30, target_pt: 15, target_intro: 10, target_db_assigned: 50, target_db_returned: 0,
     edu_status: "미참여", is_approved: false,
     edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
+  });
+  const [addInput, setAddInput] = useState({
+    life_amt: 0, life_cnt: 0, nonlife_amt: 0, nonlife_cnt: 0,
+    call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
   });
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
@@ -26,6 +33,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const year = selectedDate.getFullYear();
   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
   const monthKey = `${year}-${month}-01`;
+  const extKey = `daily_perf_ext:${user.id}:${monthKey}`;
 
   const LINKS = {
     metaon: "https://meta-on.kr/#/login",
@@ -60,6 +68,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   useEffect(() => {
     fetchData();
     fetchAllHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthKey, user.id]);
 
   async function fetchData() {
@@ -67,15 +76,27 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
     const savedEdu = settings?.find(s => s.key === 'edu_content')?.value;
     if (savedEdu) {
-      try { setEduWeeks(JSON.parse(savedEdu)); } catch (e) { setEduWeeks({ 1: savedEdu, 2: "", 3: "", 4: "", 5: "" }); }
+      try { setEduWeeks(JSON.parse(savedEdu)); } catch { setEduWeeks({ 1: savedEdu, 2: "", 3: "", 4: "", 5: "" }); }
     }
     const { data: perf } = await supabase.from("daily_perf").select("*").eq("user_id", user.id).eq("date", monthKey).maybeSingle();
-    if (perf) setPerfInput(prev => ({ ...prev, ...perf }));
+    const { data: extSetting } = await supabase.from("team_settings").select("value").eq("key", extKey).maybeSingle();
+    let ext = {};
+    if (extSetting?.value) {
+      try { ext = typeof extSetting.value === "string" ? JSON.parse(extSetting.value) : extSetting.value; } catch { ext = {}; }
+    }
+    if (perf) setPerfInput(prev => ({ ...prev, ...perf, ...ext }));
     else setPerfInput({
       call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
       contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300,
+      life_amt: 0, life_cnt: 0, nonlife_amt: 0, nonlife_cnt: 0,
+      target_life_amt: 150, target_life_cnt: 5, target_nonlife_amt: 150, target_nonlife_cnt: 5,
+      target_call: 100, target_meet: 30, target_pt: 15, target_intro: 10, target_db_assigned: 50, target_db_returned: 0,
       edu_status: "미참여", is_approved: false,
       edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
+    });
+    setAddInput({
+      life_amt: 0, life_cnt: 0, nonlife_amt: 0, nonlife_cnt: 0,
+      call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
     });
   }
 
@@ -132,23 +153,71 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   };
 
   const handleSave = async (customField?: object) => {
-    const rawPayload = customField ? { ...perfInput, ...customField } : perfInput;
+    const added = customField ? {} as any : addInput;
+    const rawPayload = customField ? { ...perfInput, ...customField } : {
+      ...perfInput,
+      life_amt: Number(perfInput.life_amt || 0) + Number(added.life_amt || 0),
+      life_cnt: Number(perfInput.life_cnt || 0) + Number(added.life_cnt || 0),
+      nonlife_amt: Number(perfInput.nonlife_amt || 0) + Number(added.nonlife_amt || 0),
+      nonlife_cnt: Number(perfInput.nonlife_cnt || 0) + Number(added.nonlife_cnt || 0),
+      call: Number(perfInput.call || 0) + Number(added.call || 0),
+      meet: Number(perfInput.meet || 0) + Number(added.meet || 0),
+      pt: Number(perfInput.pt || 0) + Number(added.pt || 0),
+      intro: Number(perfInput.intro || 0) + Number(added.intro || 0),
+      db_assigned: Number(perfInput.db_assigned || 0) + Number(added.db_assigned || 0),
+      db_returned: Number(perfInput.db_returned || 0) + Number(added.db_returned || 0),
+    };
+    rawPayload.contract_amt = Number(rawPayload.life_amt || 0) + Number(rawPayload.nonlife_amt || 0);
+    rawPayload.contract_cnt = Number(rawPayload.life_cnt || 0) + Number(rawPayload.nonlife_cnt || 0);
+    rawPayload.target_amt = Number(rawPayload.target_life_amt || 0) + Number(rawPayload.target_nonlife_amt || 0);
+    rawPayload.target_cnt = Number(rawPayload.target_life_cnt || 0) + Number(rawPayload.target_nonlife_cnt || 0);
     const lockedTargetPayload = perfInput.is_approved
       ? { target_cnt: perfInput.target_cnt, target_amt: perfInput.target_amt }
       : {};
     const payload = {
-      ...rawPayload,
-      ...lockedTargetPayload,
       call: Number(rawPayload.call || 0), meet: Number(rawPayload.meet || 0),
       pt: Number(rawPayload.pt || 0), intro: Number(rawPayload.intro || 0),
       db_assigned: Number(rawPayload.db_assigned || 0), db_returned: Number(rawPayload.db_returned || 0),
       contract_cnt: Number(rawPayload.contract_cnt || 0), contract_amt: Number(rawPayload.contract_amt || 0),
       target_cnt: Number((perfInput.is_approved ? perfInput.target_cnt : rawPayload.target_cnt) || 0),
-      target_amt: Number((perfInput.is_approved ? perfInput.target_amt : rawPayload.target_amt) || 0)
+      target_amt: Number((perfInput.is_approved ? perfInput.target_amt : rawPayload.target_amt) || 0),
+      edu_status: rawPayload.edu_status,
+      is_approved: rawPayload.is_approved,
+      edu_1: rawPayload.edu_1,
+      edu_2: rawPayload.edu_2,
+      edu_3: rawPayload.edu_3,
+      edu_4: rawPayload.edu_4,
+      edu_5: rawPayload.edu_5,
+      ...lockedTargetPayload,
     };
     const { error } = await supabase.from("daily_perf").upsert({ ...payload, user_id: user.id, date: monthKey }, { onConflict: 'user_id, date' });
     if (error) alert("저장 실패: " + error.message);
     else {
+      if (!customField) {
+        await supabase.from("team_settings").upsert({
+          key: extKey,
+          value: JSON.stringify({
+            life_amt: Number(rawPayload.life_amt || 0),
+            life_cnt: Number(rawPayload.life_cnt || 0),
+            nonlife_amt: Number(rawPayload.nonlife_amt || 0),
+            nonlife_cnt: Number(rawPayload.nonlife_cnt || 0),
+            target_life_amt: Number(rawPayload.target_life_amt || 0),
+            target_life_cnt: Number(rawPayload.target_life_cnt || 0),
+            target_nonlife_amt: Number(rawPayload.target_nonlife_amt || 0),
+            target_nonlife_cnt: Number(rawPayload.target_nonlife_cnt || 0),
+            target_call: Number(rawPayload.target_call || 0),
+            target_meet: Number(rawPayload.target_meet || 0),
+            target_pt: Number(rawPayload.target_pt || 0),
+            target_intro: Number(rawPayload.target_intro || 0),
+            target_db_assigned: Number(rawPayload.target_db_assigned || 0),
+            target_db_returned: Number(rawPayload.target_db_returned || 0),
+            logs: [
+              ...(((perfInput as any).logs || []) as any[]).slice(-60),
+              { date: new Date().toISOString(), ...addInput },
+            ],
+          }),
+        }, { onConflict: "key" });
+      }
       if(!customField) alert(`${month}월 실적이 업데이트되었습니다.`);
       await fetchData(); await fetchAllHistory();
     }
@@ -156,6 +225,10 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   const amtRate = calculateRate(perfInput.contract_amt, perfInput.target_amt);
   const cntRate = calculateRate(perfInput.contract_cnt, perfInput.target_cnt);
+  const lifeAmtRate = calculateRate(perfInput.life_amt, perfInput.target_life_amt);
+  const lifeCntRate = calculateRate(perfInput.life_cnt, perfInput.target_life_cnt);
+  const nonlifeAmtRate = calculateRate(perfInput.nonlife_amt, perfInput.target_nonlife_amt);
+  const nonlifeCntRate = calculateRate(perfInput.nonlife_cnt, perfInput.target_nonlife_cnt);
 
   return (
     <div className="agent-work-view min-w-0 space-y-4 pb-20 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
@@ -219,97 +292,85 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       {mainTab === 'input' && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* 실적 카드 2열 */}
-          <div className="agent-perf-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {/* 실적액 */}
+          {/* 실적 목표/누적 입력 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+            <InsurancePerfCard
+              title="생명보험"
+              tone="#2563eb"
+              amountRate={lifeAmtRate}
+              countRate={lifeCntRate}
+              targetAmount={perfInput.target_life_amt}
+              currentAmount={perfInput.life_amt}
+              addAmount={addInput.life_amt}
+              targetCount={perfInput.target_life_cnt}
+              currentCount={perfInput.life_cnt}
+              addCount={addInput.life_cnt}
+              disabled={perfInput.is_approved}
+              onTargetAmount={(value: number) => setPerfInput({ ...perfInput, target_life_amt: value })}
+              onAddAmount={(value: number) => setAddInput({ ...addInput, life_amt: value })}
+              onTargetCount={(value: number) => setPerfInput({ ...perfInput, target_life_cnt: value })}
+              onAddCount={(value: number) => setAddInput({ ...addInput, life_cnt: value })}
+            />
+            <InsurancePerfCard
+              title="손해보험"
+              tone="#0f6e56"
+              amountRate={nonlifeAmtRate}
+              countRate={nonlifeCntRate}
+              targetAmount={perfInput.target_nonlife_amt}
+              currentAmount={perfInput.nonlife_amt}
+              addAmount={addInput.nonlife_amt}
+              targetCount={perfInput.target_nonlife_cnt}
+              currentCount={perfInput.nonlife_cnt}
+              addCount={addInput.nonlife_cnt}
+              disabled={perfInput.is_approved}
+              onTargetAmount={(value: number) => setPerfInput({ ...perfInput, target_nonlife_amt: value })}
+              onAddAmount={(value: number) => setAddInput({ ...addInput, nonlife_amt: value })}
+              onTargetCount={(value: number) => setPerfInput({ ...perfInput, target_nonlife_cnt: value })}
+              onAddCount={(value: number) => setAddInput({ ...addInput, nonlife_cnt: value })}
+            />
             <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <p style={{ fontSize: 12, color: "#7a9ab2" }}>{month}월 실적액 (만)</p>
-                <p style={{ fontSize: 28, fontWeight: 500, color: getRateColor(amtRate) }}>{amtRate}%</p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>TARGET</p>
-                  <input
-                    type="number"
-                    disabled={perfInput.is_approved}
-                    value={perfInput.target_amt}
-                    onChange={e => setPerfInput({ ...perfInput, target_amt: Number(e.target.value) })}
-                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#1a2d42", fontFamily: "inherit", cursor: perfInput.is_approved ? "not-allowed" : "text" }}
-                  />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ fontSize: 12, color: "#7a9ab2", marginBottom: 4 }}>{month}월 전체 누적</p>
+                  <p style={{ fontSize: 22, fontWeight: 600, color: "#1a2d42" }}>{Number(perfInput.contract_amt || 0).toLocaleString()}만 / {perfInput.contract_cnt}건</p>
                 </div>
-                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>ACTUAL</p>
-                  <input
-                    type="number"
-                    value={perfInput.contract_amt}
-                    onChange={e => setPerfInput({ ...perfInput, contract_amt: Number(e.target.value) })}
-                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#378add", fontFamily: "inherit" }}
-                  />
+                <div style={{ display: "flex", gap: 10 }}>
+                  <CircleRate label="금액" rate={amtRate} size={86} />
+                  <CircleRate label="건수" rate={cntRate} size={86} />
                 </div>
-              </div>
-              <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(amtRate, 100)}%`, background: getBarColor(amtRate), borderRadius: 3, transition: "width 0.8s ease" }} />
-              </div>
-            </div>
-
-            {/* 실적건수 */}
-            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <p style={{ fontSize: 12, color: "#7a9ab2" }}>{month}월 실적건수</p>
-                <p style={{ fontSize: 28, fontWeight: 500, color: getRateColor(cntRate) }}>{cntRate}%</p>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>TARGET</p>
-                  <input
-                    type="number"
-                    disabled={perfInput.is_approved}
-                    value={perfInput.target_cnt}
-                    onChange={e => setPerfInput({ ...perfInput, target_cnt: Number(e.target.value) })}
-                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#1a2d42", fontFamily: "inherit", cursor: perfInput.is_approved ? "not-allowed" : "text" }}
-                  />
-                </div>
-                <div style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 12px" }}>
-                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4, letterSpacing: "0.04em" }}>ACTUAL</p>
-                  <input
-                    type="number"
-                    value={perfInput.contract_cnt}
-                    onChange={e => setPerfInput({ ...perfInput, contract_cnt: Number(e.target.value) })}
-                    style={{ width: "100%", background: "none", border: "none", outline: "none", fontSize: 24, fontWeight: 500, color: "#378add", fontFamily: "inherit" }}
-                  />
-                </div>
-              </div>
-              <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(cntRate, 100)}%`, background: getBarColor(cntRate), borderRadius: 3, transition: "width 0.8s ease" }} />
               </div>
             </div>
           </div>
 
           {/* 활동 지표 */}
           <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px" }}>
-            <p style={{ fontSize: 12, color: "#7a9ab2", marginBottom: 12, letterSpacing: "0.04em" }}>활동 지표</p>
-            <div className="agent-activity-grid" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+            <p style={{ fontSize: 12, color: "#7a9ab2", marginBottom: 12, letterSpacing: "0.04em" }}>활동 지표 · 목표 대비 누적</p>
+            <div className="agent-activity-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
               {[
-                { label: "전화", key: "call", color: "#1a2d42" },
-                { label: "만남", key: "meet", color: "#1a2d42" },
-                { label: "제안", key: "pt", color: "#1a2d42" },
-                { label: "소개", key: "intro", color: "#1a2d42" },
-                { label: "배정", key: "db_assigned", color: "#378add" },
-                { label: "반품", key: "db_returned", color: "#e24b4a" },
-              ].map(({ label, key, color }) => (
-                <div key={key} style={{ textAlign: "center", padding: "10px 4px", background: "#f7fafc", borderRadius: 8 }}>
-                  <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 5 }}>{label}</p>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={(perfInput as any)[key] === 0 ? "" : (perfInput as any)[key]}
-                    placeholder="0"
-                    onChange={e => setPerfInput({ ...perfInput, [key]: Number(e.target.value) })}
-                    style={{ width: "100%", background: "none", border: "none", outline: "none", textAlign: "center", fontSize: 20, fontWeight: 500, color, fontFamily: "inherit" }}
+                { label: "전화", key: "call", targetKey: "target_call" },
+                { label: "만남", key: "meet", targetKey: "target_meet" },
+                { label: "제안", key: "pt", targetKey: "target_pt" },
+                { label: "소개", key: "intro", targetKey: "target_intro" },
+                { label: "DB 배정", key: "db_assigned", targetKey: "target_db_assigned" },
+                { label: "DB 반품", key: "db_returned", targetKey: "target_db_returned" },
+              ].map(({ label, key, targetKey }) => {
+                const current = Number((perfInput as any)[key] || 0);
+                const target = Number((perfInput as any)[targetKey] || 0);
+                const rate = calculateRate(current, target);
+                return (
+                  <ActivityProgressCard
+                    key={key}
+                    label={label}
+                    current={current}
+                    target={target}
+                    add={Number((addInput as any)[key] || 0)}
+                    rate={rate}
+                    disabled={perfInput.is_approved}
+                    onTarget={(value: number) => setPerfInput({ ...perfInput, [targetKey]: value })}
+                    onAdd={(value: number) => setAddInput({ ...addInput, [key]: value })}
                   />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -471,6 +532,106 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
+function InsurancePerfCard({
+  title,
+  tone,
+  amountRate,
+  countRate,
+  targetAmount,
+  currentAmount,
+  addAmount,
+  targetCount,
+  currentCount,
+  addCount,
+  disabled,
+  onTargetAmount,
+  onAddAmount,
+  onTargetCount,
+  onAddCount,
+}: any) {
+  return (
+    <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "16px 18px", display: "grid", gridTemplateColumns: "1fr 190px", gap: 16, alignItems: "center" }}>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#1a2d42" }}>{title}</p>
+          <p style={{ fontSize: 11, fontWeight: 700, color: tone }}>오늘 추가 입력 → 저장 시 누적</p>
+        </div>
+        <div className="agent-insurance-input-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 10 }}>
+          <MetricInput label="목표 금액" value={targetAmount} disabled={disabled} onChange={onTargetAmount} suffix="만" />
+          <ReadMetric label="현재 누적" value={`${Number(currentAmount || 0).toLocaleString()}만`} />
+          <MetricInput label="오늘 추가" value={addAmount} onChange={onAddAmount} suffix="만" accent={tone} />
+        </div>
+        <div className="agent-insurance-input-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+          <MetricInput label="목표 건수" value={targetCount} disabled={disabled} onChange={onTargetCount} suffix="건" />
+          <ReadMetric label="현재 누적" value={`${Number(currentCount || 0).toLocaleString()}건`} />
+          <MetricInput label="오늘 추가" value={addCount} onChange={onAddCount} suffix="건" accent={tone} />
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+        <CircleRate label="금액" rate={amountRate} tone={tone} />
+        <CircleRate label="건수" rate={countRate} tone={tone} />
+      </div>
+    </div>
+  )
+}
+
+function ActivityProgressCard({ label, current, target, add, rate, disabled, onTarget, onAdd }: any) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "82px 1fr", gap: 10, alignItems: "center", borderRadius: 10, background: "#f7fafc", border: "0.5px solid #e4edf5", padding: 10 }}>
+      <CircleRate label={label} rate={rate} size={76} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+        <MetricInput label="목표" value={target} disabled={disabled} onChange={onTarget} suffix="건" compact />
+        <ReadMetric label="누적" value={`${Number(current || 0).toLocaleString()}건`} compact />
+        <MetricInput label="오늘 추가" value={add} onChange={onAdd} suffix="건" accent="#2563eb" compact />
+        <ReadMetric label="저장 후" value={`${Number(current || 0) + Number(add || 0)}건`} compact />
+      </div>
+    </div>
+  )
+}
+
+function MetricInput({ label, value, onChange, disabled = false, suffix, accent = "#1a2d42", compact = false }: any) {
+  return (
+    <label style={{ display: "block", background: "white", borderRadius: 8, border: "0.5px solid #e4edf5", padding: compact ? "7px 8px" : "9px 10px" }}>
+      <span style={{ display: "block", fontSize: 9, color: "#9ab4c8", marginBottom: 3, letterSpacing: "0.04em" }}>{label}</span>
+      <span style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
+        <input
+          type="number"
+          disabled={disabled}
+          value={Number(value || 0) === 0 ? "" : Number(value || 0)}
+          placeholder="0"
+          onChange={(event) => onChange(Number(event.target.value || 0))}
+          style={{ width: "100%", minWidth: 0, background: "none", border: "none", outline: "none", fontSize: compact ? 15 : 19, fontWeight: 700, color: disabled ? "#94a3b8" : accent, fontFamily: "inherit" }}
+        />
+        <span style={{ fontSize: 10, color: "#9ab4c8", flexShrink: 0 }}>{suffix}</span>
+      </span>
+    </label>
+  )
+}
+
+function ReadMetric({ label, value, compact = false }: any) {
+  return (
+    <div style={{ background: "#eef4fb", borderRadius: 8, border: "0.5px solid #d4e0eb", padding: compact ? "7px 8px" : "9px 10px" }}>
+      <p style={{ fontSize: 9, color: "#7a9ab2", marginBottom: 3, letterSpacing: "0.04em" }}>{label}</p>
+      <p style={{ fontSize: compact ? 15 : 19, fontWeight: 700, color: "#378add" }}>{value}</p>
+    </div>
+  )
+}
+
+function CircleRate({ label, rate, tone, size = 94 }: { label: string; rate: number; tone?: string; size?: number }) {
+  const color = tone || getBarColor(rate);
+  const background = `conic-gradient(${color} 0 ${Math.min(rate, 100)}%, #e8eef5 ${Math.min(rate, 100)}% 100%)`;
+  return (
+    <div style={{ width: size, textAlign: "center" }}>
+      <div style={{ width: size, height: size, borderRadius: "50%", background, padding: 8 }}>
+        <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: size < 82 ? 17 : 21, fontWeight: 800, color: getRateColor(rate), lineHeight: 1 }}>{rate}%</span>
+          <span style={{ marginTop: 3, fontSize: 9, fontWeight: 700, color: "#9ab4c8" }}>{label}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function getRateColor(rate: number) {
   if (rate >= 80) return "#0f6e56";
   if (rate >= 65) return "#ba7517";
@@ -483,14 +644,4 @@ function getBarColor(rate: number) {
   if (rate >= 65) return "#f0a500";
   if (rate >= 30) return "#f0a500";
   return "#e24b4a";
-}
-
-function MonitorBar({ rate }: { rate: number }) {
-  return (
-    <div>
-      <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${Math.min(rate, 100)}%`, background: getBarColor(rate), borderRadius: 3, transition: "width 0.8s ease" }} />
-      </div>
-    </div>
-  )
 }

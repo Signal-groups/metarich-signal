@@ -86,74 +86,159 @@ function parseAmountToMan(val: unknown): number {
 }
 
 // ── GPTs JSON 파서 ──────────────────────────────────────────────────────
+// coverage_summary 키 → rowKey 매핑
+const SUMMARY_KEY_TO_ROW: Record<string, string> = {
+  cancer: 'cancer_general',
+  similar_cancer: 'cancer_similar',
+  cancer_chemo: 'cancer_chemo',
+  cancer_targeted: 'cancer_targeted',
+  cancer_major: 'cancer_major_benefit',
+  cancer_major_benefit: 'cancer_major_benefit',
+  cancer_major_nonbenefit: 'cancer_major_nonbenefit',
+  brain_vascular: 'brain_vascular',
+  brain_stroke: 'brain_stroke',
+  brain_hemorrhage: 'brain_hemorrhage',
+  brain_surgery: 'two_major_surgery',
+  heart_mi: 'heart_acute_mi',
+  ischemic_heart: 'heart_ischemic',
+  heart_vascular: 'heart_vascular',
+  heart_surgery: 'two_major_surgery',
+  major_treatment: 'vascular_major',
+  disease_surgery: 'surgery_disease',
+  injury_surgery: 'surgery_injury',
+  disease_hosp_daily: 'hospital_disease_daily',
+  injury_hosp_daily: 'hospital_injury_daily',
+  nursing_daily: 'nursing_hospital',
+  nursing_injury: 'nursing_integrated',
+  driver_fine: 'driver_fine',
+  driver_lawyer: 'driver_lawyer',
+  driver_accident: 'driver_accident',
+  disability_disease_80: 'disability_disease_80',
+  disability_disease: 'disability_disease',
+  disability_injury_80: 'disability_injury_80',
+  disability_injury: 'disability_injury',
+  death_general: 'death_general',
+  death_disease: 'death_disease',
+  death_injury: 'death_injury',
+}
+
+function parsePolicyType(val: unknown): 'protection' | 'savings' {
+  const s = String(val ?? '').toLowerCase()
+  return s === 'savings' || s.includes('savings') || s.includes('저축') ? 'savings' : 'protection'
+}
+
+// 붙여 넣은 텍스트에서 가장 바깥쪽 JSON 오브젝트/배열 추출
+function extractJson(raw: string): string {
+  // 중괄호 기준 첫 { 위치 찾기
+  const start = raw.indexOf('{')
+  const startArr = raw.indexOf('[')
+  if (start === -1 && startArr === -1) return raw
+  if (startArr !== -1 && (start === -1 || startArr < start)) {
+    // 배열로 시작
+    const last = raw.lastIndexOf(']')
+    return last !== -1 ? raw.slice(startArr, last + 1) : raw
+  }
+  const last = raw.lastIndexOf('}')
+  return last !== -1 ? raw.slice(start, last + 1) : raw
+}
+
 function parseGptsJson(raw: string): ProContract[] | null {
   try {
-    const parsed = JSON.parse(raw)
+    const cleaned = extractJson(raw.trim())
+    const parsed = JSON.parse(cleaned)
 
-    // ── v5 포맷: { version: "insurance_analysis_v5", policies: [...] } ──
-    if (parsed.version === 'insurance_analysis_v5' && Array.isArray(parsed.policies)) {
+    // ── v5 포맷 또는 policies 배열 감지 ─────────────────────────────────
+    const isV5 = parsed.version === 'insurance_analysis_v5' || parsed.version?.startsWith('insurance_analysis')
+    if ((isV5 || Array.isArray(parsed.policies)) && Array.isArray(parsed.policies)) {
       if (parsed.policies.length === 0) return null
       return parsed.policies.map((item: Record<string, unknown>, idx: number) => {
         const coverages = Array.isArray(item.coverages)
           ? (item.coverages as Array<Record<string, unknown>>).map((cov, ci) => {
-              // v5: coverage_name 필드, amount는 만원 단위
-              const name = String(cov.coverage_name ?? cov.name ?? cov.담보명 ?? '')
+              const name = String(cov.coverage_name ?? cov.name ?? cov['담보명'] ?? '')
               return {
                 id: `json-cov-${idx}-${ci}`,
                 contractId: '',
                 rowKey: inferClientRowKey(name) ?? 'unknown',
                 name,
-                // parseAmountToMan으로 "1억", "5000만", 30000 등 모두 정규화
-                amount: parseAmountToMan(cov.amount ?? cov.가입금액 ?? 0),
-                expiryDate: String(cov.end_date ?? cov.expiryDate ?? cov.만기 ?? ''),
+                amount: parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0),
+                expiryDate: String(cov.end_date ?? cov.expiryDate ?? cov['만기'] ?? ''),
                 isRenewal: cov.coverage_type === '갱신형' || Boolean(cov.isRenewal ?? false),
               }
             })
           : []
         return {
           id: `json-${idx}-${Date.now()}`,
-          company: String(item.company ?? item.보험사 ?? ''),
-          productName: String(item.product_name ?? item.productName ?? item.상품명 ?? ''),
-          policyHolder: String(item.policyHolder ?? item.계약자 ?? ''),
-          contractDate: String(item.start_date ?? item.contractDate ?? item.계약일 ?? ''),
-          paymentPeriod: String(item.payment_period ?? item.paymentPeriod ?? item.납입기간 ?? ''),
-          // v5: monthly_premium은 만원 단위 → 원으로 변환
-          monthlyPremium: Math.round(Number(item.monthly_premium ?? item.monthlyPremium ?? item.월보험료 ?? 0) * 10000),
+          company: String(item.company ?? item['보험사'] ?? ''),
+          productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
+          policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
+          contractDate: String(item.start_date ?? item.contractDate ?? item['계약일'] ?? ''),
+          paymentPeriod: String(item.payment_period ?? item.paymentPeriod ?? item['납입기간'] ?? ''),
+          monthlyPremium: Math.round(Number(item.monthly_premium ?? item.monthlyPremium ?? item['월보험료'] ?? 0) * 10000),
           isRenewal: Boolean(item.isRenewal ?? false),
           status: (['active','lapsed','expired'].includes(String(item.policy_status)) ? item.policy_status : 'active') as 'active' | 'lapsed' | 'expired',
+          policyType: parsePolicyType(item.policy_type ?? item.policyType),
           coverages,
         }
       })
     }
 
-    // ── 레거시 포맷: 배열 또는 { contracts: [...] } ──
+    // ── coverage_summary 포맷: 단일 계약 요약 ────────────────────────────
+    const summary = parsed.coverage_summary as Record<string, unknown> | undefined
+    if (summary && typeof summary === 'object') {
+      const company = String(parsed.company ?? parsed['보험사'] ?? '')
+      const productName = String(parsed.product_name ?? parsed.productName ?? parsed['상품명'] ?? '')
+      const premium = Math.round(Number(parsed.monthly_premium ?? parsed.monthlyPremium ?? 0) * 10000)
+      const coverages = Object.entries(summary)
+        .filter(([k]) => SUMMARY_KEY_TO_ROW[k] && typeof summary[k] === 'number' && (summary[k] as number) > 0)
+        .map(([k, v], ci) => ({
+          id: `sum-cov-${ci}`,
+          contractId: 'summary',
+          rowKey: SUMMARY_KEY_TO_ROW[k],
+          name: k,
+          amount: Number(v),
+          isRenewal: false,
+        }))
+      if (coverages.length === 0) return null
+      return [{
+        id: `sum-${Date.now()}`,
+        company: company || '확인불가',
+        productName: productName || '통합보장',
+        monthlyPremium: premium,
+        status: 'active' as const,
+        policyType: 'protection' as const,
+        coverages,
+      }]
+    }
+
+    // ── 레거시: 배열 또는 { contracts: [...] } ───────────────────────────
     const arr = Array.isArray(parsed) ? parsed : parsed.contracts ?? parsed.data ?? []
     if (!Array.isArray(arr) || arr.length === 0) return null
     return arr.map((item: Record<string, unknown>, idx: number) => {
       const coverages = Array.isArray(item.coverages)
         ? (item.coverages as Array<Record<string, unknown>>).map((cov, ci) => {
-            const name = String(cov.name ?? cov.담보명 ?? '')
+            const name = String(cov.name ?? cov['담보명'] ?? '')
             return {
               id: `json-cov-${idx}-${ci}`,
               contractId: '',
               rowKey: inferClientRowKey(name) ?? 'unknown',
               name,
-              amount: parseAmountToMan(cov.amount ?? cov.가입금액 ?? 0),
-              expiryDate: String(cov.expiryDate ?? cov.만기 ?? ''),
+              amount: parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0),
+              expiryDate: String(cov.expiryDate ?? cov['만기'] ?? ''),
               isRenewal: Boolean(cov.isRenewal ?? false),
             }
           })
         : []
       return {
         id: `json-${idx}-${Date.now()}`,
-        company: String(item.company ?? item.보험사 ?? ''),
-        productName: String(item.productName ?? item.상품명 ?? ''),
-        policyHolder: String(item.policyHolder ?? item.계약자 ?? ''),
-        contractDate: String(item.contractDate ?? item.계약일 ?? ''),
-        paymentPeriod: String(item.paymentPeriod ?? item.납입기간 ?? ''),
-        monthlyPremium: Number(item.monthlyPremium ?? item.월보험료 ?? 0),
+        company: String(item.company ?? item['보험사'] ?? ''),
+        productName: String(item.productName ?? item['상품명'] ?? ''),
+        policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
+        contractDate: String(item.contractDate ?? item['계약일'] ?? ''),
+        paymentPeriod: String(item.paymentPeriod ?? item['납입기간'] ?? ''),
+        monthlyPremium: Number(item.monthlyPremium ?? item['월보험료'] ?? 0),
         isRenewal: Boolean(item.isRenewal ?? false),
         status: 'active' as const,
+        policyType: parsePolicyType(item.policy_type ?? item.policyType),
         coverages,
       }
     })
@@ -565,7 +650,14 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
           {/* ══════════════ STEP 3 — 현재 보험 ═══════════════════════ */}
           {currentStep === 3 && (
             <div style={{ display: 'grid', gap: 14 }}>
-              <ContractList contracts={contracts} />
+              <ContractList
+                contracts={contracts}
+                onUpdate={(id, patch) =>
+                  setContracts((prev) =>
+                    prev.map((c) => (c.id === id ? { ...c, ...patch } : c))
+                  )
+                }
+              />
               {/* JSON 다시 붙여넣기 허용 */}
               {!showJsonPaste ? (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

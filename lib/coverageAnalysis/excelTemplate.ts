@@ -297,6 +297,7 @@ export async function fillCoverageTemplate(input: ExcelExportInput): Promise<Buf
     ws.getRow(ROW.CONTRACTEE).getCell(col).value      = contract.policyHolder ?? ''
     ws.getRow(ROW.CONTRACT_DATE).getCell(col).value   = contract.contractDate ?? ''
     ws.getRow(ROW.PAYMENT).getCell(col).value         = contract.paymentPeriod ?? ''
+    ws.getRow(ROW.NOTE).getCell(col).value            = contract.policyType === 'savings' ? 'ì ì¶ì±' : 'ë³´ì¥ì±'
     ws.getRow(ROW.PREMIUM).getCell(col).value         = contract.monthlyPremium ?? 0
 
     // 담보별 금액 입력 (T열 수식 절대 건드리지 않음)

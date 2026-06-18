@@ -26,6 +26,7 @@ interface UserFiltersProps {
 const headquarters = ["1본부", "2본부", "3본부", "4본부", "5본부", "6본부", "7본부", "8본부", "9본부", "10본부", "CJ onstyle"]
 
 const ranks = [
+  { value: "guest", label: "게스트 (타사/미승인)" },
   { value: "agent", label: "설계사" },
   { value: "manager", label: "지점장" },
   { value: "leader", label: "사업부장" },

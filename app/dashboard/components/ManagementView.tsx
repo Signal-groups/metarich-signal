@@ -36,6 +36,11 @@ const QUICK_LINKS = [
 ]
 
 const defaultDeptMeta = { targetAmt: 3000, targetCnt: 100, targetIntro: 10, actualIntro: 0 }
+const defaultPerfExt = {
+  life_amt: 0, life_cnt: 0, nonlife_amt: 0, nonlife_cnt: 0,
+  target_life_amt: 150, target_life_cnt: 5, target_nonlife_amt: 150, target_nonlife_cnt: 5,
+  target_call: 100, target_meet: 30, target_pt: 15, target_intro: 10, target_db_assigned: 50, target_db_returned: 0,
+}
 
 export default function ManagementView({ user, selectedDate }: ManagementViewProps) {
   const [agents, setAgents] = useState<any[]>([])
@@ -74,7 +79,12 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
         contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10,
         is_approved: target.is_approved || false,
       }
-      return { ...target, performance: currentPerf }
+      const rawExt = settings?.find((setting) => setting.key === `daily_perf_ext:${target.id}:${monthKey}`)?.value
+      let parsedExt = {}
+      if (rawExt) {
+        try { parsedExt = typeof rawExt === "string" ? JSON.parse(rawExt) : rawExt } catch { parsedExt = {} }
+      }
+      return { ...target, performance: { ...defaultPerfExt, ...currentPerf, ...parsedExt } }
     }))
   }, [monthKey, user])
 
@@ -126,11 +136,35 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
   const totals = useMemo(() => scopedAgents.reduce((acc, agent) => ({
     amt: acc.amt + Number(agent.performance?.contract_amt || 0),
     cnt: acc.cnt + Number(agent.performance?.contract_cnt || 0),
+    targetAmt: acc.targetAmt + Number(agent.performance?.target_amt || 0),
+    targetCnt: acc.targetCnt + Number(agent.performance?.target_cnt || 0),
+    lifeAmt: acc.lifeAmt + Number(agent.performance?.life_amt || 0),
+    lifeCnt: acc.lifeCnt + Number(agent.performance?.life_cnt || 0),
+    nonlifeAmt: acc.nonlifeAmt + Number(agent.performance?.nonlife_amt || 0),
+    nonlifeCnt: acc.nonlifeCnt + Number(agent.performance?.nonlife_cnt || 0),
+    targetLifeAmt: acc.targetLifeAmt + Number(agent.performance?.target_life_amt || 0),
+    targetLifeCnt: acc.targetLifeCnt + Number(agent.performance?.target_life_cnt || 0),
+    targetNonlifeAmt: acc.targetNonlifeAmt + Number(agent.performance?.target_nonlife_amt || 0),
+    targetNonlifeCnt: acc.targetNonlifeCnt + Number(agent.performance?.target_nonlife_cnt || 0),
     call: acc.call + Number(agent.performance?.call || 0),
     meet: acc.meet + Number(agent.performance?.meet || 0),
     pt: acc.pt + Number(agent.performance?.pt || 0),
     intro: acc.intro + Number(agent.performance?.intro || 0),
-  }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 }), [scopedAgents])
+    dbAssigned: acc.dbAssigned + Number(agent.performance?.db_assigned || 0),
+    dbReturned: acc.dbReturned + Number(agent.performance?.db_returned || 0),
+    targetCall: acc.targetCall + Number(agent.performance?.target_call || 0),
+    targetMeet: acc.targetMeet + Number(agent.performance?.target_meet || 0),
+    targetPt: acc.targetPt + Number(agent.performance?.target_pt || 0),
+    targetIntro: acc.targetIntro + Number(agent.performance?.target_intro || 0),
+    targetDbAssigned: acc.targetDbAssigned + Number(agent.performance?.target_db_assigned || 0),
+    targetDbReturned: acc.targetDbReturned + Number(agent.performance?.target_db_returned || 0),
+  }), {
+    amt: 0, cnt: 0, targetAmt: 0, targetCnt: 0,
+    lifeAmt: 0, lifeCnt: 0, nonlifeAmt: 0, nonlifeCnt: 0,
+    targetLifeAmt: 0, targetLifeCnt: 0, targetNonlifeAmt: 0, targetNonlifeCnt: 0,
+    call: 0, meet: 0, pt: 0, intro: 0, dbAssigned: 0, dbReturned: 0,
+    targetCall: 0, targetMeet: 0, targetPt: 0, targetIntro: 0, targetDbAssigned: 0, targetDbReturned: 0,
+  }), [scopedAgents])
 
   const scopeLabel = [
     selectedHeadquarter || (isMaster ? "전체 본부" : getHeadquarter(user)),
@@ -172,7 +206,8 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
     setShowExportOpt(false)
   }
 
-  const achievementRate = Math.round((totals.amt / (deptMeta.targetAmt || 1)) * 100)
+  const achievementRate = Math.round((totals.amt / (totals.targetAmt || deptMeta.targetAmt || 1)) * 100)
+  const countAchievementRate = Math.round((totals.cnt / (totals.targetCnt || deptMeta.targetCnt || 1)) * 100)
 
   return (
     <div className="management-workspace min-w-0 [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]" style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 80 }}>
@@ -192,28 +227,31 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
 
       {/* 통계 카드 */}
       <div style={{ background: "white", borderRadius: 12, border: "0.5px solid #e4edf5", padding: "16px 18px" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16, flexWrap: "wrap" }}>
           <div>
             <p style={{ fontSize: 11, color: "#7a9ab2", marginBottom: 4, letterSpacing: "0.04em" }}>{roleLabel(user)} 관리 범위</p>
             <p style={{ fontSize: 18, fontWeight: 500, color: "#1a2d42" }}>{scopeLabel || "관리 범위 없음"}</p>
           </div>
-          <p style={{ fontSize: 28, fontWeight: 500, color: getRateColor(achievementRate) }}>{achievementRate}%</p>
+          <div style={{ display: "flex", gap: 10 }}>
+            <CircleRate label="금액" rate={achievementRate} size={90} />
+            <CircleRate label="건수" rate={countAchievementRate} size={90} />
+          </div>
         </div>
-        <div style={{ height: 5, background: "#eef2f7", borderRadius: 3, overflow: "hidden", marginBottom: 14 }}>
-          <div style={{ height: "100%", width: `${Math.min(achievementRate, 100)}%`, background: getBarColor(achievementRate), borderRadius: 3, transition: "width 0.8s ease" }} />
-        </div>
-        <div className="management-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-          {[
-            { label: "실적", value: `${totals.amt.toLocaleString()}만` },
-            { label: "계약", value: `${totals.cnt}건` },
-            { label: "전화", value: `${totals.call}건` },
-            { label: "만남", value: `${totals.meet}건` },
-          ].map(item => (
-            <div key={item.label} style={{ background: "#f7fafc", borderRadius: 8, padding: "10px 8px", textAlign: "center" }}>
-              <p style={{ fontSize: 10, color: "#9ab4c8", marginBottom: 4 }}>{item.label}</p>
-              <p style={{ fontSize: 14, fontWeight: 500, color: "#1a2d42" }}>{item.value}</p>
-            </div>
-          ))}
+        <div className="management-stat-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 2fr", gap: 10 }}>
+          <InsuranceSummaryBox title="생명보험" amount={totals.lifeAmt} count={totals.lifeCnt} targetAmount={totals.targetLifeAmt} targetCount={totals.targetLifeCnt} tone="#2563eb" />
+          <InsuranceSummaryBox title="손해보험" amount={totals.nonlifeAmt} count={totals.nonlifeCnt} targetAmount={totals.targetNonlifeAmt} targetCount={totals.targetNonlifeCnt} tone="#0f6e56" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            {[
+              { label: "전화", current: totals.call, target: totals.targetCall },
+              { label: "만남", current: totals.meet, target: totals.targetMeet },
+              { label: "제안", current: totals.pt, target: totals.targetPt },
+              { label: "소개", current: totals.intro, target: totals.targetIntro },
+              { label: "DB 배정", current: totals.dbAssigned, target: totals.targetDbAssigned },
+              { label: "DB 반품", current: totals.dbReturned, target: totals.targetDbReturned },
+            ].map((item) => (
+              <MiniActivityGauge key={item.label} {...item} />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -302,6 +340,12 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
           {scopedAgents.filter((agent) => agent.is_approved).map((agent) => {
             const amtRate = Math.round(((Number(agent.performance?.contract_amt) || 0) / (Number(agent.performance?.target_amt) || 1)) * 100)
             const cntRate = Math.round(((Number(agent.performance?.contract_cnt) || 0) / (Number(agent.performance?.target_cnt) || 1)) * 100)
+            const activityItems = [
+              { label: "전화", current: Number(agent.performance?.call || 0), target: Number(agent.performance?.target_call || 0) },
+              { label: "만남", current: Number(agent.performance?.meet || 0), target: Number(agent.performance?.target_meet || 0) },
+              { label: "제안", current: Number(agent.performance?.pt || 0), target: Number(agent.performance?.target_pt || 0) },
+              { label: "소개", current: Number(agent.performance?.intro || 0), target: Number(agent.performance?.target_intro || 0) },
+            ]
             return (
               <div
                 key={agent.id}
@@ -316,6 +360,13 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
                 <div className="management-monitor-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                   <MonitorBar label="매출 달성률" rate={amtRate} current={agent.performance?.contract_amt} target={agent.performance?.target_amt} unit="만원" />
                   <MonitorBar label="건수 달성률" rate={cntRate} current={agent.performance?.contract_cnt} target={agent.performance?.target_cnt} unit="건" />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                  <InsuranceMiniLine label="생명보험" amount={agent.performance?.life_amt} count={agent.performance?.life_cnt} tone="#2563eb" />
+                  <InsuranceMiniLine label="손해보험" amount={agent.performance?.nonlife_amt} count={agent.performance?.nonlife_cnt} tone="#0f6e56" />
+                </div>
+                <div className="management-activity-mini-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
+                  {activityItems.map((item) => <MiniActivityGauge key={item.label} {...item} />)}
                 </div>
               </div>
             )
@@ -352,6 +403,76 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
 
 export function departmentSettingsKey(headquarter: string, department: string) {
   return `department_settings:${headquarter}:${department}`
+}
+
+function CircleRate({ label, rate, size = 88 }: { label: string; rate: number; size?: number }) {
+  const color = getBarColor(rate)
+  const background = `conic-gradient(${color} 0 ${Math.min(rate, 100)}%, #e8eef5 ${Math.min(rate, 100)}% 100%)`
+  return (
+    <div style={{ width: size, textAlign: "center" }}>
+      <div style={{ width: size, height: size, borderRadius: "50%", background, padding: 8 }}>
+        <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "white", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 20, fontWeight: 800, color: getRateColor(rate), lineHeight: 1 }}>{rate}%</span>
+          <span style={{ marginTop: 3, fontSize: 9, fontWeight: 700, color: "#9ab4c8" }}>{label}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function InsuranceSummaryBox({ title, amount, count, targetAmount, targetCount, tone }: any) {
+  const amountRate = Math.round((Number(amount || 0) / (Number(targetAmount || 0) || 1)) * 100)
+  const countRate = Math.round((Number(count || 0) / (Number(targetCount || 0) || 1)) * 100)
+  return (
+    <div style={{ borderRadius: 10, background: "#f7fafc", border: "0.5px solid #e4edf5", padding: "12px 13px" }}>
+      <p style={{ fontSize: 13, fontWeight: 800, color: tone, marginBottom: 8 }}>{title}</p>
+      <p style={{ fontSize: 18, fontWeight: 800, color: "#1a2d42" }}>{Number(amount || 0).toLocaleString()}만</p>
+      <p style={{ fontSize: 12, fontWeight: 700, color: "#7a9ab2", marginTop: 2 }}>{Number(count || 0).toLocaleString()}건</p>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10 }}>
+        <SmallRate label="금액" rate={amountRate} />
+        <SmallRate label="건수" rate={countRate} />
+      </div>
+    </div>
+  )
+}
+
+function SmallRate({ label, rate }: { label: string; rate: number }) {
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 6, marginBottom: 4 }}>
+        <span style={{ fontSize: 9, color: "#9ab4c8" }}>{label}</span>
+        <span style={{ fontSize: 10, fontWeight: 800, color: getRateColor(rate) }}>{rate}%</span>
+      </div>
+      <div style={{ height: 4, borderRadius: 999, background: "#e8eef5", overflow: "hidden" }}>
+        <div style={{ width: `${Math.min(rate, 100)}%`, height: "100%", borderRadius: 999, background: getBarColor(rate) }} />
+      </div>
+    </div>
+  )
+}
+
+function MiniActivityGauge({ label, current, target }: any) {
+  const rate = Math.round((Number(current || 0) / (Number(target || 0) || 1)) * 100)
+  return (
+    <div style={{ borderRadius: 9, background: "white", border: "0.5px solid #e4edf5", padding: "8px 9px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 6, marginBottom: 5 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: "#1a2d42" }}>{label}</span>
+        <span style={{ fontSize: 10, fontWeight: 800, color: getRateColor(rate) }}>{rate}%</span>
+      </div>
+      <p style={{ fontSize: 10, color: "#7a9ab2", marginBottom: 5 }}>{Number(current || 0).toLocaleString()} / {Number(target || 0).toLocaleString()}건</p>
+      <div style={{ height: 4, borderRadius: 999, background: "#e8eef5", overflow: "hidden" }}>
+        <div style={{ width: `${Math.min(rate, 100)}%`, height: "100%", borderRadius: 999, background: getBarColor(rate) }} />
+      </div>
+    </div>
+  )
+}
+
+function InsuranceMiniLine({ label, amount, count, tone }: any) {
+  return (
+    <div style={{ borderRadius: 9, background: "white", border: "0.5px solid #e4edf5", padding: "8px 10px" }}>
+      <p style={{ fontSize: 10, fontWeight: 800, color: tone, marginBottom: 4 }}>{label}</p>
+      <p style={{ fontSize: 12, fontWeight: 800, color: "#1a2d42" }}>{Number(amount || 0).toLocaleString()}만 · {Number(count || 0).toLocaleString()}건</p>
+    </div>
+  )
 }
 
 function getRateColor(rate: number) {
@@ -401,4 +522,3 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
     </button>
   )
 }
-

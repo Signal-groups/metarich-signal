@@ -50,3 +50,33 @@ body {
   word-break: keep-all;
   overflow-wrap: break-word;
 }
+
+@media (max-width: 1100px) {
+  .management-stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .management-activity-mini-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .agent-activity-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .agent-insurance-input-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .agent-work-view [style*="grid-template-columns: 1fr 190px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .management-monitor-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

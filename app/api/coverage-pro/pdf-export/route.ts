@@ -213,6 +213,7 @@ function buildPrintHtml(input: PdfExportInput): string {
     {
       title: '간병 · 재가',
       icon: '🏥',
+      showTotal: false,
       items: [
         { label: '병원간병인',     rowKeys: ['nursing_hospital'] },
         { label: '요양병원간병인', rowKeys: ['nursing_care_hospital'] },
@@ -232,10 +233,13 @@ function buildPrintHtml(input: PdfExportInput): string {
       </div>`
     }).join('')
     const total = card.items.reduce((s, { rowKeys }) => s + sumAmount(contracts, ...rowKeys), 0)
+    const totalHtml = (card as {showTotal?: boolean}).showTotal === false
+      ? ''
+      : `<div class="tc-total">합계 <b>${formatWon(total)}</b></div>`
     return `<div class="tc-card">
       <div class="tc-head">${card.icon} ${escHtml(card.title)}</div>
       ${rows}
-      <div class="tc-total">합계 <b>${formatWon(total)}</b></div>
+      ${totalHtml}
     </div>`
   }).join('')
 
@@ -592,9 +596,9 @@ ${selectedImages.map((src, idx) => `
 
 <script>
   window.addEventListener('load', function() {
-    window.setTimeout(function(){ window.print(); }, 500);
-  });
-</script>
+      window.setTimeout(function(){ window.print(); }, 500);
+    });
+  </script>
 </body>
 </html>`
 }

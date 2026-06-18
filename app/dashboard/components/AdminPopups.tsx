@@ -327,6 +327,10 @@ export default function AdminPopups({
   const getRate = (part: number, total: number) => total > 0 ? ((part / total) * 100).toFixed(1) : "0.0"
   const totalAmt = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.contract_amt || 0), 0) || 0
   const totalCnt = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.contract_cnt || 0), 0) || 0
+  const totalLifeAmt = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.life_amt || 0), 0) || 0
+  const totalLifeCnt = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.life_cnt || 0), 0) || 0
+  const totalNonlifeAmt = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.nonlife_amt || 0), 0) || 0
+  const totalNonlifeCnt = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.nonlife_cnt || 0), 0) || 0
   const totalDB = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.db_assigned || 0), 0) || 0
   const totalReturn = agents?.reduce((sum: number, agent: any) => sum + Number(agent.performance?.db_returned || 0), 0) || 0
 
@@ -485,6 +489,10 @@ export default function AdminPopups({
               <StatBox label="건수 달성률" cur={totalCnt} tar={tarCnt} unit="건" color="bg-emerald-500" />
               <StatBox label="도입 인원 목표" cur={curIntro} tar={tarIntro} unit="명" color="bg-amber-500" />
             </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <InsuranceBreakdownBox title="생명보험 합계" amount={totalLifeAmt} count={totalLifeCnt} tone="text-blue-700" />
+              <InsuranceBreakdownBox title="손해보험 합계" amount={totalNonlifeAmt} count={totalNonlifeCnt} tone="text-emerald-700" />
+            </div>
             <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 shadow-xl">
               <table className="w-full text-left font-black">
                 <thead className="bg-[#1a3a6e] text-[13px] text-white">
@@ -530,6 +538,14 @@ export default function AdminPopups({
                   <ActivityCountBox label="제안" val={`${selectedAgent.performance?.pt || 0}건`} />
                   <ActivityCountBox label="소개" val={`${selectedAgent.performance?.intro || 0}건`} />
                 </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    { label: "전화 달성률", cur: selectedAgent.performance?.call, tar: selectedAgent.performance?.target_call },
+                    { label: "만남 달성률", cur: selectedAgent.performance?.meet, tar: selectedAgent.performance?.target_meet },
+                    { label: "제안 달성률", cur: selectedAgent.performance?.pt, tar: selectedAgent.performance?.target_pt },
+                    { label: "소개 달성률", cur: selectedAgent.performance?.intro, tar: selectedAgent.performance?.target_intro },
+                  ].map((item) => <ActivityRateBox key={item.label} {...item} />)}
+                </div>
               </div>
             ) : (
               <div className="space-y-8">
@@ -543,6 +559,14 @@ export default function AdminPopups({
                   <ActivityCountBox label="만남 합계" val={`${agents?.reduce((s: number, a: any) => s + Number(a.performance?.meet || 0), 0) || 0}건`} />
                   <ActivityCountBox label="제안 합계" val={`${agents?.reduce((s: number, a: any) => s + Number(a.performance?.pt || 0), 0) || 0}건`} />
                   <ActivityCountBox label="소개 합계" val={`${agents?.reduce((s: number, a: any) => s + Number(a.performance?.intro || 0), 0) || 0}건`} />
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    { label: "전화 달성률", cur: agents?.reduce((s: number, a: any) => s + Number(a.performance?.call || 0), 0) || 0, tar: agents?.reduce((s: number, a: any) => s + Number(a.performance?.target_call || 0), 0) || 0 },
+                    { label: "만남 달성률", cur: agents?.reduce((s: number, a: any) => s + Number(a.performance?.meet || 0), 0) || 0, tar: agents?.reduce((s: number, a: any) => s + Number(a.performance?.target_meet || 0), 0) || 0 },
+                    { label: "제안 달성률", cur: agents?.reduce((s: number, a: any) => s + Number(a.performance?.pt || 0), 0) || 0, tar: agents?.reduce((s: number, a: any) => s + Number(a.performance?.target_pt || 0), 0) || 0 },
+                    { label: "소개 달성률", cur: agents?.reduce((s: number, a: any) => s + Number(a.performance?.intro || 0), 0) || 0, tar: agents?.reduce((s: number, a: any) => s + Number(a.performance?.target_intro || 0), 0) || 0 },
+                  ].map((item) => <ActivityRateBox key={item.label} {...item} />)}
                 </div>
               </div>
             )}
@@ -656,6 +680,40 @@ function ActivityCountBox({ label, val }: any) {
     <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center font-black shadow-sm transition-transform hover:-translate-y-0.5">
       <p className="mb-2 text-[13px] text-slate-400">{label}</p>
       <p className="text-xl font-black">{val || 0}</p>
+    </div>
+  )
+}
+
+function InsuranceBreakdownBox({ title, amount, count, tone }: any) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-md">
+      <p className={`mb-3 text-[14px] font-black ${tone}`}>{title}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-white p-4 text-center">
+          <p className="mb-1 text-[12px] text-slate-400">금액</p>
+          <p className="text-xl font-black text-slate-900">{Number(amount || 0).toLocaleString()}만원</p>
+        </div>
+        <div className="rounded-xl bg-white p-4 text-center">
+          <p className="mb-1 text-[12px] text-slate-400">건수</p>
+          <p className="text-xl font-black text-slate-900">{Number(count || 0).toLocaleString()}건</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ActivityRateBox({ label, cur, tar }: any) {
+  const pct = Math.min((Number(cur || 0) / (Number(tar || 0) || 1)) * 100, 100).toFixed(1)
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-[13px] font-black text-slate-500">{label}</p>
+        <p className="text-xl font-black text-[#1a3a6e]">{pct}%</p>
+      </div>
+      <p className="mb-3 text-[12px] font-bold text-slate-400">{Number(cur || 0).toLocaleString()} / {Number(tar || 0).toLocaleString()}건</p>
+      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-[#2563eb] transition-all duration-700" style={{ width: `${pct}%` }} />
+      </div>
     </div>
   )
 }

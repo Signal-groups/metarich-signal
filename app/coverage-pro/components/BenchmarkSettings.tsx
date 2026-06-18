@@ -104,12 +104,13 @@ export const BENCHMARK_PRESETS: Record<'min' | 'standard' | 'comfort', Benchmark
     cancer_major_benefit: 1000, cancer_major_nonbenefit: 1000, vascular_major: 1000,
   },
   comfort: {
-    death: 50000, cancer: 10000, cancer_similar: 2000,
-    brain: 5000, brain_stroke: 3000, brain_hemorrhage: 3000,
-    heart: 5000, heart_ischemic: 3000, heart_mi: 3000,
-    surgery: 1000, nursing: 70, driver: 5000,
-    silson: 1, fire: 10000,
-    cancer_major_benefit: 2000, cancer_major_nonbenefit: 2000, vascular_major: 2000,
+    // 표준 기준의 1.5배 — 표준 대비 월보험료 약 50% 상승, 최소↔여유 암진단비 차이 약 3만원
+    death: 45000, cancer: 7500, cancer_similar: 1500,
+    brain: 4500, brain_stroke: 3000, brain_hemorrhage: 3000,
+    heart: 4500, heart_ischemic: 3000, heart_mi: 3000,
+    surgery: 750, nursing: 75, driver: 4500,
+    silson: 1, fire: 7500,
+    cancer_major_benefit: 1500, cancer_major_nonbenefit: 1500, vascular_major: 1500,
   },
 }
 

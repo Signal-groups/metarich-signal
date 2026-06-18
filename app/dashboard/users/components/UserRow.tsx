@@ -56,7 +56,7 @@ interface UserRowProps {
 }
 
 const rankOptions: Array<{ value: AppRank; label: string }> = [
-  { value: "guest", label: "게스트 (타사)" },
+  { value: "guest", label: "게스트 (타사/미승인)" },
   { value: "agent", label: "설계사" },
   { value: "manager", label: "지점장" },
   { value: "leader", label: "사업부장" },
