@@ -35,6 +35,29 @@ export const CONSULTING_TOOL_CATEGORIES: {
   { id: "claims", title: "수술 및 후유장해", desc: "질병, 수술, 장해 기준 확인에 필요한 도구", tone: "border-rose-500 text-rose-600", countTone: "bg-rose-50 text-rose-700" },
 ];
 
+// fixed=true 항목은 항상 true, defaultEnabled=false면 false, 나머지는 true
+export const DEFAULT_MENU_STATUS: Record<string, boolean> = {
+  show_first_coverage_check: true,  // fixed
+  show_cont: true,                  // fixed
+  show_hira: true,                  // fixed
+  show_health_kr: true,             // fixed
+  show_insurance_survey: true,      // fixed
+  show_card_consult: true,          // fixed
+  show_knia: true,                  // fixed
+  show_coverage_stats: true,
+  show_car_accident: true,
+  show_disease: true,               // fixed
+  show_premium_compare: true,
+  show_surgery: true,
+  show_disability: true,
+  show_underwriting: true,
+  show_insu: true,
+  show_calc: true,
+  show_financial_portfolio: true,
+  show_finance: true,
+  show_gongsi: true,                // fixed
+}
+
 export const CONSULTING_TOOLS: ConsultingTool[] = [
   {
     id: "show_first_coverage_check",

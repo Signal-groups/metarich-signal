@@ -29,7 +29,7 @@ del /f /q git-push.bat 2>nul
 if exist "tmp_pdf_pages" rmdir /s /q "tmp_pdf_pages"
 
 git add -A
-git commit -m "feat: fix first-coverage-check always visible for office users + robot surgery item"
+git commit -m "fix: surgery gap shows fixed-only deficit + face tools always visible with DEFAULT_MENU_STATUS"
 git push origin main
 
 pause

@@ -943,12 +943,14 @@ function SurgeryGapBadge({
   actualLossCoverageRate: number
 }) {
   const itemNeed = Math.round((item.costMin + item.costMax) / 2)
-  const actualLoss = hasActualLoss
+  // 정액수술비 기준으로 gap 계산 (실손은 별도 보완 참고용)
+  const itemGap = itemNeed - fixedCoverage
+  const surplus = itemGap <= 0
+  // 실손보완 예상액 (참고용 — gap을 줄여주는 효과)
+  const actualLossSupport = hasActualLoss
     ? Math.round(itemNeed * (actualLossCoverageRate / 100) * item.actualLossFactor)
     : 0
-  const itemReady = fixedCoverage + actualLoss
-  const itemGap = itemNeed - itemReady
-  const surplus = itemGap <= 0
+  const netGap = itemGap - actualLossSupport
   return (
     <div className="mt-3 border-t border-[#c8dcef] pt-3 space-y-1.5">
       <div className="flex justify-between items-center">
@@ -956,20 +958,25 @@ function SurgeryGapBadge({
         <span className="text-[10px] font-black text-slate-700">{item.costMin.toLocaleString()}~{item.costMax.toLocaleString()}만원</span>
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-[10px] text-slate-500 font-bold">현재 준비</span>
-        <span className="text-[10px] font-black text-[#1a7a5a]">{itemReady.toLocaleString()}만원</span>
+        <span className="text-[10px] text-slate-500 font-bold">수술비 정액 준비</span>
+        <span className="text-[10px] font-black text-[#1a7a5a]">{fixedCoverage.toLocaleString()}만원</span>
       </div>
-      {!surplus && actualLoss > 0 && (
-        <p className="text-[9px] text-slate-400 font-bold">정액 {fixedCoverage.toLocaleString()}만 + 실손보완 ~{actualLoss.toLocaleString()}만</p>
-      )}
       <div className={`flex justify-between items-center rounded-lg px-2 py-1.5 ${surplus ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
         <span className={`text-[10px] font-black ${surplus ? "text-emerald-700" : "text-red-700"}`}>
-          {surplus ? "충족" : "부족 예상"}
+          {surplus ? "정액 충족" : "정액 부족"}
         </span>
         <span className={`text-[12px] font-black ${surplus ? "text-emerald-600" : "text-red-600"}`}>
           {surplus ? `+${Math.abs(itemGap).toLocaleString()}만원` : `-${itemGap.toLocaleString()}만원`}
         </span>
       </div>
+      {!surplus && hasActualLoss && actualLossSupport > 0 && (
+        <div className={`flex justify-between items-center rounded-lg px-2 py-1 ${netGap <= 0 ? "bg-sky-50 border border-sky-200" : "bg-orange-50 border border-orange-200"}`}>
+          <span className="text-[9px] font-bold text-slate-500">실손 보완 후</span>
+          <span className={`text-[11px] font-black ${netGap <= 0 ? "text-sky-600" : "text-orange-600"}`}>
+            {netGap <= 0 ? `+${Math.abs(netGap).toLocaleString()}만원` : `-${netGap.toLocaleString()}만원`}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
