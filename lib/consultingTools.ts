@@ -9,7 +9,7 @@ export type ConsultingTool = {
   cardColor: string;
   fixed?: boolean;
   staffOnly?: boolean;
-  access: "public" | "approved";
+  access: "public" | "approved" | "office";
   guestVisible?: boolean;  // true = 미승인·게스트도 볼 수 있는 도구
   highlight?: boolean;
   isNew?: boolean;
@@ -70,7 +70,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-amber-500 text-amber-700",
     fixed: true,
     staffOnly: true,
-    access: "office",
+    access: "approved",
     highlight: true,
     isNew: true,
     editable: true,

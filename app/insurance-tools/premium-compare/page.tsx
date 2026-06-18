@@ -1,6 +1,6 @@
 "use client"
 import { useMemo, useState } from "react"
-import { TrendingDown, Zap, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
+import { Zap, ChevronDown, ChevronUp } from "lucide-react"
 
 // ══════════════════════════════════════════════════════════
 // 타입
@@ -243,6 +243,7 @@ export default function PremiumComparePage() {
   const [monthlySav,setMonthlySav]= useState(300000)
   const [overrides,setOverrides]  = useState<Record<string,number>>({})
   const [amtOpen, setAmtOpen]     = useState(false)
+  const [showDiscPopup, setShowDiscPopup] = useState(false)
 
   const coverages = mainTab==="death" ? DEATH_COV : HEALTH_COV
   const visibleCos = useMemo(()=>COMPANIES.filter(c=>coFilter==="전체"||c.type===coFilter),[coFilter])
@@ -311,57 +312,74 @@ export default function PremiumComparePage() {
 
   return (
     <div className="min-h-screen bg-[#eef3fb]">
-      {/* ── RP 가이드 배너 (상단 sticky) ── */}
+      {/* ── 상단 sticky 헤더 ── */}
       <div className="sticky top-0 z-50 bg-[#0d1f3c] shadow-lg">
-        <div className="mx-auto flex max-w-[1500px] items-stretch">
-          {/* 로고 */}
-          <div className="flex items-center gap-3 border-r border-white/10 px-5 py-2.5">
-            <div>
-              <p className="text-[14px] font-black text-white">🛡 보험료 비교</p>
-              <p className="text-[10px] text-blue-300">교차설계 시스템</p>
-            </div>
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-5 py-2.5">
+          <div>
+            <p className="text-[14px] font-black text-white">🛡 보험료 비교</p>
+            <p className="text-[10px] text-blue-300">교차설계 시스템 · {AGE_LABEL[ageBand]} {gender} · {DISC_LABEL[disc]}</p>
           </div>
-          {/* 보장수준 탭 */}
-          {(mainTab==="health"||mainTab==="death") && (
-            <div className="flex flex-1 items-stretch">
-              {(["min","standard","full"] as PlanLevel[]).map(lv=>(
-                <button key={lv} onClick={()=>handlePlan(lv)}
-                  className={`flex flex-1 flex-col items-center justify-center border-r border-white/10 py-2 text-center transition-all ${
-                    planLv===lv?"border-b-2 border-b-amber-400 bg-white/12 text-white":"text-white/50 hover:bg-white/8 hover:text-white/80"
-                  }`}>
-                  <p className="text-[13px] font-black">{PLAN_LABEL[lv]}</p>
-                  <p className="text-[9px] opacity-75">{PLAN_DESC[lv]}</p>
-                </button>
-              ))}
-              <button onClick={()=>{setPlanLv("standard")}}
-                className="flex flex-col items-center justify-center border-r border-white/10 px-4 py-2 text-center text-white/40 hover:text-white/70">
-                <p className="text-[12px] font-black">✏️ 수동</p>
-                <p className="text-[9px]">직접 조정</p>
-              </button>
-            </div>
-          )}
-          {/* 액션 버튼 */}
-          <div className="flex items-center gap-2 px-4">
-            <button onClick={()=>window.open("/dashboard","_self")} className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20">대시보드</button>
-          </div>
+          <button onClick={()=>window.open("/dashboard","_self")} className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20">대시보드</button>
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1500px] px-4 py-4 md:px-6">
-        {/* ── 메인 탭 ── */}
-        <div className="mb-4 flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          {([{id:"health",l:"🏥 건강보험"},{id:"death",l:"🛡 종신·사망"},{id:"saving",l:"💰 단기납·저축"},{id:"dollar",l:"💵 달러종신·연금"}] as {id:MainTab;l:string}[]).map(t=>(
-            <button key={t.id} onClick={()=>setMainTab(t.id)}
-              className={`flex-1 py-3 text-[13px] font-black transition-all ${mainTab===t.id?"bg-[#1f5597] text-white":"text-slate-500 hover:bg-slate-50"}`}>
-              {t.l}
-            </button>
-          ))}
-        </div>
+      <div className="mx-auto flex max-w-[1600px] items-start gap-4 px-4 py-4 md:px-6">
+
+        {/* ── 왼쪽 사이드바 ── */}
+        <aside className="w-52 shrink-0 sticky top-[52px]">
+          {/* 보험 유형 */}
+          <div className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="bg-[#1f5597] px-4 py-2.5">
+              <p className="text-[11px] font-black text-white">보험 유형</p>
+            </div>
+            <div className="flex flex-col gap-1 p-2">
+              {([{id:"health",l:"🏥 건강보험"},{id:"death",l:"🛡 종신·사망"},{id:"saving",l:"💰 단기납·저축"},{id:"dollar",l:"💵 달러종신·연금"}] as {id:MainTab;l:string}[]).map(t=>(
+                <button key={t.id} onClick={()=>setMainTab(t.id)}
+                  className={`w-full rounded-xl px-3 py-2.5 text-left text-[12px] font-black transition-all ${mainTab===t.id?"bg-[#1f5597] text-white":"text-slate-600 hover:bg-slate-50"}`}>
+                  {t.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 보장 수준 (건강·사망 탭에서만) */}
+          {(mainTab==="health"||mainTab==="death") && (
+            <div className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="bg-[#1f5597] px-4 py-2.5">
+                <p className="text-[11px] font-black text-white">보장 수준</p>
+              </div>
+              <div className="flex flex-col gap-1 p-2">
+                {(["min","standard","full"] as PlanLevel[]).map(lv=>(
+                  <button key={lv} onClick={()=>handlePlan(lv)}
+                    className={`w-full rounded-xl px-3 py-2.5 text-left transition-all ${planLv===lv?"border-l-4 border-amber-400 bg-[#0d1f3c] pl-2.5 text-white":"text-slate-600 hover:bg-slate-50"}`}>
+                    <p className="text-[12px] font-black">{PLAN_LABEL[lv]}</p>
+                    <p className="mt-0.5 text-[9px] leading-tight opacity-70">{PLAN_DESC[lv]}</p>
+                  </button>
+                ))}
+                <button onClick={()=>handlePlan("standard")}
+                  className="mt-1 w-full rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-left hover:bg-slate-50">
+                  <p className="text-[12px] font-black text-slate-500">✏️ 수동 조정</p>
+                  <p className="mt-0.5 text-[9px] text-slate-400">직접 금액 입력</p>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 상품별 보험료 차이 버튼 */}
+          <button onClick={()=>setShowDiscPopup(true)}
+            className="w-full rounded-2xl bg-gradient-to-br from-[#C9A96E] to-[#b8892e] p-3.5 text-left text-white shadow-sm transition-opacity hover:opacity-90">
+            <p className="text-[13px] font-black">📊 상품별 보험료 차이</p>
+            <p className="mt-0.5 text-[10px] opacity-85">건강고지형 → 초간편 비교</p>
+          </button>
+        </aside>
+
+        {/* ── 메인 컨텐츠 ── */}
+        <div className="min-w-0 flex-1">
 
         {/* ── 고객 조건 입력 ── */}
         <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="mb-3 text-[10px] font-black tracking-wider text-slate-400">고객 조건</p>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {/* 나이대 */}
             <div>
               <p className="mb-1 text-[10px] font-black text-slate-500">나이대</p>
@@ -479,91 +497,25 @@ export default function PremiumComparePage() {
             )}
           </section>
 
-          {/* 납입기간 비교 */}
-          {payRows.length>0 && (
-            <section className="mb-4 rounded-2xl border border-purple-200 bg-white p-4 shadow-sm">
-              <p className="mb-2.5 text-[11px] font-black text-purple-700">⏱ 납입기간별 월 보험료 비교 (최저 회사 기준)</p>
-              <div className="grid grid-cols-3 gap-3">
-                {payRows.map(r=>{
-                  const pct=Math.round(r.total/Math.max(...payRows.map(x=>x.total))*100)
-                  const isCur=r.period===payPeriod
-                  return (
-                    <button key={r.period} onClick={()=>setPayPeriod(r.period)}
-                      className={`rounded-xl border-2 p-3 text-left transition-all ${isCur?"border-purple-600 bg-purple-50":"border-slate-200 hover:border-purple-300"}`}>
-                      <p className={`mb-1 text-[12px] font-black ${isCur?"text-purple-700":"text-slate-700"}`}>{r.period}년납</p>
-                      <div className="mb-1.5 h-1.5 rounded-full bg-slate-100">
-                        <div className="h-full rounded-full bg-purple-400" style={{width:`${pct}%`}}/>
-                      </div>
-                      <p className={`text-[14px] font-black ${isCur?"text-purple-700":"text-slate-900"}`}>{f(r.total)}<span className="text-[10px] font-bold opacity-50">/월</span></p>
-                      <p className="text-[10px] text-slate-400">총 납입 {f(r.total*r.period*12)}</p>
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* 교차설계 절감 배너 */}
+          {/* 교차설계 절감 요약 (compact) */}
           {bestSingle && saving>0 && (
-            <section className="mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a2f5c] to-[#1f5597] text-white shadow-lg">
-              <div className="px-5 pt-4 pb-2 flex items-center gap-2">
-                <Zap size={14} className="text-yellow-300"/>
-                <p className="text-[11px] font-black text-blue-200">
-                  {AGE_LABEL[ageBand]} · {gender} · {DISC_LABEL[disc]} · {payPeriod}년납
-                </p>
+            <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-xl bg-[#1a2f5c] px-4 py-2.5 text-white">
+              <div className="flex items-center gap-1.5">
+                <Zap size={12} className="shrink-0 text-yellow-300"/>
+                <span className="text-[10px] font-black text-blue-200">{AGE_LABEL[ageBand]} · {gender} · {payPeriod}년납</span>
               </div>
-              <div className="grid grid-cols-3 gap-0 px-3 pb-4">
-
-                {/* LEFT: 단일회사 최저·최고 한 탭 */}
-                <div className="rounded-2xl bg-white/10 p-3 mx-1.5 flex flex-col">
-                  <p className="text-[9px] font-black text-blue-200 mb-2 text-center">단일회사 비교</p>
-                  {worstSingle && (
-                    <div className="rounded-xl bg-red-500/20 px-2.5 py-1.5 mb-1.5">
-                      <p className="text-[8px] text-red-300 font-bold mb-0.5">최고가</p>
-                      <p className="text-[11px] font-black text-white leading-none">{worstSingle.co.name}</p>
-                      <p className="text-[15px] font-black text-red-200 mt-0.5 leading-tight">{f(worstSingle.total)}<span className="text-[8px] opacity-70">/월</span></p>
-                    </div>
-                  )}
-                  <div className="rounded-xl bg-emerald-500/20 px-2.5 py-1.5">
-                    <p className="text-[8px] text-emerald-300 font-bold mb-0.5">최저가</p>
-                    <p className="text-[11px] font-black text-white leading-none">{bestSingle.co.name}</p>
-                    <p className="text-[15px] font-black text-emerald-200 mt-0.5 leading-tight">{f(bestSingle.total)}<span className="text-[8px] opacity-70">/월</span></p>
-                  </div>
-                </div>
-
-                {/* CENTER: 회사 간 차이 — 큰 숫자 */}
-                <div className="rounded-2xl bg-yellow-400/20 border border-yellow-300/30 p-3 mx-1.5 flex flex-col items-center justify-center text-center">
-                  <p className="text-[9px] font-black text-yellow-200 mb-0.5">회사 선택만으로</p>
-                  <p className="text-[8px] text-yellow-300/60 mb-0.5">월 최대 차이</p>
-                  <p className="text-[28px] font-black text-yellow-300 leading-none">{f(companySpread)}</p>
-                  <p className="text-[9px] text-yellow-200/80 mb-2">원 더 낼 수 있음</p>
-                  <div className="w-full rounded-xl bg-yellow-300/10 border border-yellow-300/20 px-2 py-1.5">
-                    <p className="text-[8px] text-yellow-300/60">{payPeriod}년 납입 총 차이</p>
-                    <p className="text-[17px] font-black text-yellow-200 leading-tight">{f(companySpread*payPeriod*12)}</p>
-                  </div>
-                </div>
-
-                {/* RIGHT: 담보별 교차설계 최적 + 추가 절감 */}
-                <div className="rounded-2xl bg-emerald-400/15 border border-emerald-300/30 p-3 mx-1.5 flex flex-col">
-                  <p className="text-[9px] font-black text-emerald-300 mb-1.5 text-center">담보별 교차설계</p>
-                  <div className="text-center mb-1.5">
-                    <p className="text-[8px] text-emerald-300/60">최적 월 보험료</p>
-                    <p className="text-[22px] font-black text-emerald-300 leading-tight">{f(crossBest)}</p>
-                    <p className="text-[8px] text-emerald-200/70">원/월</p>
-                  </div>
-                  <div className="rounded-xl bg-white/10 px-2.5 py-1.5 mb-1.5">
-                    <p className="text-[8px] text-emerald-300 font-bold mb-0.5">최저 단일사 대비 추가 절감</p>
-                    <p className="text-[13px] font-black text-emerald-200 leading-tight">{f(saving)}<span className="text-[8px] opacity-70">/월</span></p>
-                    <p className="text-[9px] text-white/50">{payPeriod}년 총 <span className="font-black text-emerald-300">{f(saving*payPeriod*12)}</span></p>
-                  </div>
-                  <div className="flex items-center gap-1 rounded-lg bg-red-500/20 px-2 py-0.5">
-                    <AlertCircle size={8} className="shrink-0"/>
-                    <p className="text-[8px] font-black text-red-200">사람이 직접 계산 불가능</p>
-                  </div>
-                </div>
-
-              </div>
-            </section>
+              <span className="text-[11px] text-slate-300">
+                최저 단독 <span className="font-black text-white">{bestSingle.co.name} {f(bestSingle.total)}/월</span>
+              </span>
+              {worstSingle && companySpread>0 && (
+                <span className="text-[11px] font-black text-yellow-300">
+                  회사 간 최대 차이 {f(companySpread)}/월
+                </span>
+              )}
+              <span className="text-[11px] font-black text-emerald-300">
+                교차 최적 {f(crossBest)}/월 · 절감 {f(saving)}
+              </span>
+            </div>
           )}
 
           {/* 보기 전환 탭 */}
@@ -587,11 +539,82 @@ export default function PremiumComparePage() {
         {/* ── 달러 탭 ── */}
         {mainTab==="dollar" && <DollarView ageBand={ageBand} gender={gender} payPeriod={payPeriod}/>}
 
-        <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-900">
-          ※ 위 보험료 비교는 나이·성별·인수기준 기반의 <strong>방향성 예시</strong>입니다. 개인의 직업·성별·병력에 따라 실제 설계 결과와 다를 수 있습니다.
-          실제 보험료는 산출일·심사결과·약관개정에 따라 달라지며, 이 도구는 담보별 최적 회사 조합을 시각화하는 <strong>상담 보조 도구</strong>입니다.
-        </p>
-      </div>
+          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-900">
+            ※ 위 보험료 비교는 나이·성별·인수기준 기반의 <strong>방향성 예시</strong>입니다. 개인의 직업·성별·병력에 따라 실제 설계 결과와 다를 수 있습니다.
+            실제 보험료는 산출일·심사결과·약관개정에 따라 달라지며, 이 도구는 담보별 최적 회사 조합을 시각화하는 <strong>상담 보조 도구</strong>입니다.
+          </p>
+        </div>{/* end 메인 컨텐츠 */}
+      </div>{/* end 사이드바+컨텐츠 flex */}
+
+      {/* ── 상품별 보험료 차이 팝업 ── */}
+      {showDiscPopup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+             onClick={()=>setShowDiscPopup(false)}>
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white shadow-2xl"
+               onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between bg-[#0d1f3c] px-6 py-4">
+              <div>
+                <h2 className="text-[16px] font-black text-white">상품별 보험료 차이</h2>
+                <p className="text-[11px] text-blue-300">건강 고지 유형별 보험료 비교</p>
+              </div>
+              <button onClick={()=>setShowDiscPopup(false)} className="rounded-full bg-white/10 p-2 text-[14px] text-white hover:bg-white/20">✕</button>
+            </div>
+            <div className="p-5">
+              <p className="mb-4 text-[12px] font-bold text-slate-600">
+                가입자의 건강 상태에 따라 고지 방식이 달라지며, 기준이 느슨할수록 보험료가 올라갑니다.
+              </p>
+              {[
+                { step:1, label:"건강고지형", sublabel:"표준체 일반고지",
+                  badge:"기준(100%)", barW:"42%",
+                  color:"bg-emerald-500", tc:"text-emerald-700", bc:"bg-emerald-50 border-emerald-200",
+                  desc:"건강에 이상이 없는 표준 가입자 — 모든 담보 정상 가입 가능",
+                  qualify:"건강 이력 없는 일반인" },
+                { step:2, label:"표준형 간편고지", sublabel:"간편 3·10·5",
+                  badge:"+12~22%", barW:"57%",
+                  color:"bg-sky-500", tc:"text-sky-700", bc:"bg-sky-50 border-sky-200",
+                  desc:"10년 이내 입원 이력만 없으면 가입 가능, 기준 완화",
+                  qualify:"경미한 과거 치료 이력 있는 분" },
+                { step:3, label:"경증간편형", sublabel:"간편 3·5·5",
+                  badge:"+20~32%", barW:"70%",
+                  color:"bg-yellow-500", tc:"text-yellow-700", bc:"bg-yellow-50 border-yellow-200",
+                  desc:"5년 이내 입원 이력만 확인 — 경증 질환자도 가입 가능",
+                  qualify:"고혈압·당뇨 경증 등 유병자" },
+                { step:4, label:"유병자보험", sublabel:"간편 3·3·5",
+                  badge:"+28~42%", barW:"83%",
+                  color:"bg-orange-500", tc:"text-orange-700", bc:"bg-orange-50 border-orange-200",
+                  desc:"3년 이내 입원 3회 이하면 가입 시도 가능, 보험료 높음",
+                  qualify:"중증 만성질환자" },
+                { step:5, label:"초간편", sublabel:"간편 3·2·5",
+                  badge:"+38~52%", barW:"100%",
+                  color:"bg-red-500", tc:"text-red-700", bc:"bg-red-50 border-red-200",
+                  desc:"2년 이내 입원 이력만 없으면 가입 가능 — 가장 느슨한 기준",
+                  qualify:"기존 거절 이력 있는 분도 시도 가능" },
+              ].map(item=>(
+                <div key={item.step} className={`mb-3 rounded-2xl border p-4 ${item.bc}`}>
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[12px] font-black text-slate-700 shadow-sm">{item.step}</span>
+                      <div>
+                        <p className={`text-[13px] font-black leading-none ${item.tc}`}>{item.label}</p>
+                        <p className="mt-0.5 text-[10px] text-slate-400">{item.sublabel}</p>
+                      </div>
+                    </div>
+                    <span className={`rounded-full bg-white px-2.5 py-1 text-[11px] font-black shadow-sm ${item.tc}`}>{item.badge}</span>
+                  </div>
+                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-white/80">
+                    <div className={`h-full rounded-full ${item.color}`} style={{width:item.barW}}/>
+                  </div>
+                  <p className="text-[11px] font-bold text-slate-600">{item.desc}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-400">대상: {item.qualify}</p>
+                </div>
+              ))}
+              <p className="mt-2 text-[10px] font-bold text-slate-400">
+                ※ 실제 보험료는 나이·성별·보험사별로 상이하며, 위 수치는 40대 기준 방향성 예시입니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

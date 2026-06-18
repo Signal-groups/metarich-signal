@@ -112,135 +112,136 @@ function scopeScore(scope: FormState["brainScope"] | FormState["heartScope"]) {
   return 35
 }
 
-// ─ 비용 단위: 만원 / 건강보험 본인부담 기준 (실손 보완 전)
-// ─ 출처: HIRA 비급여 진료비 정보, 국민건강보험공단 2023 주요수술통계, 금감원 보험통계
-// ─ actualLossFactor: 실손보험이 보완할 수 있는 비율 (0~1)
+// ─ 비용 단위: 만원 / 총 예상 환자 지출 기준
+// ─ (NHIS 본인부담 + 비급여 재료비 + 상급병실 + 간병비 등 실제 부담 합산)
+// ─ 출처: HIRA 비급여 진료비 정보, 국민건강보험공단 2024 주요수술통계, 금감원 보험통계
+// ─ actualLossFactor: 총 부담액 중 실손보험이 보완할 수 있는 비율 (0~1)
 const SURGERY_CASES = [
   // ─── 근골격계 ───────────────────────────────────────────
   {
     id: "knee",
     name: "무릎 인공관절",
-    costMin: 200, costMax: 350,
+    costMin: 500, costMax: 1500,
     coverageType: "급여 중심",
-    actualLossFactor: 0.85,
-    note: "슬관절 치환술 급여 본인부담 기준. 양측 동시 수술·상급병실·간병비는 별도.",
+    actualLossFactor: 0.40,
+    note: "급여 본인부담 300~500만 + 비급여 재료 200~500만 + 상급병실·간병비 200~500만. 실손은 의료비 일부만 보완.",
   },
   {
     id: "hip",
     name: "고관절 치환술",
-    costMin: 250, costMax: 450,
+    costMin: 600, costMax: 1800,
     coverageType: "급여 중심",
-    actualLossFactor: 0.82,
-    note: "고관절 전치환술 급여 기준. 인공관절 재료 선택에 따라 비급여 추가 가능.",
+    actualLossFactor: 0.38,
+    note: "급여 본인부담 + 인공관절 재료비 + 장기 재활비 포함 총 부담. 고령일수록 간병비 증가.",
   },
   {
     id: "knee-arthroscopy",
     name: "무릎 관절경/연골수술",
-    costMin: 100, costMax: 300,
+    costMin: 200, costMax: 600,
     coverageType: "급여+비급여 혼합",
-    actualLossFactor: 0.70,
-    note: "반월상연골·관절경 급여 기준. 치료재료·병원별 비급여 추가 확인 필요.",
+    actualLossFactor: 0.55,
+    note: "급여 본인부담 + 비급여 치료재료 + 상급병실. 병원급·방식에 따라 비용 편차 큼.",
   },
   {
     id: "knee-regeneration",
     name: "무릎 연골재생 (카티스템)",
-    costMin: 700, costMax: 1200,
+    costMin: 800, costMax: 1500,
     coverageType: "비급여 중심",
-    actualLossFactor: 0.25,
-    note: "카티스템 등 연골재생 재료비 전액 비급여. 실손 약관과 가입 시기에 따라 보완 범위 크게 상이.",
+    actualLossFactor: 0.20,
+    note: "카티스템 재료비 전액 비급여. 4세대 실손부터 보완 한도 크게 축소.",
   },
   {
     id: "shoulder",
     name: "어깨 회전근개",
-    costMin: 54, costMax: 130,
-    coverageType: "급여 중심",
-    actualLossFactor: 0.88,
-    note: "건강보험 수가 적용 대표 수술. 봉합 범위와 재료대에 따라 비급여 소액 추가 가능.",
+    costMin: 300, costMax: 800,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.50,
+    note: "급여 본인부담 + 비급여 재료 + 상급병실·물리치료. 봉합 범위와 병원에 따라 크게 다름.",
   },
   {
     id: "spine",
     name: "허리 디스크/척추수술",
-    costMin: 200, costMax: 600,
+    costMin: 500, costMax: 1500,
     coverageType: "급여+비급여 혼합",
-    actualLossFactor: 0.55,
-    note: "미세현미경·내시경은 급여. 레이저·고주파·내시경 비급여 방식 선택 시 비용 크게 증가.",
+    actualLossFactor: 0.35,
+    note: "미세현미경·내시경 급여분 + 비급여 재료 + 재활치료 포함. 비급여 방식 선택 시 총 부담 급증.",
   },
   // ─── 눈 ────────────────────────────────────────────────
   {
     id: "cataract",
     name: "백내장 (단초점렌즈)",
-    costMin: 60, costMax: 200,
+    costMin: 200, costMax: 500,
     coverageType: "급여 중심",
-    actualLossFactor: 0.80,
-    note: "양안 기준. 단초점 렌즈는 건강보험 급여 적용. 병원에 따라 비용 차이 발생.",
+    actualLossFactor: 0.45,
+    note: "양안 기준. 단초점 급여 적용이나 검사비·상급병실·마취비 비급여 추가 발생.",
   },
   {
     id: "cataract-multi",
     name: "백내장 (다초점렌즈)",
-    costMin: 400, costMax: 1200,
+    costMin: 600, costMax: 1500,
     coverageType: "비급여 중심",
-    actualLossFactor: 0.35,
-    note: "양안 기준. 다초점·초점가변 렌즈는 전액 비급여. 4세대 이후 실손 보완 한도 급감.",
+    actualLossFactor: 0.20,
+    note: "양안 기준 전액 비급여. 렌즈 종류·병원에 따라 차이 큼. 4세대 실손 보완 한도 대폭 축소.",
   },
   // ─── 소화기 ────────────────────────────────────────────
   {
     id: "appendix",
     name: "맹장 (충수절제술)",
-    costMin: 30, costMax: 150,
+    costMin: 150, costMax: 500,
     coverageType: "급여 중심",
-    actualLossFactor: 0.90,
-    note: "복강경 기준 급여 수술. 합병증·입원 연장·상급병실 시 추가 부담 발생.",
+    actualLossFactor: 0.65,
+    note: "복강경 급여 + 입원비·상급병실·검사비 포함. 합병증 시 부담 급증.",
   },
   {
     id: "gallbladder",
     name: "담낭절제술 (담석증)",
-    costMin: 150, costMax: 350,
+    costMin: 250, costMax: 700,
     coverageType: "급여 중심",
-    actualLossFactor: 0.85,
-    note: "복강경 담낭절제 건강보험 급여 기준. 마취과·상급병실 비급여 추가 확인.",
+    actualLossFactor: 0.60,
+    note: "복강경 급여 본인부담 + 상급병실·마취·검사비 포함. 급성 담낭염 동반 시 부담 증가.",
   },
   {
     id: "hernia",
     name: "탈장 수술",
-    costMin: 100, costMax: 300,
+    costMin: 200, costMax: 600,
     coverageType: "급여+비급여 혼합",
-    actualLossFactor: 0.68,
-    note: "급여 기준 수술. 메시(mesh) 재료 선택·복강경 방식에 따라 비급여 추가 가능.",
+    actualLossFactor: 0.50,
+    note: "급여 본인부담 + 메시 재료비·마취비 포함. 복강경·양측 수술 시 비용 상승.",
   },
   // ─── 여성 ────────────────────────────────────────────
   {
     id: "uterine-myoma",
     name: "자궁근종 절제술",
-    costMin: 200, costMax: 550,
+    costMin: 400, costMax: 1000,
     coverageType: "급여+비급여 혼합",
-    actualLossFactor: 0.65,
-    note: "복강경·자궁경 방식 급여. 로봇수술 선택 시 비급여 전환. 재발·재수술 가능성 확인.",
+    actualLossFactor: 0.45,
+    note: "복강경·자궁경 급여분 + 비급여 재료 + 입원비. 로봇수술 선택 시 아래 항목으로 별도 체크.",
   },
   // ─── 갑상선/항문 ──────────────────────────────────────
   {
     id: "thyroid-surgery",
     name: "갑상선 절제술",
-    costMin: 150, costMax: 450,
+    costMin: 400, costMax: 1000,
     coverageType: "급여 중심",
-    actualLossFactor: 0.78,
-    note: "개방·내시경 수술 급여 기준. 로봇수술 선택 시 아래 '로봇수술' 항목으로 별도 체크 필요. 악성 시 산정특례 적용 가능.",
+    actualLossFactor: 0.50,
+    note: "개방·내시경 급여 본인부담 + 입원·검사비. 로봇수술 선택 시 아래 항목으로 별도 체크.",
   },
   {
     id: "hemorrhoid",
     name: "치질 수술",
-    costMin: 50, costMax: 200,
-    coverageType: "급여 중심",
-    actualLossFactor: 0.75,
-    note: "급여 기준 수술. 레이저·고주파 등 비급여 방식 선택 시 본인부담 증가.",
+    costMin: 150, costMax: 500,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.55,
+    note: "급여 기준 + 비급여 방식(레이저·고주파) 선택 시 비용 추가. 1박2일 입원비 포함.",
   },
   // ─── 심장혈관 ────────────────────────────────────────
   {
     id: "heart-stent",
     name: "심장 스텐트 시술",
-    costMin: 50, costMax: 200,
+    costMin: 400, costMax: 1200,
     coverageType: "급여 중심",
-    actualLossFactor: 0.90,
-    note: "산정특례 5% 적용으로 본인부담 낮음. 총 진료비 1,400~5,000만원 규모. 스텐트 재료 선택 시 일부 비급여 추가.",
+    actualLossFactor: 0.60,
+    note: "산정특례 5% 본인부담 + 비급여 스텐트 재료·검사·중환자실·간병비 합산. 총 진료비 1,400~5,000만원 규모.",
   },
   // ─── 로봇수술 ────────────────────────────────────────
   {
@@ -248,8 +249,8 @@ const SURGERY_CASES = [
     name: "로봇수술 (다빈치)",
     costMin: 1000, costMax: 2500,
     coverageType: "비급여 중심",
-    actualLossFactor: 0.20,
-    note: "전립선·갑상선·자궁·대장·위 등 다빈치 로봇수술 기준. 수술비 전액 비급여로 기본 1,000만원~. 4세대 이후 실손 보완 한도 급감.",
+    actualLossFactor: 0.15,
+    note: "전립선·갑상선·자궁·대장·위 등 다빈치 로봇수술. 수술비 전액 비급여 기본 1,000만원~. 4세대 이후 실손 보완 한도 급감.",
   },
 ]
 
@@ -384,7 +385,6 @@ export default function FirstCoverageCheckPage() {
       const role = normalizeRole(profile)
       const approved = isApprovedUser(profile)
       const isAgentOrAbove = ROLE_PRIORITY[role] >= ROLE_PRIORITY["agent"]
-      const hasOfficeAccess = approved && profile?.office_access === true || profile?.office_access === 1 || profile?.office_access === "true" || profile?.office_access === "1"
       const canUse = canAccessFirstCoverageCheck(profile)
 
       // 접근 불가 사유 결정
@@ -393,8 +393,6 @@ export default function FirstCoverageCheckPage() {
         reason = "관리자 승인 후 사용할 수 있습니다."
       } else if (!isAgentOrAbove) {
         reason = "설계사 등급 이상만 이용할 수 있습니다."
-      } else if (!hasOfficeAccess) {
-        reason = "사무실 업무 권한이 없습니다.\n관리자에게 사무실 업무 권한 부여를 요청해 주세요."
       }
 
       if (!alive) return
@@ -1024,4 +1022,146 @@ function Panel({ title, desc, children }: { title: string; desc: string; childre
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+}
+
+function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[11px] font-black text-slate-500">{label}</span>
+      <input type="text" value={value} onChange={e => onChange(e.target.value)}
+        className="h-9 rounded-xl border border-slate-200 px-3 text-[13px] font-bold outline-none focus:border-blue-500" />
+    </label>
+  )
+}
+
+function NumberInput({ label, value, onChange, suffix }: { label: string; value: number; onChange: (v: number) => void; suffix?: string }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[11px] font-black text-slate-500">{label}</span>
+      <div className="flex overflow-hidden rounded-xl border border-slate-200 focus-within:border-blue-500">
+        <input type="number" value={value} onChange={e => onChange(Number(e.target.value) || 0)}
+          className="h-9 min-w-0 flex-1 px-3 text-[13px] font-bold outline-none" />
+        {suffix && <span className="flex items-center border-l border-slate-200 px-2.5 text-[11px] font-black text-slate-500">{suffix}</span>}
+      </div>
+    </label>
+  )
+}
+
+function SelectInput({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: [string, string][] }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[11px] font-black text-slate-500">{label}</span>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        className="h-9 rounded-xl border border-slate-200 px-2 text-[13px] font-bold outline-none focus:border-blue-500">
+        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </label>
+  )
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3">
+      <span className="text-[11px] font-black text-slate-500">{label}</span>
+      <button type="button" onClick={() => onChange(!checked)}
+        className={`relative h-6 w-11 rounded-full transition-colors ${checked ? "bg-blue-600" : "bg-slate-200"}`}>
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0.5"}`} />
+      </button>
+    </label>
+  )
+}
+
+function ResultCard({ item }: { item: { title: string; need: number; ready: number; rate: number; gap: number; note: string } }) {
+  const surplus = item.gap <= 0
+  const rateColor = item.rate >= 80 ? "text-emerald-600" : item.rate >= 50 ? "text-amber-600" : "text-red-600"
+  const bgColor = item.rate >= 80 ? "border-emerald-200 bg-emerald-50" : item.rate >= 50 ? "border-amber-200 bg-amber-50" : "border-red-200 bg-red-50"
+  return (
+    <div className={`rounded-2xl border p-4 ${bgColor}`}>
+      <p className="text-[11px] font-black text-slate-500">{item.title}</p>
+      <p className={`mt-1 text-2xl font-black ${rateColor}`}>{item.rate}%</p>
+      <div className="mt-2 h-1.5 rounded-full bg-white/60">
+        <div className={`h-full rounded-full ${item.rate >= 80 ? "bg-emerald-500" : item.rate >= 50 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${Math.min(item.rate, 100)}%` }} />
+      </div>
+      <p className={`mt-2 text-[12px] font-black ${rateColor}`}>{surplus ? `+${man(Math.abs(item.gap))} 여유` : `-${man(Math.abs(item.gap))} 부족`}</p>
+      <p className="mt-1.5 text-[10px] font-bold leading-5 text-slate-500 line-clamp-2">{item.note}</p>
+    </div>
+  )
+}
+
+function CostBox({ label, value, desc }: { label: string; value: number; desc: string }) {
+  return (
+    <div className="rounded-xl bg-white p-3">
+      <p className="text-[10px] font-black text-slate-500">{label}</p>
+      <p className="mt-1 text-[16px] font-black text-slate-900">{man(value)}</p>
+      <p className="mt-1 text-[10px] font-bold leading-4 text-slate-400">{desc}</p>
+    </div>
+  )
+}
+
+function SmallTextCost({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div className="rounded-xl bg-white p-3">
+      <p className="text-[10px] font-black text-slate-500">{label}</p>
+      <p className={`mt-1 text-[14px] font-black ${tone}`}>{value}</p>
+    </div>
+  )
+}
+
+function SmallCost({ label, value, tone }: { label: string; value: number; tone: string }) {
+  return (
+    <div className="rounded-xl bg-white p-3">
+      <p className="text-[10px] font-black text-slate-500">{label}</p>
+      <p className={`mt-1 text-[16px] font-black ${tone}`}>{man(value)}</p>
+    </div>
+  )
+}
+
+function CostStructure({ title, tone, living, treatment, indirectItems, desc }: {
+  title: string; tone: "blue" | "rose"; living: number; treatment: number; indirectItems: string; desc: string
+}) {
+  const borderColor = tone === "blue" ? "border-blue-200 bg-blue-50" : "border-rose-200 bg-rose-50"
+  const headColor = tone === "blue" ? "text-blue-900" : "text-rose-900"
+  const bodyColor = tone === "blue" ? "text-blue-800" : "text-rose-800"
+  return (
+    <div className={`rounded-2xl border p-5 ${borderColor}`}>
+      <p className={`text-sm font-black ${headColor}`}>{title}</p>
+      <div className="mt-3 grid gap-2">
+        <div className="rounded-xl bg-white p-3">
+          <p className="text-[10px] font-black text-slate-500">생활비 공백 (6개월)</p>
+          <p className={`mt-1 text-[16px] font-black ${headColor}`}>{man(living)}</p>
+        </div>
+        <div className="rounded-xl bg-white p-3">
+          <p className="text-[10px] font-black text-slate-500">직접 치료비 기준</p>
+          <p className={`mt-1 text-[16px] font-black ${headColor}`}>{man(treatment)}만원</p>
+        </div>
+        <div className="rounded-xl bg-white p-3">
+          <p className="text-[10px] font-black text-slate-500">직접치료 외 비용</p>
+          <p className={`mt-1 text-[11px] font-bold leading-5 ${bodyColor}`}>{indirectItems}</p>
+        </div>
+      </div>
+      <p className={`mt-3 text-[11px] font-bold leading-6 ${bodyColor}`}>{desc}</p>
+    </div>
+  )
+}
+
+function ResourceGallery() {
+  const items = [
+    { label: "암 통계 자료", desc: "국가암등록 통계 · 연간 발생률 현황", href: "/insurance-tools/coverage-stats" },
+    { label: "보장별 통계", desc: "뇌·심장·수술 통계 이미지", href: "/insurance-tools/coverage-stats" },
+    { label: "질병코드 조회", desc: "KCD 질병분류 검색", href: "https://kcdcode.kr/browse/main" },
+  ]
+  return (
+    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+      <p className="text-sm font-black text-slate-800">상담 참고 자료</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        {items.map((item) => (
+          <a key={item.label} href={item.href} target="_blank" rel="noreferrer"
+            className="rounded-xl border border-slate-200 bg-white p-3 transition-colors hover:border-blue-300 hover:bg-blue-50">
+            <p className="text-[12px] font-black text-slate-700">{item.label}</p>
+            <p className="mt-1 text-[10px] font-bold text-slate-400">{item.desc}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
 }

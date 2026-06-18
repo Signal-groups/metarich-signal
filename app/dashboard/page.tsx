@@ -775,4 +775,28 @@ export default function DashboardPage() {
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "white", flexShrink: 0 }}>O</div>
                 <div style={{ flex: 1, textAlign: "left" }}>
                   <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3 }}>실시간 소통</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의 기준 오픈채팅</p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* 공지사항 상세 팝업 */}
+          {selectedAnnouncement && (
+            <AnnouncementModal
+              item={selectedAnnouncement}
+              onClose={() => setSelectedAnnouncement(null)}
+              onSave={saveAnnouncement}
+              onDelete={deleteAnnouncement}
+              isMaster={isMaster}
+            />
+          )}
+
+        </div>
+      )
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}

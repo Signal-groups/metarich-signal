@@ -153,16 +153,14 @@ export function canAccessBranding(user: any): boolean {
  * ─────────────────────────────────────────────────────────────────
  * • master      : 항상 허용
  * • guest       : 영구 차단
- * • 설계사 미만 : 차단 (rank < agent)
- * • 그 외       : is_approved + office_access 모두 true여야 허용
+ * • 설계사 이상 + 승인 : 허용 (office_access 불필요)
  */
 export function canAccessFirstCoverageCheck(user: any): boolean {
-  if (normalizeRole(user) === "master") return true;
   if (normalizeRole(user) === "guest") return false;
   const role = normalizeRole(user);
   const isAgentOrAbove = ROLE_PRIORITY[role] >= ROLE_PRIORITY["agent"];
   if (!isAgentOrAbove) return false;
-  return isApprovedUser(user) && enabled(user?.office_access);
+  return isApprovedUser(user);
 }
 
 export function canSeeUser(viewer: any, target: any): boolean {
