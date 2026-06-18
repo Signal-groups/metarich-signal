@@ -377,21 +377,14 @@ export default function DashboardPage() {
   const isGuest = userRole === 'guest';
   
   const isApproved = isApprovedUser(user);
-  const visibleConsultingTools = CONSULTING_TOOLS.filter(m =>
-    m.placement !== "office" &&
-    (
-      // 미승인·게스트: guestVisible 도구만 표시
-      !isApproved
-        ? m.guestVisible === true
-        : (
-            m.access === "public" ||
-            // 편집모드: 비활성 항목도 표시(노출 토글 가능하도록), 일반모드: 활성만 표시
-            (m.access === "approved" && (isConsultEditMode || menuStatus[m.id] !== false))
-          )
-    )
-  );
+  const visibleConsultingTools = CONSULTING_TOOLS.filter((m) => {
+    if (m.placement === "office") return false;
+    if (!isApproved && m.category === "face") return false;
+    if (!isApproved) return m.guestVisible === true;
+    return m.access === "public" || (m.access === "approved" && (isConsultEditMode || menuStatus[m.id] !== false));
+  });
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
-  const faceTools = visibleConsultingTools.filter(t => t.category === "face");
+  const faceTools = isApproved ? visibleConsultingTools.filter(t => t.category === "face") : [];
 
   const renderOfficeView = () => {
     if (isGuest || !isApproved) return (
@@ -561,7 +554,7 @@ export default function DashboardPage() {
                 <p style={{ fontSize: 14, fontWeight: 800, color: "#0f2d55" }}>대면상담</p>
                 <span style={{ fontSize: 11, color: "#185fa5", background: "#e8f2fd", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>고객 현장 활용 핵심 도구</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
                 {faceTools.map((menu) => (
                   <button
                     key={menu.id}
@@ -569,8 +562,9 @@ export default function DashboardPage() {
                     onClick={() => !isConsultEditMode && handleNavigation(menu)}
                     className="group hover:-translate-y-[3px] hover:shadow-lg"
                     style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
-                      padding: "14px 8px 12px", borderRadius: 12,
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                      minHeight: 126,
+                      padding: "12px 7px 10px", borderRadius: 12,
                       border: menu.isNew ? "2px solid #f59e0b" : "1.5px solid #c2def5",
                       cursor: "pointer", background: "linear-gradient(145deg,#f0f7fd,#e8f2fb)",
                       fontFamily: "inherit", transition: "all 0.2s ease", position: "relative"
@@ -584,11 +578,11 @@ export default function DashboardPage() {
                       (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#f59e0b" : "#c2def5";
                     }}
                   >
-                    <div style={{ width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "#185fa5", color: "white", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(24,95,165,0.25)" }} className="group-hover:scale-110 group-hover:shadow-[0_4px_14px_rgba(24,95,165,0.4)]">
-                      <ToolIcon icon={menu.icon} className="h-5 w-5" />
+                    <div style={{ width: 40, height: 40, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: "#185fa5", color: "white", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(24,95,165,0.25)" }} className="group-hover:scale-110 group-hover:shadow-[0_4px_14px_rgba(24,95,165,0.4)]">
+                      <ToolIcon icon={menu.icon} className="h-4 w-4" />
                     </div>
-                    <p style={{ fontSize: 13, color: "#0f2d55", textAlign: "center", lineHeight: 1.35, fontWeight: 800, wordBreak: "keep-all" }}>{menu.title}</p>
-                    <span style={{ fontSize: 10, color: "#5a7a92", lineHeight: 1.4, textAlign: "center", wordBreak: "keep-all" }}>{menu.desc}</span>
+                    <p style={{ fontSize: 12, color: "#0f2d55", textAlign: "center", lineHeight: 1.25, fontWeight: 800, wordBreak: "keep-all" }}>{menu.title}</p>
+                    <span style={{ fontSize: 9, color: "#5a7a92", lineHeight: 1.35, textAlign: "center", wordBreak: "keep-all" }}>{menu.desc}</span>
                     {favorites.includes(menu.id) && !isFavEditMode && (
                       <Star className="h-3 w-3" style={{ position: "absolute", top: 6, right: 6, color: "#f59e0b", fill: "#f59e0b" }} />
                     )}

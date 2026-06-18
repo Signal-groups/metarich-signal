@@ -173,16 +173,12 @@ export default function Sidebar({
   };
 
   const consultTools = CONSULTING_TOOLS.filter((tool) => tool.placement !== "office");
-  const visibleConsultTools = consultTools.filter((tool) =>
-    (!tool.staffOnly || isStaff) &&
-    // 미승인·게스트: guestVisible 도구만 표시
-    !isApproved
-      ? tool.guestVisible === true
-      : (
-          tool.access === "public" ||
-          (tool.access === "approved" && (menuStatus[tool.id] || isEditMode))
-        )
-  );
+  const visibleConsultTools = consultTools.filter((tool) => {
+    if (!isApproved && tool.category === "face") return false;
+    if (tool.staffOnly && !isStaff) return false;
+    if (!isApproved) return tool.guestVisible === true;
+    return tool.access === "public" || (tool.access === "approved" && (menuStatus[tool.id] || isEditMode));
+  });
   const highlightTools = visibleConsultTools.filter((tool) => tool.highlight);
 
   const handleLinkClick = (item: any) => {
