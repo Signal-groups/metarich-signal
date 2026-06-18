@@ -434,67 +434,33 @@ export default function FirstCoverageCheckPage() {
             )}
             {active === "cancer" && (
               <Panel title="암 보장 입력" desc="진단비는 1년 생활비, 치료비는 산정특례 이후 남을 수 있는 비급여 준비 관점으로 봅니다.">
-                <div className="grid gap-3 xl:grid-cols-[2fr_1fr]">
-                  <FieldGrid>
-                    <NumberInput label="암 진단비" value={form.cancerDiagnosis} onChange={(v) => update("cancerDiagnosis", v)} suffix="만원" />
-                    <NumberInput label="유사암/소액암" value={form.similarCancer} onChange={(v) => update("similarCancer", v)} suffix="만원" />
-                    <NumberInput label="항암약물 치료비" value={form.cancerTreatment} onChange={(v) => update("cancerTreatment", v)} suffix="만원" />
-                    <NumberInput label="표적항암/신약" value={form.targetCancer} onChange={(v) => update("targetCancer", v)} suffix="만원" />
-                    <NumberInput label="방사선/양성자/중입자" value={form.radiationCancer} onChange={(v) => update("radiationCancer", v)} suffix="만원" />
-                  </FieldGrid>
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                    <p className="text-base font-black text-amber-900">암 집중치료 기간</p>
-                    <p className="mt-2 text-3xl font-black text-amber-700">최소 1년</p>
-                    <p className="mt-4 text-sm font-bold leading-7 text-amber-900">
-                      암은 진단비와 치료비가 준비되어 있어도 치료 기간 동안 생활비가 계속 지출됩니다.
-                      교통비, 보호자 식사, 영양식, 위생용품, 통원 준비물처럼 직접치료 외 비용도 함께 계산합니다.
-                    </p>
-                    <div className="mt-4 rounded-xl bg-white/75 p-4 text-sm font-black text-amber-900">
-                      <p>1년 생활비 기준: {man(form.monthlyLivingCost * 12)}</p>
-                      <p className="mt-1">직접치료 외 비용: {man(form.cancerIndirectMonthlyCost * 12)}</p>
-                    </div>
-                  </div>
-                </div>
+                <FieldGrid>
+                  <NumberInput label="암 진단비" value={form.cancerDiagnosis} onChange={(v) => update("cancerDiagnosis", v)} suffix="만원" />
+                  <NumberInput label="유사암/소액암" value={form.similarCancer} onChange={(v) => update("similarCancer", v)} suffix="만원" />
+                  <NumberInput label="항암약물 치료비" value={form.cancerTreatment} onChange={(v) => update("cancerTreatment", v)} suffix="만원" />
+                  <NumberInput label="표적항암/신약" value={form.targetCancer} onChange={(v) => update("targetCancer", v)} suffix="만원" />
+                  <NumberInput label="방사선/양성자/중입자" value={form.radiationCancer} onChange={(v) => update("radiationCancer", v)} suffix="만원" />
+                </FieldGrid>
               </Panel>
             )}
             {active === "brain" && (
               <Panel title="뇌 보장 입력" desc="보장 범위가 뇌출혈인지, 뇌졸중인지, 뇌혈관질환까지인지가 핵심입니다.">
-                <div className="grid gap-3 xl:grid-cols-[2fr_1fr]">
-                  <FieldGrid>
-                    <SelectInput label="뇌 보장 범위" value={form.brainScope} onChange={(v) => update("brainScope", v as FormState["brainScope"])} options={[["hemorrhage", "뇌출혈"], ["stroke", "뇌졸중"], ["vascular", "뇌혈관질환"]]} />
-                    <NumberInput label="뇌 진단비" value={form.brainDiagnosis} onChange={(v) => update("brainDiagnosis", v)} suffix="만원" />
-                    <NumberInput label="뇌 수술비" value={form.brainSurgery} onChange={(v) => update("brainSurgery", v)} suffix="만원" />
-                    <NumberInput label="혈전용해/스텐트 등 치료비" value={form.brainTreatment} onChange={(v) => update("brainTreatment", v)} suffix="만원" />
-                  </FieldGrid>
-                  <TreatmentNote
-                    title="뇌 치료·회복 비용"
-                    period="최소 6개월"
-                    tone="blue"
-                    living={form.monthlyLivingCost * 6}
-                    indirectItems="교통비, 식대, 의료용품, 재활·통원 준비물"
-                    body="뇌혈관 치료는 급성기 치료 이후 재활, 통원, 보호자 동행, 이동 비용이 이어질 수 있습니다. 진단비와 수술비 외에 생활비와 직접치료 외 비용을 함께 확인합니다."
-                  />
-                </div>
+                <FieldGrid>
+                  <SelectInput label="뇌 보장 범위" value={form.brainScope} onChange={(v) => update("brainScope", v as FormState["brainScope"])} options={[["hemorrhage", "뇌출혈"], ["stroke", "뇌졸중"], ["vascular", "뇌혈관질환"]]} />
+                  <NumberInput label="뇌 진단비" value={form.brainDiagnosis} onChange={(v) => update("brainDiagnosis", v)} suffix="만원" />
+                  <NumberInput label="뇌 수술비" value={form.brainSurgery} onChange={(v) => update("brainSurgery", v)} suffix="만원" />
+                  <NumberInput label="혈전용해/스텐트 등 치료비" value={form.brainTreatment} onChange={(v) => update("brainTreatment", v)} suffix="만원" />
+                </FieldGrid>
               </Panel>
             )}
             {active === "heart" && (
               <Panel title="심장 보장 입력" desc="급성심근경색만인지, 허혈성심장질환 또는 심혈관까지 보는지 확인합니다.">
-                <div className="grid gap-3 xl:grid-cols-[2fr_1fr]">
-                  <FieldGrid>
-                    <SelectInput label="심장 보장 범위" value={form.heartScope} onChange={(v) => update("heartScope", v as FormState["heartScope"])} options={[["ami", "급성심근경색"], ["ischemic", "허혈성심장질환"], ["cardio", "심혈관질환"]]} />
-                    <NumberInput label="심장 진단비" value={form.heartDiagnosis} onChange={(v) => update("heartDiagnosis", v)} suffix="만원" />
-                    <NumberInput label="심장 수술비" value={form.heartSurgery} onChange={(v) => update("heartSurgery", v)} suffix="만원" />
-                    <NumberInput label="스텐트/우회술/부정맥 치료비" value={form.heartTreatment} onChange={(v) => update("heartTreatment", v)} suffix="만원" />
-                  </FieldGrid>
-                  <TreatmentNote
-                    title="심장 치료·회복 비용"
-                    period="최소 6개월"
-                    tone="rose"
-                    living={form.monthlyLivingCost * 6}
-                    indirectItems="교통비, 식대, 의료용품, 통원·회복 관리 비용"
-                    body="심장질환은 시술·수술 이후 회복, 통원, 식이 관리, 보호자 동행 비용이 이어질 수 있습니다. 보장 범위와 직접치료 외 비용을 함께 확인합니다."
-                  />
-                </div>
+                <FieldGrid>
+                  <SelectInput label="심장 보장 범위" value={form.heartScope} onChange={(v) => update("heartScope", v as FormState["heartScope"])} options={[["ami", "급성심근경색"], ["ischemic", "허혈성심장질환"], ["cardio", "심혈관질환"]]} />
+                  <NumberInput label="심장 진단비" value={form.heartDiagnosis} onChange={(v) => update("heartDiagnosis", v)} suffix="만원" />
+                  <NumberInput label="심장 수술비" value={form.heartSurgery} onChange={(v) => update("heartSurgery", v)} suffix="만원" />
+                  <NumberInput label="스텐트/우회술/부정맥 치료비" value={form.heartTreatment} onChange={(v) => update("heartTreatment", v)} suffix="만원" />
+                </FieldGrid>
               </Panel>
             )}
             {active === "surgery" && (
@@ -503,23 +469,27 @@ export default function FirstCoverageCheckPage() {
                   <div>
                     <p className="mb-3 text-sm font-black text-slate-800">수술 항목 선택</p>
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                      {SURGERY_CASES.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => update("selectedSurgeryCase", item.id)}
-                          className={`rounded-2xl border p-4 text-left transition ${form.selectedSurgeryCase === item.id ? "border-[#1a3a6e] bg-[#eef4fb] shadow-sm" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-black text-slate-900">{item.name}</p>
-                            <span className={`rounded-full px-2 py-1 text-[10px] font-black ${item.coverageType.includes("혼합") ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                      {SURGERY_CASES.map((item) => {
+                        const checked = form.selectedSurgeryCases.includes(item.id)
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => update("selectedSurgeryCases", checked ? form.selectedSurgeryCases.filter((id) => id !== item.id) : [...form.selectedSurgeryCases, item.id])}
+                            className={`rounded-2xl border p-4 text-left transition ${checked ? "border-[#1a3a6e] bg-[#eef4fb] shadow-sm" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-sm font-black text-slate-900">{item.name}</p>
+                              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-black ${checked ? "border-[#1a3a6e] bg-[#1a3a6e] text-white" : "border-slate-300 bg-white text-slate-300"}`}>
+                                {checked ? "✓" : ""}
+                              </span>
+                            </div>
+                            <span className={`mt-4 inline-flex rounded-full px-2 py-1 text-[10px] font-black ${item.coverageType.includes("혼합") ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
                               {item.coverageType}
                             </span>
-                          </div>
-                          <p className="mt-3 text-2xl font-black text-[#1a3a6e]">{man(item.costMin)}~{man(item.costMax)}</p>
-                          <p className="mt-2 text-xs font-bold leading-5 text-slate-500">{item.note}</p>
-                        </button>
-                      ))}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                   <FieldGrid>
@@ -599,21 +569,59 @@ export default function FirstCoverageCheckPage() {
                     desc="심장질환은 시술·수술 이후 회복, 식이 관리, 통원, 보호자 동행 비용이 생길 수 있어 직접치료 외 비용을 함께 봅니다."
                   />
                 </div>
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-sm font-black text-slate-900">대표 치료·수술 상담 기준</p>
+                  <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                    <SmallTextCost label="암" value="표적항암, 방사선, 양성자·중입자, 비급여 검사와 약제" tone="text-slate-700" />
+                    <SmallTextCost label="뇌" value="혈전용해, 스텐트, 개두술, 재활·통원 치료" tone="text-slate-700" />
+                    <SmallTextCost label="심장" value="스텐트, 관상동맥우회술, 부정맥 시술, 통원 회복관리" tone="text-slate-700" />
+                  </div>
+                  <p className="mt-4 text-sm font-bold leading-7 text-slate-600">
+                    대표 치료와 비용 기준은 입력 화면에는 노출하지 않고 결과에서만 확인합니다. 산정특례가 적용되어도 비급여, 치료재료, 약관상 제외 항목, 직접치료 외 비용은 별도 부담으로 설명합니다.
+                  </p>
+                </div>
                 <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-black text-indigo-900">수술비 기준 항목</p>
-                      <p className="mt-2 text-3xl font-black text-indigo-700">{selectedSurgery.name}</p>
+                      <p className="text-sm font-black text-indigo-900">수술비 체크 항목 합산</p>
+                      <p className="mt-2 text-3xl font-black text-indigo-700">{selectedSurgeryCases.length}개 항목</p>
                     </div>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-indigo-700">{selectedSurgery.coverageType}</span>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-indigo-700">현재 부족 가능 {man(surgeryGapTotal)}</span>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-4">
-                    <SmallCost label="기준 비용 범위" value={averageCost(selectedSurgery)} tone="text-indigo-700" />
-                    <SmallCost label="질병수술비" value={form.diseaseSurgery} tone="text-indigo-700" />
-                    <SmallCost label="주요/N대 수술비" value={form.majorSurgery + form.nsurgery} tone="text-indigo-700" />
-                    <SmallTextCost label="확인할 항목" value={selectedSurgery.coverageType.includes("혼합") ? "비급여, 치료재료, 실손 제한" : "급여 기준, 법정본인부담"} tone="text-indigo-700" />
+                    <SmallCost label="체크 수술 예상비용" value={surgeryNeedTotal} tone="text-indigo-700" />
+                    <SmallCost label="수술비 정액 합산" value={surgeryFixedCoverageTotal} tone="text-indigo-700" />
+                    <SmallCost label="실손 예상 보완" value={surgeryActualLossTotal} tone="text-indigo-700" />
+                    <SmallCost label="부족 가능 금액" value={surgeryGapTotal} tone="text-indigo-700" />
                   </div>
-                  <p className="mt-4 text-sm font-bold leading-7 text-indigo-900">{selectedSurgery.note}</p>
+                  {selectedSurgeryCases.length === 0 ? (
+                    <p className="mt-4 rounded-xl bg-white/80 p-4 text-sm font-bold leading-7 text-indigo-900">수술비 탭에서 확인할 수술 항목을 체크하면 항목별 비용과 보장 예상액이 표시됩니다.</p>
+                  ) : (
+                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                      {selectedSurgeryCases.map((item) => {
+                        const itemNeed = averageCost(item)
+                        const itemActualLoss = surgeryActualLossAmount(form, item)
+                        const itemReady = surgeryFixedCoveragePerCase + itemActualLoss
+                        const itemGap = itemNeed - itemReady
+                        return (
+                          <div key={item.id} className="rounded-xl bg-white/80 p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-base font-black text-indigo-900">{item.name}</p>
+                              <span className="rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-black text-indigo-700">{item.coverageType}</span>
+                            </div>
+                            <div className="mt-3 grid gap-2 text-xs font-black text-indigo-900 sm:grid-cols-2">
+                              <p>예상비용 {man(item.costMin)}~{man(item.costMax)}</p>
+                              <p>상담 기준 {man(itemNeed)}</p>
+                              <p>수술비 보장 {man(surgeryFixedCoveragePerCase)}</p>
+                              <p>실손 예상 {man(itemActualLoss)}</p>
+                              <p className="sm:col-span-2">부족 가능 {man(itemGap)}</p>
+                            </div>
+                            <p className="mt-3 text-xs font-bold leading-5 text-indigo-900">{item.note}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
                 <ResourceGallery />
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -754,23 +762,6 @@ function CostBox({ label, value, desc }: { label: string; value: number; desc: s
       <p className="text-xs font-black text-amber-700">{label}</p>
       <p className="mt-2 text-2xl font-black text-amber-900">{man(value)}</p>
       <p className="mt-2 text-xs font-bold leading-5 text-amber-800">{desc}</p>
-    </div>
-  )
-}
-
-function TreatmentNote({ title, period, body, living, indirectItems, tone }: { title: string; period: string; body: string; living: number; indirectItems: string; tone: "blue" | "rose" }) {
-  const styles = tone === "blue"
-    ? { border: "border-sky-200", bg: "bg-sky-50", title: "text-sky-900", point: "text-sky-700" }
-    : { border: "border-rose-200", bg: "bg-rose-50", title: "text-rose-900", point: "text-rose-700" }
-  return (
-    <div className={`rounded-2xl border p-5 ${styles.border} ${styles.bg}`}>
-      <p className={`text-base font-black ${styles.title}`}>{title}</p>
-      <p className={`mt-2 text-3xl font-black ${styles.point}`}>{period}</p>
-      <p className={`mt-4 text-sm font-bold leading-7 ${styles.title}`}>{body}</p>
-      <div className="mt-4 rounded-xl bg-white/75 p-4 text-sm font-black">
-        <p className={styles.title}>최소 필요 생활비: {man(living)}</p>
-        <p className={`mt-1 ${styles.title}`}>직접치료 외 비용: {indirectItems}</p>
-      </div>
     </div>
   )
 }

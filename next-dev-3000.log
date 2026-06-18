@@ -12,3 +12,4 @@
 ○ Compiling /dashboard ...
   Using external babel configuration from C:\Users\hoo\Documents\metarich-signal-projec\insurance-manager\.babelrc
  GET /dashboard 200 in 9.9s (compile: 9.2s, render: 631ms)
+ GET /first-coverage-check 200 in 1710ms (compile: 1435ms, render: 275ms)
