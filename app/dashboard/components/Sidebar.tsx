@@ -177,8 +177,8 @@ export default function Sidebar({
     if (!isApproved && tool.category === "face") return false;
     if (tool.staffOnly && !isStaff) return false;
     if (!isApproved) return tool.guestVisible === true;
-    // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출
-    if (tool.access === "office") return canUseOffice && (menuStatus[tool.id] || isEditMode);
+    // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출. fixed=true 항목은 항상 노출
+    if (tool.access === "office") return canUseOffice && (tool.fixed || menuStatus[tool.id] || isEditMode);
     return tool.access === "public" || (tool.access === "approved" && (menuStatus[tool.id] || isEditMode));
   });
   const highlightTools = visibleConsultTools.filter((tool) => tool.highlight);
@@ -565,7 +565,7 @@ export default function Sidebar({
                             <ToolIcon icon={item.icon} />
                             <span className="text-[12px] font-black text-left leading-tight">{item.label}</span>
                           </button>
-                          {isMaster && isEditMode && item.editable && (
+                          {isMaster && isEditMode && item.editable && !item.fixed && (
                             <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black" />
                           )}
                         </div>

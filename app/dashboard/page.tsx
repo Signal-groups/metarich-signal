@@ -382,8 +382,8 @@ export default function DashboardPage() {
     if (m.placement === "office") return false;
     if (!isApproved && m.category === "face") return false;
     if (!isApproved) return m.guestVisible === true;
-    // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출
-    if (m.access === "office") return canUseOffice && (isConsultEditMode || menuStatus[m.id] !== false);
+    // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출. fixed=true 항목은 항상 노출
+    if (m.access === "office") return canUseOffice && (m.fixed || isConsultEditMode || menuStatus[m.id] !== false);
     return m.access === "public" || (m.access === "approved" && (isConsultEditMode || menuStatus[m.id] !== false));
   });
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
