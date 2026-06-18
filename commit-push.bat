@@ -29,7 +29,7 @@ del /f /q git-push.bat 2>nul
 if exist "tmp_pdf_pages" rmdir /s /q "tmp_pdf_pages"
 
 git add -A
-git commit -m "feat: premium comparison UI overhaul + sidebar redesign + cleanup"
+git commit -m "feat: premium compare center panel - max vs min company + 20yr impact display"
 git push origin main
 
 pause

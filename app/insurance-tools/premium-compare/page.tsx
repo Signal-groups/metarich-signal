@@ -290,6 +290,8 @@ export default function PremiumComparePage() {
 
   const maxCase = cases.length ? Math.max(...cases.map(c=>c.total)) : 1
   const saving = bestSingle ? Math.max(bestSingle.total-crossBest,0) : 0
+  const worstSingle = coTotals.length > 1 ? coTotals[coTotals.length-1] : undefined
+  const companySpread = worstSingle && bestSingle ? worstSingle.total - bestSingle.total : 0
 
   // 납입기간 비교
   const payRows = useMemo(()=>([10,20,30] as PayPeriod[]).map(pp=>({
@@ -517,14 +519,43 @@ export default function PremiumComparePage() {
                   <p className="mt-0.5 text-[11px] text-blue-200">{bestSingle.co.name}</p>
                   <p className="mt-1 text-[9px] text-white/50">총 납입 {f(bestSingle.total*payPeriod*12)}</p>
                 </div>
-                <div className="rounded-2xl bg-yellow-400/20 border border-yellow-300/30 p-4 mx-1.5 flex flex-col items-center justify-center text-center">
-                  <TrendingDown size={16} className="text-yellow-300 mb-1"/>
-                  <p className="text-[10px] font-black text-yellow-200 mb-0.5">교차설계 절감</p>
-                  <p className="text-2xl font-black text-yellow-300">{f(saving)}<span className="text-[11px] opacity-70">/월</span></p>
-                  <p className="mt-1 text-[10px] text-yellow-200">{payPeriod*12}개월 총 {f(saving*payPeriod*12)}</p>
-                  <div className="mt-1.5 flex items-center gap-1 rounded-lg bg-red-500/20 px-2 py-0.5">
-                    <AlertCircle size={9}/>
-                    <p className="text-[9px] font-black text-red-200">사람이 직접 계산 불가능</p>
+                {/* CENTER: 보험사별 최고↔최저 비교 + 교차설계 임팩트 */}
+                <div className="rounded-2xl bg-yellow-400/20 border border-yellow-300/30 p-3 mx-1.5 flex flex-col">
+                  <p className="text-[9px] font-black text-yellow-200 mb-1 text-center tracking-wide">보험사 선택만으로</p>
+                  {/* 20년 총 차이 — 헤드라인 숫자 */}
+                  <div className="text-center mb-1.5">
+                    <p className="text-[8px] text-yellow-300/60">{payPeriod}년 총납 기준</p>
+                    <p className="text-[22px] font-black text-yellow-300 leading-tight">{f(companySpread*payPeriod*12)}</p>
+                    <p className="text-[8px] text-yellow-200/70">납입 차이 발생</p>
+                  </div>
+                  {/* 최고가 ↔ 최저가 회사 */}
+                  {worstSingle && (
+                    <div className="space-y-1 mb-1.5">
+                      <div className="flex justify-between items-center rounded-lg bg-red-500/20 px-2 py-0.5">
+                        <span className="text-[8px] text-red-300 font-bold shrink-0">최고가</span>
+                        <div className="text-right ml-1">
+                          <p className="text-[8px] font-black text-red-200 leading-none">{worstSingle.co.name}</p>
+                          <p className="text-[10px] font-black text-red-100">{f(worstSingle.total)}/월</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center rounded-lg bg-emerald-500/20 px-2 py-0.5">
+                        <span className="text-[8px] text-emerald-300 font-bold shrink-0">최저가</span>
+                        <div className="text-right ml-1">
+                          <p className="text-[8px] font-black text-emerald-200 leading-none">{bestSingle.co.name}</p>
+                          <p className="text-[10px] font-black text-emerald-100">{f(bestSingle.total)}/월</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {/* 교차설계 추가절감 */}
+                  <div className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-0.5 mb-1">
+                    <TrendingDown size={8} className="text-yellow-300 shrink-0"/>
+                    <p className="text-[8px] text-yellow-200 leading-tight">교차설계 추가절감 <span className="font-black">{f(saving*payPeriod*12)}</span></p>
+                  </div>
+                  {/* 뱃지 */}
+                  <div className="flex items-center gap-1 rounded-lg bg-red-500/20 px-2 py-0.5">
+                    <AlertCircle size={8} className="shrink-0"/>
+                    <p className="text-[8px] font-black text-red-200">사람이 직접 계산 불가능</p>
                   </div>
                 </div>
                 <div className="rounded-2xl bg-emerald-400/15 border border-emerald-300/30 p-4 mx-1.5">
