@@ -86,31 +86,37 @@ export const BENCHMARK_ITEMS: BenchmarkItem[] = [
 ]
 
 // ── 프리셋 정의 (단위: 만원) ─────────────────────────────────────────────
+// 40대 남성 사무직 기준 추정 월보험료
+//   최소 ≈ 44,000원/월 (실손 제외, 핵심 담보만)
+//   표준 ≈ 100,000원/월 (실손 포함, 종합 설계)
+//   여유 ≈ 150,000원/월 (표준 대비 +50%)
 export const BENCHMARK_PRESETS: Record<'min' | 'standard' | 'comfort', BenchmarkAmounts> = {
   min: {
-    death: 10000, cancer: 3000, cancer_similar: 500,
-    brain: 2000, brain_stroke: 1000, brain_hemorrhage: 1000,
-    heart: 2000, heart_ischemic: 1000, heart_mi: 1000,
-    surgery: 200, nursing: 30, driver: 2000,
-    silson: 1, fire: 3000,
-    cancer_major_benefit: 500, cancer_major_nonbenefit: 500, vascular_major: 500,
+    // 기본 보장만 (실손 제외) — 40대 기준 약 4.4만원/월
+    death: 3000, cancer: 2000, cancer_similar: 500,
+    brain: 1000, brain_stroke: 500, brain_hemorrhage: 500,
+    heart: 1000, heart_ischemic: 500, heart_mi: 500,
+    surgery: 100, nursing: 15, driver: 1000,
+    silson: 0, fire: 0,
+    cancer_major_benefit: 0, cancer_major_nonbenefit: 0, vascular_major: 0,
   },
   standard: {
-    death: 30000, cancer: 5000, cancer_similar: 1000,
-    brain: 3000, brain_stroke: 2000, brain_hemorrhage: 2000,
-    heart: 3000, heart_ischemic: 2000, heart_mi: 2000,
-    surgery: 500, nursing: 50, driver: 3000,
-    silson: 1, fire: 5000,
-    cancer_major_benefit: 1000, cancer_major_nonbenefit: 1000, vascular_major: 1000,
+    // 표준 종합보험 (실손 포함) — 40대 기준 약 10만원/월
+    death: 5000, cancer: 3500, cancer_similar: 500,
+    brain: 2500, brain_stroke: 1000, brain_hemorrhage: 1000,
+    heart: 2000, heart_ischemic: 1000, heart_mi: 1000,
+    surgery: 200, nursing: 20, driver: 2000,
+    silson: 1, fire: 1000,
+    cancer_major_benefit: 300, cancer_major_nonbenefit: 300, vascular_major: 300,
   },
   comfort: {
-    // 표준 기준의 1.5배 — 표준 대비 월보험료 약 50% 상승, 최소↔여유 암진단비 차이 약 3만원
-    death: 45000, cancer: 7500, cancer_similar: 1500,
-    brain: 4500, brain_stroke: 3000, brain_hemorrhage: 3000,
-    heart: 4500, heart_ischemic: 3000, heart_mi: 3000,
-    surgery: 750, nursing: 75, driver: 4500,
-    silson: 1, fire: 7500,
-    cancer_major_benefit: 1500, cancer_major_nonbenefit: 1500, vascular_major: 1500,
+    // 여유 종합보험 (표준 대비 ~50% 상승) — 40대 기준 약 15만원/월
+    death: 10000, cancer: 5000, cancer_similar: 1000,
+    brain: 3000, brain_stroke: 1500, brain_hemorrhage: 1500,
+    heart: 3000, heart_ischemic: 1500, heart_mi: 1500,
+    surgery: 500, nursing: 30, driver: 3000,
+    silson: 1, fire: 2000,
+    cancer_major_benefit: 500, cancer_major_nonbenefit: 500, vascular_major: 500,
   },
 }
 

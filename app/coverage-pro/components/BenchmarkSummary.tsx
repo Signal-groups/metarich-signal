@@ -30,8 +30,14 @@ const PREMIUM_RATE: Partial<Record<BenchmarkKey, number>> = {
   cancer_major_nonbenefit: 3.50,
   vascular_major:         2.50,
 }
-// 실손은 티어별 정액으로 처리
-const SILSON_FLAT = { min: 25_000, standard: 35_000, comfort: 50_000 }
+// 실손은 티어별 정액으로 처리 (min=실손 없음, standard=4세대, comfort=고급형)
+const SILSON_FLAT = { min: 0, standard: 15_000, comfort: 25_000 }
+
+// ── 나이대별 보험료 배수 ──────────────────────────────────────────────────
+type AgeGroup = '40대' | '50대' | '60대'
+const AGE_MULT: Record<AgeGroup, number> = { '40대': 1.0, '50대': 1.6, '60대': 2.35 }
+// 동일 보장, 회사별 최소↔최대 격차 (원)
+const COMPANY_GAP: Record<AgeGroup, number> = { '40대': 50_000, '50대': 70_000, '60대': 100_000 }
 
 /** 프리셋별 예상 총 월보험료 계산 (원 단위) */
 function calcTierPremium(preset: 'min' | 'standard' | 'comfort'): number {
@@ -52,6 +58,221 @@ function calcTierPremium(preset: 'min' | 'standard' | 'comfort'): number {
 function fmtWon(won: number) {
   if (won >= 10_000) return `${Math.round(won / 10_000).toLocaleString()}만원`
   return `${won.toLocaleString()}원`
+}
+
+// ── 고지별/상황별 보험료 차이 모달 ───────────────────────────────────────
+const DISCLOSURE_ROWS = [
+  {
+    type: '건강고지형', sub: '일반플랜', tag: 'best',
+    codes: ['A플랜', 'B플랜', 'C플랜', 'D플랜'],
+    desc: '건강 고지 가능자 — 가장 유리한 보험 가입',
+    step: null, color: '#1e40af', bg: '#eff6ff', border: '#bfdbfe',
+  },
+  {
+    type: '표준형', sub: '', tag: 'standard',
+    codes: ['표준형'],
+    desc: '일반적으로 제안받는 표준 플랜',
+    step: '+10~15%', color: '#1a2744', bg: '#f0f4ff', border: '#c7d2fe',
+  },
+  {
+    type: '경증간편형', sub: '', tag: 'light',
+    codes: ['간편A'],
+    desc: '경미한 병력 있는 경우 — 유병자 중 가장 저렴',
+    step: '+10~15%', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd',
+  },
+  {
+    type: '유병자보험', sub: '간편심사', tag: 'sub',
+    codes: ['간편B', '간편C', '간편D'],
+    desc: '기존 병력·질환 있는 경우',
+    step: '+10~15%', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe',
+  },
+  {
+    type: '초간편', sub: '', tag: 'worst',
+    codes: ['초간편'],
+    desc: '심각한 병력 또는 다수 질환 — 가장 높은 보험료',
+    step: '+10~15%', color: '#dc2626', bg: '#fff1f2', border: '#fecdd3',
+  },
+]
+
+function DisclosureModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 10000,
+      background: 'rgba(0,0,0,0.55)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 20,
+    }} onClick={onClose}>
+      <div style={{
+        background: '#fff', borderRadius: 16,
+        width: '100%', maxWidth: 680,
+        boxShadow: '0 24px 80px rgba(0,0,0,0.28)',
+        overflow: 'hidden',
+        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+      }} onClick={(e) => e.stopPropagation()}>
+
+        {/* 헤더 */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1a2744 0%, #2d4a8a 100%)',
+          padding: '20px 24px',
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        }}>
+          <div>
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: '#c9a96e',
+              letterSpacing: '0.08em', marginBottom: 6,
+            }}>STEP 4 · 문제인식 및 선택기준 제시</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 4 }}>
+              상황별 상품별 보험료 차이
+            </div>
+            <div style={{ fontSize: 12, color: '#93c5fd' }}>
+              가입한 보험 · 가입할 보험의 기준을 제시합니다
+            </div>
+          </div>
+          <button type="button" onClick={onClose} style={{
+            background: 'rgba(255,255,255,0.1)', border: 'none',
+            borderRadius: 8, color: '#94a3b8', fontSize: 18,
+            cursor: 'pointer', padding: '4px 10px', lineHeight: 1,
+          }}>✕</button>
+        </div>
+
+        {/* 본문 */}
+        <div style={{ overflowY: 'auto', padding: '20px 24px', flex: 1 }}>
+          <div style={{ display: 'flex', gap: 16 }}>
+
+            {/* 테이블 */}
+            <div style={{ flex: 1 }}>
+              {/* 컬럼 헤더 */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: '120px 1fr',
+                gap: 8, marginBottom: 8,
+                borderBottom: '2px solid #1a2744', paddingBottom: 8,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#1a2744' }}>유형</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#1a2744' }}>설명</div>
+              </div>
+
+              {/* 행 */}
+              {DISCLOSURE_ROWS.map((row, idx) => (
+                <div key={row.tag}>
+                  {/* 단계 구분선 (첫 번째 제외) */}
+                  {row.step && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      margin: '4px 0',
+                    }}>
+                      <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, color: '#64748b',
+                        background: '#f1f5f9', padding: '2px 8px', borderRadius: 10,
+                      }}>{row.step}</span>
+                      <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                    </div>
+                  )}
+
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: '120px 1fr',
+                    gap: 8, padding: '10px 12px',
+                    background: row.bg, border: `1px solid ${row.border}`,
+                    borderRadius: 10, marginBottom: 4,
+                  }}>
+                    {/* 유형 컬럼 */}
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: row.color }}>
+                        {row.type}
+                      </div>
+                      {row.sub && (
+                        <div style={{
+                          fontSize: 10, color: row.color, opacity: 0.7,
+                          marginTop: 2,
+                        }}>({row.sub})</div>
+                      )}
+                      {/* 코드 뱃지 */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 5 }}>
+                        {row.codes.map((code) => (
+                          <span key={code} style={{
+                            fontSize: 9, padding: '1px 6px',
+                            background: row.color, color: '#fff',
+                            borderRadius: 4, fontWeight: 700, opacity: 0.85,
+                          }}>{code}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 설명 컬럼 */}
+                    <div style={{
+                      fontSize: 12, color: '#334155', lineHeight: 1.6,
+                      alignSelf: 'center',
+                    }}>
+                      {idx === 0 && (
+                        <span style={{
+                          background: '#1e40af', color: '#fff',
+                          fontSize: 9, fontWeight: 700, padding: '1px 6px',
+                          borderRadius: 4, marginRight: 6,
+                        }}>최저 보험료</span>
+                      )}
+                      {idx === DISCLOSURE_ROWS.length - 1 && (
+                        <span style={{
+                          background: '#dc2626', color: '#fff',
+                          fontSize: 9, fontWeight: 700, padding: '1px 6px',
+                          borderRadius: 4, marginRight: 6,
+                        }}>최고 보험료</span>
+                      )}
+                      {row.desc}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 오른쪽 화살표 시각화 */}
+            <div style={{
+              width: 80, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', paddingTop: 28,
+            }}>
+              <div style={{
+                background: '#1e40af', color: '#fff',
+                borderRadius: 10, padding: '8px 10px',
+                fontSize: 11, fontWeight: 800, textAlign: 'center',
+                width: '100%',
+              }}>보험료<br/>－</div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 0' }}>
+                <div style={{
+                  width: 3, flex: 1, background: 'linear-gradient(to bottom, #3b82f6, #dc2626)',
+                  borderRadius: 2,
+                }} />
+                <div style={{
+                  fontSize: 9, color: '#64748b', textAlign: 'center',
+                  margin: '6px 0', lineHeight: 1.5,
+                }}>단계별<br/>10~15%<br/>차이</div>
+                <div style={{
+                  width: 3, flex: 1, background: 'linear-gradient(to bottom, #3b82f6, #dc2626)',
+                  borderRadius: 2,
+                }} />
+              </div>
+              <div style={{
+                background: '#dc2626', color: '#fff',
+                borderRadius: 10, padding: '8px 10px',
+                fontSize: 11, fontWeight: 800, textAlign: 'center',
+                width: '100%',
+              }}>보험료<br/>＋</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 푸터 */}
+        <div style={{
+          borderTop: '1px solid #e2e8f0',
+          padding: '14px 24px',
+          background: '#fafaf8',
+          fontSize: 12, color: '#475569', lineHeight: 1.6,
+        }}>
+          <b style={{ color: '#1a2744' }}>핵심 메시지</b> — 상품 수백 개 중 단 한 개를 고르는 기준입니다.
+          저는 단순히 상품만 들이미는 사람이 아닙니다.{' '}
+          <b style={{ color: '#c9a96e' }}>정확하게 진단하고, 최적의 설계 및 추천</b>을 해드립니다.
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── 반원 게이지 SVG ───────────────────────────────────────────────────────
@@ -106,15 +327,29 @@ function GaugeSVG({ pct }: { pct: number }) {
 
 // ── 보험료 비교 게이지 카드 ────────────────────────────────────────────────
 function PremiumTierCard({ contracts }: { contracts: ProContract[] }) {
-  const minP = calcTierPremium('min')
-  const stdP = calcTierPremium('standard')
-  const comP = calcTierPremium('comfort')
+  const [ageGroup, setAgeGroup] = useState<AgeGroup>('40대')
+  const [showDisclosure, setShowDisclosure] = useState(false)
+
+  const mult = AGE_MULT[ageGroup]
+  const gap  = COMPANY_GAP[ageGroup]
+
+  // 기준 보험료 (40대 기준) × 나이 배수
+  const baseMin = calcTierPremium('min')
+  const baseStd = calcTierPremium('standard')
+  const baseCom = calcTierPremium('comfort')
+  const minP = Math.round(baseMin * mult)
+  const stdP = Math.round(baseStd * mult)
+  const comP = Math.round(baseCom * mult)
+
+  // 회사간 최저↔최고 (표준 기준 기준)
+  const companyLow  = Math.round(stdP - gap / 2)
+  const companyHigh = Math.round(stdP + gap / 2)
 
   // 실제 현재 납입 보험료 (원 단위)
   const actualMonthly = contracts.reduce((s, c) => s + (c.monthlyPremium || 0), 0)
-  const hasActual = actualMonthly > 10_000  // 최소 1만원 이상이면 실제값 사용
+  const hasActual = actualMonthly > 10_000
 
-  // 게이지 바늘: 실제 납입액 위치 (없으면 표준 위치)
+  // 게이지 바늘
   const rawPct = hasActual
     ? (actualMonthly - minP) / (comP - minP)
     : (stdP - minP) / (comP - minP)
@@ -123,136 +358,201 @@ function PremiumTierCard({ contracts }: { contracts: ProContract[] }) {
   const diff    = comP - minP
   const diffPct = Math.round((comP / minP - 1) * 100)
 
-  // 주요 담보 비교 항목
+  // 주요 담보 비교
   const compareItems = [
-    { label: '암진단비',  minV: BENCHMARK_PRESETS.min.cancer,   comV: BENCHMARK_PRESETS.comfort.cancer,   rate: PREMIUM_RATE.cancer ?? 0 },
-    { label: '뇌혈관',    minV: BENCHMARK_PRESETS.min.brain,    comV: BENCHMARK_PRESETS.comfort.brain,    rate: PREMIUM_RATE.brain ?? 0 },
-    { label: '심장질환',  minV: BENCHMARK_PRESETS.min.heart,    comV: BENCHMARK_PRESETS.comfort.heart,    rate: PREMIUM_RATE.heart ?? 0 },
-    { label: '수술비',    minV: BENCHMARK_PRESETS.min.surgery,  comV: BENCHMARK_PRESETS.comfort.surgery,  rate: PREMIUM_RATE.surgery ?? 0 },
+    { label: '암진단비', minV: BENCHMARK_PRESETS.min.cancer,  comV: BENCHMARK_PRESETS.comfort.cancer,  rate: PREMIUM_RATE.cancer ?? 0 },
+    { label: '뇌혈관',   minV: BENCHMARK_PRESETS.min.brain,   comV: BENCHMARK_PRESETS.comfort.brain,   rate: PREMIUM_RATE.brain ?? 0 },
+    { label: '심장질환', minV: BENCHMARK_PRESETS.min.heart,   comV: BENCHMARK_PRESETS.comfort.heart,   rate: PREMIUM_RATE.heart ?? 0 },
+    { label: '수술비',   minV: BENCHMARK_PRESETS.min.surgery, comV: BENCHMARK_PRESETS.comfort.surgery, rate: PREMIUM_RATE.surgery ?? 0 },
   ]
 
   const total20min = minP * 12 * 20
   const total20com = comP * 12 * 20
-
   const R = (n: number) => Math.round(n / 10_000) * 10_000
 
   return (
-    <div style={{ borderRadius: 14, overflow: 'hidden', marginBottom: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.13)' }}>
+    <>
+      {showDisclosure && <DisclosureModal onClose={() => setShowDisclosure(false)} />}
 
-      {/* ① 게이지 패널 (다크 네이비) */}
-      <div style={{ background: 'linear-gradient(160deg, #0f1e3d 0%, #1a2744 60%, #1e3a6e 100%)', padding: '20px 20px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+      <div style={{ borderRadius: 14, overflow: 'hidden', marginBottom: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.13)' }}>
 
-          {/* 게이지 SVG */}
-          <div style={{ flex: '0 0 auto' }}>
-            <GaugeSVG pct={gaugePct} />
-            {/* min / max 라벨 */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingLeft: 4, paddingRight: 4 }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 10, color: '#93c5fd', fontWeight: 700 }}>최소 기준</div>
-                <div style={{ fontSize: 13, color: '#fff', fontWeight: 900 }}>{fmtWon(R(minP))}/월</div>
-                <div style={{ fontSize: 10, color: '#60a5fa' }}>minimum</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 10, color: '#fcd34d', fontWeight: 700 }}>여유 기준</div>
-                <div style={{ fontSize: 13, color: '#fcd34d', fontWeight: 900 }}>{fmtWon(R(comP))}/월</div>
-                <div style={{ fontSize: 10, color: '#fbbf24' }}>maximum</div>
-              </div>
-            </div>
+        {/* ① 나이대 선택 탭 */}
+        <div style={{ background: '#0f1e3d', padding: '12px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 11, color: '#93c5fd', fontWeight: 700, letterSpacing: '0.04em' }}>
+            보험료 비교 기준
           </div>
+          <div style={{ display: 'flex', gap: 2 }}>
+            {(['40대', '50대', '60대'] as AgeGroup[]).map((ag) => (
+              <button key={ag} type="button" onClick={() => setAgeGroup(ag)} style={{
+                padding: '5px 14px',
+                borderRadius: '8px 8px 0 0',
+                border: 'none',
+                background: ageGroup === ag ? 'rgba(255,255,255,0.12)' : 'transparent',
+                color: ageGroup === ag ? '#fff' : '#64748b',
+                fontSize: 12, fontWeight: 700,
+                cursor: 'pointer',
+                borderBottom: ageGroup === ag ? '2px solid #c9a96e' : '2px solid transparent',
+              }}>{ag}</button>
+            ))}
+          </div>
+        </div>
 
-          {/* 오른쪽: 차이 수치 */}
-          <div style={{ flex: 1, paddingTop: 8 }}>
-            {/* 월 보험료 차이 */}
-            <div style={{ fontSize: 11, color: '#64748b', letterSpacing: '0.04em', marginBottom: 2 }}>월 보험료 차이</div>
-            <div style={{ fontSize: 30, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              {fmtWon(Math.round(diff / 1_000) * 1_000)}
-            </div>
-            <div style={{ fontSize: 13, color: '#c9a96e', fontWeight: 700, marginBottom: 14 }}>
-              ▲ {diffPct}% 차이
+        {/* ② 게이지 패널 (다크 네이비) */}
+        <div style={{ background: 'linear-gradient(160deg, #0f1e3d 0%, #1a2744 60%, #1e3a6e 100%)', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+
+            {/* 게이지 SVG */}
+            <div style={{ flex: '0 0 auto' }}>
+              <GaugeSVG pct={gaugePct} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingLeft: 4, paddingRight: 4 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, color: '#93c5fd', fontWeight: 700 }}>최소 기준</div>
+                  <div style={{ fontSize: 13, color: '#fff', fontWeight: 900 }}>{fmtWon(R(minP))}/월</div>
+                  <div style={{ fontSize: 10, color: '#60a5fa' }}>minimum</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, color: '#fcd34d', fontWeight: 700 }}>여유 기준</div>
+                  <div style={{ fontSize: 13, color: '#fcd34d', fontWeight: 900 }}>{fmtWon(R(comP))}/월</div>
+                  <div style={{ fontSize: 10, color: '#fbbf24' }}>maximum</div>
+                </div>
+              </div>
             </div>
 
-            {/* 현재 납입액 (실제 데이터 있을 때) */}
-            {hasActual && (
+            {/* 오른쪽: 수치 정보 */}
+            <div style={{ flex: 1, paddingTop: 4 }}>
+              {/* 최소↔여유 차이 */}
+              <div style={{ fontSize: 10, color: '#64748b', letterSpacing: '0.04em', marginBottom: 2 }}>
+                최소 ↔ 여유 월 차이
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                {fmtWon(Math.round(diff / 1_000) * 1_000)}
+              </div>
+              <div style={{ fontSize: 12, color: '#c9a96e', fontWeight: 700, marginBottom: 10 }}>
+                ▲ {diffPct}% 차이
+              </div>
+
+              {/* 회사간 격차 박스 */}
               <div style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: 10, padding: '8px 12px', marginBottom: 10,
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(201,169,110,0.35)',
+                borderRadius: 10, padding: '9px 12px', marginBottom: 10,
               }}>
-                <div style={{ fontSize: 10, color: '#94a3b8' }}>현재 납입 중 (실제)</div>
-                <div style={{ fontSize: 17, fontWeight: 900, color: '#fff' }}>
-                  {fmtWon(Math.round(actualMonthly / 1_000) * 1_000)}/월
+                <div style={{ fontSize: 10, color: '#c9a96e', fontWeight: 700, marginBottom: 4 }}>
+                  동일 보장 · 회사별 보험료 차이 ({ageGroup})
                 </div>
-                <div style={{ fontSize: 10, color: '#93c5fd', marginTop: 2 }}>
-                  최소 대비 +{fmtWon(Math.round((actualMonthly - minP) / 1_000) * 1_000)} · 여유까지 -{fmtWon(Math.round((comP - actualMonthly) / 1_000) * 1_000)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 10, color: '#93c5fd' }}>최저가 회사</div>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: '#93c5fd' }}>{fmtWon(R(companyLow))}</div>
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ fontSize: 10, color: '#c9a96e', fontWeight: 800 }}>
+                      차이 {fmtWon(gap)}
+                    </div>
+                    <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'linear-gradient(to right, #3b82f6, #dc2626)', margin: '2px 0' }} />
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 10, color: '#fca5a5' }}>최고가 회사</div>
+                    <div style={{ fontSize: 14, fontWeight: 900, color: '#fca5a5' }}>{fmtWon(R(companyHigh))}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 9, color: '#475569', marginTop: 5, textAlign: 'center' }}>
+                  표준 기준 동일 보장 설계 시 · 50대는 7만원 · 60대는 10만원 차이
                 </div>
               </div>
-            )}
 
-            <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.5 }}>
-              40대 기준 · 사무직 · 20년납 예시<br/>
-              <span style={{ color: '#64748b' }}>실제 보험료는 성별·나이·건강상태에 따라 다름</span>
+              {/* 현재 납입액 */}
+              {hasActual && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: 10, padding: '8px 12px',
+                }}>
+                  <div style={{ fontSize: 10, color: '#94a3b8' }}>현재 납입 중 (실제)</div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>
+                    {fmtWon(Math.round(actualMonthly / 1_000) * 1_000)}/월
+                  </div>
+                  <div style={{ fontSize: 10, color: '#93c5fd', marginTop: 2 }}>
+                    최소 대비 +{fmtWon(Math.round((actualMonthly - minP) / 1_000) * 1_000)} · 여유까지 -{fmtWon(Math.round((comP - actualMonthly) / 1_000) * 1_000)}
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* 하단: 나이 기준 + 고지별 버튼 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+            <div style={{ fontSize: 10, color: '#475569' }}>
+              {ageGroup} · 사무직 · 20년납 기준 예시&nbsp;
+              <span style={{ color: '#334155' }}>(성별·건강상태에 따라 다름)</span>
+            </div>
+            <button type="button" onClick={() => setShowDisclosure(true)} style={{
+              background: 'rgba(201,169,110,0.2)',
+              border: '1px solid rgba(201,169,110,0.5)',
+              borderRadius: 8, padding: '5px 12px',
+              fontSize: 11, fontWeight: 700, color: '#c9a96e',
+              cursor: 'pointer',
+            }}>
+              📋 고지별 보험료 차이 보기
+            </button>
+          </div>
+        </div>
+
+        {/* ③ 담보 비교 패널 (딥 블루) */}
+        <div style={{ background: 'linear-gradient(160deg, #1e3a5f 0%, #1e4d8c 100%)', padding: '16px 20px' }}>
+
+          {/* 담보별 최소↔여유 바 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
+            {compareItems.map(({ label, minV, comV, rate }) => {
+              const minPrem = Math.round(minV * rate * mult)
+              const comPrem = Math.round(comV * rate * mult)
+              const minW = Math.round((minV / comV) * 100)
+              return (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, color: '#bfdbfe', minWidth: 56, fontWeight: 600 }}>{label}</span>
+                  <div style={{ flex: 1, height: 10, borderRadius: 5, overflow: 'hidden', background: '#c9a96e' }}>
+                    <div style={{ height: '100%', width: `${minW}%`, background: '#3b82f6' }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: '#93c5fd', textAlign: 'right', minWidth: 130 }}>
+                    <span style={{ color: '#93c5fd' }}>{minV.toLocaleString()}만</span>
+                    <span style={{ color: '#64748b', margin: '0 3px' }}>→</span>
+                    <span style={{ color: '#fcd34d', fontWeight: 700 }}>{comV.toLocaleString()}만</span>
+                    <span style={{ color: '#64748b', marginLeft: 4 }}>
+                      (+{fmtWon(Math.round((comPrem - minPrem) / 1000) * 1000)}/월)
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* 20년 총납 비교 */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 12, marginBottom: 8,
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: '#93c5fd', marginBottom: 2 }}>최소 기준 20년 총납</div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{fmtWon(R(total20min))}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ fontSize: 18, color: '#c9a96e', lineHeight: 1 }}>↔</div>
+              <div style={{ fontSize: 10, color: '#c9a96e', fontWeight: 700, marginTop: 2 }}>
+                차이 {fmtWon(R(total20com - total20min))}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 10, color: '#fcd34d', marginBottom: 2 }}>여유 기준 20년 총납</div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#fcd34d' }}>{fmtWon(R(total20com))}</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: 10, color: '#475569', textAlign: 'center' }}>
+            사무직 기준 / 100세 만기 / 20년납
           </div>
         </div>
       </div>
-
-      {/* ② 담보 비교 패널 (딥 블루) */}
-      <div style={{ background: 'linear-gradient(160deg, #1e3a5f 0%, #1e4d8c 100%)', padding: '16px 20px' }}>
-
-        {/* 담보별 최소↔여유 바 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
-          {compareItems.map(({ label, minV, comV, rate }) => {
-            const minPrem = Math.round(minV * rate)
-            const comPrem = Math.round(comV * rate)
-            const minW = Math.round((minV / comV) * 100)
-            return (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 11, color: '#bfdbfe', minWidth: 56, fontWeight: 600 }}>{label}</span>
-                {/* 스택 바 */}
-                <div style={{ flex: 1, height: 10, borderRadius: 5, overflow: 'hidden', background: '#c9a96e' }}>
-                  <div style={{ height: '100%', width: `${minW}%`, background: '#3b82f6' }} />
-                </div>
-                {/* 금액 표시 */}
-                <div style={{ fontSize: 10, color: '#93c5fd', textAlign: 'right', minWidth: 130 }}>
-                  <span style={{ color: '#93c5fd' }}>{minV.toLocaleString()}만</span>
-                  <span style={{ color: '#64748b', margin: '0 3px' }}>→</span>
-                  <span style={{ color: '#fcd34d', fontWeight: 700 }}>{comV.toLocaleString()}만</span>
-                  <span style={{ color: '#64748b', marginLeft: 4 }}>
-                    (+{fmtWon(Math.round((comPrem - minPrem)/1000)*1000)}/월)
-                  </span>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* 20년 총납 비교 */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 12, marginBottom: 10,
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: '#93c5fd', marginBottom: 2 }}>최소 기준 20년 총납</div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{fmtWon(R(total20min))}</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontSize: 18, color: '#c9a96e', lineHeight: 1 }}>↔</div>
-            <div style={{ fontSize: 10, color: '#c9a96e', fontWeight: 700, marginTop: 2 }}>
-              차이 {fmtWon(R(total20com - total20min))}
-            </div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: '#fcd34d', marginBottom: 2 }}>여유 기준 20년 총납</div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: '#fcd34d' }}>{fmtWon(R(total20com))}</div>
-          </div>
-        </div>
-
-        <div style={{ fontSize: 10, color: '#475569', textAlign: 'center' }}>
-          사무직 기준 / 100세 만기 / 20년납
-        </div>
-      </div>
-    </div>
+    </>
   )
 }
 
