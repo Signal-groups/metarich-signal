@@ -177,6 +177,8 @@ export default function Sidebar({
     if (!isApproved && tool.category === "face") return false;
     if (tool.staffOnly && !isStaff) return false;
     if (!isApproved) return tool.guestVisible === true;
+    // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출
+    if (tool.access === "office") return canUseOffice && (menuStatus[tool.id] || isEditMode);
     return tool.access === "public" || (tool.access === "approved" && (menuStatus[tool.id] || isEditMode));
   });
   const highlightTools = visibleConsultTools.filter((tool) => tool.highlight);
@@ -628,14 +630,4 @@ function NavItem({ icon, label, active, onClick, variant, badge, iconNode }: { i
   return (
     <button 
       onClick={onClick} 
-      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${variantClass}`}
-    >
-      <span className={iconClass}>{iconNode ?? icon}</span>
-      <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
-      <span className="ml-auto flex items-center gap-2">
-        {badge && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-white/70">{badge}</span>}
-        {active && <span className="h-4 w-1 rounded-full bg-[#0ea5e9]" />}
-      </span>
-    </button>
-  )
-}
+      className={`w-full flex items-center gap-3 px-3

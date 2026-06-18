@@ -36,7 +36,7 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
-import { normalizeRole, isApprovedUser, canAccessBranding } from "../../lib/roles"
+import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
 function ToolIcon({ icon, className = "h-7 w-7" }: { icon: string; className?: string }) {
@@ -377,10 +377,13 @@ export default function DashboardPage() {
   const isGuest = userRole === 'guest';
   
   const isApproved = isApprovedUser(user);
+  const canUseOffice = canAccessOffice(user);
   const visibleConsultingTools = CONSULTING_TOOLS.filter((m) => {
     if (m.placement === "office") return false;
     if (!isApproved && m.category === "face") return false;
     if (!isApproved) return m.guestVisible === true;
+    // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출
+    if (m.access === "office") return canUseOffice && (isConsultEditMode || menuStatus[m.id] !== false);
     return m.access === "public" || (m.access === "approved" && (isConsultEditMode || menuStatus[m.id] !== false));
   });
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
@@ -772,28 +775,4 @@ export default function DashboardPage() {
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "white", flexShrink: 0 }}>O</div>
                 <div style={{ flex: 1, textAlign: "left" }}>
                   <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3 }}>실시간 소통</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의 기준 오픈채팅</p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* 공지사항 상세 팝업 */}
-          {selectedAnnouncement && (
-            <AnnouncementModal
-              item={selectedAnnouncement}
-              onClose={() => setSelectedAnnouncement(null)}
-              onSave={saveAnnouncement}
-              onDelete={deleteAnnouncement}
-              isMaster={isMaster}
-            />
-          )}
-
-        </div>
-      )
-          )}
-        </div>
-      </main>
-    </div>
-  )
-}
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의

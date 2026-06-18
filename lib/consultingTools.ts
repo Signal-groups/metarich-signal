@@ -47,7 +47,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-amber-500 text-amber-700",
     fixed: true,
     staffOnly: true,
-    access: "approved",
+    access: "office",
     highlight: true,
     isNew: true,
     editable: true,
@@ -316,26 +316,5 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     access: "public",
     highlight: false,
     editable: false,
-    category: "planning",
   },
-  {
-    id: "show_claim_docs",
-    title: "서류 안내",
-    label: "서류 안내",
-    desc:  "보험금 청구 필요 서류 안내",
-    icon: "document-check",
-    url: "/claim-documents",
-    color: "border-green-400",
-    cardColor: "border-green-400 text-green-600",
-    fixed: true,
-    access: "public",
-    highlight: false,
-    editable: false,
-    category: "planning",
-  },
-];
-
-export const DEFAULT_MENU_STATUS = CONSULTING_TOOLS.reduce<Record<string, boolean>>((acc, tool) => {
-  acc[tool.id] = tool.defaultEnabled !== false;
-  return acc;
-}, {});
+]

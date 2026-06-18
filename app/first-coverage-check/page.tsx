@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { Activity, ArrowLeft, Brain, FolderOpen, HeartPulse, Printer, Save, ShieldCheck, Sparkles, Stethoscope, UserRound, X } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { ensureUserProfile } from "../../lib/userProfile"
-import { isApprovedUser, normalizeRole } from "../../lib/roles"
+import { isApprovedUser, normalizeRole, canAccessFirstCoverageCheck, ROLE_PRIORITY } from "../../lib/roles"
 
 type StepId = "intro" | "customer" | "cancer" | "brain" | "heart" | "surgery" | "care" | "result"
 
@@ -299,14 +299,24 @@ export default function FirstCoverageCheckPage() {
 
       const role = normalizeRole(profile)
       const approved = isApprovedUser(profile)
-      const { data: setting } = await supabase.from("team_settings").select("value").eq("key", "show_first_coverage_check").maybeSingle()
-      const opened = setting?.value === "true"
-      const canUse = role === "master" || (approved && opened)
+      const isAgentOrAbove = ROLE_PRIORITY[role] >= ROLE_PRIORITY["agent"]
+      const hasOfficeAccess = approved && profile?.office_access === true || profile?.office_access === 1 || profile?.office_access === "true" || profile?.office_access === "1"
+      const canUse = canAccessFirstCoverageCheck(profile)
+
+      // 접근 불가 사유 결정
+      let reason = "이용 권한이 없습니다."
+      if (!approved) {
+        reason = "관리자 승인 후 사용할 수 있습니다."
+      } else if (!isAgentOrAbove) {
+        reason = "설계사 등급 이상만 이용할 수 있습니다."
+      } else if (!hasOfficeAccess) {
+        reason = "사무실 업무 권한이 없습니다.\n관리자에게 사무실 업무 권한 부여를 요청해 주세요."
+      }
 
       if (!alive) return
       setProfileId(profile?.id || session.user.id)
       setAllowed(canUse)
-      setLockedReason(!approved ? "관리자 승인 후 사용할 수 있습니다." : "마스터가 대면상담 탭에서 기능을 오픈하면 사용할 수 있습니다.")
+      setLockedReason(reason)
       setChecking(false)
     }
     checkAccess()
@@ -812,7 +822,7 @@ function CenterMessage({ title, body, action }: { title: string; body: string; a
     <div className="flex min-h-screen items-center justify-center bg-[#eef3f8] p-6 text-center">
       <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <p className="text-xl font-black text-slate-900">{title}</p>
-        <p className="mt-3 text-sm font-bold leading-7 text-slate-500">{body}</p>
+        <p className="mt-3 whitespace-pre-line text-sm font-bold leading-7 text-slate-500">{body}</p>
         {action && <button onClick={action} className="mt-5 rounded-lg bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white">대시보드로 이동</button>}
       </div>
     </div>
@@ -849,159 +859,4 @@ function Panel({ title, desc, children }: { title: string; desc: string; childre
 }
 
 function FieldGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>
-}
-
-function NumberInput({ label, value, suffix, onChange }: { label: string; value: number; suffix: string; onChange: (value: number) => void }) {
-  return (
-    <label className="block rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <span className="text-xs font-black text-slate-500">{label}</span>
-      <span className="mt-2 flex items-center gap-2">
-        <input type="number" value={value || ""} placeholder="0" onChange={(e) => onChange(Number(e.target.value || 0))} className="w-full bg-transparent text-2xl font-black text-[#1a3a6e] outline-none" />
-        <span className="text-sm font-black text-slate-400">{suffix}</span>
-      </span>
-    </label>
-  )
-}
-
-function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <label className="block rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <span className="text-xs font-black text-slate-500">{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="고객명" className="mt-2 w-full bg-transparent text-2xl font-black text-[#1a3a6e] outline-none" />
-    </label>
-  )
-}
-
-function SelectInput({ label, value, options, onChange }: { label: string; value: string; options: string[][]; onChange: (value: string) => void }) {
-  return (
-    <label className="block rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <span className="text-xs font-black text-slate-500">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-2 w-full bg-transparent text-xl font-black text-[#1a3a6e] outline-none">
-        {options.map(([id, text]) => <option key={id} value={id}>{text}</option>)}
-      </select>
-    </label>
-  )
-}
-
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <button type="button" onClick={() => onChange(!checked)} className={`rounded-xl border p-4 text-left ${checked ? "border-[#1a3a6e] bg-[#eef4fb]" : "border-slate-200 bg-slate-50"}`}>
-      <span className="block text-xs font-black text-slate-500">{label}</span>
-      <span className={`mt-2 block text-2xl font-black ${checked ? "text-[#1a3a6e]" : "text-slate-400"}`}>{checked ? "있음" : "없음"}</span>
-    </button>
-  )
-}
-
-function ResultCard({ item }: { item: { title: string; need: number; ready: number; rate: number; gap: number; note: string } }) {
-  const s = status(item.rate)
-  return (
-    <div className="rounded-2xl border p-4" style={{ borderColor: s.border, background: s.bg }}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-lg font-black" style={{ color: s.color }}>{item.title}</p>
-        <span className="rounded-full px-2 py-1 text-[11px] font-black" style={{ color: s.color, background: "rgba(255,255,255,0.7)" }}>{s.label}</span>
-      </div>
-      <p className="mt-4 text-4xl font-black" style={{ color: s.color }}>{item.rate}%</p>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
-        <div className="h-full rounded-full" style={{ width: `${item.rate}%`, background: s.color }} />
-      </div>
-      <div className="mt-4 space-y-1 text-xs font-black text-slate-600">
-        <p>기준 {man(item.need)}</p>
-        <p>현재 {man(item.ready)}</p>
-        <p>부족 가능 {balanceText(item.gap)}</p>
-      </div>
-    </div>
-  )
-}
-
-function CostBox({ label, value, desc }: { label: string; value: number; desc: string }) {
-  return (
-    <div className="rounded-xl bg-white/80 p-4">
-      <p className="text-xs font-black text-amber-700">{label}</p>
-      <p className="mt-2 text-2xl font-black text-amber-900">{man(value)}</p>
-      <p className="mt-2 text-xs font-bold leading-5 text-amber-800">{desc}</p>
-    </div>
-  )
-}
-
-function CostStructure({ title, living, treatment, indirectItems, desc, tone }: { title: string; living: number; treatment: number; indirectItems: string; desc: string; tone: "blue" | "rose" }) {
-  const color = tone === "blue" ? "sky" : "rose"
-  const border = tone === "blue" ? "border-sky-200" : "border-rose-200"
-  const bg = tone === "blue" ? "bg-sky-50" : "bg-rose-50"
-  const text = tone === "blue" ? "text-sky-900" : "text-rose-900"
-  const chip = tone === "blue" ? "text-sky-700" : "text-rose-700"
-  void color
-  return (
-    <div className={`rounded-2xl border p-5 ${border} ${bg}`}>
-      <p className={`text-sm font-black ${text}`}>{title}</p>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <SmallCost label="생활비 공백" value={living} tone={chip} />
-        <SmallCost label="치료·수술 기준" value={treatment} tone={chip} />
-        <SmallTextCost label="직접치료 외 비용" value={indirectItems} tone={chip} />
-      </div>
-      <p className={`mt-4 text-sm font-bold leading-7 ${text}`}>{desc}</p>
-    </div>
-  )
-}
-
-function SmallCost({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className="rounded-xl bg-white/80 p-4">
-      <p className={`text-xs font-black ${tone}`}>{label}</p>
-      <p className="mt-2 text-xl font-black text-slate-900">{man(value)}</p>
-    </div>
-  )
-}
-
-function SmallTextCost({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return (
-    <div className="rounded-xl bg-white/80 p-4">
-      <p className={`text-xs font-black ${tone}`}>{label}</p>
-      <p className="mt-2 text-sm font-black leading-6 text-slate-900">{value}</p>
-    </div>
-  )
-}
-
-const RESOURCE_IMAGES = [
-  { title: "산정특례 기준", desc: "산정특례 적용 범위와 본인부담 이해", src: "/coverage-stats/special-case-2605.png" },
-  { title: "산정특례 표", desc: "국민건강보험 산정특례 표 자료", src: "/coverage-stats/nhis-special-case-table.png" },
-  { title: "암 치료 과정", desc: "암 치료 흐름 설명 자료", src: "/coverage-stats/cancer-treatment-process.png" },
-  { title: "암 치료 로드맵", desc: "수술·항암·방사선·추적관리 흐름", src: "/coverage-stats/cancer-treatment-roadmap-2605.png" },
-  { title: "표적항암 비용", desc: "표적항암 치료비 설명 자료", src: "/coverage-stats/cancer-target-cost-2605.png" },
-  { title: "뇌·심장 치료 로드맵", desc: "뇌·심장 치료와 상담 흐름", src: "/coverage-stats/brain-heart-treatment-roadmap-2605.png" },
-  { title: "뇌·심장 수술비", desc: "수술·시술 비용 비교 자료", src: "/coverage-stats/brain-heart-surgery-cost-2605.png" },
-  { title: "뇌·심장 보장 범위", desc: "진단비 범위 차이 설명 자료", src: "/coverage-stats/brain-heart-scope-2605.png" },
-  { title: "간병 부담", desc: "간병 가족 부담과 우울 위험", src: "/coverage-stats/caregiver-burden-depression.png" },
-  { title: "장기요양 등급 비용", desc: "장기요양 등급별 비용", src: "/coverage-stats/longterm-care-grade-cost-2605.png" },
-]
-
-function ResourceGallery() {
-  return (
-    <div className="no-print mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-sm font-black text-slate-900">상담 참고 자료</p>
-          <p className="mt-1 text-xs font-bold text-slate-500">산정특례, 암·뇌·심장 치료 과정과 비용, 간병 자료를 새창으로 확인합니다.</p>
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {RESOURCE_IMAGES.map((item) => (
-          <button
-            key={item.src}
-            type="button"
-            onClick={() => window.open(item.src, "_blank", "noopener,noreferrer")}
-            className="overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#1a3a6e] hover:shadow-md"
-          >
-            <div className="aspect-[4/3] bg-slate-100">
-              <img src={item.src} alt={item.title} className="h-full w-full object-cover" />
-            </div>
-            <div className="p-3">
-              <p className="text-xs font-black text-slate-900">{item.title}</p>
-              <p className="mt-1 text-[11px] font-bold leading-4 text-slate-500">{item.desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+  return <di

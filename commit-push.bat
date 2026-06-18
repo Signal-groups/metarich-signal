@@ -29,7 +29,7 @@ del /f /q git-push.bat 2>nul
 if exist "tmp_pdf_pages" rmdir /s /q "tmp_pdf_pages"
 
 git add -A
-git commit -m "feat: premium compare center panel - max vs min company + 20yr impact display"
+git commit -m "feat: restrict 첫상담 보장체크 to agent+ with office_access only"
 git push origin main
 
 pause

@@ -148,6 +148,23 @@ export function canAccessBranding(user: any): boolean {
   return isApprovedUser(user) && (enabled(user?.branding_access) || enabled(user?.paid_access));
 }
 
+/**
+ * 첫상담 보장체크 — 설계사(agent) 등급 이상 + office_access(사무실업무 체크) 동시 필요
+ * ─────────────────────────────────────────────────────────────────
+ * • master      : 항상 허용
+ * • guest       : 영구 차단
+ * • 설계사 미만 : 차단 (rank < agent)
+ * • 그 외       : is_approved + office_access 모두 true여야 허용
+ */
+export function canAccessFirstCoverageCheck(user: any): boolean {
+  if (normalizeRole(user) === "master") return true;
+  if (normalizeRole(user) === "guest") return false;
+  const role = normalizeRole(user);
+  const isAgentOrAbove = ROLE_PRIORITY[role] >= ROLE_PRIORITY["agent"];
+  if (!isAgentOrAbove) return false;
+  return isApprovedUser(user) && enabled(user?.office_access);
+}
+
 export function canSeeUser(viewer: any, target: any): boolean {
   const viewerRole = normalizeRole(viewer);
   const targetRole = normalizeRole(target);
