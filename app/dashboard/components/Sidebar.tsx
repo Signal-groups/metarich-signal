@@ -215,6 +215,13 @@ export default function Sidebar({
         return;
       }
 
+      if (item.id === "show_first_coverage_check") {
+        window.open(finalUrl, "first-coverage-check", "width=1280,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes");
+        setIsOpen(false);
+        setIsConsultModalOpen(false);
+        return;
+      }
+
       window.open(finalUrl, "_blank", "noopener,noreferrer");
 
       setIsOpen(false);
@@ -529,8 +536,11 @@ export default function Sidebar({
                       <button
                         key={item.id}
                         onClick={() => handleLinkClick(item)}
-                        className={`min-h-[72px] w-full rounded-2xl border-2 bg-white px-4 py-3 text-left transition-all hover:bg-black hover:text-[#d4af37] ${item.color}`}
+                        className={`relative min-h-[72px] w-full rounded-2xl border-2 bg-white px-4 py-3 text-left transition-all hover:bg-black hover:text-[#d4af37] ${item.color}`}
                       >
+                        {item.isNew && (
+                          <span className="new-pulse-badge absolute right-3 top-2 rounded-full px-2 py-0.5 text-[9px] font-black text-white">NEW</span>
+                        )}
                         <span className="flex items-center gap-3">
                           <ToolIcon icon={item.icon} />
                           <span className="text-[12px] font-black leading-tight">{item.label}</span>

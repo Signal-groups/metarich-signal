@@ -51,6 +51,33 @@ body {
   overflow-wrap: break-word;
 }
 
+.new-pulse-badge {
+  animation: newBadgeColor 1.35s infinite alternate ease-in-out;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.28);
+}
+
+@keyframes newBadgeColor {
+  0% { background: #ef4444; box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3); }
+  33% { background: #2563eb; box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3); }
+  66% { background: #10b981; box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3); }
+  100% { background: #f59e0b; box-shadow: 0 6px 16px rgba(245, 158, 11, 0.34); }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+
 @media (max-width: 1100px) {
   .management-stat-grid {
     grid-template-columns: 1fr !important;

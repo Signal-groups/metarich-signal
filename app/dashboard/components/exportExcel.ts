@@ -367,11 +367,11 @@ export function exportExcel({
 
   // ── 섹션3: 팀 전체 활동 현황 ──────────────────────────────
   h(30); xr(ws1,R,1,8,X.secHead)
-  xc(ws1,R,1,"▌ 팀 전체 활동 현황 (전화 / 만남 / 제안 / 소개 / DB배정 / 반품)",X.secHead)
+  xc(ws1,R,1,"▌ 팀 전체 활동 현황 (전화 / 만남 / 제안 / 소개 / 신청 / 반품)",X.secHead)
   xm(ws1,R,1,R,8); R++
 
   h(30);
-  ["이름","전화","만남","제안","소개","DB배정","반품","활동합계"]
+  ["이름","전화","만남","제안","소개","신청","반품","활동합계"]
     .forEach((v,i) => xc(ws1,R,1+i,v,X.colHead))
   R++
 
@@ -413,7 +413,7 @@ export function exportExcel({
   xc(ws1,R,1,"▌ 팀 전체 활동 전환율 분석",X.secHead); xm(ws1,R,1,R,8); R++
 
   h(28);
-  ["전화→만남 전환율","만남→제안 전환율","소개 건수","DB 배정","DB 반품","반품률"]
+  ["전화→만남 전환율","만남→제안 전환율","소개 건수","신청","반품","반품률"]
     .forEach((v,i) => xc(ws1,R,2+i,v,X.colHead))
   R++
 
@@ -533,7 +533,7 @@ export function exportExcel({
 
     // 활동 헤더 (v2: 높이 28)
     h2(28);
-    ["전화","만남","제안","소개","DB배정","반품","활동합계"]
+    ["전화","만남","제안","소개","신청","반품","활동합계"]
       .forEach((v,i) => xc(ws2,R2,1+i,v,X.colHeadSm))
     xc(ws2,R2,8,"",X.colHeadSm)
     R2++
@@ -779,12 +779,12 @@ export function exportExcel({
 
   h3(14); R3++
 
-  // ── [블록 F] DB 현황 요약 ────────────────────────────────────
+  // ── [블록 F] 신청/반품 현황 요약 ────────────────────────────────────
   h3(30); xr(ws3,R3,1,8,X.infoSubTitle)
-  xc(ws3,R3,1,"🗃️  DB 현황 요약",X.infoSubTitle); xm(ws3,R3,1,R3,8); R3++
+  xc(ws3,R3,1,"🗃️  신청/반품 현황 요약",X.infoSubTitle); xm(ws3,R3,1,R3,8); R3++
 
   h3(30);
-  ;["DB 배정","DB 반품","반품률","소개 건수"].forEach((v,i) => xc(ws3,R3,1+i*2,v,X.colHead))
+  ;["신청","반품","반품률","소개 건수"].forEach((v,i) => xc(ws3,R3,1+i*2,v,X.colHead))
   R3++
 
   h3(44);
@@ -794,9 +794,9 @@ export function exportExcel({
   xc(ws3,R3,7,`${tIntro}건`, X.infoKpiVal)
   R3++
 
-  // DB 반품률 게이지
+  // 신청 대비 반품률 게이지
   h3(32);
-  xc(ws3,R3,1,"🔄 DB 반품률",X.metaGoalLbl); xm(ws3,R3,1,R3,2)
+  xc(ws3,R3,1,"🔄 신청 대비 반품률",X.metaGoalLbl); xm(ws3,R3,1,R3,2)
   const retGaugeSt = Number(retRatePct)>10 ? X.infoBarFillR : X.infoBarFill
   xc(ws3,R3,3, makeProgressBar(tDb>0?tRet/tDb:0, 30), retGaugeSt); xm(ws3,R3,3,R3,7)
   xc(ws3,R3,8, `${retRatePct}%  ${Number(retRatePct)>10?"⚠️ 주의":"✅ 양호"}`,
@@ -813,7 +813,7 @@ export function exportExcel({
     `• 금액 달성률  ${(amtRate*100).toFixed(1)}%  |  건수 달성률  ${(cntRate*100).toFixed(1)}%  →  ${rateBadge(amtRate)}`,
     `• 총 계약 실적  ${totalActCnt}건 / ${totalActAmt.toLocaleString()}만원  (목표: ${teamMeta.targetCnt}건 / ${teamMeta.targetAmt.toLocaleString()}만원)`,
     `• 전화→만남 전환율  ${mc1}%  |  만남→제안 전환율  ${pc1}%`,
-    `• DB 배정  ${tDb}건  |  반품  ${tRet}건  |  반품률  ${retRatePct}%  ${Number(retRatePct)>10?"⚠️ 반품 관리 필요":"✅ 양호"}`,
+    `• 신청  ${tDb}건  |  반품  ${tRet}건  |  반품률  ${retRatePct}%  ${Number(retRatePct)>10?"⚠️ 반품 관리 필요":"✅ 양호"}`,
     `• 팀 전체 활동 합계  ${gAct}건  (전화: ${tCall}  만남: ${tMeet}  제안: ${tPt}  소개: ${tIntro})`,
   ]
 

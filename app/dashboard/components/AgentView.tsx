@@ -351,12 +351,14 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                 { label: "만남", key: "meet", targetKey: "target_meet" },
                 { label: "제안", key: "pt", targetKey: "target_pt" },
                 { label: "소개", key: "intro", targetKey: "target_intro" },
-                { label: "DB 배정", key: "db_assigned", targetKey: "target_db_assigned" },
-                { label: "DB 반품", key: "db_returned", targetKey: "target_db_returned" },
-              ].map(({ label, key, targetKey }) => {
+                { label: "신청", key: "db_assigned", targetKey: "target_db_assigned" },
+                { label: "반품", key: "db_returned", targetKey: "target_db_returned", noTarget: true },
+              ].map(({ label, key, targetKey, noTarget }) => {
                 const current = Number((perfInput as any)[key] || 0);
                 const target = Number((perfInput as any)[targetKey] || 0);
-                const rate = calculateRate(current, target);
+                const rate = noTarget
+                  ? calculateRate(Number(perfInput.db_returned || 0), Number(perfInput.db_assigned || 0))
+                  : calculateRate(current, target);
                 return (
                   <ActivityProgressCard
                     key={key}
@@ -365,6 +367,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                     target={target}
                     add={Number((addInput as any)[key] || 0)}
                     rate={rate}
+                    noTarget={noTarget}
+                    rateLabel={noTarget ? "반품률" : label}
                     disabled={perfInput.is_approved}
                     onTarget={(value: number) => setPerfInput({ ...perfInput, [targetKey]: value })}
                     onAdd={(value: number) => setAddInput({ ...addInput, [key]: value })}
@@ -449,8 +453,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                       { label: "만남", val: `${viewDetail.meet}회` },
                       { label: "제안", val: `${viewDetail.pt}회` },
                       { label: "소개", val: `${viewDetail.intro}회` },
-                      { label: "DB배정", val: `${viewDetail.db_assigned}개` },
-                      { label: "DB반품", val: `${viewDetail.db_returned}개` },
+                      { label: "신청", val: `${viewDetail.db_assigned}개` },
+                      { label: "반품", val: `${viewDetail.db_returned}개` },
                     ].map(item => (
                       <div key={item.label} style={{ background: "white", borderRadius: 6, padding: "8px 10px", textAlign: "center", border: "0.5px solid #e4edf5" }}>
                         <p style={{ fontSize: 9, color: "#9ab4c8", marginBottom: 3 }}>{item.label}</p>
@@ -575,12 +579,12 @@ function InsurancePerfCard({
   )
 }
 
-function ActivityProgressCard({ label, current, target, add, rate, disabled, onTarget, onAdd }: any) {
+function ActivityProgressCard({ label, current, target, add, rate, disabled, onTarget, onAdd, noTarget = false, rateLabel }: any) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "82px 1fr", gap: 10, alignItems: "center", borderRadius: 10, background: "#f7fafc", border: "0.5px solid #e4edf5", padding: 10 }}>
-      <CircleRate label={label} rate={rate} size={76} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
-        <MetricInput label="목표" value={target} disabled={disabled} onChange={onTarget} suffix="건" compact />
+      <CircleRate label={rateLabel || label} rate={rate} size={76} />
+      <div style={{ display: "grid", gridTemplateColumns: noTarget ? "1fr" : "1fr 1fr", gap: 7 }}>
+        {!noTarget && <MetricInput label="목표" value={target} disabled={disabled} onChange={onTarget} suffix="건" compact />}
         <ReadMetric label="누적" value={`${Number(current || 0).toLocaleString()}건`} compact />
         <MetricInput label="오늘 추가" value={add} onChange={onAdd} suffix="건" accent="#2563eb" compact />
         <ReadMetric label="저장 후" value={`${Number(current || 0) + Number(add || 0)}건`} compact />

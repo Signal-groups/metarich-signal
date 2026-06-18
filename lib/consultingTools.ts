@@ -12,8 +12,10 @@ export type ConsultingTool = {
   access: "public" | "approved";
   guestVisible?: boolean;  // true = 미승인·게스트도 볼 수 있는 도구
   highlight?: boolean;
+  isNew?: boolean;
   editable?: boolean;
   chromeRecommended?: boolean;
+  defaultEnabled?: boolean;
   category?: "customer" | "coverage" | "financial" | "planning" | "claims" | "face";
   placement?: "consulting" | "office";
 };
@@ -34,6 +36,24 @@ export const CONSULTING_TOOL_CATEGORIES: {
 ];
 
 export const CONSULTING_TOOLS: ConsultingTool[] = [
+  {
+    id: "show_first_coverage_check",
+    title: "첫 상담 보장체크",
+    label: "첫 상담 보장체크",
+    desc: "고객 현재 보장으로 암·뇌·심장·수술·간병 준비율을 바로 확인",
+    icon: "shield",
+    url: "/first-coverage-check",
+    color: "border-amber-500",
+    cardColor: "border-amber-500 text-amber-700",
+    fixed: true,
+    staffOnly: true,
+    access: "approved",
+    highlight: true,
+    isNew: true,
+    editable: true,
+    defaultEnabled: false,
+    category: "face",
+  },
   {
     id: "show_cont",
     title: "숨은보험금",
@@ -316,6 +336,6 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
 ];
 
 export const DEFAULT_MENU_STATUS = CONSULTING_TOOLS.reduce<Record<string, boolean>>((acc, tool) => {
-  acc[tool.id] = true;
+  acc[tool.id] = tool.defaultEnabled !== false;
   return acc;
 }, {});

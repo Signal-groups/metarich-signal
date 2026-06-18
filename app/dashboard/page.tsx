@@ -355,6 +355,11 @@ export default function DashboardPage() {
       return;
     }
 
+    if (item.id === "show_first_coverage_check") {
+      window.open(finalUrl, "first-coverage-check", "width=1280,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes");
+      return;
+    }
+
     window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
@@ -566,17 +571,17 @@ export default function DashboardPage() {
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
                       padding: "14px 8px 12px", borderRadius: 12,
-                      border: "1.5px solid #c2def5",
+                      border: menu.isNew ? "2px solid #f59e0b" : "1.5px solid #c2def5",
                       cursor: "pointer", background: "linear-gradient(145deg,#f0f7fd,#e8f2fb)",
                       fontFamily: "inherit", transition: "all 0.2s ease", position: "relative"
                     }}
                     onMouseEnter={e => {
                       (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(145deg,#dbeeff,#cfe4f8)";
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#185fa5";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#d97706" : "#185fa5";
                     }}
                     onMouseLeave={e => {
                       (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(145deg,#f0f7fd,#e8f2fb)";
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = "#c2def5";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#f59e0b" : "#c2def5";
                     }}
                   >
                     <div style={{ width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "#185fa5", color: "white", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(24,95,165,0.25)" }} className="group-hover:scale-110 group-hover:shadow-[0_4px_14px_rgba(24,95,165,0.4)]">
@@ -586,6 +591,11 @@ export default function DashboardPage() {
                     <span style={{ fontSize: 10, color: "#5a7a92", lineHeight: 1.4, textAlign: "center", wordBreak: "keep-all" }}>{menu.desc}</span>
                     {favorites.includes(menu.id) && !isFavEditMode && (
                       <Star className="h-3 w-3" style={{ position: "absolute", top: 6, right: 6, color: "#f59e0b", fill: "#f59e0b" }} />
+                    )}
+                    {menu.isNew && (
+                      <span className="new-pulse-badge" style={{ position: "absolute", top: 7, left: 7, borderRadius: 999, padding: "2px 7px", fontSize: 9, fontWeight: 900, color: "white", letterSpacing: "0.04em" }}>
+                        NEW
+                      </span>
                     )}
                     {isFavEditMode && (
                       <button

@@ -246,8 +246,8 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
               { label: "만남", current: totals.meet, target: totals.targetMeet },
               { label: "제안", current: totals.pt, target: totals.targetPt },
               { label: "소개", current: totals.intro, target: totals.targetIntro },
-              { label: "DB 배정", current: totals.dbAssigned, target: totals.targetDbAssigned },
-              { label: "DB 반품", current: totals.dbReturned, target: totals.targetDbReturned },
+              { label: "신청", current: totals.dbAssigned, target: totals.targetDbAssigned },
+              { label: "반품률", current: totals.dbReturned, target: totals.dbAssigned, rateMode: true },
             ].map((item) => (
               <MiniActivityGauge key={item.label} {...item} />
             ))}
@@ -345,6 +345,8 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
               { label: "만남", current: Number(agent.performance?.meet || 0), target: Number(agent.performance?.target_meet || 0) },
               { label: "제안", current: Number(agent.performance?.pt || 0), target: Number(agent.performance?.target_pt || 0) },
               { label: "소개", current: Number(agent.performance?.intro || 0), target: Number(agent.performance?.target_intro || 0) },
+              { label: "신청", current: Number(agent.performance?.db_assigned || 0), target: Number(agent.performance?.target_db_assigned || 0) },
+              { label: "반품률", current: Number(agent.performance?.db_returned || 0), target: Number(agent.performance?.db_assigned || 0), rateMode: true },
             ]
             return (
               <div
@@ -365,7 +367,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
                   <InsuranceMiniLine label="생명보험" amount={agent.performance?.life_amt} count={agent.performance?.life_cnt} tone="#2563eb" />
                   <InsuranceMiniLine label="손해보험" amount={agent.performance?.nonlife_amt} count={agent.performance?.nonlife_cnt} tone="#0f6e56" />
                 </div>
-                <div className="management-activity-mini-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
+                <div className="management-activity-mini-grid" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginTop: 12 }}>
                   {activityItems.map((item) => <MiniActivityGauge key={item.label} {...item} />)}
                 </div>
               </div>
@@ -450,7 +452,7 @@ function SmallRate({ label, rate }: { label: string; rate: number }) {
   )
 }
 
-function MiniActivityGauge({ label, current, target }: any) {
+function MiniActivityGauge({ label, current, target, rateMode = false }: any) {
   const rate = Math.round((Number(current || 0) / (Number(target || 0) || 1)) * 100)
   return (
     <div style={{ borderRadius: 9, background: "white", border: "0.5px solid #e4edf5", padding: "8px 9px" }}>
@@ -458,7 +460,11 @@ function MiniActivityGauge({ label, current, target }: any) {
         <span style={{ fontSize: 10, fontWeight: 800, color: "#1a2d42" }}>{label}</span>
         <span style={{ fontSize: 10, fontWeight: 800, color: getRateColor(rate) }}>{rate}%</span>
       </div>
-      <p style={{ fontSize: 10, color: "#7a9ab2", marginBottom: 5 }}>{Number(current || 0).toLocaleString()} / {Number(target || 0).toLocaleString()}건</p>
+      <p style={{ fontSize: 10, color: "#7a9ab2", marginBottom: 5 }}>
+        {rateMode
+          ? `${Number(current || 0).toLocaleString()}건 / 신청 ${Number(target || 0).toLocaleString()}건`
+          : `${Number(current || 0).toLocaleString()} / ${Number(target || 0).toLocaleString()}건`}
+      </p>
       <div style={{ height: 4, borderRadius: 999, background: "#e8eef5", overflow: "hidden" }}>
         <div style={{ width: `${Math.min(rate, 100)}%`, height: "100%", borderRadius: 999, background: getBarColor(rate) }} />
       </div>

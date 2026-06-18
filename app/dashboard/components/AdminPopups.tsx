@@ -528,8 +528,8 @@ export default function AdminPopups({
                   </button>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  <ActivityCountBox label="배정 DB" val={`${selectedAgent.performance?.db_assigned || 0}건`} />
-                  <ActivityCountBox label="반품 DB" val={`${selectedAgent.performance?.db_returned || 0}건`} />
+                  <ActivityCountBox label="신청" val={`${selectedAgent.performance?.db_assigned || 0}건`} />
+                  <ActivityCountBox label="반품" val={`${selectedAgent.performance?.db_returned || 0}건`} />
                   <ActivityCountBox label="반품률" val={`${getRate(selectedAgent.performance?.db_returned, selectedAgent.performance?.db_assigned)}%`} />
                 </div>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -550,8 +550,8 @@ export default function AdminPopups({
             ) : (
               <div className="space-y-8">
                 <div className="grid grid-cols-3 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center shadow-sm">
-                  <ActivityCountBox label="총 배정 DB" val={`${totalDB}건`} />
-                  <ActivityCountBox label="총 반품 DB" val={`${totalReturn}건`} />
+                  <ActivityCountBox label="총 신청" val={`${totalDB}건`} />
+                  <ActivityCountBox label="총 반품" val={`${totalReturn}건`} />
                   <ActivityCountBox label="전체 반품률" val={`${getRate(totalReturn, totalDB)}%`} />
                 </div>
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
