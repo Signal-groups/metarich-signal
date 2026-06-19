@@ -603,6 +603,7 @@ export default function FirstCoverageCheckPage() {
   const [savedCases, setSavedCases] = useState<SavedCase[]>([])
   const [showSaved, setShowSaved] = useState(false)
   const [showPremiumGuide, setShowPremiumGuide] = useState(false)
+  const [expandedResultKey, setExpandedResultKey] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -698,6 +699,19 @@ export default function FirstCoverageCheckPage() {
         rate: clampRate((cancerReady / cancerNeed) * 100),
         gap: cancerNeed - cancerReady,
         note: `${cancerCase.name} 기준입니다. ${cancerCase.category === "similar" ? "유사·소액암 진단비" : "일반암 진단비"}는 먼저 1년 생활비 ${man(livingNeed)}에 배정합니다. 생활비 부족은 ${balanceText(cancerLivingShortage)}이고, 남는 진단비 ${man(cancerDiagnosisAfterLiving)}만 치료비 준비금으로 봅니다.`,
+        details: [
+          { label: "선택 암 기준", value: cancerCase.name },
+          { label: "필요 ① 1년 생활비", value: man(livingNeed) },
+          { label: "필요 ② 직접 치료비", value: man(cancerDirectTreatmentNeed) },
+          { label: "필요 ③ 통원·본인부담", value: man(cancerOutpatientSelfPayNeed) },
+          { label: "필요 ④ 전액본인부담", value: man(cancerNonCoveredNeed) },
+          { label: "필요 ⑤ 간접비용(1년)", value: man(cancerIndirectNeed) },
+          { label: "준비 ① 진단비(생활비 차감)", value: man(cancerDiagnosisAfterLiving) },
+          { label: "준비 ② 치료비 보험금", value: man(cancerTreatmentBenefits) },
+          { label: "준비 ③ 실손 예상", value: man(cancerActualLoss) },
+          { label: "준비 합계", value: man(cancerReady) },
+          { label: "부족 가능", value: balanceText(cancerNeed - cancerReady) },
+        ],
       },
       brain: {
         title: "뇌",
@@ -708,6 +722,18 @@ export default function FirstCoverageCheckPage() {
         note: form.brainScope === "hemorrhage"
           ? "뇌출혈 중심 보장은 범위가 좁아 뇌졸중·뇌혈관 치료 공백을 확인해야 합니다. 재활, 통원, 교통비, 식대, 의료용품 등 직접치료 외 비용도 함께 봅니다."
           : "스텐트, 혈전용해, 개두술 등 실제 치료와 수술비 지급 범위를 확인합니다. 재활, 통원, 교통비, 식대, 의료용품 등 직접치료 외 비용도 함께 봅니다.",
+        details: [
+          { label: "보장 범위", value: form.brainScope === "hemorrhage" ? "뇌출혈" : form.brainScope === "stroke" ? "뇌졸중" : "뇌혈관질환" },
+          { label: "필요 ① 6개월 생활비", value: man(brainLivingNeed) },
+          { label: "필요 ② 치료비 기준", value: man(brainTreatmentNeed) },
+          { label: "필요 ③ 간병비 기준", value: man(brainCareNeed) },
+          { label: "준비 진단비", value: man(form.brainDiagnosis) },
+          { label: "준비 수술비", value: man(form.brainSurgery) },
+          { label: "준비 치료비", value: man(form.brainTreatment) },
+          { label: "실손 예상", value: form.hasActualLoss ? man(800) : "미가입" },
+          { label: "준비 합계", value: man(brainReady) },
+          { label: "부족 가능", value: balanceText(brainNeed - brainReady) },
+        ],
       },
       heart: {
         title: "심장",
@@ -718,6 +744,18 @@ export default function FirstCoverageCheckPage() {
         note: form.heartScope === "ami"
           ? "급성심근경색 중심 보장은 허혈성·심혈관 시술 공백이 생길 수 있습니다. 통원, 교통비, 식대, 의료용품 등 직접치료 외 비용도 함께 봅니다."
           : "스텐트, 관상동맥우회술, 부정맥 시술에서 지급되는 보장을 확인합니다. 통원, 교통비, 식대, 의료용품 등 직접치료 외 비용도 함께 봅니다.",
+        details: [
+          { label: "보장 범위", value: form.heartScope === "ami" ? "급성심근경색" : form.heartScope === "ischemic" ? "허혈성심장질환" : "심혈관질환" },
+          { label: "필요 ① 6개월 생활비", value: man(heartLivingNeed) },
+          { label: "필요 ② 치료비 기준", value: man(heartTreatmentNeed) },
+          { label: "필요 ③ 간병비 기준", value: man(heartCareNeed) },
+          { label: "준비 진단비", value: man(form.heartDiagnosis) },
+          { label: "준비 수술비", value: man(form.heartSurgery) },
+          { label: "준비 치료비", value: man(form.heartTreatment) },
+          { label: "실손 예상", value: form.hasActualLoss ? man(700) : "미가입" },
+          { label: "준비 합계", value: man(heartReady) },
+          { label: "부족 가능", value: balanceText(heartNeed - heartReady) },
+        ],
       },
       surgery: {
         title: "수술비",
@@ -728,6 +766,18 @@ export default function FirstCoverageCheckPage() {
         note: surgeryCases.length
           ? `체크한 ${surgeryCases.length}개 수술 항목 합산 기준입니다. 수술비 정액 보장과 실손 예상 보완액을 더해 부족 가능 금액을 계산합니다.`
           : "확인할 수술 항목을 체크하면 예상 비용과 현재 준비 금액을 합산해 부족 가능 금액을 계산합니다.",
+        details: surgeryCases.length ? [
+          { label: "체크 항목 수", value: `${surgeryCases.length}개` },
+          { label: "예상 비용 합산", value: man(surgeryNeed) },
+          { label: "정액 보장 합산", value: man(surgeryBaseCoverage) },
+          { label: "실손 예상", value: man(surgeryActualLoss) },
+          { label: "준비 합계", value: man(surgeryReady) },
+          { label: "부족 가능", value: balanceText(surgeryNeed - surgeryReady) },
+          ...surgeryCases.map(s => ({
+            label: `${s.name} (${s.surgeryClass})`,
+            value: balanceText(averageCost(s) - surgeryCovByType(form, s.surgeryType) - surgeryActualLossAmount(form, s)),
+          })),
+        ] : [{ label: "안내", value: "수술 항목을 체크하면 항목별 부족 금액이 표시됩니다." }],
       },
       care: {
         title: "간병비",
@@ -738,6 +788,15 @@ export default function FirstCoverageCheckPage() {
         note: checkedCareItems.length > 0
           ? `체크한 ${checkedCareItems.length}개 간병 항목 합산 (총 ${careTotalDays}일, 일당 ${form.careDailyCost}만원 기준). 일당 보험금 ${form.careBenefitDaily}만원 준비 기준입니다.`
           : "간병 항목을 체크하면 예상 기간과 일당 기준으로 간병비 부족 금액을 계산합니다.",
+        details: checkedCareItems.length > 0 ? [
+          { label: "체크 항목 수", value: `${checkedCareItems.length}개` },
+          { label: "총 예상 기간", value: `${careTotalDays}일` },
+          { label: "일당 단가", value: man(form.careDailyCost) },
+          { label: "현재 일당 보험금", value: man(form.careBenefitDaily) },
+          { label: "필요 합계", value: man(careNeed) },
+          { label: "준비 합계", value: man(careReady) },
+          { label: "부족 가능", value: balanceText(careNeed - careReady) },
+        ] : [{ label: "안내", value: "간병 항목을 체크하면 세부 내역이 표시됩니다." }],
       },
       treatment: (() => {
         const allTreatmentItems = [...TREATMENT_CASES, ...SURGERY_CASES.map((s) => ({ ...s, category: "surgery" as TreatmentCat }))]
@@ -780,6 +839,12 @@ export default function FirstCoverageCheckPage() {
           note: txRate < 50
             ? `선택한 ${checkedItems.length}개 치료 항목 기준 준비율 ${txRate}% — 치료 전용 보험금과 실손 예상 보완액을 합산했습니다. 치료비 보장 보완이 필요합니다.`
             : `선택한 ${checkedItems.length}개 치료 항목 기준 준비율 ${txRate}% — 치료 전용 보험금과 실손 예상 보완액 기준입니다.`,
+          details: checkedItems.length > 0 ? [
+            { label: "체크 항목 수", value: `${checkedItems.length}개` },
+            { label: "예상 비용 합산", value: man(txNeed) },
+            { label: "준비 합계", value: man(txReady) },
+            { label: "부족 가능", value: balanceText(txNeed - txReady) },
+          ] : [{ label: "안내", value: "치료 항목을 선택하면 세부 내역이 표시됩니다." }],
         }
       })(),
     }
@@ -1076,8 +1141,22 @@ export default function FirstCoverageCheckPage() {
                   {/* 실손의료비 보장 */}
                   <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
                     <p className="mb-3 text-xs font-black text-blue-700 uppercase tracking-wide">실손의료비 보장</p>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <Toggle label="실손 유지 여부" checked={form.hasActualLoss} onChange={(v) => update("hasActualLoss", v)} />
+                    {/* 토글 — 전체 폭 단독 행 */}
+                    <div className="mb-3 flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-blue-100">
+                      <span className="text-sm font-black text-slate-700">실손 유지 여부</span>
+                      <button
+                        type="button"
+                        onClick={() => update("hasActualLoss", !form.hasActualLoss)}
+                        className={`relative h-7 w-13 rounded-full transition-colors focus:outline-none ${form.hasActualLoss ? "bg-blue-600" : "bg-slate-300"}`}
+                        style={{ width: 52 }}
+                      >
+                        <span
+                          className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${form.hasActualLoss ? "translate-x-7" : "translate-x-1"}`}
+                        />
+                      </button>
+                    </div>
+                    {/* 나머지 3개 입력 — 3열 */}
+                    <div className="grid gap-3 md:grid-cols-3">
                       <div>
                         <NumberInput label="실손 예상 보완율" value={form.actualLossCoverageRate} onChange={(v) => update("actualLossCoverageRate", v)} suffix="%" />
                         <p className="mt-1.5 text-[10px] font-bold text-blue-600">전액본인부담금·선별급여·약관 제외 항목은 별도 부담</p>
@@ -1404,8 +1483,18 @@ export default function FirstCoverageCheckPage() {
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                  {resultList.map((item) => <ResultCard key={item.title} item={item} />)}
+                  {resultList.map((item) => (
+                    <ResultCard
+                      key={item.title}
+                      item={item}
+                      isExpanded={expandedResultKey === item.title}
+                      onToggle={() => setExpandedResultKey(prev => prev === item.title ? null : item.title)}
+                    />
+                  ))}
                 </div>
+                {expandedResultKey && (
+                  <p className="mt-1 text-center text-[10px] font-bold text-slate-400">카드를 다시 클릭하면 닫힙니다</p>
+                )}
                 <div className="mt-4 grid gap-3 lg:grid-cols-3">
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 lg:col-span-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1494,18 +1583,22 @@ export default function FirstCoverageCheckPage() {
                       {selectedSurgeryCases.map((item) => {
                         const itemNeed = averageCost(item)
                         const itemActualLoss = surgeryActualLossAmount(form, item)
-                        const itemReady = surgeryFixedCoveragePerCase + itemActualLoss
+                        const itemFixedCov = surgeryCovByType(form, item.surgeryType)
+                        const itemReady = itemFixedCov + itemActualLoss
                         const itemGap = itemNeed - itemReady
                         return (
                           <div key={item.id} className="rounded-xl bg-white/80 p-4">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="text-base font-black text-indigo-900">{item.name}</p>
-                              <span className="rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-black text-indigo-700">{item.coverageType}</span>
+                              <div className="flex gap-1">
+                                <span className="rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-black text-indigo-700">{item.surgeryClass}</span>
+                                <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-600">{item.coverageType}</span>
+                              </div>
                             </div>
                             <div className="mt-3 grid gap-2 text-xs font-black text-indigo-900 sm:grid-cols-2">
                               <p>예상비용 {man(item.costMin)}~{man(item.costMax)}</p>
                               <p>상담 기준 {man(itemNeed)}</p>
-                              <p>수술비 보장 {man(surgeryFixedCoveragePerCase)}</p>
+                              <p>수술비 보장 {man(itemFixedCov)}</p>
                               <p>실손 예상 {man(itemActualLoss)}</p>
                               <p className="sm:col-span-2">부족 가능 {balanceText(itemGap)}</p>
                             </div>
@@ -1547,8 +1640,9 @@ export default function FirstCoverageCheckPage() {
                           const cat = item.category as TreatmentCat
                           const avgC = Math.round((item.costMin + item.costMax) / 2)
                           const countInCat = checkedTx.filter(i => i.category === cat).length
+                          const txSurgeryItem = SURGERY_CASES.find(s => s.id === item.id)
                           const perItemBase = cat === "surgery"
-                            ? form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                            ? surgeryCovByType(form, txSurgeryItem?.surgeryType ?? "general")
                             : Math.round(catTxBenefitOnlyFn(cat) / Math.max(1, countInCat))
                           const rawActualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
                           const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
@@ -1751,19 +1845,46 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   )
 }
 
-function ResultCard({ item }: { item: { title: string; need: number; ready: number; rate: number; gap: number; note: string } }) {
+function ResultCard({
+  item,
+  isExpanded,
+  onToggle,
+}: {
+  item: { title: string; need: number; ready: number; rate: number; gap: number; note: string; details?: { label: string; value: string }[] }
+  isExpanded: boolean
+  onToggle: () => void
+}) {
   const surplus = item.gap <= 0
   const rateColor = item.rate >= 80 ? "text-emerald-600" : item.rate >= 50 ? "text-amber-600" : "text-red-600"
   const bgColor = item.rate >= 80 ? "border-emerald-200 bg-emerald-50" : item.rate >= 50 ? "border-amber-200 bg-amber-50" : "border-red-200 bg-red-50"
+  const expandBg = item.rate >= 80 ? "bg-emerald-100/60" : item.rate >= 50 ? "bg-amber-100/60" : "bg-red-100/60"
   return (
-    <div className={`rounded-2xl border p-4 ${bgColor}`}>
-      <p className="text-[11px] font-black text-slate-500">{item.title}</p>
-      <p className={`mt-1 text-2xl font-black ${rateColor}`}>{item.rate}%</p>
-      <div className="mt-2 h-1.5 rounded-full bg-white/60">
-        <div className={`h-full rounded-full ${item.rate >= 80 ? "bg-emerald-500" : item.rate >= 50 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${Math.min(item.rate, 100)}%` }} />
-      </div>
-      <p className={`mt-2 text-[12px] font-black ${rateColor}`}>{surplus ? `+${man(Math.abs(item.gap))} 여유` : `-${man(Math.abs(item.gap))} 부족`}</p>
-      <p className="mt-1.5 text-[10px] font-bold leading-5 text-slate-500 line-clamp-2">{item.note}</p>
+    <div className={`rounded-2xl border transition-all ${bgColor} ${isExpanded ? "xl:col-span-2" : ""}`}>
+      <button type="button" onClick={onToggle} className="w-full p-4 text-left">
+        <div className="flex items-start justify-between gap-1">
+          <p className="text-[11px] font-black text-slate-500">{item.title}</p>
+          <span className="text-[9px] font-black text-slate-400">{isExpanded ? "▲" : "▼"}</span>
+        </div>
+        <p className={`mt-1 text-2xl font-black ${rateColor}`}>{item.rate}%</p>
+        <div className="mt-2 h-1.5 rounded-full bg-white/60">
+          <div className={`h-full rounded-full ${item.rate >= 80 ? "bg-emerald-500" : item.rate >= 50 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${Math.min(item.rate, 100)}%` }} />
+        </div>
+        <p className={`mt-2 text-[12px] font-black ${rateColor}`}>{surplus ? `+${man(Math.abs(item.gap))} 여유` : `-${man(Math.abs(item.gap))} 부족`}</p>
+        <p className="mt-1.5 text-[10px] font-bold leading-5 text-slate-500 line-clamp-2">{item.note}</p>
+      </button>
+      {isExpanded && item.details && (
+        <div className={`mx-3 mb-3 rounded-xl p-3 ${expandBg}`}>
+          <p className="mb-2 text-[9px] font-black uppercase tracking-wide text-slate-400">세부 내역</p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            {item.details.map((d, i) => (
+              <div key={i} className="flex items-baseline justify-between gap-1 border-b border-white/40 pb-0.5">
+                <span className="text-[9px] font-bold text-slate-500 shrink-0">{d.label}</span>
+                <span className="text-[10px] font-black text-slate-800 text-right">{d.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
