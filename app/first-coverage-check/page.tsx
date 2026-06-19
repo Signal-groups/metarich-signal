@@ -20,6 +20,8 @@ type FormState = {
   cancerIndirectMonthlyCost: number
   hasActualLoss: boolean
   actualLossCoverageRate: number
+  realLossInpatient: number
+  realLossOutpatient: number
   cancerDiagnosis: number
   similarCancer: number
   cancerCaseId: string
@@ -74,6 +76,8 @@ const initialForm: FormState = {
   cancerIndirectMonthlyCost: 50,
   hasActualLoss: true,
   actualLossCoverageRate: 70,
+  realLossInpatient: 5000,
+  realLossOutpatient: 25,
   cancerDiagnosis: 3000,
   similarCancer: 300,
   cancerCaseId: "prostate",
@@ -699,25 +703,39 @@ export default function FirstCoverageCheckPage() {
           return { title: "치료방법", need: 0, ready: 0, rate: 0, gap: 0, note: "치료 항목을 선택하면 예상 비용과 준비된 보험금을 비교합니다." }
         }
         const txNeed = checkedItems.reduce((sum, item) => sum + Math.round((item.costMin + item.costMax) / 2), 0)
-        const catBenefits = (cat: TreatmentCat) => {
-          if (cat === "cancer") return form.cancerDiagnosis + form.cancerTreatment + form.targetCancer + form.radiationCancer
-          if (cat === "brain") return form.brainDiagnosis + form.brainSurgery + form.brainTreatment
-          if (cat === "heart") return form.heartDiagnosis + form.heartSurgery + form.heartTreatment
-          return form.diseaseSurgery + form.majorSurgery + form.nsurgery
+        // ★ 수정: 진단비/수술비 제외 — 치료 전용 보험금만 준비금으로 산정
+        // 암 진단비는 생활비에 이미 배정됨, 뇌/심장 진단비·수술비도 해당 카드에서 별도 계산
+        const catTxBenefitOnly = (cat: TreatmentCat) => {
+          if (cat === "cancer") return form.cancerTreatment + form.targetCancer + form.radiationCancer
+          if (cat === "brain") return form.brainTreatment
+          if (cat === "heart") return form.heartTreatment
+          return 0 // surgery: 항목별 정액 수술비로 계산 (아래에서 perItem)
         }
         const txReady = checkedItems.reduce((sum, item) => {
           const cat = item.category as TreatmentCat
-          const base = catBenefits(cat) / Math.max(1, allTreatmentItems.filter((i) => form.selectedTreatmentItems.includes(i.id) && i.category === cat).length)
-          const actualLoss = form.hasActualLoss ? Math.round(Math.round((item.costMin + item.costMax) / 2) * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
-          return sum + Math.round(base) + actualLoss
+          const avgC = Math.round((item.costMin + item.costMax) / 2)
+          const countInCat = checkedItems.filter(i => i.category === cat).length
+          // 수술 항목: 수술 1건당 정액 지급
+          const base = cat === "surgery"
+            ? form.diseaseSurgery + form.majorSurgery + form.nsurgery
+            : Math.round(catTxBenefitOnly(cat) / Math.max(1, countInCat))
+          // 실손: 치료비 × 보완율 × 해당 치료 실손 적용 비율, 입원 한도 이내
+          const rawActualLoss = form.hasActualLoss
+            ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45))
+            : 0
+          const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
+          return sum + base + actualLoss
         }, 0)
+        const txRate = clampRate((txReady / (txNeed || 1)) * 100)
         return {
           title: "치료방법",
           need: txNeed,
           ready: txReady,
-          rate: clampRate((txReady / (txNeed || 1)) * 100),
+          rate: txRate,
           gap: txNeed - txReady,
-          note: `선택한 ${checkedItems.length}개 치료 항목 예상 비용 합산. 해당 카테고리 보험금과 실손 예상 보완액 기준입니다.`,
+          note: txRate < 50
+            ? `선택한 ${checkedItems.length}개 치료 항목 기준 준비율 ${txRate}% — 치료 전용 보험금과 실손 예상 보완액을 합산했습니다. 치료비 보장 보완이 필요합니다.`
+            : `선택한 ${checkedItems.length}개 치료 항목 기준 준비율 ${txRate}% — 치료 전용 보험금과 실손 예상 보완액 기준입니다.`,
         }
       })(),
     }
@@ -1001,18 +1019,37 @@ export default function FirstCoverageCheckPage() {
             {active === "intro" && <Intro onStart={() => setActive("customer")} />}
             {active === "customer" && (
               <Panel title="고객 기본 정보" desc="설계사가 고객의 현재 증권과 상담 내용을 보고 직접 입력합니다.">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <TextInput label="고객명" value={form.customerName} onChange={(v) => update("customerName", v)} />
-                  <NumberInput label="나이" value={form.age} onChange={(v) => update("age", v)} suffix="세" />
-                  <SelectInput label="성별" value={form.gender} onChange={(v) => update("gender", v as FormState["gender"])} options={[["male", "남성"], ["female", "여성"]]} />
-                  <NumberInput label="월 생활비 기준" value={form.monthlyLivingCost} onChange={(v) => update("monthlyLivingCost", v)} suffix="만원" />
-                  <NumberInput label="암 치료 중 월 추가 지출" value={form.cancerIndirectMonthlyCost} onChange={(v) => update("cancerIndirectMonthlyCost", v)} suffix="만원" />
-                  <Toggle label="실손 유지 여부" checked={form.hasActualLoss} onChange={(v) => update("hasActualLoss", v)} />
-                  <div>
-                    <NumberInput label="실손 예상 보완율" value={form.actualLossCoverageRate} onChange={(v) => update("actualLossCoverageRate", v)} suffix="%" />
-                    <p className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                      전액본인부담금, 선별급여, 약관상 보상 제외 항목은 실손 예상 보완율에서 제외됩니다.
-                    </p>
+                <div className="grid gap-5">
+                  {/* 기본 정보 */}
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <TextInput label="고객명" value={form.customerName} onChange={(v) => update("customerName", v)} />
+                    <NumberInput label="나이" value={form.age} onChange={(v) => update("age", v)} suffix="세" />
+                    <SelectInput label="성별" value={form.gender} onChange={(v) => update("gender", v as FormState["gender"])} options={[["male", "남성"], ["female", "여성"]]} />
+                    <NumberInput label="월 생활비 기준" value={form.monthlyLivingCost} onChange={(v) => update("monthlyLivingCost", v)} suffix="만원" />
+                    <NumberInput label="암 치료 중 월 추가 지출" value={form.cancerIndirectMonthlyCost} onChange={(v) => update("cancerIndirectMonthlyCost", v)} suffix="만원" />
+                  </div>
+
+                  {/* 실손의료비 보장 */}
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                    <p className="mb-3 text-xs font-black text-blue-700 uppercase tracking-wide">실손의료비 보장</p>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Toggle label="실손 유지 여부" checked={form.hasActualLoss} onChange={(v) => update("hasActualLoss", v)} />
+                      <div>
+                        <NumberInput label="실손 예상 보완율" value={form.actualLossCoverageRate} onChange={(v) => update("actualLossCoverageRate", v)} suffix="%" />
+                        <p className="mt-1.5 text-[10px] font-bold text-blue-600">전액본인부담금·선별급여·약관 제외 항목은 별도 부담</p>
+                      </div>
+                      <div>
+                        <NumberInput label="입원 실손 보장 한도" value={form.realLossInpatient} onChange={(v) => update("realLossInpatient", v)} suffix="만원" />
+                        <p className="mt-1.5 text-[10px] font-bold text-blue-600">입원 1회 또는 연간 실손 지급 한도 (예: 5,000만원)</p>
+                      </div>
+                      <div>
+                        <NumberInput label="통원 실손 보장 한도" value={form.realLossOutpatient} onChange={(v) => update("realLossOutpatient", v)} suffix="만원/회" />
+                        <p className="mt-1.5 text-[10px] font-bold text-blue-600">통원 1회당 실손 지급 한도 (예: 25만원/회)</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-xl bg-blue-100 px-3 py-2 text-[11px] font-bold text-blue-800 leading-5">
+                      입원 실손 한도는 치료방법 탭의 실손 예상 보완액 계산에 반영됩니다. 한도 초과분은 준비금에서 제외합니다.
+                    </div>
                   </div>
                 </div>
               </Panel>
@@ -1200,16 +1237,19 @@ export default function FirstCoverageCheckPage() {
                         const checked = form.selectedTreatmentItems.includes(item.id)
                         const avgC = Math.round((item.costMin + item.costMax) / 2)
                         const cat = activeTreatmentTab
-                        const catBenefit = cat === "cancer"
-                          ? form.cancerDiagnosis + form.cancerTreatment + form.targetCancer + form.radiationCancer
-                          : cat === "brain"
-                          ? form.brainDiagnosis + form.brainSurgery + form.brainTreatment
-                          : cat === "heart"
-                          ? form.heartDiagnosis + form.heartSurgery + form.heartTreatment
-                          : form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                        // ★ 치료 전용 보험금만 (진단비·수술비 제외)
+                        const catTxOnly = cat === "cancer"
+                          ? form.cancerTreatment + form.targetCancer + form.radiationCancer
+                          : cat === "brain" ? form.brainTreatment
+                          : cat === "heart" ? form.heartTreatment
+                          : 0
                         const checkedInCat = (activeTreatmentTab === "surgery" ? SURGERY_CASES : TREATMENT_CASES.filter(i => i.category === cat)).filter(i => form.selectedTreatmentItems.includes(i.id)).length
-                        const perItemBase = Math.round(catBenefit / Math.max(1, checked ? checkedInCat : checkedInCat + 1))
-                        const actualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
+                        // 수술: 1건당 정액, 그 외: 치료전용 보험금 ÷ 선택 항목 수
+                        const perItemBase = cat === "surgery"
+                          ? form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                          : Math.round(catTxOnly / Math.max(1, checked ? checkedInCat : checkedInCat + 1))
+                        const rawActualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
+                        const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
                         const itemReady = perItemBase + actualLoss
                         const itemGap = avgC - itemReady
                         return (
@@ -1412,17 +1452,18 @@ export default function FirstCoverageCheckPage() {
                     surgery: "bg-emerald-100 text-emerald-700",
                   }
                   const catLabel: Record<TreatmentCat, string> = { cancer: "암", brain: "뇌", heart: "심장", surgery: "수술" }
-                  const catBenefitFn = (cat: TreatmentCat) => {
-                    if (cat === "cancer") return form.cancerDiagnosis + form.cancerTreatment + form.targetCancer + form.radiationCancer
-                    if (cat === "brain") return form.brainDiagnosis + form.brainSurgery + form.brainTreatment
-                    if (cat === "heart") return form.heartDiagnosis + form.heartSurgery + form.heartTreatment
-                    return form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                  // ★ 치료 전용 보험금만 (진단비·수술비 제외)
+                  const catTxBenefitOnlyFn = (cat: TreatmentCat) => {
+                    if (cat === "cancer") return form.cancerTreatment + form.targetCancer + form.radiationCancer
+                    if (cat === "brain") return form.brainTreatment
+                    if (cat === "heart") return form.heartTreatment
+                    return 0
                   }
                   return (
                     <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-5">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm font-black text-violet-900">선택된 치료방법 항목 ({checkedTx.length}개)</p>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-violet-700">
+                        <span className={`rounded-full bg-white px-3 py-1 text-xs font-black ${result.treatment.rate < 50 ? "text-rose-700" : result.treatment.rate < 70 ? "text-amber-700" : "text-emerald-700"}`}>
                           전체 {man(result.treatment.need)} 필요 / {man(result.treatment.ready)} 준비 ({result.treatment.rate}%)
                         </span>
                       </div>
@@ -1431,8 +1472,11 @@ export default function FirstCoverageCheckPage() {
                           const cat = item.category as TreatmentCat
                           const avgC = Math.round((item.costMin + item.costMax) / 2)
                           const countInCat = checkedTx.filter(i => i.category === cat).length
-                          const perItemBase = Math.round(catBenefitFn(cat) / Math.max(1, countInCat))
-                          const actualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
+                          const perItemBase = cat === "surgery"
+                            ? form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                            : Math.round(catTxBenefitOnlyFn(cat) / Math.max(1, countInCat))
+                          const rawActualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
+                          const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
                           const itemReady = perItemBase + actualLoss
                           const itemGap = avgC - itemReady
                           const itemRate = clampRate((itemReady / (avgC || 1)) * 100)
