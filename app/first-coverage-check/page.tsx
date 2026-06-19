@@ -555,6 +555,7 @@ export default function FirstCoverageCheckPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [savedCases, setSavedCases] = useState<SavedCase[]>([])
   const [showSaved, setShowSaved] = useState(false)
+  const [showPremiumGuide, setShowPremiumGuide] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -818,6 +819,9 @@ export default function FirstCoverageCheckPage() {
             <button onClick={saveCase} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1a3a6e] px-4 py-2 text-sm font-black text-white shadow-sm">
               <Save className="h-4 w-4" /> 저장
             </button>
+            <button onClick={() => setShowPremiumGuide(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-violet-700">
+              보험료 구조
+            </button>
             <button onClick={() => setShowSaved((prev) => !prev)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm">
               <FolderOpen className="h-4 w-4" /> 불러오기
             </button>
@@ -848,6 +852,131 @@ export default function FirstCoverageCheckPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 보험료 구조 팝업 모달 */}
+        {showPremiumGuide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setShowPremiumGuide(false)}>
+            <div className="relative w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              {/* 헤더 */}
+              <div className="bg-[#1A2744] px-6 py-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-black text-white/60 uppercase tracking-widest mb-1">Insurance Premium Structure</p>
+                  <h2 className="text-xl font-black text-white">보험료 차이 구조 한눈에 보기</h2>
+                </div>
+                <button onClick={() => setShowPremiumGuide(false)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 text-lg font-black">✕</button>
+              </div>
+
+              <div className="p-6 grid gap-5">
+                {/* 핵심 강조 배너 */}
+                <div className="rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200 p-4">
+                  <p className="text-xs font-black text-rose-600 uppercase tracking-wide mb-1">핵심 포인트</p>
+                  <p className="text-base font-black text-rose-800">
+                    표준형 ↔ 유병자보험(325) 기준 보험료 차이 <span className="text-rose-600">최대 40~60%</span>
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-rose-700">각 단계 간 차이는 약 10~15% 수준. 단계가 낮아질수록 비용 부담이 급증합니다.</p>
+                </div>
+
+                {/* 테이블 + 화살표 */}
+                <div className="flex gap-3 items-stretch">
+                  {/* 테이블 */}
+                  <div className="flex-1 overflow-hidden rounded-2xl border border-slate-200">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-[#1A2744] text-white">
+                          <th className="px-4 py-3 text-left font-black text-xs w-[34%]">유형</th>
+                          <th className="px-3 py-3 text-center font-black text-xs w-[16%]">코드</th>
+                          <th className="px-4 py-3 text-left font-black text-xs">설명</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* 건강고지형 */}
+                        <tr className="bg-yellow-50 border-b border-yellow-200">
+                          <td className="px-4 py-3 font-black text-yellow-800 text-[13px]" rowSpan={5}>
+                            건강고지형<br/><span className="text-xs font-bold text-yellow-600">(할인형)</span>
+                          </td>
+                          <td className="px-3 py-2.5 text-center font-black text-[13px] text-[#1A2744] border-b border-yellow-100">3105</td>
+                          <td className="px-4 py-2.5 text-[12px] font-bold text-yellow-800 border-b border-yellow-100">고지에 가입할 수 있는 <span className="font-black">가장 유리한 보험</span></td>
+                        </tr>
+                        {[["395",""], ["385",""], ["375",""], ["365",""]].map(([code, desc]) => (
+                          <tr key={code} className="bg-yellow-50 border-b border-yellow-100">
+                            <td className="px-3 py-2 text-center text-[12px] font-bold text-yellow-600">{code}</td>
+                            <td className="px-4 py-2 text-[11px] text-slate-400">{desc}</td>
+                          </tr>
+                        ))}
+                        {/* 표준형 */}
+                        <tr className="bg-white border-b-2 border-slate-300">
+                          <td className="px-4 py-3 font-black text-[13px] text-slate-800 border-r border-slate-200">표준형</td>
+                          <td className="px-3 py-3 text-center font-black text-[13px] text-[#1A2744]">355</td>
+                          <td className="px-4 py-3 text-[12px] font-bold text-slate-600">일반적으로 제안받는 표준형</td>
+                        </tr>
+                        {/* 경증간편형 */}
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <td className="px-4 py-3 font-black text-[13px] text-slate-700 border-r border-slate-200">경증간편형</td>
+                          <td className="px-3 py-3 text-center font-black text-[13px] text-amber-700">31010</td>
+                          <td className="px-4 py-3 text-[12px] font-bold text-slate-600">유병자 보험 중 <span className="font-black">가장 저렴한 옵션</span></td>
+                        </tr>
+                        {/* 유병자보험 */}
+                        <tr className="bg-rose-50/50 border-b border-rose-100">
+                          <td className="px-4 py-2.5 font-black text-[13px] text-rose-800 border-r border-rose-100" rowSpan={3}>유병자보험</td>
+                          <td className="px-3 py-2.5 text-center font-bold text-[12px] text-rose-600 border-b border-rose-100">345</td>
+                          <td className="px-4 py-2.5 text-[11px] text-slate-400 border-b border-rose-100"></td>
+                        </tr>
+                        <tr className="bg-rose-50/50 border-b border-rose-100">
+                          <td className="px-3 py-2.5 text-center font-bold text-[12px] text-rose-600 border-b border-rose-100">335</td>
+                          <td className="px-4 py-2.5 text-[11px] text-slate-400 border-b border-rose-100"></td>
+                        </tr>
+                        <tr className="bg-rose-50/50 border-b-2 border-rose-300">
+                          <td className="px-3 py-2.5 text-center font-black text-[13px] text-rose-700">325</td>
+                          <td className="px-4 py-2.5 text-[11px] font-bold text-rose-700">
+                            <span className="inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">표준 대비 최대 40~60% ↑</span>
+                          </td>
+                        </tr>
+                        {/* 초간편 */}
+                        <tr className="bg-slate-100">
+                          <td className="px-4 py-3 font-black text-[13px] text-slate-600 border-r border-slate-200">초간편</td>
+                          <td className="px-3 py-3 text-center font-black text-[13px] text-slate-500">–</td>
+                          <td className="px-4 py-3 text-[12px] font-bold text-slate-500">가장 비싼 보험</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 화살표 + 라벨 */}
+                  <div className="flex flex-col items-center justify-between py-2 w-14 shrink-0">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="rounded-xl bg-[#1A2744] px-2 py-1.5 text-[10px] font-black text-white text-center leading-tight">보험료<br/>–</span>
+                      <div className="w-px flex-1 bg-gradient-to-b from-[#1A2744] to-rose-500 min-h-[160px]" style={{height:"auto"}}></div>
+                      <span className="rounded-xl bg-rose-600 px-2 py-1.5 text-[10px] font-black text-white text-center leading-tight">보험료<br/>+</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 단계별 차이 안내 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                    <p className="text-[11px] font-black text-blue-600 uppercase tracking-wide mb-1">단계 간 보험료 차이</p>
+                    <p className="text-2xl font-black text-blue-800">10~15%</p>
+                    <p className="mt-1 text-[11px] font-bold text-blue-700">한 단계 내려갈수록 약 10~15% 추가 부담</p>
+                  </div>
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                    <p className="text-[11px] font-black text-rose-600 uppercase tracking-wide mb-1">표준형 vs 325 최대 차이</p>
+                    <p className="text-2xl font-black text-rose-700">40~60%</p>
+                    <p className="mt-1 text-[11px] font-bold text-rose-700">건강 고지가 핵심. 단계 선택이 보험료를 결정합니다</p>
+                  </div>
+                </div>
+
+                {/* 핵심 메시지 */}
+                <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+                  <p className="text-[11px] font-black text-violet-600 uppercase tracking-wide mb-1.5">핵심 메시지</p>
+                  <p className="text-sm font-bold leading-7 text-violet-900">
+                    상품 수백 개 중 <span className="font-black">단 한 개를 고르는 기준</span>입니다. 저는 단순히 상품만 들이미는 사람이 아닙니다.
+                    <span className="font-black"> 정확하게 진단하고, 최적의 설계 및 추천</span>을 해드립니다.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
