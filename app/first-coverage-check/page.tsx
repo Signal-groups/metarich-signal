@@ -418,6 +418,8 @@ const CARE_ITEMS = [
 // ─────────────────────────────────────────────────────────────────
 // 치료방법 항목 데이터 (암/뇌/심장)
 // ─────────────────────────────────────────────────────────────────
+type TxBenefitKey = "cancerTreatment" | "targetCancer" | "radiationCancer" | "brainTreatment" | "heartTreatment"
+
 const TREATMENT_CASES: {
   id: string
   category: TreatmentCat
@@ -426,6 +428,14 @@ const TREATMENT_CASES: {
   costMax: number
   coverageType: string
   actualLossFactor: number
+  /** 이 항목에 직접 대응하는 보험금 입력 키 (null=수술비 탭에서 별도) */
+  benefitKey: TxBenefitKey | null
+  /** 통원 중심 치료 여부 — true면 실손 통원 한도(회당)×예상횟수로 계산 */
+  isOutpatient: boolean
+  /** 예상 통원 횟수 (isOutpatient=true 시 사용) */
+  outpatientVisits?: number
+  /** 비급여 중심으로 실손 혜택 거의 없음 */
+  noActualLoss?: boolean
   note: string
 }[] = [
   // ─── 암 치료 ──────────────────────────────────────────────────
@@ -436,6 +446,8 @@ const TREATMENT_CASES: {
     costMin: 500, costMax: 2000,
     coverageType: "급여 중심",
     actualLossFactor: 0.50,
+    benefitKey: null, // 수술비 탭에서 별도 산정
+    isOutpatient: false,
     note: "위절제·폐절제·유방절제 등 부위별 수술. 급여 본인부담 + 비급여 재료비 + 입원비 합산. 로봇수술 선택 시 비용 급증.",
   },
   {
@@ -445,6 +457,9 @@ const TREATMENT_CASES: {
     costMin: 800, costMax: 3000,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.40,
+    benefitKey: "cancerTreatment",
+    isOutpatient: true,
+    outpatientVisits: 40, // 약 6~12개월, 주 1회 기준
     note: "6~12개월 주기 항암투여. 급여 약제 외 비급여 표적치료제·지지요법 포함. 통원 횟수 × 회당 비용으로 총 부담 증가.",
   },
   {
@@ -454,6 +469,9 @@ const TREATMENT_CASES: {
     costMin: 300, costMax: 1200,
     coverageType: "급여 중심",
     actualLossFactor: 0.45,
+    benefitKey: "radiationCancer",
+    isOutpatient: true,
+    outpatientVisits: 25, // 부위당 20~35회
     note: "부위당 20~35회 통원. 급여 본인부담 + 정밀방사선(SBRT·양성자) 비급여 선택 시 추가 발생.",
   },
   {
@@ -463,6 +481,10 @@ const TREATMENT_CASES: {
     costMin: 1000, costMax: 4000,
     coverageType: "비급여 중심",
     actualLossFactor: 0.20,
+    benefitKey: "targetCancer",
+    isOutpatient: true,
+    outpatientVisits: 12, // 월 1회 기준
+    noActualLoss: true, // 비급여 중심 — 실손 거의 미적용
     note: "비급여 표적항암제·면역항암제(PD-1/PD-L1). 월 200~500만원 약제비 부담. 급여 전환 전까지 자기부담 큼.",
   },
   {
@@ -472,6 +494,9 @@ const TREATMENT_CASES: {
     costMin: 100, costMax: 600,
     coverageType: "급여 중심",
     actualLossFactor: 0.60,
+    benefitKey: "cancerTreatment", // 항암약물치료비에 포함
+    isOutpatient: true,
+    outpatientVisits: 60, // 5~10년 장기 복용
     note: "유방암·전립선암 장기 호르몬제. 5~10년 복용 기준 누적 부담. 급여지만 검사비·통원비 추가.",
   },
   // ─── 뇌 치료 ──────────────────────────────────────────────────
@@ -482,6 +507,8 @@ const TREATMENT_CASES: {
     costMin: 300, costMax: 800,
     coverageType: "급여 중심",
     actualLossFactor: 0.55,
+    benefitKey: "brainTreatment",
+    isOutpatient: false,
     note: "뇌졸중 초기 3~4.5시간 내 혈전용해제 투여. 급여 본인부담 + 중환자실·검사비 포함.",
   },
   {
@@ -491,6 +518,8 @@ const TREATMENT_CASES: {
     costMin: 700, costMax: 1800,
     coverageType: "급여 중심",
     actualLossFactor: 0.50,
+    benefitKey: "brainTreatment",
+    isOutpatient: false,
     note: "스텐트리버·흡입카테터 시술. 급여 산정특례 적용이나 재료비·중환자실 비급여 추가 발생.",
   },
   {
@@ -500,6 +529,8 @@ const TREATMENT_CASES: {
     costMin: 1000, costMax: 3000,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.40,
+    benefitKey: "brainTreatment",
+    isOutpatient: false,
     note: "뇌출혈·뇌종양 개두수술. 급여 본인부담 + 특수재료·ICU·간병비 포함 총 부담 큼.",
   },
   {
@@ -509,6 +540,8 @@ const TREATMENT_CASES: {
     costMin: 500, costMax: 1500,
     coverageType: "급여 중심",
     actualLossFactor: 0.55,
+    benefitKey: "brainTreatment",
+    isOutpatient: false,
     note: "경동맥·뇌동맥 스텐트 삽입. 급여 본인부담 + 비급여 스텐트 재료비 추가.",
   },
   {
@@ -518,6 +551,8 @@ const TREATMENT_CASES: {
     costMin: 400, costMax: 2000,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.45,
+    benefitKey: "brainTreatment",
+    isOutpatient: false,
     note: "재활전문병원 2~6개월 입원. 급여 재활치료 + 비급여 물리치료·보조기구 포함. 장기화 시 부담 급증.",
   },
   // ─── 심장 치료 ──────────────────────────────────────────────────
@@ -528,6 +563,8 @@ const TREATMENT_CASES: {
     costMin: 400, costMax: 1200,
     coverageType: "급여 중심",
     actualLossFactor: 0.60,
+    benefitKey: "heartTreatment",
+    isOutpatient: false,
     note: "심근경색·협심증 스텐트 삽입. 급여 본인부담 + 비급여 약물스텐트 재료비·ICU 포함.",
   },
   {
@@ -537,6 +574,8 @@ const TREATMENT_CASES: {
     costMin: 1200, costMax: 3000,
     coverageType: "급여 중심",
     actualLossFactor: 0.45,
+    benefitKey: "heartTreatment",
+    isOutpatient: false,
     note: "3가지 혈관 우회 기준. 급여 산정특례 + 비급여 재료·ICU·장기 재활 포함. 총 부담 큼.",
   },
   {
@@ -546,6 +585,8 @@ const TREATMENT_CASES: {
     costMin: 500, costMax: 1500,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.50,
+    benefitKey: "heartTreatment",
+    isOutpatient: false,
     note: "심방세동·빈맥 절제술. 급여 본인부담 + 비급여 카테터 재료비 포함.",
   },
   {
@@ -555,6 +596,8 @@ const TREATMENT_CASES: {
     costMin: 800, costMax: 2000,
     coverageType: "급여 중심",
     actualLossFactor: 0.40,
+    benefitKey: "heartTreatment",
+    isOutpatient: false,
     note: "ICD·CRT 기기 포함. 급여 본인부담 + 기기 재료비 일부 비급여. 재수술 가능성 포함.",
   },
   {
@@ -564,6 +607,8 @@ const TREATMENT_CASES: {
     costMin: 1000, costMax: 3500,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.42,
+    benefitKey: "heartTreatment",
+    isOutpatient: false,
     note: "개흉판막치환·TAVI(경피적 대동맥판막) 포함. 급여분 + 비급여 판막 재료비·ICU 합산.",
   },
 ]
@@ -575,6 +620,26 @@ function averageCost(item: typeof SURGERY_CASES[number]) {
 function surgeryActualLossAmount(form: FormState, item: typeof SURGERY_CASES[number]) {
   if (!form.hasActualLoss) return 0
   return Math.round(averageCost(item) * (form.actualLossCoverageRate / 100) * item.actualLossFactor)
+}
+
+/** 치료방법 항목별 보험금 (benefitKey 직접 매핑) */
+function getTxItemBenefit(form: FormState, bKey: TxBenefitKey | null): number {
+  if (!bKey) return 0
+  return (form[bKey] as number) ?? 0
+}
+
+/** 치료방법 항목별 실손 예상 (통원/입원 구분 적용) */
+function getTxActualLoss(form: FormState, item: typeof TREATMENT_CASES[number], avgC: number): number {
+  if (!form.hasActualLoss) return 0
+  if (item.noActualLoss) return 0
+  const raw = Math.round(avgC * (form.actualLossCoverageRate / 100) * item.actualLossFactor)
+  if (item.isOutpatient) {
+    // 통원 실손: 회당 한도 × 예상 통원 횟수
+    const visits = item.outpatientVisits ?? 20
+    return Math.min(raw, form.realLossOutpatient * visits)
+  }
+  // 입원 실손: 입원 연간 한도 이내
+  return Math.min(raw, form.realLossInpatient)
 }
 
 function genderCancerCases(gender: FormState["gender"]) {
@@ -799,36 +864,36 @@ export default function FirstCoverageCheckPage() {
         ] : [{ label: "안내", value: "간병 항목을 체크하면 세부 내역이 표시됩니다." }],
       },
       treatment: (() => {
-        const allTreatmentItems = [...TREATMENT_CASES, ...SURGERY_CASES.map((s) => ({ ...s, category: "surgery" as TreatmentCat }))]
+        const allTreatmentItems = [...TREATMENT_CASES, ...SURGERY_CASES.map((s) => ({ ...s, category: "surgery" as TreatmentCat, benefitKey: null as null, isOutpatient: false, noActualLoss: undefined, outpatientVisits: undefined }))]
         const checkedItems = allTreatmentItems.filter((item) => form.selectedTreatmentItems.includes(item.id))
         if (checkedItems.length === 0) {
           return { title: "치료방법", need: 0, ready: 0, rate: 0, gap: 0, note: "치료 항목을 선택하면 예상 비용과 준비된 보험금을 비교합니다." }
         }
         const txNeed = checkedItems.reduce((sum, item) => sum + Math.round((item.costMin + item.costMax) / 2), 0)
-        // ★ 수정: 진단비/수술비 제외 — 치료 전용 보험금만 준비금으로 산정
-        // 암 진단비는 생활비에 이미 배정됨, 뇌/심장 진단비·수술비도 해당 카드에서 별도 계산
-        const catTxBenefitOnly = (cat: TreatmentCat) => {
-          if (cat === "cancer") return form.cancerTreatment + form.targetCancer + form.radiationCancer
-          if (cat === "brain") return form.brainTreatment
-          if (cat === "heart") return form.heartTreatment
-          return 0 // surgery: 항목별 정액 수술비로 계산 (아래에서 perItem)
-        }
-        const txReady = checkedItems.reduce((sum, item) => {
-          const cat = item.category as TreatmentCat
+        // ★ Bug1 수정: benefitKey 직접 매핑 + 중복 집계 방지 (같은 키 한 번만 합산)
+        const checkedTxItems = checkedItems.filter(i => i.category !== "surgery")
+        const usedBenefitKeys = new Set<TxBenefitKey>()
+        checkedTxItems.forEach(i => { if (i.benefitKey) usedBenefitKeys.add(i.benefitKey as TxBenefitKey) })
+        const txBenefitTotal = Array.from(usedBenefitKeys).reduce((sum, key) => sum + getTxItemBenefit(form, key), 0)
+        // 수술 항목: surgeryType별 정액 수술비
+        const txSurgeryBenefit = checkedItems
+          .filter(i => i.category === "surgery")
+          .reduce((sum, item) => {
+            const sItem = SURGERY_CASES.find(s => s.id === item.id)
+            return sum + surgeryCovByType(form, sItem?.surgeryType ?? "general")
+          }, 0)
+        // ★ Bug2 수정: 실손 — 통원 항목은 realLossOutpatient×횟수, 입원은 realLossInpatient 한도
+        const txActualLoss = checkedItems.reduce((sum, item) => {
           const avgC = Math.round((item.costMin + item.costMax) / 2)
-          const countInCat = checkedItems.filter(i => i.category === cat).length
-          // 수술 항목: surgeryType별 실제 받는 정액 수술비 적용 (general/major/ndae)
-          const sItemBase = SURGERY_CASES.find(s => s.id === item.id)
-          const base = cat === "surgery"
-            ? surgeryCovByType(form, sItemBase?.surgeryType ?? "general")
-            : Math.round(catTxBenefitOnly(cat) / Math.max(1, countInCat))
-          // 실손: 치료비 × 보완율 × 해당 치료 실손 적용 비율, 입원 한도 이내
-          const rawActualLoss = form.hasActualLoss
-            ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45))
-            : 0
-          const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
-          return sum + base + actualLoss
+          if (item.category === "surgery") {
+            const sItem = SURGERY_CASES.find(s => s.id === item.id)
+            return sum + surgeryActualLossAmount(form, sItem ?? (item as unknown as typeof SURGERY_CASES[0]))
+          }
+          const tc = TREATMENT_CASES.find(t => t.id === item.id)
+          if (!tc) return sum
+          return sum + getTxActualLoss(form, tc, avgC)
         }, 0)
+        const txReady = txBenefitTotal + txSurgeryBenefit + txActualLoss
         const txRate = clampRate((txReady / (txNeed || 1)) * 100)
         return {
           title: "치료방법",
@@ -842,6 +907,8 @@ export default function FirstCoverageCheckPage() {
           details: checkedItems.length > 0 ? [
             { label: "체크 항목 수", value: `${checkedItems.length}개` },
             { label: "예상 비용 합산", value: man(txNeed) },
+            { label: "치료비 보험금", value: man(txBenefitTotal + txSurgeryBenefit) },
+            { label: "실손 예상", value: man(txActualLoss) },
             { label: "준비 합계", value: man(txReady) },
             { label: "부족 가능", value: balanceText(txNeed - txReady) },
           ] : [{ label: "안내", value: "치료 항목을 선택하면 세부 내역이 표시됩니다." }],
@@ -931,7 +998,7 @@ export default function FirstCoverageCheckPage() {
     }, 150)
   }
 
-  if (checking) return <CenterMessage title="권한 확인 중입니다" body="잠시만 기다려 주세요." />
+  if (checking) return <LoadingScreen />
   if (!allowed) return <CenterMessage title="사용 권한이 없습니다" body={lockedReason} action={() => router.push("/dashboard")} />
 
   return (
@@ -1380,20 +1447,16 @@ export default function FirstCoverageCheckPage() {
                         const checked = form.selectedTreatmentItems.includes(item.id)
                         const avgC = Math.round((item.costMin + item.costMax) / 2)
                         const cat = activeTreatmentTab
-                        // ★ 치료 전용 보험금만 (진단비·수술비 제외)
-                        const catTxOnly = cat === "cancer"
-                          ? form.cancerTreatment + form.targetCancer + form.radiationCancer
-                          : cat === "brain" ? form.brainTreatment
-                          : cat === "heart" ? form.heartTreatment
-                          : 0
-                        const checkedInCat = (activeTreatmentTab === "surgery" ? SURGERY_CASES : TREATMENT_CASES.filter(i => i.category === cat)).filter(i => form.selectedTreatmentItems.includes(i.id)).length
-                        // 수술: surgeryType별 실제 받는 정액 수술비, 그 외: 치료전용 보험금 ÷ 선택 항목 수
+                        // ★ Bug1 수정: benefitKey 직접 매핑 (카드별 전용 보험금)
                         const sItemCard = SURGERY_CASES.find(s => s.id === item.id)
+                        const txCardItem = TREATMENT_CASES.find(t => t.id === item.id)
                         const perItemBase = cat === "surgery"
                           ? surgeryCovByType(form, sItemCard?.surgeryType ?? "general")
-                          : Math.round(catTxOnly / Math.max(1, checked ? checkedInCat : checkedInCat + 1))
-                        const rawActualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
-                        const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
+                          : getTxItemBenefit(form, txCardItem?.benefitKey ?? null)
+                        // ★ Bug2 수정: 통원/입원 실손 구분
+                        const actualLoss = txCardItem
+                          ? getTxActualLoss(form, txCardItem, avgC)
+                          : (form.hasActualLoss ? Math.min(Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)), form.realLossInpatient) : 0)
                         const itemReady = perItemBase + actualLoss
                         const itemGap = avgC - itemReady
                         return (
@@ -1420,6 +1483,16 @@ export default function FirstCoverageCheckPage() {
                                     sItemCard.surgeryType === "major" ? "bg-blue-100 text-blue-800" :
                                     "bg-slate-100 text-slate-600"}`}>
                                   {sItemCard.surgeryClass}
+                                </span>
+                              )}
+                              {txCardItem?.noActualLoss && (
+                                <span className="inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-black text-slate-600">
+                                  실손 미적용
+                                </span>
+                              )}
+                              {txCardItem?.isOutpatient && !txCardItem?.noActualLoss && (
+                                <span className="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[9px] font-black text-sky-700">
+                                  통원 실손
                                 </span>
                               )}
                             </div>
@@ -1620,13 +1693,6 @@ export default function FirstCoverageCheckPage() {
                     surgery: "bg-emerald-100 text-emerald-700",
                   }
                   const catLabel: Record<TreatmentCat, string> = { cancer: "암", brain: "뇌", heart: "심장", surgery: "수술" }
-                  // ★ 치료 전용 보험금만 (진단비·수술비 제외)
-                  const catTxBenefitOnlyFn = (cat: TreatmentCat) => {
-                    if (cat === "cancer") return form.cancerTreatment + form.targetCancer + form.radiationCancer
-                    if (cat === "brain") return form.brainTreatment
-                    if (cat === "heart") return form.heartTreatment
-                    return 0
-                  }
                   return (
                     <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-5">
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1639,13 +1705,16 @@ export default function FirstCoverageCheckPage() {
                         {checkedTx.map((item) => {
                           const cat = item.category as TreatmentCat
                           const avgC = Math.round((item.costMin + item.costMax) / 2)
-                          const countInCat = checkedTx.filter(i => i.category === cat).length
                           const txSurgeryItem = SURGERY_CASES.find(s => s.id === item.id)
+                          const txResultItem = TREATMENT_CASES.find(t => t.id === item.id)
+                          // ★ Bug1 수정: benefitKey 직접 매핑
                           const perItemBase = cat === "surgery"
                             ? surgeryCovByType(form, txSurgeryItem?.surgeryType ?? "general")
-                            : Math.round(catTxBenefitOnlyFn(cat) / Math.max(1, countInCat))
-                          const rawActualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
-                          const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
+                            : getTxItemBenefit(form, txResultItem?.benefitKey ?? null)
+                          // ★ Bug2 수정: 통원/입원 실손 구분
+                          const actualLoss = txResultItem
+                            ? getTxActualLoss(form, txResultItem, avgC)
+                            : (form.hasActualLoss ? Math.min(Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)), form.realLossInpatient) : 0)
                           const itemReady = perItemBase + actualLoss
                           const itemGap = avgC - itemReady
                           const itemRate = clampRate((itemReady / (avgC || 1)) * 100)
@@ -1654,14 +1723,25 @@ export default function FirstCoverageCheckPage() {
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${catColors[cat]}`}>{catLabel[cat]}</span>
                                 <p className="text-[13px] font-black text-slate-900">{item.name}</p>
+                                {txResultItem?.noActualLoss && (
+                                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-black text-slate-600">실손 미적용</span>
+                                )}
+                                {txResultItem?.isOutpatient && !txResultItem?.noActualLoss && (
+                                  <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[9px] font-black text-sky-700">통원 실손</span>
+                                )}
                                 <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-black ${itemRate >= 70 ? "bg-emerald-100 text-emerald-700" : itemRate >= 40 ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
                                   {itemRate}% 준비
                                 </span>
                               </div>
                               <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-black text-slate-700 sm:grid-cols-4">
                                 <div><span className="font-bold text-slate-400 block">예상 비용</span>{man(avgC)}</div>
-                                <div><span className="font-bold text-slate-400 block">보험금 배분</span>{man(perItemBase)}</div>
-                                <div><span className="font-bold text-slate-400 block">실손 예상</span>{man(actualLoss)}</div>
+                                <div><span className="font-bold text-slate-400 block">보험금</span>{man(perItemBase)}</div>
+                                <div>
+                                  <span className="font-bold text-slate-400 block">
+                                    {txResultItem?.noActualLoss ? "실손(미적용)" : txResultItem?.isOutpatient ? `통원실손(${txResultItem.outpatientVisits ?? 20}회)` : "실손 예상"}
+                                  </span>
+                                  {txResultItem?.noActualLoss ? <span className="text-slate-400">—</span> : man(actualLoss)}
+                                </div>
                                 <div className={itemGap > 0 ? "text-rose-700" : "text-emerald-700"}>
                                   <span className="font-bold text-slate-400 block">{itemGap > 0 ? "부족 가능" : "여유 예상"}</span>
                                   {itemGap > 0 ? `-${man(itemGap)}` : `+${man(Math.abs(itemGap))}`}
@@ -1749,6 +1829,107 @@ function SurgeryGapBadge({
           </span>
         </div>
       )}
+    </div>
+  )
+}
+
+function LoadingScreen() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0c1428] p-6">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
+
+        @keyframes bezel-rotate {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @keyframes needle-seek {
+          0%   { transform: rotate(-35deg); }
+          25%  { transform: rotate(20deg); }
+          50%  { transform: rotate(-12deg); }
+          75%  { transform: rotate(7deg); }
+          90%  { transform: rotate(-3deg); }
+          100% { transform: rotate(0deg); }
+        }
+        .bezel-spin {
+          transform-origin: 70px 70px;
+          animation: bezel-rotate 7s linear infinite;
+        }
+        .needle-seek {
+          transform-origin: 70px 70px;
+          animation: needle-seek 2.8s ease-in-out infinite alternate;
+        }
+      `}</style>
+
+      <div className="text-center">
+        {/* ── 나침반 SVG ── */}
+        <div className="mx-auto mb-10">
+          <svg viewBox="0 0 140 140" width="148" height="148" xmlns="http://www.w3.org/2000/svg">
+            {/* 글로우 링 (고정) */}
+            <circle cx="70" cy="70" r="67" fill="none" stroke="#C9A96E" strokeWidth="0.5" opacity="0.15"/>
+
+            {/* 회전하는 베젤 그룹 */}
+            <g className="bezel-spin">
+              <circle cx="70" cy="70" r="62" fill="none" stroke="#C9A96E" strokeWidth="1.2" opacity="0.55"/>
+              {/* 눈금 8방향 */}
+              {([0,45,90,135,180,225,270,315] as number[]).map((deg, i) => {
+                const r = Math.PI / 180 * deg
+                const r1 = 56, r2 = 62
+                const x1 = 70 + r1 * Math.sin(r), y1 = 70 - r1 * Math.cos(r)
+                const x2 = 70 + r2 * Math.sin(r), y2 = 70 - r2 * Math.cos(r)
+                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#C9A96E" strokeWidth={i % 2 === 0 ? 2 : 0.8} opacity="0.75"/>
+              })}
+              {/* N/S/E/W */}
+              <text x="70" y="10" textAnchor="middle" dominantBaseline="middle" fill="#C9A96E" fontSize="11" fontWeight="bold" fontFamily="sans-serif">N</text>
+              <text x="70" y="130" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.4)" fontSize="9" fontFamily="sans-serif">S</text>
+              <text x="130" y="70" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.4)" fontSize="9" fontFamily="sans-serif">E</text>
+              <text x="10" y="70" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.4)" fontSize="9" fontFamily="sans-serif">W</text>
+            </g>
+
+            {/* 나침반 판면 (고정) */}
+            <circle cx="70" cy="70" r="50" fill="#0f1e38" stroke="#1A2744" strokeWidth="1"/>
+            {/* 십자선 */}
+            <line x1="70" y1="24" x2="70" y2="116" stroke="#1A2744" strokeWidth="0.5" opacity="0.5"/>
+            <line x1="24" y1="70" x2="116" y2="70" stroke="#1A2744" strokeWidth="0.5" opacity="0.5"/>
+
+            {/* 흔들리는 바늘 */}
+            <g className="needle-seek">
+              {/* 북쪽 (골드) */}
+              <polygon points="70,26 65.5,70 74.5,70" fill="#C9A96E"/>
+              {/* 남쪽 (네이비) */}
+              <polygon points="70,114 65.5,70 74.5,70" fill="#2D4A8A" opacity="0.65"/>
+            </g>
+
+            {/* 중심 허브 */}
+            <circle cx="70" cy="70" r="6" fill="#0c1428" stroke="#C9A96E" strokeWidth="1.5"/>
+            <circle cx="70" cy="70" r="2.5" fill="#C9A96E"/>
+          </svg>
+        </div>
+
+        {/* ── "보험의 기준" 필기체 (메인) ── */}
+        <h1
+          style={{ fontFamily: "'Nanum Pen Script', cursive" }}
+          className="text-7xl leading-tight text-white"
+        >
+          보험의 기준
+        </h1>
+
+        {/* 서브 */}
+        <p className="mt-5 text-sm font-bold tracking-widest text-white/40">
+          접근 권한을 확인하고 있습니다
+        </p>
+
+        {/* 바운스 도트 */}
+        <div className="mt-6 flex items-center justify-center gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-1.5 w-1.5 rounded-full bg-[#C9A96E] animate-bounce"
+              style={{ animationDelay: `${i * 160}ms` }}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
