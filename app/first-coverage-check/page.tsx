@@ -1582,16 +1582,19 @@ function ResourceGallery() {
     { label: "보장별 통계", desc: "뇌·심장·수술 통계 이미지", href: "/insurance-tools/coverage-stats" },
     { label: "질병코드 조회", desc: "KCD 질병분류 검색", href: "https://kcdcode.kr/browse/main" },
   ]
+  const handleOpen = (href: string) => {
+    window.open(href, "_blank", "noopener,noreferrer")
+  }
   return (
     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
       <p className="text-sm font-black text-slate-800">상담 참고 자료</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
         {items.map((item) => (
-          <a key={item.label} href={item.href} target="_blank" rel="noreferrer"
-            className="rounded-xl border border-slate-200 bg-white p-3 transition-colors hover:border-blue-300 hover:bg-blue-50">
+          <button key={item.label} type="button" onClick={() => handleOpen(item.href)}
+            className="rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50">
             <p className="text-[12px] font-black text-slate-700">{item.label}</p>
             <p className="mt-1 text-[10px] font-bold text-slate-400">{item.desc}</p>
-          </a>
+          </button>
         ))}
       </div>
     </div>
