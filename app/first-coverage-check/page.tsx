@@ -42,6 +42,7 @@ type FormState = {
   brainCareDays: number
   heartCareDays: number
   careBenefitDaily: number
+  selectedCareItems: string[]
 }
 
 type SavedCase = {
@@ -93,6 +94,7 @@ const initialForm: FormState = {
   brainCareDays: 60,
   heartCareDays: 21,
   careBenefitDaily: 0,
+  selectedCareItems: [],
 }
 
 const clampRate = (value: number) => Math.max(0, Math.min(100, Math.round(value)))
@@ -337,6 +339,31 @@ const CANCER_CASES = [
   },
 ]
 
+// ─────────────────────────────────────────────────────────────────
+// 간병비 항목 데이터
+// ─────────────────────────────────────────────────────────────────
+const CARE_ITEMS = [
+  // 암 간병
+  { id: "care-cancer-inpatient",  category: "cancer" as const, name: "입원 간병", desc: "수술·항암·방사선 입원 기간 간병인 배치", estDays: 45, note: "평균 30~60일 입원. 1인실 간병인 기준." },
+  { id: "care-cancer-outpatient", category: "cancer" as const, name: "통원 항암 지원", desc: "외래 항암·주사 통원 시 이동·동행 지원", estDays: 60, note: "6~12개월 통원 기간 중 간병 필요 일수 기준." },
+  { id: "care-cancer-rehab",      category: "cancer" as const, name: "재활 기간 간병", desc: "치료 후 일상 복귀까지 재활·자택 돌봄", estDays: 60, note: "2~6개월 재활 기간 기준." },
+  { id: "care-cancer-hospice",    category: "cancer" as const, name: "호스피스 간병", desc: "말기암 완화케어 기간 24시간 돌봄", estDays: 45, note: "1~3개월 호스피스 입원 기준." },
+  // 뇌 간병
+  { id: "care-brain-acute",       category: "brain" as const, name: "급성기 입원 간병", desc: "중환자실·일반병실 집중 간병", estDays: 30, note: "뇌졸중·뇌출혈 초기 20~60일." },
+  { id: "care-brain-rehab",       category: "brain" as const, name: "재활 입원 간병", desc: "재활전문병원 입원 간병", estDays: 90, note: "2~6개월 재활 입원 기준." },
+  { id: "care-brain-home",        category: "brain" as const, name: "재가 요양 간병", desc: "퇴원 후 자택 돌봄·방문 요양", estDays: 180, note: "6~24개월 장기 재가 요양 기준." },
+  { id: "care-brain-nursing",     category: "brain" as const, name: "요양병원 간병", desc: "장기 요양 필요 시 요양병원 입원", estDays: 120, note: "4~12개월 요양병원 기준." },
+  // 심장 간병
+  { id: "care-heart-acute",       category: "heart" as const, name: "급성기 입원 간병", desc: "심장내과·중환자실 초기 돌봄", estDays: 14, note: "스텐트·심근경색 후 7~21일." },
+  { id: "care-heart-post",        category: "heart" as const, name: "시술 후 관리 간병", desc: "시술·수술 후 회복기 돌봄", estDays: 30, note: "시술 후 2~8주 기준." },
+  { id: "care-heart-rehab",       category: "heart" as const, name: "심장 재활 간병", desc: "심장 재활 프로그램 기간 지원", estDays: 45, note: "1~3개월 재활 기준." },
+  // 수술 간병
+  { id: "care-surgery-minor",     category: "surgery" as const, name: "1~2종 수술 후 간병", desc: "소수술·외래수술 후 단기 돌봄", estDays: 5, note: "수술 후 3~7일 기준." },
+  { id: "care-surgery-mid",       category: "surgery" as const, name: "3종 수술 후 간병", desc: "중간 규모 수술 후 회복기 돌봄", estDays: 14, note: "수술 후 7~21일 기준." },
+  { id: "care-surgery-major",     category: "surgery" as const, name: "주요질환 수술 간병", desc: "대수술·복부·정형외과 수술 후 돌봄", estDays: 21, note: "수술 후 14~30일 기준." },
+  { id: "care-surgery-inpatient", category: "surgery" as const, name: "입원 중 간병인 배치", desc: "수술 입원 기간 전 기간 간병인", estDays: 10, note: "입원 기간 기준 일당 산정." },
+]
+
 function averageCost(item: typeof SURGERY_CASES[number]) {
   return Math.round((item.costMin + item.costMax) / 2)
 }
@@ -366,6 +393,7 @@ export default function FirstCoverageCheckPage() {
   const [lockedReason, setLockedReason] = useState("")
   const [profileId, setProfileId] = useState("")
   const [active, setActive] = useState<StepId>("intro")
+  const [activeCareTab, setActiveCareTab] = useState<"cancer" | "brain" | "heart" | "surgery">("cancer")
   const [form, setForm] = useState<FormState>(initialForm)
   const [savedCases, setSavedCases] = useState<SavedCase[]>([])
   const [showSaved, setShowSaved] = useState(false)
@@ -446,8 +474,15 @@ export default function FirstCoverageCheckPage() {
     const surgeryActualLoss = surgeryCases.reduce((sum, item) => sum + surgeryActualLossAmount(form, item), 0)
     const surgeryReady = surgeryBaseCoverage + surgeryActualLoss
 
-    const careNeed = form.careDailyCost * Math.max(form.cancerCareDays, form.brainCareDays, form.heartCareDays)
-    const careReady = form.careBenefitDaily * Math.max(form.cancerCareDays, form.brainCareDays, form.heartCareDays)
+    const checkedCareItems = CARE_ITEMS.filter((item) => form.selectedCareItems.includes(item.id))
+    const careTotalDays = checkedCareItems.reduce((sum, item) => sum + item.estDays, 0)
+    // 체크된 항목이 있으면 합산, 없으면 기존 방식(직접 입력 일수 최대값)으로 폴백
+    const careNeed = checkedCareItems.length > 0
+      ? checkedCareItems.reduce((sum, item) => sum + item.estDays * form.careDailyCost, 0)
+      : form.careDailyCost * Math.max(form.cancerCareDays, form.brainCareDays, form.heartCareDays)
+    const careReady = checkedCareItems.length > 0
+      ? form.careBenefitDaily * careTotalDays
+      : form.careBenefitDaily * Math.max(form.cancerCareDays, form.brainCareDays, form.heartCareDays)
 
     return {
       cancer: {
@@ -494,7 +529,9 @@ export default function FirstCoverageCheckPage() {
         ready: careReady,
         rate: clampRate((careReady / (careNeed || 1)) * 100),
         gap: careNeed - careReady,
-        note: "암·뇌·심장 수술 후 회복 기간에는 치료비와 별도로 간병 단가와 기간 부담을 확인해야 합니다.",
+        note: checkedCareItems.length > 0
+          ? `체크한 ${checkedCareItems.length}개 간병 항목 합산 (총 ${careTotalDays}일, 일당 ${form.careDailyCost}만원 기준). 일당 보험금 ${form.careBenefitDaily}만원 준비 기준입니다.`
+          : "간병 항목을 체크하면 예상 기간과 일당 기준으로 간병비 부족 금액을 계산합니다.",
       },
     }
   }, [form])
@@ -586,7 +623,7 @@ export default function FirstCoverageCheckPage() {
     <main className="min-h-screen bg-[#eef3f8] p-4 text-slate-900 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1440px]">
         <header className="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
-          <button onClick={() => router.push("/dashboard")} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm">
+          <button onClick={() => { if (window.opener) { window.opener.focus(); window.close(); } else { router.push("/dashboard"); } }} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm">
             <ArrowLeft className="h-4 w-4" /> 대시보드
           </button>
           <div className="flex flex-wrap items-center justify-end gap-2">
@@ -773,14 +810,88 @@ export default function FirstCoverageCheckPage() {
               </Panel>
             )}
             {active === "care" && (
-              <Panel title="간병비 입력" desc="암·뇌·심장 수술 후 간병 기간과 1일 단가를 기준으로 봅니다.">
-                <FieldGrid>
-                  <NumberInput label="간병 1일 단가" value={form.careDailyCost} onChange={(v) => update("careDailyCost", v)} suffix="만원" />
-                  <NumberInput label="암 간병 예상일" value={form.cancerCareDays} onChange={(v) => update("cancerCareDays", v)} suffix="일" />
-                  <NumberInput label="뇌 간병 예상일" value={form.brainCareDays} onChange={(v) => update("brainCareDays", v)} suffix="일" />
-                  <NumberInput label="심장 간병 예상일" value={form.heartCareDays} onChange={(v) => update("heartCareDays", v)} suffix="일" />
-                  <NumberInput label="현재 간병 일당" value={form.careBenefitDaily} onChange={(v) => update("careBenefitDaily", v)} suffix="만원" />
-                </FieldGrid>
+              <Panel title="간병비 입력" desc="항목을 체크하면 예상 기간과 일당 기준으로 간병비 부족 금액을 바로 확인할 수 있습니다.">
+                <div className="grid gap-5">
+                  {/* ① 간병 기준 입력 */}
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="mb-1 text-xs font-black text-slate-500 uppercase tracking-wide">간병 기준 단가 · 현재 보장</p>
+                    <FieldGrid>
+                      <NumberInput label="간병 1일 단가" value={form.careDailyCost} onChange={(v) => update("careDailyCost", v)} suffix="만원" />
+                      <NumberInput label="현재 간병 일당 보험금" value={form.careBenefitDaily} onChange={(v) => update("careBenefitDaily", v)} suffix="만원" />
+                    </FieldGrid>
+                    <p className="mt-2 text-[10px] font-bold text-slate-400">간병인 1일 평균 단가: 15~20만원 수준. 현재 가입된 간병 일당 금액을 입력하세요.</p>
+                  </div>
+
+                  {/* ② 간병 항목 서브탭 */}
+                  <div>
+                    <div className="flex gap-2 mb-4 border-b border-slate-200 pb-2">
+                      {(["cancer","brain","heart","surgery"] as const).map((cat) => {
+                        const labels: Record<string, string> = { cancer:"🔴 암", brain:"🟣 뇌", heart:"🟠 심장", surgery:"🟢 수술" }
+                        const checkedCount = CARE_ITEMS.filter(i => i.category === cat && form.selectedCareItems.includes(i.id)).length
+                        return (
+                          <button key={cat} type="button" onClick={() => setActiveCareTab(cat)}
+                            className={`flex-1 rounded-xl px-3 py-2 text-[12px] font-black transition-all ${activeCareTab === cat ? "bg-[#1a3a6e] text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
+                            {labels[cat]}
+                            {checkedCount > 0 && <span className={`ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black ${activeCareTab === cat ? "bg-white/20 text-white" : "bg-[#1a3a6e]/20 text-[#1a3a6e]"}`}>{checkedCount}</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* 서브탭 설명 */}
+                    <p className="mb-3 text-sm font-black text-slate-800">
+                      간병 항목 체크
+                      <span className="ml-2 text-[11px] font-bold text-slate-400">— 체크하면 예상 일수 · 일당 기준 간병비 부족이 표시됩니다</span>
+                    </p>
+
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {CARE_ITEMS.filter(item => item.category === activeCareTab).map((item) => {
+                        const checked = form.selectedCareItems.includes(item.id)
+                        const itemNeed = item.estDays * form.careDailyCost
+                        const itemReady = form.careBenefitDaily * item.estDays
+                        const itemGap = itemNeed - itemReady
+                        return (
+                          <button key={item.id} type="button"
+                            onClick={() => update("selectedCareItems", checked ? form.selectedCareItems.filter(id => id !== item.id) : [...form.selectedCareItems, item.id])}
+                            className={`rounded-2xl border p-4 text-left transition-all ${checked ? "border-[#1a3a6e] bg-[#eef4fb] shadow-md" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[13px] font-black text-slate-900 leading-tight">{item.name}</p>
+                              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${checked ? "border-[#1a3a6e] bg-[#1a3a6e] text-white" : "border-slate-300 bg-white text-slate-300"}`}>
+                                {checked ? "✓" : ""}
+                              </span>
+                            </div>
+                            <p className="mt-1.5 text-[10px] font-bold text-slate-500 leading-4">{item.desc}</p>
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-600">예상 {item.estDays}일</span>
+                              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-black text-blue-700">비용 {man(itemNeed)}</span>
+                            </div>
+                            {checked && (
+                              <div className={`mt-2 rounded-xl p-2 ${itemGap > 0 ? "bg-rose-50" : "bg-emerald-50"}`}>
+                                <p className={`text-[11px] font-black ${itemGap > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                                  {itemGap > 0 ? `부족 ${man(itemGap)}` : `여유 ${man(Math.abs(itemGap))}`}
+                                </p>
+                                <p className="mt-0.5 text-[9px] text-slate-400">{item.note}</p>
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    {/* 체크 없을 때 기존 직접입력 폴백 안내 */}
+                    {form.selectedCareItems.length === 0 && (
+                      <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                        <p className="text-xs font-black text-slate-500">항목을 체크하지 않으면 아래 직접 입력 일수로 결과를 계산합니다.</p>
+                        <FieldGrid className="mt-3">
+                          <NumberInput label="암 간병 예상일" value={form.cancerCareDays} onChange={(v) => update("cancerCareDays", v)} suffix="일" />
+                          <NumberInput label="뇌 간병 예상일" value={form.brainCareDays} onChange={(v) => update("brainCareDays", v)} suffix="일" />
+                          <NumberInput label="심장 간병 예상일" value={form.heartCareDays} onChange={(v) => update("heartCareDays", v)} suffix="일" />
+                        </FieldGrid>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </Panel>
             )}
             {active === "result" && (
@@ -1020,8 +1131,8 @@ function Panel({ title, desc, children }: { title: string; desc: string; childre
   )
 }
 
-function FieldGrid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+function FieldGrid({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${className ?? ""}`}>{children}</div>
 }
 
 function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {

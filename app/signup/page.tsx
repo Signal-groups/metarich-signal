@@ -108,7 +108,25 @@ export default function SignupPage() {
       if (authError) throw authError
 
       if (authData.user) {
-        await ensureUserProfile(supabase, authData.user, formData)
+        try {
+          await ensureUserProfile(supabase, authData.user, formData)
+        } catch {}
+        await fetch("/api/signup-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: authData.user.id,
+            email: formData.email.trim(),
+            name: formData.name,
+            phone: formData.phone.trim(),
+            accountType: formData.accountType,
+            headquarter: formData.headquarter,
+            department: formData.department,
+            branch: formData.branch,
+            companyName: formData.companyName.trim(),
+            position: formData.position.trim(),
+          }),
+        })
         fetch("/api/notify-signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -145,7 +163,25 @@ export default function SignupPage() {
           return
         }
 
-        await ensureUserProfile(supabase, loginData.user, formData)
+        try {
+          await ensureUserProfile(supabase, loginData.user, formData)
+        } catch {}
+        await fetch("/api/signup-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: loginData.user.id,
+            email: formData.email.trim(),
+            name: formData.name,
+            phone: formData.phone.trim(),
+            accountType: formData.accountType,
+            headquarter: formData.headquarter,
+            department: formData.department,
+            branch: formData.branch,
+            companyName: formData.companyName.trim(),
+            position: formData.position.trim(),
+          }),
+        })
         await supabase.auth.signOut()
         alert("기존 인증 계정과 직원정보를 다시 연결했습니다. 관리자 승인 후 로그인해주세요.")
         router.push("/login")

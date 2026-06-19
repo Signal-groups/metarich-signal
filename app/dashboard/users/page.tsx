@@ -39,15 +39,23 @@ export default function StaffManagementPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const loadUsers = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      alert("직원 목록을 불러오지 못했습니다: " + error.message)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      alert("로그인 세션을 확인하지 못했습니다. 다시 로그인해주세요.")
       return
     }
+
+    const res = await fetch("/api/admin/users", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    const json = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      alert("직원 목록을 불러오지 못했습니다: " + (json.error || "알 수 없는 오류"))
+      return
+    }
+
+    const data = json.users || []
 
     setUsers(((data || []) as StaffUser[]).map((user) => ({
       ...user,

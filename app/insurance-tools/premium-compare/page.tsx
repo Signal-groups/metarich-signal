@@ -319,7 +319,7 @@ export default function PremiumComparePage() {
             <p className="text-[14px] font-black text-white">🛡 보험료 비교</p>
             <p className="text-[10px] text-blue-300">교차설계 시스템 · {AGE_LABEL[ageBand]} {gender} · {DISC_LABEL[disc]}</p>
           </div>
-          <button onClick={()=>window.open("/dashboard","_self")} className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20">대시보드</button>
+          <button onClick={()=>{ if(window.opener){ window.opener.focus(); window.close(); } else { window.location.href = window.location.origin + "/dashboard"; } }} className="rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-black text-white hover:bg-white/20">대시보드</button>
         </div>
       </div>
 

@@ -59,32 +59,38 @@ export default function UsageAnalytics() {
   const [dayStats, setDayStats] = useState<DayStat[]>([])
   const [totalViews, setTotalViews] = useState(0)
   const [activeUsers, setActiveUsers] = useState(0)
+  const [errorMessage, setErrorMessage] = useState("")
 
   const load = useCallback(async () => {
     setLoading(true)
-    const since = new Date(Date.now() - PERIOD_DAYS[period] * 86400_000).toISOString()
+    setErrorMessage("")
 
-    // ── 전체 로그 fetch (master RLS 통과) ─────────────────────────────
-    const { data: logs, error } = await supabase
-      .from("user_activity_logs")
-      .select("user_id, page, page_label, created_at")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      setErrorMessage("로그인 세션을 확인하지 못했습니다. 다시 로그인 후 확인해주세요.")
+      setLoading(false)
+      return
+    }
 
-    if (error || !logs) { setLoading(false); return }
+    const res = await fetch(`/api/admin/usage?period=${period}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setErrorMessage(json.error || "사용량 데이터를 불러오지 못했습니다.")
+      setLoading(false)
+      return
+    }
 
-    // ── 사용자 이름 조회 ──────────────────────────────────────────────
-    const uids = [...new Set(logs.map((l) => l.user_id))]
-    const { data: users } = await supabase
-      .from("users")
-      .select("id, name, email")
-      .in("id", uids)
+    const logs = json.logs || []
+    const users = json.users || []
+    const uids = [...new Set(logs.map((l: any) => l.user_id).filter(Boolean))]
     const userMap: Record<string, { name: string; email: string }> = {}
-    for (const u of users ?? []) userMap[u.id] = { name: u.name ?? "", email: u.email ?? "" }
+    for (const u of users) userMap[u.id] = { name: u.name ?? "", email: u.email ?? "" }
 
     // ── 페이지별 집계 ─────────────────────────────────────────────────
     const pageCnt: Record<string, { label: string; count: number }> = {}
-    for (const l of logs) {
+    for (const l of logs as Array<{ user_id: string; page: string; page_label: string; created_at: string }>) {
       const key = l.page ?? "unknown"
       if (!pageCnt[key]) pageCnt[key] = { label: l.page_label ?? key, count: 0 }
       pageCnt[key].count++
@@ -96,7 +102,7 @@ export default function UsageAnalytics() {
 
     // ── 사용자별 집계 ─────────────────────────────────────────────────
     const userCnt: Record<string, { count: number; last_seen: string }> = {}
-    for (const l of logs) {
+    for (const l of logs as Array<{ user_id: string; page: string; page_label: string; created_at: string }>) {
       if (!userCnt[l.user_id]) userCnt[l.user_id] = { count: 0, last_seen: l.created_at }
       userCnt[l.user_id].count++
       if (l.created_at > userCnt[l.user_id].last_seen) userCnt[l.user_id].last_seen = l.created_at
@@ -115,7 +121,7 @@ export default function UsageAnalytics() {
     // ── 시간대별 집계 (0~23시) ────────────────────────────────────────
     const hCnt: Record<number, number> = {}
     for (let h = 0; h < 24; h++) hCnt[h] = 0
-    for (const l of logs) {
+    for (const l of logs as Array<{ created_at: string }>) {
       const h = new Date(l.created_at).getHours()
       hCnt[h] = (hCnt[h] ?? 0) + 1
     }
@@ -124,7 +130,7 @@ export default function UsageAnalytics() {
     // ── 요일별 집계 ───────────────────────────────────────────────────
     const dCnt: Record<number, number> = {}
     for (let d = 0; d < 7; d++) dCnt[d] = 0
-    for (const l of logs) {
+    for (const l of logs as Array<{ created_at: string }>) {
       const d = new Date(l.created_at).getDay()
       dCnt[d] = (dCnt[d] ?? 0) + 1
     }
@@ -177,7 +183,11 @@ export default function UsageAnalytics() {
         </div>
       </div>
 
-      {loading ? (
+      {errorMessage ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm font-bold text-rose-700">
+          {errorMessage}
+        </div>
+      ) : loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#1a3a6e]/20 border-t-[#1a3a6e]" />
         </div>
