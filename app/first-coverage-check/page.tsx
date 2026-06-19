@@ -9,7 +9,8 @@ import { supabase } from "../../lib/supabase"
 import { ensureUserProfile } from "../../lib/userProfile"
 import { isApprovedUser, normalizeRole, canAccessFirstCoverageCheck, ROLE_PRIORITY } from "../../lib/roles"
 
-type StepId = "intro" | "customer" | "cancer" | "brain" | "heart" | "surgery" | "care" | "result"
+type StepId = "intro" | "customer" | "cancer" | "brain" | "heart" | "surgery" | "care" | "treatment" | "result"
+type TreatmentCat = "cancer" | "brain" | "heart" | "surgery"
 
 type FormState = {
   customerName: string
@@ -43,6 +44,7 @@ type FormState = {
   heartCareDays: number
   careBenefitDaily: number
   selectedCareItems: string[]
+  selectedTreatmentItems: string[]
 }
 
 type SavedCase = {
@@ -60,6 +62,7 @@ const steps: { id: StepId; label: string; icon: any }[] = [
   { id: "heart", label: "심장", icon: HeartPulse },
   { id: "surgery", label: "수술비", icon: Stethoscope },
   { id: "care", label: "간병비", icon: Activity },
+  { id: "treatment", label: "치료방법", icon: Stethoscope },
   { id: "result", label: "결과", icon: Sparkles },
 ]
 
@@ -95,6 +98,7 @@ const initialForm: FormState = {
   heartCareDays: 21,
   careBenefitDaily: 0,
   selectedCareItems: [],
+  selectedTreatmentItems: [],
 }
 
 const clampRate = (value: number) => Math.max(0, Math.min(100, Math.round(value)))
@@ -344,7 +348,7 @@ const CANCER_CASES = [
 // ─────────────────────────────────────────────────────────────────
 const CARE_ITEMS = [
   // 암 간병
-  { id: "care-cancer-inpatient",  category: "cancer" as const, name: "입원 간병", desc: "수술·항암·방사선 입원 기간 간병인 배치", estDays: 45, note: "평균 30~60일 입원. 1인실 간병인 기준." },
+  { id: "care-cancer-inpatient",  category: "cancer" as const, name: "입원 간병", desc: "수술·항암·방사선 입원 기간 간병인 배치", estDays: 8, note: "수술 후 평균 7~10일 입원. 1인실 간병인 기준." },
   { id: "care-cancer-outpatient", category: "cancer" as const, name: "통원 항암 지원", desc: "외래 항암·주사 통원 시 이동·동행 지원", estDays: 60, note: "6~12개월 통원 기간 중 간병 필요 일수 기준." },
   { id: "care-cancer-rehab",      category: "cancer" as const, name: "재활 기간 간병", desc: "치료 후 일상 복귀까지 재활·자택 돌봄", estDays: 60, note: "2~6개월 재활 기간 기준." },
   { id: "care-cancer-hospice",    category: "cancer" as const, name: "호스피스 간병", desc: "말기암 완화케어 기간 24시간 돌봄", estDays: 45, note: "1~3개월 호스피스 입원 기준." },
@@ -354,14 +358,167 @@ const CARE_ITEMS = [
   { id: "care-brain-home",        category: "brain" as const, name: "재가 요양 간병", desc: "퇴원 후 자택 돌봄·방문 요양", estDays: 180, note: "6~24개월 장기 재가 요양 기준." },
   { id: "care-brain-nursing",     category: "brain" as const, name: "요양병원 간병", desc: "장기 요양 필요 시 요양병원 입원", estDays: 120, note: "4~12개월 요양병원 기준." },
   // 심장 간병
-  { id: "care-heart-acute",       category: "heart" as const, name: "급성기 입원 간병", desc: "심장내과·중환자실 초기 돌봄", estDays: 14, note: "스텐트·심근경색 후 7~21일." },
+  { id: "care-heart-acute",       category: "heart" as const, name: "급성기 입원 간병", desc: "심장내과·중환자실 초기 돌봄", estDays: 20, note: "스텐트·심근경색 후 10~30일." },
   { id: "care-heart-post",        category: "heart" as const, name: "시술 후 관리 간병", desc: "시술·수술 후 회복기 돌봄", estDays: 30, note: "시술 후 2~8주 기준." },
   { id: "care-heart-rehab",       category: "heart" as const, name: "심장 재활 간병", desc: "심장 재활 프로그램 기간 지원", estDays: 45, note: "1~3개월 재활 기준." },
   // 수술 간병
   { id: "care-surgery-minor",     category: "surgery" as const, name: "1~2종 수술 후 간병", desc: "소수술·외래수술 후 단기 돌봄", estDays: 5, note: "수술 후 3~7일 기준." },
   { id: "care-surgery-mid",       category: "surgery" as const, name: "3종 수술 후 간병", desc: "중간 규모 수술 후 회복기 돌봄", estDays: 14, note: "수술 후 7~21일 기준." },
   { id: "care-surgery-major",     category: "surgery" as const, name: "주요질환 수술 간병", desc: "대수술·복부·정형외과 수술 후 돌봄", estDays: 21, note: "수술 후 14~30일 기준." },
-  { id: "care-surgery-inpatient", category: "surgery" as const, name: "입원 중 간병인 배치", desc: "수술 입원 기간 전 기간 간병인", estDays: 10, note: "입원 기간 기준 일당 산정." },
+  { id: "care-surgery-inpatient", category: "surgery" as const, name: "입원 중 간병인 배치", desc: "수술 입원 기간 전 기간 간병인", estDays: 20, note: "수술 종류에 따라 10~30일 입원 기준." },
+]
+
+// ─────────────────────────────────────────────────────────────────
+// 치료방법 항목 데이터 (암/뇌/심장)
+// ─────────────────────────────────────────────────────────────────
+const TREATMENT_CASES: {
+  id: string
+  category: TreatmentCat
+  name: string
+  costMin: number
+  costMax: number
+  coverageType: string
+  actualLossFactor: number
+  note: string
+}[] = [
+  // ─── 암 치료 ──────────────────────────────────────────────────
+  {
+    id: "tx-cancer-surgery",
+    category: "cancer",
+    name: "암 절제수술",
+    costMin: 500, costMax: 2000,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.50,
+    note: "위절제·폐절제·유방절제 등 부위별 수술. 급여 본인부담 + 비급여 재료비 + 입원비 합산. 로봇수술 선택 시 비용 급증.",
+  },
+  {
+    id: "tx-cancer-chemo",
+    category: "cancer",
+    name: "항암화학요법",
+    costMin: 800, costMax: 3000,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.40,
+    note: "6~12개월 주기 항암투여. 급여 약제 외 비급여 표적치료제·지지요법 포함. 통원 횟수 × 회당 비용으로 총 부담 증가.",
+  },
+  {
+    id: "tx-cancer-radiation",
+    category: "cancer",
+    name: "방사선 치료",
+    costMin: 300, costMax: 1200,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.45,
+    note: "부위당 20~35회 통원. 급여 본인부담 + 정밀방사선(SBRT·양성자) 비급여 선택 시 추가 발생.",
+  },
+  {
+    id: "tx-cancer-target",
+    category: "cancer",
+    name: "표적·면역항암 치료",
+    costMin: 1000, costMax: 4000,
+    coverageType: "비급여 중심",
+    actualLossFactor: 0.20,
+    note: "비급여 표적항암제·면역항암제(PD-1/PD-L1). 월 200~500만원 약제비 부담. 급여 전환 전까지 자기부담 큼.",
+  },
+  {
+    id: "tx-cancer-hormone",
+    category: "cancer",
+    name: "호르몬·유지요법",
+    costMin: 100, costMax: 600,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.60,
+    note: "유방암·전립선암 장기 호르몬제. 5~10년 복용 기준 누적 부담. 급여지만 검사비·통원비 추가.",
+  },
+  // ─── 뇌 치료 ──────────────────────────────────────────────────
+  {
+    id: "tx-brain-thrombolysis",
+    category: "brain",
+    name: "혈전용해술 (tPA)",
+    costMin: 300, costMax: 800,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.55,
+    note: "뇌졸중 초기 3~4.5시간 내 혈전용해제 투여. 급여 본인부담 + 중환자실·검사비 포함.",
+  },
+  {
+    id: "tx-brain-thrombectomy",
+    category: "brain",
+    name: "기계적 혈전제거술",
+    costMin: 700, costMax: 1800,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.50,
+    note: "스텐트리버·흡입카테터 시술. 급여 산정특례 적용이나 재료비·중환자실 비급여 추가 발생.",
+  },
+  {
+    id: "tx-brain-craniotomy",
+    category: "brain",
+    name: "개두술 (뇌출혈/종양)",
+    costMin: 1000, costMax: 3000,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.40,
+    note: "뇌출혈·뇌종양 개두수술. 급여 본인부담 + 특수재료·ICU·간병비 포함 총 부담 큼.",
+  },
+  {
+    id: "tx-brain-stent",
+    category: "brain",
+    name: "뇌혈관 스텐트 시술",
+    costMin: 500, costMax: 1500,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.55,
+    note: "경동맥·뇌동맥 스텐트 삽입. 급여 본인부담 + 비급여 스텐트 재료비 추가.",
+  },
+  {
+    id: "tx-brain-rehab",
+    category: "brain",
+    name: "뇌 재활치료 (장기)",
+    costMin: 400, costMax: 2000,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.45,
+    note: "재활전문병원 2~6개월 입원. 급여 재활치료 + 비급여 물리치료·보조기구 포함. 장기화 시 부담 급증.",
+  },
+  // ─── 심장 치료 ──────────────────────────────────────────────────
+  {
+    id: "tx-heart-stent",
+    category: "heart",
+    name: "관상동맥 스텐트 시술",
+    costMin: 400, costMax: 1200,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.60,
+    note: "심근경색·협심증 스텐트 삽입. 급여 본인부담 + 비급여 약물스텐트 재료비·ICU 포함.",
+  },
+  {
+    id: "tx-heart-bypass",
+    category: "heart",
+    name: "관상동맥우회술 (CABG)",
+    costMin: 1200, costMax: 3000,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.45,
+    note: "3가지 혈관 우회 기준. 급여 산정특례 + 비급여 재료·ICU·장기 재활 포함. 총 부담 큼.",
+  },
+  {
+    id: "tx-heart-ablation",
+    category: "heart",
+    name: "부정맥 전극도자절제술",
+    costMin: 500, costMax: 1500,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.50,
+    note: "심방세동·빈맥 절제술. 급여 본인부담 + 비급여 카테터 재료비 포함.",
+  },
+  {
+    id: "tx-heart-pacemaker",
+    category: "heart",
+    name: "심박동기·제세동기 삽입",
+    costMin: 800, costMax: 2000,
+    coverageType: "급여 중심",
+    actualLossFactor: 0.40,
+    note: "ICD·CRT 기기 포함. 급여 본인부담 + 기기 재료비 일부 비급여. 재수술 가능성 포함.",
+  },
+  {
+    id: "tx-heart-valve",
+    category: "heart",
+    name: "심장판막 수술·시술",
+    costMin: 1000, costMax: 3500,
+    coverageType: "급여+비급여 혼합",
+    actualLossFactor: 0.42,
+    note: "개흉판막치환·TAVI(경피적 대동맥판막) 포함. 급여분 + 비급여 판막 재료비·ICU 합산.",
+  },
 ]
 
 function averageCost(item: typeof SURGERY_CASES[number]) {
@@ -394,6 +551,7 @@ export default function FirstCoverageCheckPage() {
   const [profileId, setProfileId] = useState("")
   const [active, setActive] = useState<StepId>("intro")
   const [activeCareTab, setActiveCareTab] = useState<"cancer" | "brain" | "heart" | "surgery">("cancer")
+  const [activeTreatmentTab, setActiveTreatmentTab] = useState<TreatmentCat>("cancer")
   const [form, setForm] = useState<FormState>(initialForm)
   const [savedCases, setSavedCases] = useState<SavedCase[]>([])
   const [showSaved, setShowSaved] = useState(false)
@@ -533,6 +691,34 @@ export default function FirstCoverageCheckPage() {
           ? `체크한 ${checkedCareItems.length}개 간병 항목 합산 (총 ${careTotalDays}일, 일당 ${form.careDailyCost}만원 기준). 일당 보험금 ${form.careBenefitDaily}만원 준비 기준입니다.`
           : "간병 항목을 체크하면 예상 기간과 일당 기준으로 간병비 부족 금액을 계산합니다.",
       },
+      treatment: (() => {
+        const allTreatmentItems = [...TREATMENT_CASES, ...SURGERY_CASES.map((s) => ({ ...s, category: "surgery" as TreatmentCat }))]
+        const checkedItems = allTreatmentItems.filter((item) => form.selectedTreatmentItems.includes(item.id))
+        if (checkedItems.length === 0) {
+          return { title: "치료방법", need: 0, ready: 0, rate: 0, gap: 0, note: "치료 항목을 선택하면 예상 비용과 준비된 보험금을 비교합니다." }
+        }
+        const txNeed = checkedItems.reduce((sum, item) => sum + Math.round((item.costMin + item.costMax) / 2), 0)
+        const catBenefits = (cat: TreatmentCat) => {
+          if (cat === "cancer") return form.cancerDiagnosis + form.cancerTreatment + form.targetCancer + form.radiationCancer
+          if (cat === "brain") return form.brainDiagnosis + form.brainSurgery + form.brainTreatment
+          if (cat === "heart") return form.heartDiagnosis + form.heartSurgery + form.heartTreatment
+          return form.diseaseSurgery + form.majorSurgery + form.nsurgery
+        }
+        const txReady = checkedItems.reduce((sum, item) => {
+          const cat = item.category as TreatmentCat
+          const base = catBenefits(cat) / Math.max(1, allTreatmentItems.filter((i) => form.selectedTreatmentItems.includes(i.id) && i.category === cat).length)
+          const actualLoss = form.hasActualLoss ? Math.round(Math.round((item.costMin + item.costMax) / 2) * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
+          return sum + Math.round(base) + actualLoss
+        }, 0)
+        return {
+          title: "치료방법",
+          need: txNeed,
+          ready: txReady,
+          rate: clampRate((txReady / (txNeed || 1)) * 100),
+          gap: txNeed - txReady,
+          note: `선택한 ${checkedItems.length}개 치료 항목 예상 비용 합산. 해당 카테고리 보험금과 실손 예상 보완액 기준입니다.`,
+        }
+      })(),
     }
   }, [form])
 
@@ -558,7 +744,8 @@ export default function FirstCoverageCheckPage() {
   const surgeryActualLossTotal = selectedSurgeryCases.reduce((sum, item) => sum + surgeryActualLossAmount(form, item), 0)
   const surgeryReadyTotal = surgeryFixedCoverageTotal + surgeryActualLossTotal
   const surgeryGapTotal = surgeryNeedTotal - surgeryReadyTotal
-  const averageRate = clampRate(resultList.reduce((sum, item) => sum + item.rate, 0) / resultList.length)
+  const rateItems = resultList.filter(item => item.title !== "치료방법" || form.selectedTreatmentItems.length > 0)
+  const averageRate = clampRate(rateItems.reduce((sum, item) => sum + item.rate, 0) / Math.max(1, rateItems.length))
   const currentIndex = steps.findIndex((step) => step.id === active)
   const next = () => setActive(steps[Math.min(currentIndex + 1, steps.length - 1)].id)
   const prev = () => setActive(steps[Math.max(currentIndex - 1, 0)].id)
@@ -894,6 +1081,120 @@ export default function FirstCoverageCheckPage() {
                 </div>
               </Panel>
             )}
+            {active === "treatment" && (
+              <Panel title="치료방법 체크" desc="암·뇌·심장·수술 치료 항목을 선택하면 예상 비용과 현재 준비된 보험금을 비교합니다.">
+                <div className="grid gap-5">
+                  {/* 탭 선택 */}
+                  <div className="flex gap-2 border-b border-slate-200 pb-2">
+                    {(["cancer","brain","heart","surgery"] as const).map((cat) => {
+                      const labels: Record<string, string> = { cancer:"🔴 암", brain:"🟣 뇌", heart:"🟠 심장", surgery:"🟢 수술" }
+                      const checkedCount = cat === "surgery"
+                        ? SURGERY_CASES.filter(i => form.selectedTreatmentItems.includes(i.id)).length
+                        : TREATMENT_CASES.filter(i => i.category === cat && form.selectedTreatmentItems.includes(i.id)).length
+                      return (
+                        <button key={cat} type="button" onClick={() => setActiveTreatmentTab(cat)}
+                          className={`flex-1 rounded-xl px-3 py-2.5 text-[12px] font-black transition-all ${activeTreatmentTab === cat ? "bg-[#1a3a6e] text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
+                          {labels[cat]}
+                          {checkedCount > 0 && (
+                            <span className={`ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black ${activeTreatmentTab === cat ? "bg-white/20 text-white" : "bg-[#1a3a6e]/20 text-[#1a3a6e]"}`}>
+                              {checkedCount}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* 카드 목록 */}
+                  <div>
+                    <p className="mb-3 text-sm font-black text-slate-800">
+                      치료 항목 체크
+                      <span className="ml-2 text-[11px] font-bold text-slate-400">— 선택하면 예상 비용·준비 보험금·부족 금액이 표시됩니다</span>
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {(activeTreatmentTab === "surgery" ? SURGERY_CASES : TREATMENT_CASES.filter(i => i.category === activeTreatmentTab)).map((item) => {
+                        const checked = form.selectedTreatmentItems.includes(item.id)
+                        const avgC = Math.round((item.costMin + item.costMax) / 2)
+                        const cat = activeTreatmentTab
+                        const catBenefit = cat === "cancer"
+                          ? form.cancerDiagnosis + form.cancerTreatment + form.targetCancer + form.radiationCancer
+                          : cat === "brain"
+                          ? form.brainDiagnosis + form.brainSurgery + form.brainTreatment
+                          : cat === "heart"
+                          ? form.heartDiagnosis + form.heartSurgery + form.heartTreatment
+                          : form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                        const checkedInCat = (activeTreatmentTab === "surgery" ? SURGERY_CASES : TREATMENT_CASES.filter(i => i.category === cat)).filter(i => form.selectedTreatmentItems.includes(i.id)).length
+                        const perItemBase = Math.round(catBenefit / Math.max(1, checked ? checkedInCat : checkedInCat + 1))
+                        const actualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
+                        const itemReady = perItemBase + actualLoss
+                        const itemGap = avgC - itemReady
+                        return (
+                          <button key={item.id} type="button"
+                            onClick={() => update("selectedTreatmentItems", checked ? form.selectedTreatmentItems.filter(id => id !== item.id) : [...form.selectedTreatmentItems, item.id])}
+                            className={`rounded-2xl border p-4 text-left transition-all ${checked ? "border-[#1a3a6e] bg-[#eef4fb] shadow-md" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-[13px] font-black text-slate-900 leading-tight">{item.name}</p>
+                              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${checked ? "border-[#1a3a6e] bg-[#1a3a6e] text-white" : "border-slate-300 bg-white text-slate-300"}`}>
+                                {checked ? "✓" : ""}
+                              </span>
+                            </div>
+                            <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[9px] font-black
+                              ${item.coverageType.includes("비급여 중심") ? "bg-red-100 text-red-700" :
+                                item.coverageType.includes("혼합") ? "bg-amber-100 text-amber-700" :
+                                "bg-emerald-100 text-emerald-700"}`}>
+                              {item.coverageType}
+                            </span>
+                            <p className="mt-2 text-[10px] font-bold text-slate-500">
+                              예상 비용 <span className="text-slate-700 font-black">{item.costMin.toLocaleString()}~{item.costMax.toLocaleString()}만원</span>
+                            </p>
+                            {checked && (
+                              <div className={`mt-2 rounded-xl p-2.5 ${itemGap > 0 ? "bg-rose-50" : "bg-emerald-50"}`}>
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] font-black">
+                                  <span className="text-slate-500">상담 기준</span><span className="text-slate-800">{man(avgC)}</span>
+                                  <span className="text-slate-500">보험금 배분</span><span className="text-slate-800">{man(perItemBase)}</span>
+                                  <span className="text-slate-500">실손 예상</span><span className="text-slate-800">{man(actualLoss)}</span>
+                                  <span className={itemGap > 0 ? "text-rose-700 font-black" : "text-emerald-700 font-black"}>
+                                    {itemGap > 0 ? "부족 가능" : "여유 예상"}
+                                  </span>
+                                  <span className={`font-black ${itemGap > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                                    {itemGap > 0 ? `-${man(itemGap)}` : `+${man(Math.abs(itemGap))}`}
+                                  </span>
+                                </div>
+                                <p className="mt-1.5 text-[9px] leading-4 text-slate-500">{item.note}</p>
+                              </div>
+                            )}
+                            {!checked && (
+                              <p className="mt-2 text-[9px] leading-4 text-slate-400">{item.note.slice(0, 60)}{item.note.length > 60 ? "…" : ""}</p>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 선택 요약 */}
+                  {form.selectedTreatmentItems.length > 0 && (
+                    <div className="rounded-2xl border border-[#bcd6f0] bg-[#f2f8ff] p-4">
+                      <p className="text-sm font-black text-[#1a3a6e]">선택된 치료 항목 요약</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {form.selectedTreatmentItems.map((id) => {
+                          const it = [...TREATMENT_CASES, ...SURGERY_CASES.map(s => ({...s, category: "surgery" as TreatmentCat}))].find(i => i.id === id)
+                          if (!it) return null
+                          return (
+                            <span key={id} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#bcd6f0] px-3 py-1 text-[11px] font-black text-[#1a3a6e]">
+                              {it.name}
+                              <button type="button" onClick={() => update("selectedTreatmentItems", form.selectedTreatmentItems.filter(i => i !== id))} className="text-slate-400 hover:text-rose-600">✕</button>
+                            </span>
+                          )
+                        })}
+                      </div>
+                      <p className="mt-3 text-[11px] font-bold text-slate-500">결과 탭에서 항목별 예상 부족 금액을 확인할 수 있습니다.</p>
+                    </div>
+                  )}
+                </div>
+              </Panel>
+            )}
             {active === "result" && (
               <Panel title="보장 공백 진단 결과" desc="첫 상담에서 오늘 확인된 공백을 설명하고, 상세 보장분석으로 이어가기 위한 화면입니다.">
                 <div className="mb-4 rounded-2xl border border-[#bcd6f0] bg-[#f2f8ff] p-5">
@@ -903,7 +1204,7 @@ export default function FirstCoverageCheckPage() {
                     <p className="max-w-xl text-sm font-bold leading-7 text-slate-600">모두에게 똑같은 보험이 아니라, 현재 상황에서 암·뇌·심장·수술·간병을 어느 정도 감당할 수 있는지 확인한 결과입니다.</p>
                   </div>
                 </div>
-                <div className="grid gap-3 lg:grid-cols-5">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   {resultList.map((item) => <ResultCard key={item.title} item={item} />)}
                 </div>
                 <div className="mt-4 grid gap-3 lg:grid-cols-3">
@@ -1016,6 +1317,71 @@ export default function FirstCoverageCheckPage() {
                     </div>
                   )}
                 </div>
+                {/* 치료방법 결과 섹션 */}
+                {form.selectedTreatmentItems.length > 0 && (() => {
+                  const allTx = [...TREATMENT_CASES, ...SURGERY_CASES.map(s => ({...s, category: "surgery" as TreatmentCat}))]
+                  const checkedTx = allTx.filter(i => form.selectedTreatmentItems.includes(i.id))
+                  const catColors: Record<TreatmentCat, string> = {
+                    cancer: "bg-rose-100 text-rose-700",
+                    brain: "bg-purple-100 text-purple-700",
+                    heart: "bg-orange-100 text-orange-700",
+                    surgery: "bg-emerald-100 text-emerald-700",
+                  }
+                  const catLabel: Record<TreatmentCat, string> = { cancer: "암", brain: "뇌", heart: "심장", surgery: "수술" }
+                  const catBenefitFn = (cat: TreatmentCat) => {
+                    if (cat === "cancer") return form.cancerDiagnosis + form.cancerTreatment + form.targetCancer + form.radiationCancer
+                    if (cat === "brain") return form.brainDiagnosis + form.brainSurgery + form.brainTreatment
+                    if (cat === "heart") return form.heartDiagnosis + form.heartSurgery + form.heartTreatment
+                    return form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                  }
+                  return (
+                    <div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm font-black text-violet-900">선택된 치료방법 항목 ({checkedTx.length}개)</p>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-violet-700">
+                          전체 {man(result.treatment.need)} 필요 / {man(result.treatment.ready)} 준비 ({result.treatment.rate}%)
+                        </span>
+                      </div>
+                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                        {checkedTx.map((item) => {
+                          const cat = item.category as TreatmentCat
+                          const avgC = Math.round((item.costMin + item.costMax) / 2)
+                          const countInCat = checkedTx.filter(i => i.category === cat).length
+                          const perItemBase = Math.round(catBenefitFn(cat) / Math.max(1, countInCat))
+                          const actualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
+                          const itemReady = perItemBase + actualLoss
+                          const itemGap = avgC - itemReady
+                          const itemRate = clampRate((itemReady / (avgC || 1)) * 100)
+                          return (
+                            <div key={item.id} className="rounded-xl bg-white/80 p-4">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${catColors[cat]}`}>{catLabel[cat]}</span>
+                                <p className="text-[13px] font-black text-slate-900">{item.name}</p>
+                                <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-black ${itemRate >= 70 ? "bg-emerald-100 text-emerald-700" : itemRate >= 40 ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
+                                  {itemRate}% 준비
+                                </span>
+                              </div>
+                              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-black text-slate-700 sm:grid-cols-4">
+                                <div><span className="font-bold text-slate-400 block">예상 비용</span>{man(avgC)}</div>
+                                <div><span className="font-bold text-slate-400 block">보험금 배분</span>{man(perItemBase)}</div>
+                                <div><span className="font-bold text-slate-400 block">실손 예상</span>{man(actualLoss)}</div>
+                                <div className={itemGap > 0 ? "text-rose-700" : "text-emerald-700"}>
+                                  <span className="font-bold text-slate-400 block">{itemGap > 0 ? "부족 가능" : "여유 예상"}</span>
+                                  {itemGap > 0 ? `-${man(itemGap)}` : `+${man(Math.abs(itemGap))}`}
+                                </div>
+                              </div>
+                              <div className={`mt-3 h-1.5 w-full rounded-full bg-slate-100`}>
+                                <div className={`h-1.5 rounded-full ${itemRate >= 70 ? "bg-emerald-500" : itemRate >= 40 ? "bg-amber-400" : "bg-rose-400"}`}
+                                  style={{ width: `${itemRate}%` }} />
+                              </div>
+                              <p className="mt-2 text-[10px] leading-5 text-slate-500">{item.note}</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
                 <ResourceGallery />
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
                   <p className="text-sm font-black text-amber-800">오늘 상담 포인트</p>
