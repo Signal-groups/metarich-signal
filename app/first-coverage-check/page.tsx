@@ -921,77 +921,32 @@ export default function FirstCoverageCheckPage() {
               </Panel>
             )}
             {active === "surgery" && (
-              <Panel title="수술비 입력" desc="다빈도 수술을 체크하면 평균 비용과 현재 준비 금액, 부족 예상액이 바로 표시됩니다.">
+              <Panel title="수술비 입력" desc="현재 보유한 수술비 보장을 입력하세요. 수술 항목 체크는 '치료방법' 탭에서 할 수 있습니다.">
                 <div className="grid gap-5">
-                  {/* ① 현재 보장 입력 — 카드 위에 배치해 체크 즉시 반영 */}
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  {/* 현재 보장 입력 */}
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                     <p className="mb-1 text-xs font-black text-slate-500 uppercase tracking-wide">현재 보유 수술 보장 (수술당 정액)</p>
                     <FieldGrid>
                       <NumberInput label="질병수술비" value={form.diseaseSurgery} onChange={(v) => update("diseaseSurgery", v)} suffix="만원" />
                       <NumberInput label="주요질환 수술비" value={form.majorSurgery} onChange={(v) => update("majorSurgery", v)} suffix="만원" />
                       <NumberInput label="N대/종수술비" value={form.nsurgery} onChange={(v) => update("nsurgery", v)} suffix="만원" />
                     </FieldGrid>
-                    <p className="mt-2 text-[10px] font-bold text-slate-400">
-                      수술 1건당 받는 정액 수술비 합산 기준. 실손 보완은 아래 항목별로 자동 반영됩니다.
+                    <p className="mt-3 text-[10px] font-bold text-slate-400">
+                      수술 1건당 받는 정액 수술비 합산 기준입니다. 수술 항목별 예상 비용 비교는 다음 단계인 '치료방법' 탭에서 확인하세요.
                     </p>
                   </div>
 
-                  {/* ② 수술 항목 선택 — 체크 시 부족 금액 즉시 표시 */}
-                  <div>
-                    <p className="mb-3 text-sm font-black text-slate-800">
-                      수술 항목 체크
-                      <span className="ml-2 text-[11px] font-bold text-slate-400">— 체크하면 평균 비용 · 현재 준비 · 부족 금액이 표시됩니다</span>
+                  {/* 안내 박스 */}
+                  <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+                    <p className="text-sm font-black text-indigo-800">수술 항목 체크 → 치료방법 탭</p>
+                    <p className="mt-2 text-sm font-bold leading-7 text-indigo-700">
+                      무릎·척추·백내장·심장 스텐트 등 다빈도 수술 항목별 예상 비용과 현재 준비 금액 비교는
+                      <strong className="font-black"> '치료방법' 탭 → 수술</strong>에서 체크할 수 있습니다.
                     </p>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                      {SURGERY_CASES.map((item) => {
-                        const checked = form.selectedSurgeryCases.includes(item.id)
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            onClick={() => update("selectedSurgeryCases", checked ? form.selectedSurgeryCases.filter((id) => id !== item.id) : [...form.selectedSurgeryCases, item.id])}
-                            className={`rounded-2xl border p-4 text-left transition-all ${checked ? "border-[#1a3a6e] bg-[#eef4fb] shadow-md" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"}`}
-                          >
-                            {/* 카드 헤더 */}
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-[13px] font-black text-slate-900 leading-tight">{item.name}</p>
-                              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${checked ? "border-[#1a3a6e] bg-[#1a3a6e] text-white" : "border-slate-300 bg-white text-slate-300"}`}>
-                                {checked ? "✓" : ""}
-                              </span>
-                            </div>
-                            {/* 비급여 뱃지 */}
-                            <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[9px] font-black
-                              ${item.coverageType.includes("비급여 중심") ? "bg-red-100 text-red-700" :
-                                item.coverageType.includes("혼합") ? "bg-amber-100 text-amber-700" :
-                                "bg-emerald-100 text-emerald-700"}`}>
-                              {item.coverageType}
-                            </span>
-                            {/* 비용 범위 — 미체크 시도 표시 */}
-                            <p className="mt-2 text-[10px] font-bold text-slate-500">
-                              평균 비용 <span className="text-slate-700 font-black">{item.costMin.toLocaleString()}~{item.costMax.toLocaleString()}만원</span>
-                            </p>
-                            {/* 체크 시: 부족 금액 뱃지 */}
-                            {checked && (
-                              <SurgeryGapBadge
-                                item={item}
-                                fixedCoverage={surgeryFixedCoveragePerCase}
-                                hasActualLoss={form.hasActualLoss}
-                                actualLossCoverageRate={form.actualLossCoverageRate}
-                              />
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* ③ 급여·비급여 안내 */}
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <p className="text-sm font-black text-slate-900">급여·비급여 체크</p>
-                    <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
-                      급여 중심 수술은 법정 본인부담과 실손 보완 가능성을 함께 보고,
-                      급여+비급여 혼합 수술은 비급여 렌즈·내시경·고주파·치료재료 등 실손에서 제한될 수 있는 항목을 별도 확인합니다.
-                    </p>
+                    <button type="button" onClick={() => setActive("treatment")}
+                      className="mt-3 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white hover:bg-indigo-700">
+                      치료방법 탭으로 이동 →
+                    </button>
                   </div>
                 </div>
               </Panel>
