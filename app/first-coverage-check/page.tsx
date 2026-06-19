@@ -126,6 +126,7 @@ function scopeScore(scope: FormState["brainScope"] | FormState["heartScope"]) {
 // ─ (NHIS 본인부담 + 비급여 재료비 + 상급병실 + 간병비 등 실제 부담 합산)
 // ─ 출처: HIRA 비급여 진료비 정보, 국민건강보험공단 2024 주요수술통계, 금감원 보험통계
 // ─ actualLossFactor: 총 부담액 중 실손보험이 보완할 수 있는 비율 (0~1)
+// surgeryType: "general"=질병수술비만 | "major"=+N대수술비 | "ndae"=+N대수술비+종수술비
 const SURGERY_CASES = [
   // ─── 근골격계 ───────────────────────────────────────────
   {
@@ -134,6 +135,8 @@ const SURGERY_CASES = [
     costMin: 500, costMax: 1500,
     coverageType: "급여 중심",
     actualLossFactor: 0.40,
+    surgeryType: "major" as const,
+    surgeryClass: "4종",
     note: "급여 본인부담 300~500만 + 비급여 재료 200~500만 + 상급병실·간병비 200~500만. 실손은 의료비 일부만 보완.",
   },
   {
@@ -142,6 +145,8 @@ const SURGERY_CASES = [
     costMin: 600, costMax: 1800,
     coverageType: "급여 중심",
     actualLossFactor: 0.38,
+    surgeryType: "major" as const,
+    surgeryClass: "4종",
     note: "급여 본인부담 + 인공관절 재료비 + 장기 재활비 포함 총 부담. 고령일수록 간병비 증가.",
   },
   {
@@ -150,6 +155,8 @@ const SURGERY_CASES = [
     costMin: 200, costMax: 600,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.55,
+    surgeryType: "general" as const,
+    surgeryClass: "3종",
     note: "급여 본인부담 + 비급여 치료재료 + 상급병실. 병원급·방식에 따라 비용 편차 큼.",
   },
   {
@@ -158,6 +165,8 @@ const SURGERY_CASES = [
     costMin: 800, costMax: 1500,
     coverageType: "비급여 중심",
     actualLossFactor: 0.20,
+    surgeryType: "major" as const,
+    surgeryClass: "4종",
     note: "카티스템 재료비 전액 비급여. 4세대 실손부터 보완 한도 크게 축소.",
   },
   {
@@ -166,6 +175,8 @@ const SURGERY_CASES = [
     costMin: 300, costMax: 800,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.50,
+    surgeryType: "general" as const,
+    surgeryClass: "3종",
     note: "급여 본인부담 + 비급여 재료 + 상급병실·물리치료. 봉합 범위와 병원에 따라 크게 다름.",
   },
   {
@@ -174,6 +185,8 @@ const SURGERY_CASES = [
     costMin: 500, costMax: 1500,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.35,
+    surgeryType: "major" as const,
+    surgeryClass: "4종",
     note: "미세현미경·내시경 급여분 + 비급여 재료 + 재활치료 포함. 비급여 방식 선택 시 총 부담 급증.",
   },
   // ─── 눈 ────────────────────────────────────────────────
@@ -183,6 +196,8 @@ const SURGERY_CASES = [
     costMin: 200, costMax: 500,
     coverageType: "급여 중심",
     actualLossFactor: 0.45,
+    surgeryType: "general" as const,
+    surgeryClass: "2종",
     note: "양안 기준. 단초점 급여 적용이나 검사비·상급병실·마취비 비급여 추가 발생.",
   },
   {
@@ -191,6 +206,8 @@ const SURGERY_CASES = [
     costMin: 600, costMax: 1500,
     coverageType: "비급여 중심",
     actualLossFactor: 0.20,
+    surgeryType: "general" as const,
+    surgeryClass: "3종",
     note: "양안 기준 전액 비급여. 렌즈 종류·병원에 따라 차이 큼. 4세대 실손 보완 한도 대폭 축소.",
   },
   // ─── 소화기 ────────────────────────────────────────────
@@ -200,6 +217,8 @@ const SURGERY_CASES = [
     costMin: 150, costMax: 500,
     coverageType: "급여 중심",
     actualLossFactor: 0.65,
+    surgeryType: "general" as const,
+    surgeryClass: "2종",
     note: "복강경 급여 + 입원비·상급병실·검사비 포함. 합병증 시 부담 급증.",
   },
   {
@@ -208,6 +227,8 @@ const SURGERY_CASES = [
     costMin: 250, costMax: 700,
     coverageType: "급여 중심",
     actualLossFactor: 0.60,
+    surgeryType: "general" as const,
+    surgeryClass: "3종",
     note: "복강경 급여 본인부담 + 상급병실·마취·검사비 포함. 급성 담낭염 동반 시 부담 증가.",
   },
   {
@@ -216,6 +237,8 @@ const SURGERY_CASES = [
     costMin: 200, costMax: 600,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.50,
+    surgeryType: "general" as const,
+    surgeryClass: "2종",
     note: "급여 본인부담 + 메시 재료비·마취비 포함. 복강경·양측 수술 시 비용 상승.",
   },
   // ─── 여성 ────────────────────────────────────────────
@@ -225,6 +248,8 @@ const SURGERY_CASES = [
     costMin: 400, costMax: 1000,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.45,
+    surgeryType: "major" as const,
+    surgeryClass: "4종",
     note: "복강경·자궁경 급여분 + 비급여 재료 + 입원비. 로봇수술 선택 시 아래 항목으로 별도 체크.",
   },
   // ─── 갑상선/항문 ──────────────────────────────────────
@@ -234,6 +259,8 @@ const SURGERY_CASES = [
     costMin: 400, costMax: 1000,
     coverageType: "급여 중심",
     actualLossFactor: 0.50,
+    surgeryType: "general" as const,
+    surgeryClass: "3종",
     note: "개방·내시경 급여 본인부담 + 입원·검사비. 로봇수술 선택 시 아래 항목으로 별도 체크.",
   },
   {
@@ -242,6 +269,8 @@ const SURGERY_CASES = [
     costMin: 150, costMax: 500,
     coverageType: "급여+비급여 혼합",
     actualLossFactor: 0.55,
+    surgeryType: "general" as const,
+    surgeryClass: "2종",
     note: "급여 기준 + 비급여 방식(레이저·고주파) 선택 시 비용 추가. 1박2일 입원비 포함.",
   },
   // ─── 심장혈관 ────────────────────────────────────────
@@ -251,6 +280,8 @@ const SURGERY_CASES = [
     costMin: 400, costMax: 1200,
     coverageType: "급여 중심",
     actualLossFactor: 0.60,
+    surgeryType: "ndae" as const,
+    surgeryClass: "N대",
     note: "산정특례 5% 본인부담 + 비급여 스텐트 재료·검사·중환자실·간병비 합산. 총 진료비 1,400~5,000만원 규모.",
   },
   // ─── 로봇수술 ────────────────────────────────────────
@@ -260,9 +291,21 @@ const SURGERY_CASES = [
     costMin: 1000, costMax: 2500,
     coverageType: "비급여 중심",
     actualLossFactor: 0.15,
+    surgeryType: "ndae" as const,
+    surgeryClass: "N대",
     note: "전립선·갑상선·자궁·대장·위 등 다빈치 로봇수술. 수술비 전액 비급여 기본 1,000만원~. 4세대 이후 실손 보완 한도 급감.",
   },
 ]
+
+// surgeryType별 적용 수술비 계산 헬퍼
+function surgeryCovByType(
+  form: { diseaseSurgery: number; majorSurgery: number; nsurgery: number },
+  surgeryType: "general" | "major" | "ndae"
+) {
+  if (surgeryType === "ndae") return form.diseaseSurgery + form.majorSurgery + form.nsurgery
+  if (surgeryType === "major") return form.diseaseSurgery + form.majorSurgery
+  return form.diseaseSurgery
+}
 
 const CANCER_CASES = [
   {
@@ -632,8 +675,8 @@ export default function FirstCoverageCheckPage() {
     const checkedSurgeryCases = SURGERY_CASES.filter((item) => form.selectedSurgeryCases.includes(item.id))
     const surgeryCases = checkedSurgeryCases.length ? checkedSurgeryCases : []
     const surgeryNeed = surgeryCases.reduce((sum, item) => sum + averageCost(item), 0)
-    const surgeryFixedCoveragePerCase = form.diseaseSurgery + form.majorSurgery + form.nsurgery
-    const surgeryBaseCoverage = surgeryFixedCoveragePerCase * surgeryCases.length
+    // surgeryType별로 실제 받는 수술비 합산 (general=질병수술비만, major=+N대수술비, ndae=전부)
+    const surgeryBaseCoverage = surgeryCases.reduce((sum, item) => sum + surgeryCovByType(form, item.surgeryType), 0)
     const surgeryActualLoss = surgeryCases.reduce((sum, item) => sum + surgeryActualLossAmount(form, item), 0)
     const surgeryReady = surgeryBaseCoverage + surgeryActualLoss
 
@@ -715,9 +758,10 @@ export default function FirstCoverageCheckPage() {
           const cat = item.category as TreatmentCat
           const avgC = Math.round((item.costMin + item.costMax) / 2)
           const countInCat = checkedItems.filter(i => i.category === cat).length
-          // 수술 항목: 수술 1건당 정액 지급
+          // 수술 항목: surgeryType별 실제 받는 정액 수술비 적용 (general/major/ndae)
+          const sItemBase = SURGERY_CASES.find(s => s.id === item.id)
           const base = cat === "surgery"
-            ? form.diseaseSurgery + form.majorSurgery + form.nsurgery
+            ? surgeryCovByType(form, sItemBase?.surgeryType ?? "general")
             : Math.round(catTxBenefitOnly(cat) / Math.max(1, countInCat))
           // 실손: 치료비 × 보완율 × 해당 치료 실손 적용 비율, 입원 한도 이내
           const rawActualLoss = form.hasActualLoss
@@ -1094,11 +1138,31 @@ export default function FirstCoverageCheckPage() {
                     <p className="mb-1 text-xs font-black text-slate-500 uppercase tracking-wide">현재 보유 수술 보장 (수술당 정액)</p>
                     <FieldGrid>
                       <NumberInput label="질병수술비" value={form.diseaseSurgery} onChange={(v) => update("diseaseSurgery", v)} suffix="만원" />
-                      <NumberInput label="주요질환 수술비" value={form.majorSurgery} onChange={(v) => update("majorSurgery", v)} suffix="만원" />
-                      <NumberInput label="N대/종수술비" value={form.nsurgery} onChange={(v) => update("nsurgery", v)} suffix="만원" />
+                      <NumberInput label="N대수술비" value={form.majorSurgery} onChange={(v) => update("majorSurgery", v)} suffix="만원" />
+                      <NumberInput label="종수술비" value={form.nsurgery} onChange={(v) => update("nsurgery", v)} suffix="만원" />
                     </FieldGrid>
                     <p className="mt-3 text-[10px] font-bold text-slate-400">
                       수술 1건당 받는 정액 수술비 합산 기준입니다. 수술 항목별 예상 비용 비교는 다음 단계인 '치료방법' 탭에서 확인하세요.
+                    </p>
+                  </div>
+
+                  {/* 수술 종 분류 참고표 */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <p className="mb-3 text-xs font-black text-slate-500 uppercase tracking-wide">수술 종(種) 분류 — 어떤 수술비가 지급되나요?</p>
+                    <div className="grid gap-2">
+                      {[
+                        { label: "질병수술비 (전 수술)", color: "bg-slate-100 text-slate-700", items: "치질, 맹장, 탈장, 백내장(단초점), 관절경, 어깨, 담낭, 갑상선", type: "general" },
+                        { label: "질병수술비 + N대수술비", color: "bg-blue-50 text-blue-800", items: "무릎 인공관절, 고관절, 척추, 자궁근종, 연골재생(카티스템), 백내장(다초점)", type: "major" },
+                        { label: "질병수술비 + N대수술비 + 종수술비", color: "bg-amber-50 text-amber-800", items: "심장 스텐트, 로봇수술(다빈치)", type: "ndae" },
+                      ].map((row) => (
+                        <div key={row.type} className={`rounded-xl p-3 ${row.color}`}>
+                          <p className="text-[11px] font-black mb-1">{row.label}</p>
+                          <p className="text-[10px] font-bold opacity-75">{row.items}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-[10px] font-bold text-slate-400">
+                      N대수술비: 가장 높은 수술비 기준으로 입력. 종수술비: 심장·로봇 등 고비용 특정 수술에만 추가 지급.
                     </p>
                   </div>
 
@@ -1244,9 +1308,10 @@ export default function FirstCoverageCheckPage() {
                           : cat === "heart" ? form.heartTreatment
                           : 0
                         const checkedInCat = (activeTreatmentTab === "surgery" ? SURGERY_CASES : TREATMENT_CASES.filter(i => i.category === cat)).filter(i => form.selectedTreatmentItems.includes(i.id)).length
-                        // 수술: 1건당 정액, 그 외: 치료전용 보험금 ÷ 선택 항목 수
+                        // 수술: surgeryType별 실제 받는 정액 수술비, 그 외: 치료전용 보험금 ÷ 선택 항목 수
+                        const sItemCard = SURGERY_CASES.find(s => s.id === item.id)
                         const perItemBase = cat === "surgery"
-                          ? form.diseaseSurgery + form.majorSurgery + form.nsurgery
+                          ? surgeryCovByType(form, sItemCard?.surgeryType ?? "general")
                           : Math.round(catTxOnly / Math.max(1, checked ? checkedInCat : checkedInCat + 1))
                         const rawActualLoss = form.hasActualLoss ? Math.round(avgC * (form.actualLossCoverageRate / 100) * (item.actualLossFactor ?? 0.45)) : 0
                         const actualLoss = Math.min(rawActualLoss, form.realLossInpatient)
@@ -1263,12 +1328,22 @@ export default function FirstCoverageCheckPage() {
                                 {checked ? "✓" : ""}
                               </span>
                             </div>
-                            <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[9px] font-black
-                              ${item.coverageType.includes("비급여 중심") ? "bg-red-100 text-red-700" :
-                                item.coverageType.includes("혼합") ? "bg-amber-100 text-amber-700" :
-                                "bg-emerald-100 text-emerald-700"}`}>
-                              {item.coverageType}
-                            </span>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black
+                                ${item.coverageType.includes("비급여 중심") ? "bg-red-100 text-red-700" :
+                                  item.coverageType.includes("혼합") ? "bg-amber-100 text-amber-700" :
+                                  "bg-emerald-100 text-emerald-700"}`}>
+                                {item.coverageType}
+                              </span>
+                              {sItemCard?.surgeryClass && (
+                                <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black
+                                  ${sItemCard.surgeryType === "ndae" ? "bg-amber-100 text-amber-800" :
+                                    sItemCard.surgeryType === "major" ? "bg-blue-100 text-blue-800" :
+                                    "bg-slate-100 text-slate-600"}`}>
+                                  {sItemCard.surgeryClass}
+                                </span>
+                              )}
+                            </div>
                             <p className="mt-2 text-[10px] font-bold text-slate-500">
                               예상 비용 <span className="text-slate-700 font-black">{item.costMin.toLocaleString()}~{item.costMax.toLocaleString()}만원</span>
                             </p>

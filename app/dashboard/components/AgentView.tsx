@@ -6,9 +6,10 @@ import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
 import { canAccessCrm } from "../../../lib/roles"
 import CustomerManagerModal from "./CustomerManagerModal"
+import ProductStrategyPage from "./ProductStrategyPage"
 
 export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {
-  const [mainTab, setMainTab] = useState<'input' | 'edu'>('input');
+  const [mainTab, setMainTab] = useState<'input' | 'edu' | 'strategy'>('input');
 
   const [perfInput, setPerfInput] = useState({
     call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
@@ -272,8 +273,12 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       </div>
 
       {/* 탭 */}
-      <div style={{ display: "flex", gap: 2, background: "#eef2f7", borderRadius: 10, padding: 3, alignSelf: "flex-start", width: "fit-content" }}>
-        {[{ id: "input", label: "PERFORMANCE" }, { id: "edu", label: "EDUCATION" }].map(t => (
+      <div style={{ display: "flex", gap: 2, background: "#eef2f7", borderRadius: 10, padding: 3, flexWrap: "wrap" }}>
+        {[
+          { id: "input", label: "PERFORMANCE" },
+          { id: "edu", label: "EDUCATION" },
+          { id: "strategy", label: "📦 이달의 상품전략" },
+        ].map(t => (
           <button
             key={t.id}
             onClick={() => setMainTab(t.id as any)}
@@ -281,13 +286,23 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               padding: "6px 20px", borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: "pointer", border: mainTab === t.id ? "0.5px solid #d4e0eb" : "none",
               background: mainTab === t.id ? "white" : "transparent",
               color: mainTab === t.id ? "#1a2d42" : "#7a9ab2",
-              fontFamily: "inherit",
+              fontFamily: "inherit", whiteSpace: "nowrap",
             }}
           >
             {t.label}
           </button>
         ))}
       </div>
+
+      {/* 이달의 상품전략 */}
+      {mainTab === 'strategy' && (
+        <ProductStrategyPage
+          user={user}
+          isEditor={false}
+          monthKey={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`}
+          onClose={() => setMainTab('input')}
+        />
+      )}
 
       {mainTab === 'input' && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

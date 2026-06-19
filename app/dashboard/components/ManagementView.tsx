@@ -8,6 +8,7 @@ import "jspdf-autotable"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
 import AgentView from "./AgentView"
+import ProductStrategyPage from "./ProductStrategyPage"
 import { exportExcel } from "./exportExcel"
 import {
   canEditDepartmentSettings,
@@ -176,6 +177,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
     { id: "perf", label: "실적 관리" },
     { id: "act", label: "활동 및 분석" },
     { id: "edu", label: "교육 관리" },
+    { id: "strategy", label: "📦 이달의 상품전략" },
     ...(canOpenSettings ? [{ id: "sys", label: "설정 관리" }] : []),
   ]
 
@@ -384,7 +386,14 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
         </div>
       )}
 
-      {activeTab && (
+      {activeTab === "strategy" ? (
+        <ProductStrategyPage
+          user={user}
+          isEditor={isMaster || currentRole === "headquarters"}
+          monthKey={monthKey}
+          onClose={() => setActiveTab(null)}
+        />
+      ) : activeTab ? (
         <AdminPopups
           type={activeTab}
           agents={scopedAgents}
@@ -398,7 +407,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
           canEditNotice={canEditNotice}
           onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); loadDepartmentMeta() }}
         />
-      )}
+      ) : null}
     </div>
   )
 }
