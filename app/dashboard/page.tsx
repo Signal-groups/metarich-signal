@@ -177,6 +177,7 @@ function AnnouncementModal({ item, onClose, onSave, onDelete, isMaster }: {
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const initializedRef = useRef(false);   // init 완료 여부 — 팝업창 TOKEN_REFRESHED 재초기화 방지
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'office' | 'consulting'>('consulting');
@@ -259,6 +260,7 @@ export default function DashboardPage() {
         setViewMode('office');
       }
 
+      initializedRef.current = true;
       setLoading(false);
     } catch {
       // 네트워크 오류 등 예외 상황 — 로딩만 해제, 로그인 redirect 안 함
@@ -270,7 +272,9 @@ export default function DashboardPage() {
     init();
 
     // 토큰 갱신 이벤트 감지 — 세션 복원 시 자동 재초기화
+    // ⚠️ 이미 초기화 완료된 경우(팝업창 열린 후 TOKEN_REFRESHED)에는 재초기화 생략 — 도구 사라짐 방지
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" && initializedRef.current) return;
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
         init();
       }
@@ -384,7 +388,8 @@ export default function DashboardPage() {
     if (!isApproved) return m.guestVisible === true;
     // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출. fixed=true 항목은 항상 노출
     if (m.access === "office") return canUseOffice && (m.fixed || isConsultEditMode || menuStatus[m.id] !== false);
-    return m.access === "public" || (m.access === "approved" && (isConsultEditMode || menuStatus[m.id] !== false));
+    // fixed=true 항목은 menuStatus 무시 — 항상 노출 (대면상담 6개 도구 클릭 후 사라지는 문제 방지)
+    return m.access === "public" || (m.access === "approved" && (m.fixed || isConsultEditMode || menuStatus[m.id] !== false));
   });
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
   const faceTools = isApproved ? visibleConsultingTools.filter(t => t.category === "face") : [];

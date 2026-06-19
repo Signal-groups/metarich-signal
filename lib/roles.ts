@@ -127,11 +127,11 @@ export function canAccessCrm(user: any): boolean {
   return isApprovedUser(user) && enabled(user?.crm_access);
 }
 
-/** 사무실 업무 탭 — is_approved + office_access 동시 필요 (guest 영구 차단) */
+/** 사무실 업무 탭 — is_approved이면 가능 (guest 영구 차단, office_access 개별 권한 불필요) */
 export function canAccessOffice(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
   if (normalizeRole(user) === "guest") return false;
-  return isApprovedUser(user) && enabled(user?.office_access);
+  return isApprovedUser(user);
 }
 
 /** AI 자동화 청구 — is_approved + claim_access 동시 필요 (guest 영구 차단) */
