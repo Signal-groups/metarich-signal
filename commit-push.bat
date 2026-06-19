@@ -29,7 +29,7 @@ del /f /q git-push.bat 2>nul
 if exist "tmp_pdf_pages" rmdir /s /q "tmp_pdf_pages"
 
 git add -A
-git commit -m "fix: surgery gap shows fixed-only deficit + face tools always visible with DEFAULT_MENU_STATUS"
+git commit -m "fix: first-coverage-check open to all approved agents, surgery total cost rebase"
 git push origin main
 
 pause
