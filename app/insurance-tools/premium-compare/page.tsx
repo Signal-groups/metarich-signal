@@ -1,6 +1,7 @@
 "use client"
 import { useMemo, useState } from "react"
 import { Zap, ChevronDown, ChevronUp } from "lucide-react"
+import PremiumTierCard from "./PremiumTierCard"
 
 // ══════════════════════════════════════════════════════════
 // 타입
@@ -375,6 +376,9 @@ export default function PremiumComparePage() {
 
         {/* ── 메인 컨텐츠 ── */}
         <div className="min-w-0 flex-1">
+
+        {/* ── 보험료 비교 기준 카드 ── */}
+        <PremiumTierCard />
 
         {/* ── 고객 조건 입력 ── */}
         <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
