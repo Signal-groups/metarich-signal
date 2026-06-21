@@ -295,21 +295,24 @@ export default function Sidebar({
         </button>
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#1a3a6e] flex flex-col shadow-xl transition-all duration-300 ${isOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full lg:w-[300px] lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#082b5f] shadow-xl transition-all duration-300 ${isOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full lg:w-[300px] lg:translate-x-0'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden lg:flex'}`}>
           {/* Brand Logo Section */}
-          <div className="px-5 pt-5 pb-2 flex-shrink-0 flex flex-col gap-1">
-            <img
-              src="/bohum-logo.jpg"
-              alt="보험의기준"
-              className="w-full max-w-[220px] mx-auto rounded-xl object-contain"
+          <div className="px-7 pt-6 pb-5 flex-shrink-0">
+            <div
+              aria-label="보험의 기준"
+              className="mx-auto h-[74px] w-[202px] bg-no-repeat"
+              style={{
+                backgroundImage: "url('/dashboard-main-image.png')",
+                backgroundSize: "2048px auto",
+                backgroundPosition: "-18px -18px",
+              }}
             />
-            <div className="h-[1px] bg-white/10 w-full mt-3"></div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6 no-scrollbar">
             {/* User Profile Section */}
-            <div className="bg-white/5 p-4 rounded-2xl flex flex-col gap-2 transition-all hover:bg-white/10 cursor-pointer" onClick={() => { router.push('/dashboard'); setIsOpen(false); }}>
+            <div className="hidden bg-white/5 p-4 rounded-2xl flex-col gap-2 transition-all hover:bg-white/10 cursor-pointer" onClick={() => { router.push('/dashboard'); setIsOpen(false); }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#2563eb] flex items-center justify-center text-white font-bold text-lg">
                   {user?.name?.[0] || 'U'}

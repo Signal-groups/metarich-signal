@@ -412,7 +412,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef3f8] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
+    <div className="min-h-screen bg-[#f5f8fc] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <Sidebar 
         user={user} 
         selectedDate={selectedDate} 
@@ -429,12 +429,12 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-10">
+      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-9">
         <div className="mx-auto max-w-[1680px] min-w-0">
           {(
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
       viewMode === 'office' ? renderOfficeView() : (
-        <div className="mx-auto max-w-7xl min-w-0 pb-6">
+        <div className="mx-auto max-w-[1680px] min-w-0 pb-6">
 
           {/* 미승인/게스트 배너 */}
           {!isApproved && (
@@ -454,30 +454,30 @@ export default function DashboardPage() {
           )}
 
           {/* 인사 / 날짜 / 가이드 */}
-          <div style={{ background: "linear-gradient(135deg, #1a2d42 0%, #243d58 60%, #1a3050 100%)", borderRadius: 14, padding: "20px 24px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, boxShadow: "0 4px 20px rgba(26,45,66,0.18)", position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 0% 0%, rgba(55,138,221,0.15) 0%, transparent 60%)", pointerEvents: "none" }} />
+          <div style={{ background: "transparent", borderRadius: 0, padding: "6px 12px 24px", marginBottom: 2, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 14, boxShadow: "none", position: "relative", overflow: "visible" }}>
+            <div style={{ position: "absolute", inset: 0, background: "transparent", pointerEvents: "none" }} />
             <div style={{ position: "relative", zIndex: 1 }}>
-              <h2 style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
-                {(user.name || user.email?.split('@')[0] || '')}님, 오늘도 좋은 하루 되세요! 👋
+              <h2 style={{ fontSize: 28, fontWeight: 900, color: "#10203a", letterSpacing: "-0.01em" }}>
+                {(user.name || user.email?.split('@')[0] || '')}님, 오늘도 좋은 하루 되세요!
               </h2>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginTop: 5 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
+              <p style={{ fontSize: 15, color: "#50627a", marginTop: 8, fontWeight: 700 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
-              <span style={{ background: "rgba(255,255,255,0.1)", border: "0.5px solid rgba(255,255,255,0.18)", borderRadius: 8, padding: "5px 11px", fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>
+              <span style={{ background: "#ffffff", border: "1px solid #dbe5f0", borderRadius: 9, padding: "10px 17px", fontSize: 13, color: "#1f3150", fontWeight: 800, boxShadow: "0 3px 12px rgba(15,31,54,0.06)" }}>
                 📅 {selectedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}
               </span>
               <button
                 onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                style={{ display: "flex", alignItems: "center", gap: 5, borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.85)", border: "0.5px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(4px)" }}
+                style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 9, padding: "10px 17px", fontSize: 13, fontWeight: 800, background: "#ffffff", color: "#1b54ad", border: "1px solid #dbe5f0", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 3px 12px rgba(15,31,54,0.06)" }}
               >📘 일반 가이드</button>
               <button
                 onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                style={{ display: "flex", alignItems: "center", gap: 5, borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "white", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 8px rgba(245,158,11,0.35)" }}
+                style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 9, padding: "10px 18px", fontSize: 13, fontWeight: 900, background: "#082b5f", color: "white", border: "1px solid #0f3f86", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 12px rgba(8,43,95,0.18)" }}
               >⭐ 프로 가이드</button>
               {isMaster && (
                 <button
                   onClick={() => setIsConsultEditMode(!isConsultEditMode)}
-                  style={{ borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, background: isConsultEditMode ? "rgba(226,75,74,0.85)" : "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.9)", border: isConsultEditMode ? "none" : "0.5px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ borderRadius: 9, padding: "10px 17px", fontSize: 13, fontWeight: 800, background: isConsultEditMode ? "#fee2e2" : "#ffffff", color: isConsultEditMode ? "#dc2626" : "#1f3150", border: isConsultEditMode ? "1px solid #fca5a5" : "1px solid #dbe5f0", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 3px 12px rgba(15,31,54,0.06)" }}
                 >
                   {isConsultEditMode ? "편집 완료" : "노출 편집"}
                 </button>
