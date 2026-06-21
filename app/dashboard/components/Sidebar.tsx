@@ -213,13 +213,6 @@ export default function Sidebar({
         return;
       }
 
-      if (item.id === "show_first_coverage_check") {
-        window.open(finalUrl, "first-coverage-check", "width=1280,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes");
-        setIsOpen(false);
-        setIsConsultModalOpen(false);
-        return;
-      }
-
       window.open(finalUrl, "_blank", "noopener,noreferrer");
 
       setIsOpen(false);

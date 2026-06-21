@@ -359,11 +359,6 @@ export default function DashboardPage() {
       return;
     }
 
-    if (item.id === "show_first_coverage_check") {
-      window.open(finalUrl, "first-coverage-check", "width=1280,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes");
-      return;
-    }
-
     window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 

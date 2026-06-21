@@ -56,6 +56,7 @@ export const DEFAULT_MENU_STATUS: Record<string, boolean> = {
   show_financial_portfolio: true,
   show_finance: true,
   show_gongsi: true,                // fixed
+  show_proposal: true,              // fixed
 }
 
 export const CONSULTING_TOOLS: ConsultingTool[] = [
@@ -76,6 +77,23 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     editable: true,
     defaultEnabled: false,
     category: "face",
+  },
+  {
+    id: "show_proposal",
+    title: "제안서 생성",
+    label: "제안서 생성",
+    desc: "단독 또는 비교 제안서를 인포그래픽 형태로 3장 이내 가로형으로 제작",
+    icon: "document",
+    url: "/insurance-tools/proposal",
+    color: "border-amber-500",
+    cardColor: "border-amber-500 text-amber-700",
+    fixed: true,
+    staffOnly: true,
+    access: "approved",
+    highlight: true,
+    isNew: true,
+    editable: false,
+    category: "face" as const,
   },
   {
     id: "show_cont",
@@ -124,7 +142,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     guestVisible: true,
     highlight: false,
     editable: false,
-    category: "face",
+    category: "planning",
   },
   {
     id: "show_insurance_survey",
@@ -314,8 +332,8 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
   },
   {
     id: "show_finance",
-    title: "재무 분석 도구",
-    label: "재무 분석 도구",
+    title: "재무설계 PRO",
+    label: "재무설계 PRO",
     desc: "종합 금융 플래너 리포트",
     icon: "finance",
     url: "/financial-planner/index.html",
