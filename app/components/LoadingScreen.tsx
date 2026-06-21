@@ -7,9 +7,18 @@
  */
 export default function LoadingScreen({ message = "잠시만 기다려 주세요" }: { message?: string }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0c1428] p-6">
+    <div style={{
+      display: "flex",
+      width: "100%",
+      height: "100%",
+      minHeight: "100vh",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "#0c1428",
+    }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap");
 
         @keyframes bezel-rotate {
           from { transform: rotate(0deg); }
@@ -23,12 +32,15 @@ export default function LoadingScreen({ message = "잠시만 기다려 주세요
           90%  { transform: rotate(-3deg); }
           100% { transform: rotate(0deg); }
         }
+        /* transform-box: fill-box → 각 요소 자체 바운딩박스 기준으로 정중앙 회전 */
         .ls-bezel-spin {
-          transform-origin: 70px 70px;
+          transform-box: fill-box;
+          transform-origin: center;
           animation: bezel-rotate 7s linear infinite;
         }
         .ls-needle-seek {
-          transform-origin: 70px 70px;
+          transform-box: fill-box;
+          transform-origin: center;
           animation: needle-seek 2.8s ease-in-out infinite alternate;
         }
         @keyframes ls-dot-bounce {
@@ -42,10 +54,10 @@ export default function LoadingScreen({ message = "잠시만 기다려 주세요
         .ls-dot:nth-child(3) { animation-delay: 0.36s; }
       `}</style>
 
-      <div className="text-center">
+      <div style={{ textAlign: "center" }}>
         {/* ── 나침반 SVG ── */}
-        <div className="mx-auto mb-10">
-          <svg viewBox="0 0 140 140" width="148" height="148" xmlns="http://www.w3.org/2000/svg">
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
+          <svg viewBox="0 0 140 140" width="140" height="140" xmlns="http://www.w3.org/2000/svg">
             {/* 글로우 링 (고정) */}
             <circle cx="70" cy="70" r="67" fill="none" stroke="#C9A96E" strokeWidth="0.5" opacity="0.15"/>
 
@@ -87,25 +99,40 @@ export default function LoadingScreen({ message = "잠시만 기다려 주세요
           </svg>
         </div>
 
-        {/* ── "보험의 기준" 필기체 ── */}
+        {/* ── 보험의 기준 필기체 ── */}
         <h1
-          style={{ fontFamily: "'Nanum Pen Script', cursive" }}
-          className="text-7xl leading-tight text-white"
+          style={{
+            fontFamily: "'Nanum Pen Script', cursive",
+            fontSize: "4.5rem",
+            lineHeight: 1.2,
+            color: "#ffffff",
+            margin: 0,
+            textAlign: "center",
+            width: "100%",
+          }}
         >
           보험의 기준
         </h1>
 
         {/* 서브 메시지 */}
-        <p className="mt-5 text-sm font-bold tracking-widest text-white/40">
+        <p style={{
+          marginTop: 20,
+          fontSize: "0.875rem",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          color: "rgba(255,255,255,0.4)",
+          textAlign: "center",
+        }}>
           {message}
         </p>
 
         {/* 바운스 도트 */}
-        <div className="mt-6 flex items-center justify-center gap-2">
+        <div style={{ marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="ls-dot h-1.5 w-1.5 rounded-full bg-[#C9A96E]"
+              className="ls-dot"
+              style={{ width: 6, height: 6, borderRadius: "50%", background: "#C9A96E" }}
             />
           ))}
         </div>
