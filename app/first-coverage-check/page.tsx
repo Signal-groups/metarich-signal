@@ -8,6 +8,7 @@ import { Activity, ArrowLeft, Brain, FolderOpen, HeartPulse, Printer, Save, Shie
 import { supabase } from "../../lib/supabase"
 import { ensureUserProfile } from "../../lib/userProfile"
 import { isApprovedUser, normalizeRole, canAccessFirstCoverageCheck, ROLE_PRIORITY } from "../../lib/roles"
+import LoadingScreen from "../components/LoadingScreen"
 
 type StepId = "intro" | "customer" | "cancer" | "brain" | "heart" | "surgery" | "care" | "treatment" | "result"
 type TreatmentCat = "cancer" | "brain" | "heart" | "surgery"
@@ -998,7 +999,7 @@ export default function FirstCoverageCheckPage() {
     }, 150)
   }
 
-  if (checking) return <LoadingScreen />
+  if (checking) return <LoadingScreen message="접근 권한을 확인하고 있습니다" />
   if (!allowed) return <CenterMessage title="사용 권한이 없습니다" body={lockedReason} action={() => router.push("/dashboard")} />
 
   return (
@@ -1833,106 +1834,6 @@ function SurgeryGapBadge({
   )
 }
 
-function LoadingScreen() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0c1428] p-6">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap');
-
-        @keyframes bezel-rotate {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-        @keyframes needle-seek {
-          0%   { transform: rotate(-35deg); }
-          25%  { transform: rotate(20deg); }
-          50%  { transform: rotate(-12deg); }
-          75%  { transform: rotate(7deg); }
-          90%  { transform: rotate(-3deg); }
-          100% { transform: rotate(0deg); }
-        }
-        .bezel-spin {
-          transform-origin: 70px 70px;
-          animation: bezel-rotate 7s linear infinite;
-        }
-        .needle-seek {
-          transform-origin: 70px 70px;
-          animation: needle-seek 2.8s ease-in-out infinite alternate;
-        }
-      `}</style>
-
-      <div className="text-center">
-        {/* ── 나침반 SVG ── */}
-        <div className="mx-auto mb-10">
-          <svg viewBox="0 0 140 140" width="148" height="148" xmlns="http://www.w3.org/2000/svg">
-            {/* 글로우 링 (고정) */}
-            <circle cx="70" cy="70" r="67" fill="none" stroke="#C9A96E" strokeWidth="0.5" opacity="0.15"/>
-
-            {/* 회전하는 베젤 그룹 */}
-            <g className="bezel-spin">
-              <circle cx="70" cy="70" r="62" fill="none" stroke="#C9A96E" strokeWidth="1.2" opacity="0.55"/>
-              {/* 눈금 8방향 */}
-              {([0,45,90,135,180,225,270,315] as number[]).map((deg, i) => {
-                const r = Math.PI / 180 * deg
-                const r1 = 56, r2 = 62
-                const x1 = 70 + r1 * Math.sin(r), y1 = 70 - r1 * Math.cos(r)
-                const x2 = 70 + r2 * Math.sin(r), y2 = 70 - r2 * Math.cos(r)
-                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#C9A96E" strokeWidth={i % 2 === 0 ? 2 : 0.8} opacity="0.75"/>
-              })}
-              {/* N/S/E/W */}
-              <text x="70" y="10" textAnchor="middle" dominantBaseline="middle" fill="#C9A96E" fontSize="11" fontWeight="bold" fontFamily="sans-serif">N</text>
-              <text x="70" y="130" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.4)" fontSize="9" fontFamily="sans-serif">S</text>
-              <text x="130" y="70" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.4)" fontSize="9" fontFamily="sans-serif">E</text>
-              <text x="10" y="70" textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.4)" fontSize="9" fontFamily="sans-serif">W</text>
-            </g>
-
-            {/* 나침반 판면 (고정) */}
-            <circle cx="70" cy="70" r="50" fill="#0f1e38" stroke="#1A2744" strokeWidth="1"/>
-            {/* 십자선 */}
-            <line x1="70" y1="24" x2="70" y2="116" stroke="#1A2744" strokeWidth="0.5" opacity="0.5"/>
-            <line x1="24" y1="70" x2="116" y2="70" stroke="#1A2744" strokeWidth="0.5" opacity="0.5"/>
-
-            {/* 흔들리는 바늘 */}
-            <g className="needle-seek">
-              {/* 북쪽 (골드) */}
-              <polygon points="70,26 65.5,70 74.5,70" fill="#C9A96E"/>
-              {/* 남쪽 (네이비) */}
-              <polygon points="70,114 65.5,70 74.5,70" fill="#2D4A8A" opacity="0.65"/>
-            </g>
-
-            {/* 중심 허브 */}
-            <circle cx="70" cy="70" r="6" fill="#0c1428" stroke="#C9A96E" strokeWidth="1.5"/>
-            <circle cx="70" cy="70" r="2.5" fill="#C9A96E"/>
-          </svg>
-        </div>
-
-        {/* ── "보험의 기준" 필기체 (메인) ── */}
-        <h1
-          style={{ fontFamily: "'Nanum Pen Script', cursive" }}
-          className="text-7xl leading-tight text-white"
-        >
-          보험의 기준
-        </h1>
-
-        {/* 서브 */}
-        <p className="mt-5 text-sm font-bold tracking-widest text-white/40">
-          접근 권한을 확인하고 있습니다
-        </p>
-
-        {/* 바운스 도트 */}
-        <div className="mt-6 flex items-center justify-center gap-2">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-1.5 w-1.5 rounded-full bg-[#C9A96E] animate-bounce"
-              style={{ animationDelay: `${i * 160}ms` }}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function CenterMessage({ title, body, action }: { title: string; body: string; action?: () => void }) {
   return (
