@@ -163,6 +163,11 @@ export function canAccessFirstCoverageCheck(user: any): boolean {
   return isApprovedUser(user);
 }
 
+/** 제안서 생성: 현재는 첫 상담 보장체크와 동일하게 설계사 등급 이상 + 승인 필요 */
+export function canAccessProposalGenerator(user: any): boolean {
+  return canAccessFirstCoverageCheck(user);
+}
+
 export function canSeeUser(viewer: any, target: any): boolean {
   const viewerRole = normalizeRole(viewer);
   const targetRole = normalizeRole(target);

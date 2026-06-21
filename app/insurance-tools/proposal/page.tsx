@@ -1,7 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "../../../lib/supabase"
+import { ensureUserProfile } from "../../../lib/userProfile"
+import { canAccessProposalGenerator, isApprovedUser, normalizeRole, ROLE_PRIORITY } from "../../../lib/roles"
+import LoadingScreen from "../../components/LoadingScreen"
 
 // ── 타입 ─────────────────────────────────────────────────────────────────────
 type ProposalType = "single" | "compare"
@@ -1007,12 +1011,49 @@ function CompareProposalPages({ dataA, dataB, consultant }: {
 
 // ── 메인 페이지 ───────────────────────────────────────────────────────────────
 export default function ProposalPage() {
+  const router = useRouter()
+  const [checking, setChecking] = useState(true)
+  const [allowed, setAllowed] = useState(false)
+  const [lockedReason, setLockedReason] = useState("이용 권한이 없습니다.")
   const [step, setStep] = useState<Step>(1)
   const [proposalType, setProposalType] = useState<ProposalType>("single")
   const [productA, setProductA] = useState<ProductData>(emptyProduct)
   const [productB, setProductB] = useState<ProductData>(emptyProduct)
   const [consultant, setConsultant] = useState<ConsultantInfo>({ name: "", phone: "" })
   const printRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let alive = true
+    async function checkAccess() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        router.replace("/login?redirectTo=/insurance-tools/proposal")
+        return
+      }
+
+      let { data: profile } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle()
+      if (!profile) profile = await ensureUserProfile(supabase, session.user)
+
+      const role = normalizeRole(profile)
+      const approved = isApprovedUser(profile)
+      const isAgentOrAbove = ROLE_PRIORITY[role] >= ROLE_PRIORITY["agent"]
+      const canUse = canAccessProposalGenerator(profile)
+
+      let reason = "이용 권한이 없습니다."
+      if (!approved) {
+        reason = "관리자 승인 후 사용할 수 있습니다."
+      } else if (!isAgentOrAbove) {
+        reason = "설계사 등급 이상만 이용할 수 있습니다."
+      }
+
+      if (!alive) return
+      setAllowed(canUse)
+      setLockedReason(reason)
+      setChecking(false)
+    }
+    checkAccess()
+    return () => { alive = false }
+  }, [router])
 
   // 프로필 자동 로드
   useEffect(() => {
@@ -1039,6 +1080,27 @@ export default function ProposalPage() {
   const canGoStep2 = true
   const canGoStep3 = (productA.name.trim() && productA.monthlyPremium.trim()) ||
     (proposalType === "compare" && productB.name.trim())
+
+  if (checking) return <LoadingScreen />
+
+  if (!allowed) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#eef3fb] p-6">
+        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-[#1a3a6e]">Proposal Generator</p>
+          <h1 className="mt-3 text-2xl font-black text-slate-950">제안서 생성 권한이 필요합니다</h1>
+          <p className="mt-3 text-sm font-bold leading-6 text-slate-500">{lockedReason}</p>
+          <button
+            type="button"
+            onClick={() => router.replace("/dashboard")}
+            className="mt-6 rounded-2xl bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white transition hover:bg-[#2D4A8A]"
+          >
+            대시보드로 돌아가기
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

@@ -1063,18 +1063,9 @@ export default function FirstCoverageCheckPage() {
                 <button onClick={() => setShowPremiumGuide(false)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 text-lg font-black">✕</button>
               </div>
 
-              <div className="grid max-h-[calc(86vh-76px)] gap-3 overflow-y-auto p-4 lg:max-h-[calc(70vh-76px)] lg:grid-cols-[minmax(0,1fr)_240px]">
-                {/* 핵심 강조 배너 */}
-                <div className="rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200 p-3 lg:col-start-2 lg:row-start-1">
-                  <p className="text-xs font-black text-rose-600 uppercase tracking-wide mb-1">핵심 포인트</p>
-                  <p className="text-base font-black text-rose-800">
-                    표준형 ↔ 유병자보험(325) 기준 보험료 차이 <span className="text-rose-600">최대 40~60%</span>
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-rose-700">각 단계 간 차이는 약 10~15% 수준. 단계가 낮아질수록 비용 부담이 급증합니다.</p>
-                </div>
-
+              <div className="grid max-h-[calc(86vh-76px)] gap-3 overflow-y-auto p-4 lg:max-h-[calc(70vh-76px)]">
                 {/* 테이블 + 화살표 */}
-                <div className="flex gap-3 items-stretch lg:col-start-1 lg:row-span-3 lg:row-start-1">
+                <div className="flex gap-3 items-stretch">
                   {/* 테이블 */}
                   <div className="flex-1 overflow-hidden rounded-2xl border border-slate-200">
                     <table className="w-full border-collapse text-xs">
@@ -1153,27 +1144,27 @@ export default function FirstCoverageCheckPage() {
                   </div>
                 </div>
 
-                {/* 단계별 차이 안내 */}
-                <div className="grid grid-cols-2 gap-3 lg:col-start-2 lg:row-start-2 lg:grid-cols-1">
-                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3">
-                    <p className="text-[11px] font-black text-blue-600 uppercase tracking-wide mb-1">단계 간 보험료 차이</p>
-                    <p className="text-2xl font-black text-blue-800">10~15%</p>
-                    <p className="mt-1 text-[11px] font-bold text-blue-700">한 단계 내려갈수록 약 10~15% 추가 부담</p>
-                  </div>
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3">
-                    <p className="text-[11px] font-black text-rose-600 uppercase tracking-wide mb-1">표준형 vs 325 최대 차이</p>
-                    <p className="text-2xl font-black text-rose-700">40~60%</p>
-                    <p className="mt-1 text-[11px] font-bold text-rose-700">건강 고지가 핵심. 단계 선택이 보험료를 결정합니다</p>
-                  </div>
-                </div>
-
                 {/* 핵심 메시지 */}
-                <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3 lg:col-start-2 lg:row-start-3">
-                  <p className="text-[11px] font-black text-violet-600 uppercase tracking-wide mb-1.5">핵심 메시지</p>
-                  <p className="text-sm font-bold leading-7 text-violet-900">
-                    상품 수백 개 중 <span className="font-black">단 한 개를 고르는 기준</span>입니다. 저는 단순히 상품만 들이미는 사람이 아닙니다.
-                    <span className="font-black"> 정확하게 진단하고, 최적의 설계 및 추천</span>을 해드립니다.
-                  </p>
+                <div className="rounded-2xl border border-violet-200 bg-violet-50 p-3">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-[11px] font-black text-violet-600 uppercase tracking-wide mb-1">핵심 메시지</p>
+                      <p className="text-sm font-bold leading-6 text-violet-900">
+                        상품 수백 개 중 <span className="font-black">단 한 개를 고르는 기준</span>입니다. 저는 단순히 상품만 들이미는 사람이 아닙니다.
+                        <span className="font-black"> 정확하게 진단하고, 최적의 설계 및 추천</span>을 해드립니다.
+                      </p>
+                    </div>
+                    <div className="grid min-w-[250px] grid-cols-2 gap-2 text-center">
+                      <div className="rounded-xl border border-blue-200 bg-white px-3 py-2">
+                        <p className="text-[10px] font-black text-blue-600">단계별 차이</p>
+                        <p className="text-lg font-black text-blue-800">10~15%</p>
+                      </div>
+                      <div className="rounded-xl border border-rose-200 bg-white px-3 py-2">
+                        <p className="text-[10px] font-black text-rose-600">최대 차이</p>
+                        <p className="text-lg font-black text-rose-700">40~60%</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
