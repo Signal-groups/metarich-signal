@@ -339,5 +339,6 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     access: "public",
     highlight: false,
     editable: false,
+    category: "planning" as const,
   },
 ]

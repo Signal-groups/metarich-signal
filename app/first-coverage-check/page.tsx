@@ -1549,14 +1549,14 @@ export default function FirstCoverageCheckPage() {
             )}
             {active === "result" && (
               <Panel title="보장 공백 진단 결과" desc="첫 상담에서 오늘 확인된 공백을 설명하고, 상세 보장분석으로 이어가기 위한 화면입니다.">
-                <div className="mb-4 rounded-2xl border border-[#bcd6f0] bg-[#f2f8ff] p-5">
+                <div className="result-summary-box mb-4 rounded-2xl border border-[#bcd6f0] bg-[#f2f8ff] p-5">
                   <p className="text-sm font-black text-[#1a3a6e]">{form.customerName || "고객"}님의 현재 준비율</p>
                   <div className="mt-3 flex flex-wrap items-end gap-4">
-                    <p className="text-5xl font-black text-[#1a3a6e]">{averageRate}%</p>
+                    <p className="result-big-rate text-5xl font-black text-[#1a3a6e]">{averageRate}%</p>
                     <p className="max-w-xl text-sm font-bold leading-7 text-slate-600">모두에게 똑같은 보험이 아니라, 현재 상황에서 암·뇌·심장·수술·간병을 어느 정도 감당할 수 있는지 확인한 결과입니다.</p>
                   </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div className="result-cards-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   {resultList.map((item) => (
                     <ResultCard
                       key={item.title}
@@ -1567,20 +1567,20 @@ export default function FirstCoverageCheckPage() {
                   ))}
                 </div>
                 {expandedResultKey && (
-                  <p className="mt-1 text-center text-[10px] font-bold text-slate-400">카드를 다시 클릭하면 닫힙니다</p>
+                  <p className="no-print mt-1 text-center text-[10px] font-bold text-slate-400">카드를 다시 클릭하면 닫힙니다</p>
                 )}
-                <div className="mt-4 grid gap-3 lg:grid-cols-3">
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 lg:col-span-2">
+                <div className="cancer-cost-grid mt-4 grid gap-3 lg:grid-cols-3">
+                  <div className="result-card-block rounded-2xl border border-amber-200 bg-amber-50 p-5 lg:col-span-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm font-black text-amber-800">암 1년 집중치료 비용 구조</p>
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-amber-800">{currentCancerCase.name} · {cancerBenefitLabel} 기준</span>
                     </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="cancer-cost-inner mt-4 grid gap-3 md:grid-cols-3">
                       <CostBox label="1년 생활비" value={form.monthlyLivingCost * 12} desc="소득 공백과 가족 생활 유지 비용" />
                       <CostBox label="직접 치료비" value={cancerDirectTreatmentNeed} desc="수술, 항암, 방사선, 검사 등 치료 기준" />
                       <CostBox label="직접치료 외 비용" value={form.cancerIndirectMonthlyCost * 12} desc="교통비, 식사, 영양식, 위생용품 등" />
                     </div>
-                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                    <div className="cancer-cost-inner mt-3 grid gap-3 md:grid-cols-3">
                       <CostBox label="통원항암 본인부담" value={cancerOutpatientSelfPayNeed} desc="반복 통원, 주사·처치, 외래 부담 기준" />
                       <CostBox label="전액본인부담·선별급여" value={cancerNonCoveredNeed} desc="실손 보완율에서 제외될 수 있는 항목" />
                       <SmallTextCost label="치료비 부족 가능" value={balanceText(cancerTreatmentGap)} tone="text-amber-900" />
@@ -1607,7 +1607,7 @@ export default function FirstCoverageCheckPage() {
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                <div className="brain-heart-grid mt-4 grid gap-3 lg:grid-cols-2">
                   <CostStructure
                     title="뇌 치료·회복 비용 구조"
                     tone="blue"
@@ -1653,7 +1653,7 @@ export default function FirstCoverageCheckPage() {
                   {selectedSurgeryCases.length === 0 ? (
                     <p className="mt-4 rounded-xl bg-white/80 p-4 text-sm font-bold leading-7 text-indigo-900">수술비 탭에서 확인할 수술 항목을 체크하면 항목별 비용과 보장 예상액이 표시됩니다.</p>
                   ) : (
-                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                    <div className="surgery-inner-grid mt-4 grid gap-3 lg:grid-cols-2">
                       {selectedSurgeryCases.map((item) => {
                         const itemNeed = averageCost(item)
                         const itemActualLoss = surgeryActualLossAmount(form, item)
@@ -1702,7 +1702,7 @@ export default function FirstCoverageCheckPage() {
                           전체 {man(result.treatment.need)} 필요 / {man(result.treatment.ready)} 준비 ({result.treatment.rate}%)
                         </span>
                       </div>
-                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                      <div className="treatment-result-grid mt-4 grid gap-3 lg:grid-cols-2">
                         {checkedTx.map((item) => {
                           const cat = item.category as TreatmentCat
                           const avgC = Math.round((item.costMin + item.costMax) / 2)
@@ -1760,8 +1760,8 @@ export default function FirstCoverageCheckPage() {
                     </div>
                   )
                 })()}
-                <ResourceGallery />
-                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                <div className="resource-gallery-section"><ResourceGallery /></div>
+                <div className="consult-point-box mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
                   <p className="text-sm font-black text-amber-800">오늘 상담 포인트</p>
                   <ul className="mt-3 space-y-2 text-sm font-bold leading-7 text-amber-900">
                     {[...resultList].sort((a, b) => a.rate - b.rate).slice(0, 3).map((item) => (

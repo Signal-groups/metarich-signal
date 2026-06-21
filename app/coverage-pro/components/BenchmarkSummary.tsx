@@ -687,6 +687,9 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
 
   return (
     <div className="coverage-pro-card coverage-pro-card-pad">
+      {/* ── 보험료 층위 비교 ── */}
+      <PremiumTierCard contracts={contracts} />
+
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
