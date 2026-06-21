@@ -454,29 +454,30 @@ export default function DashboardPage() {
           )}
 
           {/* 인사 / 날짜 / 가이드 */}
-          <div style={{ background: "white", borderRadius: 12, border: "0.5px solid #e4edf5", padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8, boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
-            <div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1a2d42" }}>
-                {(user.name || user.email?.split('@')[0] || '')}님, 오늘도 좋은 하루 되세요!
+          <div style={{ background: "linear-gradient(135deg, #1a2d42 0%, #243d58 60%, #1a3050 100%)", borderRadius: 14, padding: "20px 24px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, boxShadow: "0 4px 20px rgba(26,45,66,0.18)", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 0% 0%, rgba(55,138,221,0.15) 0%, transparent 60%)", pointerEvents: "none" }} />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <h2 style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
+                {(user.name || user.email?.split('@')[0] || '')}님, 오늘도 좋은 하루 되세요! 👋
               </h2>
-              <p style={{ fontSize: 13, color: "#7a9ab2", marginTop: 4 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginTop: 5 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-              <span style={{ background: "#f0f4f8", border: "0.5px solid #d4e0eb", borderRadius: 7, padding: "4px 9px", fontSize: 11, color: "#7a9ab2" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
+              <span style={{ background: "rgba(255,255,255,0.1)", border: "0.5px solid rgba(255,255,255,0.18)", borderRadius: 8, padding: "5px 11px", fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>
                 📅 {selectedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}
               </span>
               <button
                 onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 500, background: "#eef4fb", color: "#185fa5", border: "0.5px solid #b5d4f4", cursor: "pointer", fontFamily: "inherit" }}
+                style={{ display: "flex", alignItems: "center", gap: 5, borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.85)", border: "0.5px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit", backdropFilter: "blur(4px)" }}
               >📘 일반 가이드</button>
               <button
                 onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 500, background: "#1a2540", color: "#e8f1f8", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                style={{ display: "flex", alignItems: "center", gap: 5, borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "white", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 8px rgba(245,158,11,0.35)" }}
               >⭐ 프로 가이드</button>
               {isMaster && (
                 <button
                   onClick={() => setIsConsultEditMode(!isConsultEditMode)}
-                  style={{ borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 500, background: isConsultEditMode ? "#e24b4a" : "#1a2d42", color: "#e8f1f8", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 600, background: isConsultEditMode ? "rgba(226,75,74,0.85)" : "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.9)", border: isConsultEditMode ? "none" : "0.5px solid rgba(255,255,255,0.2)", cursor: "pointer", fontFamily: "inherit" }}
                 >
                   {isConsultEditMode ? "편집 완료" : "노출 편집"}
                 </button>
@@ -485,16 +486,16 @@ export default function DashboardPage() {
           </div>
 
           {/* 즐겨찾기 */}
-          <div style={{ background: "white", border: "2px solid #fde68a", borderRadius: 14, padding: "15px 16px", marginBottom: 12, boxShadow: "0 2px 8px rgba(245,158,11,0.07)" }}>
+          <div style={{ background: "white", border: "1px solid #e8d9b5", borderRadius: 14, padding: "15px 16px", marginBottom: 14, boxShadow: "0 2px 10px rgba(180,140,60,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <span style={{ fontSize: 16 }}>⭐</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#f59e0b,#d97706)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: "0 2px 6px rgba(217,119,6,0.3)" }}>⭐</div>
                 <p style={{ fontSize: 14, fontWeight: 800, color: "#0f1f36" }}>즐겨찾기</p>
-                <span style={{ fontSize: 11, color: "#92400e", background: "#fef3c7", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>나만의 바로가기</span>
+                <span style={{ fontSize: 10, color: "#92400e", background: "#fef9ec", padding: "2px 8px", borderRadius: 20, fontWeight: 600, border: "0.5px solid #f0d990" }}>나만의 바로가기</span>
               </div>
               <button
                 onClick={() => setIsFavEditMode(!isFavEditMode)}
-                style={{ fontSize: 11, fontWeight: 700, color: isFavEditMode ? "#dc2626" : "#b45309", background: isFavEditMode ? "#fee2e2" : "#fef3c7", border: isFavEditMode ? "1px solid #fca5a5" : "1px solid #fde68a", borderRadius: 7, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}
+                style={{ fontSize: 11, fontWeight: 700, color: isFavEditMode ? "#dc2626" : "#78500e", background: isFavEditMode ? "#fee2e2" : "#fef3c7", border: isFavEditMode ? "1px solid #fca5a5" : "1px solid #fde68a", borderRadius: 8, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit" }}
               >
                 {isFavEditMode ? "✓ 완료" : "★ 편집"}
               </button>
@@ -551,11 +552,11 @@ export default function DashboardPage() {
 
           {/* 대면상담 카테고리 - PC 5칸 / 모바일 2~3칸 */}
           {faceTools.length > 0 && (
-            <div style={{ background: "white", border: "2px solid #d0e8f8", borderRadius: 14, padding: "16px 16px 14px", marginBottom: 12, boxShadow: "0 2px 8px rgba(24,95,165,0.07)" }}>
+            <div style={{ background: "white", border: "1px solid #d0e0f0", borderRadius: 14, padding: "16px 16px 14px", marginBottom: 14, boxShadow: "0 2px 12px rgba(24,95,165,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 13 }}>
-                <span style={{ fontSize: 16 }}>🤝</span>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#185fa5,#0e4a86)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: "0 2px 6px rgba(24,95,165,0.3)" }}>🤝</div>
                 <p style={{ fontSize: 14, fontWeight: 800, color: "#0f2d55" }}>대면상담</p>
-                <span style={{ fontSize: 11, color: "#185fa5", background: "#e8f2fd", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }}>고객 현장 활용 핵심 도구</span>
+                <span style={{ fontSize: 10, color: "#185fa5", background: "#eff6ff", padding: "2px 8px", borderRadius: 20, fontWeight: 600, border: "0.5px solid #bfdbfe" }}>고객 현장 활용 핵심 도구</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
                 {faceTools.map((menu) => (
@@ -569,16 +570,18 @@ export default function DashboardPage() {
                       minHeight: 126,
                       padding: "12px 7px 10px", borderRadius: 12,
                       border: menu.isNew ? "2px solid #f59e0b" : "1.5px solid #c2def5",
-                      cursor: "pointer", background: "linear-gradient(145deg,#f0f7fd,#e8f2fb)",
-                      fontFamily: "inherit", transition: "all 0.2s ease", position: "relative"
+                      cursor: "pointer", background: "linear-gradient(155deg,#f5faff,#edf5fc)",
+                      fontFamily: "inherit", transition: "all 0.2s ease", position: "relative", boxShadow: "0 2px 6px rgba(24,95,165,0.06)"
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(145deg,#dbeeff,#cfe4f8)";
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#d97706" : "#185fa5";
+                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(155deg,#e8f4ff,#d6ecfc)";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#d97706" : "#60a5fa";
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 20px rgba(24,95,165,0.12)";
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(145deg,#f0f7fd,#e8f2fb)";
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#f59e0b" : "#c2def5";
+                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(155deg,#f5faff,#edf5fc)";
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#f59e0b" : "#c8dff5";
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 6px rgba(24,95,165,0.06)";
                     }}
                   >
                     <div style={{ width: 40, height: 40, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: "#185fa5", color: "white", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(24,95,165,0.25)" }} className="group-hover:scale-110 group-hover:shadow-[0_4px_14px_rgba(24,95,165,0.4)]">
@@ -629,7 +632,7 @@ export default function DashboardPage() {
               const cs = catStyle[category.id] || { bg: "#f0f4f8", color: "#374151", border: "#d1d5db", headerBg: "#f9fafb", iconBg: "#e5e7eb" };
 
               return (
-                <div key={category.id} style={{ background: "white", border: `2px solid ${cs.border}`, borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <div key={category.id} style={{ background: "white", border: "1px solid #e8eef4", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.04)", transition: "box-shadow 0.2s" }}>
                   {/* 카테고리 헤더 */}
                   <button
                     type="button"
@@ -639,10 +642,10 @@ export default function DashboardPage() {
                       display: "flex", alignItems: "center", gap: 10, padding: "13px 14px",
                       cursor: "pointer", background: cs.headerBg, border: "none",
                       fontFamily: "inherit", width: "100%", textAlign: "left",
-                      borderBottom: isOpen ? `1px solid ${cs.border}` : "none"
+                      borderBottom: isOpen ? "1px solid #eef2f7" : "none"
                     }}
                   >
-                    <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: cs.iconBg, color: cs.color, flexShrink: 0, fontSize: 19 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: cs.iconBg, color: cs.color, flexShrink: 0, fontSize: 17, boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}>
                       {catEmoji[category.id] || "•"}
                     </div>
                     <div style={{ flex: 1 }}>
@@ -696,61 +699,72 @@ export default function DashboardPage() {
             })}
           </div>
 
-          {/* 하단: 공지사항 + 외부 링크 */}
+          {/* 하단: 공지사항 + 업데이트 + 외부링크 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* 공지사항 */}
-            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#1a2d42", marginBottom: 10 }}>📢 공지사항</p>
-              {announcements.filter(a => a.category === 'notice').slice(0, 3).map((ann, i, arr) => (
-                <div key={ann.id}
-                  onClick={() => setSelectedAnnouncement(ann)}
-                  style={{ paddingBottom: i < arr.length - 1 ? 8 : 0, borderBottom: i < arr.length - 1 ? "0.5px solid #e4edf5" : "none", marginBottom: i < arr.length - 1 ? 8 : 0, cursor: "pointer" }}
-                  className="hover:opacity-70 transition-opacity"
-                >
-                  <p style={{ fontSize: 12, color: "#2a3f55", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>{ann.title}</p>
-                  <p style={{ fontSize: 11, color: "#9ab4c8" }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+            <div style={{ background: "white", border: "1px solid #e8eef5", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(26,45,66,0.05)" }}>
+              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 7, background: "linear-gradient(135deg,#1a2d42,#2a4060)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>📢</div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0f1f36" }}>공지사항</p>
                 </div>
-              ))}
-              {announcements.filter(a => a.category === 'notice').length === 0 && (
-                <p style={{ fontSize: 12, color: "#b0c4d4" }}>공지사항이 없습니다.</p>
-              )}
-              {isMaster && (
-                <button
-                  onClick={() => addAnnouncement('notice')}
-                  style={{ marginTop: 10, width: "100%", padding: "6px 0", borderRadius: 7, border: "1px dashed #c5d8ec", background: "none", color: "#185fa5", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
-                >
-                  + 공지 추가
-                </button>
-              )}
+                {isMaster && (
+                  <button onClick={() => addAnnouncement('notice')} style={{ fontSize: 10, color: "#185fa5", background: "#eff6ff", border: "0.5px solid #bfdbfe", borderRadius: 6, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>+ 추가</button>
+                )}
+              </div>
+              <div style={{ padding: "10px 16px 12px" }}>
+                {announcements.filter(a => a.category === 'notice').slice(0, 3).map((ann, i, arr) => (
+                  <div key={ann.id}
+                    onClick={() => setSelectedAnnouncement(ann)}
+                    style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid #f3f6fa" : "none", cursor: "pointer" }}
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#378add", flexShrink: 0, marginTop: 6 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12, color: "#1a2d42", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600, lineHeight: 1.4 }}>{ann.title}</p>
+                      <p style={{ fontSize: 10, color: "#9ab4c8", marginTop: 2 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+                    </div>
+                    <span style={{ fontSize: 10, color: "#c0d0e0", flexShrink: 0 }}>›</span>
+                  </div>
+                ))}
+                {announcements.filter(a => a.category === 'notice').length === 0 && (
+                  <p style={{ fontSize: 12, color: "#b8ccd8", textAlign: "center", padding: "16px 0" }}>공지사항이 없습니다.</p>
+                )}
+              </div>
             </div>
+
             {/* 업데이트 소식 */}
-            <div style={{ background: "white", border: "0.5px solid #e4edf5", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 4px rgba(26,45,66,0.04)" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#1a2d42", marginBottom: 10 }}>🔔 업데이트 소식</p>
-              {announcements.filter(a => a.category === 'update').slice(0, 3).map((ann, i, arr) => (
-                <div key={ann.id}
-                  onClick={() => setSelectedAnnouncement(ann)}
-                  style={{ paddingBottom: i < arr.length - 1 ? 8 : 0, borderBottom: i < arr.length - 1 ? "0.5px solid #e4edf5" : "none", marginBottom: i < arr.length - 1 ? 8 : 0, cursor: "pointer" }}
-                  className="hover:opacity-70 transition-opacity"
-                >
-                  <p style={{ fontSize: 12, color: "#2a3f55", marginBottom: 2, fontWeight: 500 }}>
-                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "#e1f5ee", color: "#0f6e56", fontWeight: 600, marginRight: 4 }}>NEW</span>
-                    {ann.title.replace(/^\[.*?\]\s*/, '')}
-                  </p>
-                  <p style={{ fontSize: 11, color: "#9ab4c8" }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+            <div style={{ background: "white", border: "1px solid #e8eef5", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(26,45,66,0.05)" }}>
+              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 7, background: "linear-gradient(135deg,#0f6e56,#0d5c48)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>🔔</div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0f1f36" }}>업데이트 소식</p>
                 </div>
-              ))}
-              {announcements.filter(a => a.category === 'update').length === 0 && (
-                <p style={{ fontSize: 12, color: "#b0c4d4" }}>업데이트 소식이 없습니다.</p>
-              )}
-              {isMaster && (
-                <button
-                  onClick={() => addAnnouncement('update')}
-                  style={{ marginTop: 10, width: "100%", padding: "6px 0", borderRadius: 7, border: "1px dashed #b8e6d5", background: "none", color: "#0f6e56", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
-                >
-                  + 소식 추가
-                </button>
-              )}
+                {isMaster && (
+                  <button onClick={() => addAnnouncement('update')} style={{ fontSize: 10, color: "#0f6e56", background: "#ecfdf5", border: "0.5px solid #a7f3d0", borderRadius: 6, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>+ 추가</button>
+                )}
+              </div>
+              <div style={{ padding: "10px 16px 12px" }}>
+                {announcements.filter(a => a.category === 'update').slice(0, 3).map((ann, i, arr) => (
+                  <div key={ann.id}
+                    onClick={() => setSelectedAnnouncement(ann)}
+                    style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid #f3f6fa" : "none", cursor: "pointer" }}
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 6, background: "#dcfce7", color: "#15803d", fontWeight: 700, flexShrink: 0, marginTop: 2 }}>NEW</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 12, color: "#1a2d42", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600, lineHeight: 1.4 }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
+                      <p style={{ fontSize: 10, color: "#9ab4c8", marginTop: 2 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+                    </div>
+                    <span style={{ fontSize: 10, color: "#c0d0e0", flexShrink: 0 }}>›</span>
+                  </div>
+                ))}
+                {announcements.filter(a => a.category === 'update').length === 0 && (
+                  <p style={{ fontSize: 12, color: "#b8ccd8", textAlign: "center", padding: "16px 0" }}>업데이트 소식이 없습니다.</p>
+                )}
+              </div>
             </div>
+
             {/* 외부 링크 */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <button
@@ -758,25 +772,27 @@ export default function DashboardPage() {
                   const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
                   window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank")
                 }}
-                className="hover:-translate-y-[1px] hover:shadow-lg transition-all"
-                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderRadius: 12, background: "#16a34a", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                className="hover:-translate-y-[2px] hover:shadow-xl transition-all duration-200"
+                style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 14, background: "linear-gradient(135deg,#15803d,#166534)", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(21,128,61,0.2)" }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "white", flexShrink: 0 }}>N</div>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "white", flexShrink: 0, border: "1px solid rgba(255,255,255,0.25)" }}>N</div>
                 <div style={{ flex: 1, textAlign: "left" }}>
-                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3 }}>커뮤니티</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의 기준 카페</p>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3, fontWeight: 500, letterSpacing: "0.04em" }}>커뮤니티</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>보험의 기준 카페</p>
                 </div>
+                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 18 }}>›</span>
               </button>
               <button
                 onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
-                className="hover:-translate-y-[1px] hover:shadow-lg transition-all"
-                style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "16px 18px", borderRadius: 12, background: "#b45309", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                className="hover:-translate-y-[2px] hover:shadow-xl transition-all duration-200"
+                style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 14, background: "linear-gradient(135deg,#d97706,#b45309)", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(180,83,9,0.2)" }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "white", flexShrink: 0 }}>O</div>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "white", flexShrink: 0, border: "1px solid rgba(255,255,255,0.25)" }}>O</div>
                 <div style={{ flex: 1, textAlign: "left" }}>
-                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3 }}>실시간 소통</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: "white" }}>보험의 기준 오픈채팅</p>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3, fontWeight: 500, letterSpacing: "0.04em" }}>실시간 소통</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>보험의 기준 오픈채팅</p>
                 </div>
+                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 18 }}>›</span>
               </button>
             </div>
           </div>
