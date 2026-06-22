@@ -299,14 +299,10 @@ export default function Sidebar({
         <div className={`flex flex-col h-full ${!isOpen && 'hidden lg:flex'}`}>
           {/* Brand Logo Section */}
           <div className="px-7 pt-6 pb-5 flex-shrink-0">
-            <div
-              aria-label="보험의 기준"
-              className="mx-auto h-[74px] w-[202px] bg-no-repeat"
-              style={{
-                backgroundImage: "url('/dashboard-main-image.png')",
-                backgroundSize: "2048px auto",
-                backgroundPosition: "-18px -18px",
-              }}
+            <img
+              src="/bohum-logo-sidebar.png"
+              alt="보험의 기준"
+              className="h-[64px] w-[202px] object-contain"
             />
           </div>
 

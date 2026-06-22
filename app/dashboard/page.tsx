@@ -412,7 +412,7 @@ export default function DashboardPage() {
     }
 
     return (
-      <div className="mx-auto max-w-[1680px] min-w-0 pb-6">
+      <div className="mx-auto max-w-[1680px] min-w-0 pb-3">
         {!isApproved && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
             <p className="text-sm font-black text-amber-800">{isGuest ? "타사 게스트 계정입니다" : "관리자 승인 대기 중입니다"}</p>
@@ -424,28 +424,28 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <header className="mb-5 flex flex-col gap-4 px-1 lg:flex-row lg:items-start lg:justify-between">
+        <header className="mb-4 flex flex-col gap-3 px-1 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-[28px] font-black leading-tight tracking-[-0.01em] text-[#10203a]">
+            <h1 className="text-[25px] font-black leading-tight tracking-[-0.01em] text-[#10203a]">
               {(user.name || user.email?.split("@")[0] || "")}님, 오늘도 좋은 하루 되세요!
             </h1>
             <p className="mt-2 text-[15px] font-bold text-[#50627a]">고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:items-end">
             <div className="flex flex-wrap gap-3">
-              <button className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#21324d] shadow-sm">
+              <button className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#21324d] shadow-sm">
                 <CalendarDays className="h-4 w-4" />
                 {selectedDate.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" })}
               </button>
               <button
                 onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#1b54ad] shadow-sm"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#1b54ad] shadow-sm"
               >
                 <BookOpen className="h-4 w-4" /> 일반 가이드
               </button>
               <button
                 onClick={() => window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#0f3f86] bg-[#082b5f] px-5 py-3 text-[14px] font-black text-white shadow-sm"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#0f3f86] bg-[#082b5f] px-4 text-[13px] font-black text-white shadow-sm"
               >
                 <Star className="h-4 w-4 fill-[#f6c342] text-[#f6c342]" /> 프로 가이드
               </button>
@@ -456,14 +456,14 @@ export default function DashboardPage() {
                   const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
                   window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank")
                 }}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#10203a] shadow-sm"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#10203a] shadow-sm"
               >
                 <span className="grid h-5 w-5 place-items-center rounded bg-[#03c75a] text-[12px] font-black text-white">N</span>
                 보험의 기준 카페
               </button>
               <button
                 onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#10203a] shadow-sm"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#10203a] shadow-sm"
               >
                 <span className="grid h-5 w-5 place-items-center rounded bg-[#FEE500] text-[11px] font-black text-[#191919]">톡</span>
                 보험의 기준 오픈채팅
@@ -472,7 +472,7 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <section className="mb-5 rounded-[14px] border border-[#dce6f1] bg-white px-6 py-5 shadow-sm">
+        <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Star className="h-7 w-7 fill-[#172947] text-[#172947]" />
@@ -487,7 +487,7 @@ export default function DashboardPage() {
             </button>
           </div>
           {favoriteTools.length === 0 && !isFavEditMode ? (
-            <div className="mt-4 flex items-center gap-3 text-[14px] font-bold text-[#10203a]">
+            <div className="mt-3 flex items-center gap-3 text-[13px] font-bold text-[#10203a]">
               <Lightbulb className="h-5 w-5" />
               <span>편집을 눌러 자주 쓰는 도구에 ★를 클릭하면 여기에 모입니다.</span>
             </div>
@@ -513,8 +513,8 @@ export default function DashboardPage() {
         </section>
 
         {faceTools.length > 0 && (
-          <section className="mb-5 rounded-[14px] border border-[#dce6f1] bg-white px-5 py-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-3">
+          <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-5 py-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-3">
               <p className="text-[18px] font-black text-[#10203a]">대면상담</p>
               <span className="rounded-full bg-[#eaf3ff] px-3 py-1 text-[12px] font-black text-[#1b54ad]">고객 현장 활용 핵심 도구</span>
             </div>
@@ -524,35 +524,35 @@ export default function DashboardPage() {
                   key={menu.id}
                   type="button"
                   onClick={() => !isConsultEditMode && handleNavigation(menu)}
-                  className="group relative flex min-h-[176px] flex-col items-center justify-center rounded-[10px] border border-[#dce6f1] bg-white px-4 py-5 text-center transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group relative flex min-h-[148px] flex-col items-center justify-center rounded-[10px] border border-[#dce6f1] bg-white px-4 py-4 text-center transition hover:-translate-y-1 hover:shadow-lg"
                 >
                   {menu.isNew && <span className="absolute left-5 top-4 rounded-full bg-[#ff3158] px-2 py-0.5 text-[10px] font-black text-white">NEW</span>}
-                  <ToolIcon icon={menu.icon} className="mb-4 h-9 w-9 text-[#0a3a86]" />
-                  <p className="text-[16px] font-black text-[#10203a]">{menu.title}</p>
-                  <p className="mt-3 text-[12px] font-bold leading-5 text-[#64748b]">{menu.desc}</p>
+                  <ToolIcon icon={menu.icon} className="mb-3 h-8 w-8 text-[#0a3a86]" />
+                  <p className="text-[15px] font-black text-[#10203a]">{menu.title}</p>
+                  <p className="mt-2 text-[11px] font-bold leading-4 text-[#64748b]">{menu.desc}</p>
                 </button>
               ))}
             </div>
           </section>
         )}
 
-        <section className="mb-5 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-4">
+        <section className="mb-4 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-4">
           {toolSections.map((category, index) => (
-            <div key={category.id} className={`p-5 ${index > 0 ? "border-t border-[#e8eef5] md:border-l md:border-t-0" : ""}`}>
-              <h2 className="text-[18px] font-black text-[#10203a]">{category.title}</h2>
-              <p className="mt-1 text-[12px] font-bold text-[#64748b]">{category.desc}</p>
-              <div className="mt-5 space-y-3">
+            <div key={category.id} className={`p-4 ${index > 0 ? "border-t border-[#e8eef5] md:border-l md:border-t-0" : ""}`}>
+              <h2 className="text-[17px] font-black text-[#10203a]">{category.title}</h2>
+              <p className="mt-1 text-[11px] font-bold text-[#64748b]">{category.desc}</p>
+              <div className="mt-4 space-y-2">
                 {category.tools.slice(0, 4).map((tool) => (
                   <button
                     key={tool.id}
                     type="button"
                     onClick={() => !isConsultEditMode && handleNavigation(tool)}
-                    className="flex w-full items-center gap-3 rounded-lg border border-[#dce6f1] bg-white px-4 py-3 text-left transition hover:bg-[#f8fbff]"
+                    className="flex h-10 w-full items-center gap-3 rounded-lg border border-[#dce6f1] bg-white px-3 text-left transition hover:bg-[#f8fbff]"
                   >
                     <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#f3f6fa] text-[#0a3a86]">
                       <ToolIcon icon={tool.icon} className="h-4 w-4" />
                     </span>
-                    <span className="flex-1 text-[14px] font-black text-[#10203a]">{tool.title}</span>
+                    <span className="flex-1 text-[13px] font-black text-[#10203a]">{tool.title}</span>
                     {isConsultEditMode && tool.editable ? (
                       <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} className="h-4 w-4 accent-[#082b5f]" onClick={(e) => e.stopPropagation()} />
                     ) : (
@@ -566,37 +566,37 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <div style={cardBase} className="min-h-[178px] p-5">
-            <div className="mb-5 flex items-center justify-between">
+          <div style={cardBase} className="min-h-[138px] p-4">
+            <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Megaphone className="h-5 w-5 text-[#10203a]" />
-                <h2 className="text-[18px] font-black text-[#10203a]">공지사항</h2>
+                <h2 className="text-[17px] font-black text-[#10203a]">공지사항</h2>
               </div>
               {isMaster && <button onClick={() => addAnnouncement("notice")} className="text-[12px] font-black text-[#1b54ad]">더보기 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
             </div>
             {announcements.filter((a) => a.category === "notice").slice(0, 2).map((ann) => (
               <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="block w-full py-1 text-left">
-                <p className="text-[14px] font-black text-[#10203a]">{ann.title}</p>
-                <p className="mt-1 text-[13px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
+                <p className="text-[13px] font-black text-[#10203a]">{ann.title}</p>
+                <p className="mt-1 text-[12px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
               </button>
             ))}
           </div>
 
-          <div style={cardBase} className="min-h-[178px] p-5">
-            <div className="mb-5 flex items-center justify-between">
+          <div style={cardBase} className="min-h-[138px] p-4">
+            <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Bell className="h-5 w-5 text-[#10203a]" />
-                <h2 className="text-[18px] font-black text-[#10203a]">업데이트 소식</h2>
+                <h2 className="text-[17px] font-black text-[#10203a]">업데이트 소식</h2>
               </div>
               {isMaster && <button onClick={() => addAnnouncement("update")} className="text-[12px] font-black text-[#1b54ad]">더보기 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
             </div>
             <div className="space-y-3">
               {announcements.filter((a) => a.category === "update").slice(0, 2).map((ann) => (
-                <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="flex w-full items-start gap-3 border-b border-[#edf2f7] pb-3 text-left last:border-b-0">
+                <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="flex w-full items-start gap-3 border-b border-[#edf2f7] pb-2 text-left last:border-b-0">
                   <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-600">NEW</span>
                   <span>
-                    <span className="block text-[14px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, "")}</span>
-                    <span className="mt-1 block text-[13px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</span>
+                    <span className="block text-[13px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, "")}</span>
+                    <span className="mt-1 block text-[12px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</span>
                   </span>
                 </button>
               ))}
@@ -657,7 +657,7 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-9">
+      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-6 xl:p-7">
         <div className="mx-auto max-w-[1680px] min-w-0">
           {(
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
