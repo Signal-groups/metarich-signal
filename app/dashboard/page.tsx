@@ -11,17 +11,23 @@ import { useRouter } from "next/navigation"
 import {
   ArrowLeftRight,
   BarChart3,
+  Bell,
   BookOpen,
   Calculator,
+  CalendarDays,
   CarFront,
   ChevronDown,
+  ChevronRight,
   ClipboardCheck,
   FileSearch,
   Hospital,
+  Lightbulb,
+  Megaphone,
   PieChart,
   Pill,
   Scale,
   Search,
+  Settings,
   ShieldCheck,
   Star,
   Stethoscope,
@@ -389,6 +395,228 @@ export default function DashboardPage() {
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
   const faceTools = isApproved ? visibleConsultingTools.filter(t => t.category === "face") : [];
 
+  const renderConsultingView = () => {
+    const toolSections = CONSULTING_TOOL_CATEGORIES
+      .filter((category) => ["coverage", "financial", "planning", "claims"].includes(category.id))
+      .map((category) => ({
+        ...category,
+        tools: visibleConsultingTools.filter((tool) => tool.category === category.id),
+      }))
+      .filter((category) => category.tools.length > 0)
+
+    const cardBase: React.CSSProperties = {
+      background: "#fff",
+      border: "1px solid #dce6f1",
+      borderRadius: 12,
+      boxShadow: "0 4px 14px rgba(16,32,58,0.04)",
+    }
+
+    return (
+      <div className="mx-auto max-w-[1680px] min-w-0 pb-6">
+        {!isApproved && (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+            <p className="text-sm font-black text-amber-800">{isGuest ? "타사 게스트 계정입니다" : "관리자 승인 대기 중입니다"}</p>
+            <p className="mt-1 text-xs font-bold text-amber-700">
+              {isGuest
+                ? "기본 공개 도구만 이용 가능합니다. 추가 기능은 시그널그룹 소속 가입 후 승인을 받아야 합니다."
+                : "승인 후 사무실 업무와 전체 상담 도구를 이용할 수 있습니다."}
+            </p>
+          </div>
+        )}
+
+        <header className="mb-5 flex flex-col gap-4 px-1 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-[28px] font-black leading-tight tracking-[-0.01em] text-[#10203a]">
+              {(user.name || user.email?.split("@")[0] || "")}님, 오늘도 좋은 하루 되세요!
+            </h1>
+            <p className="mt-2 text-[15px] font-bold text-[#50627a]">고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
+          </div>
+          <div className="flex flex-col items-stretch gap-3 sm:items-end">
+            <div className="flex flex-wrap gap-3">
+              <button className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#21324d] shadow-sm">
+                <CalendarDays className="h-4 w-4" />
+                {selectedDate.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" })}
+              </button>
+              <button
+                onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#1b54ad] shadow-sm"
+              >
+                <BookOpen className="h-4 w-4" /> 일반 가이드
+              </button>
+              <button
+                onClick={() => window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#0f3f86] bg-[#082b5f] px-5 py-3 text-[14px] font-black text-white shadow-sm"
+              >
+                <Star className="h-4 w-4 fill-[#f6c342] text-[#f6c342]" /> 프로 가이드
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-3 sm:justify-end">
+              <button
+                onClick={() => {
+                  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
+                  window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank")
+                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#10203a] shadow-sm"
+              >
+                <span className="grid h-5 w-5 place-items-center rounded bg-[#03c75a] text-[12px] font-black text-white">N</span>
+                보험의 기준 카페
+              </button>
+              <button
+                onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-5 py-3 text-[14px] font-black text-[#10203a] shadow-sm"
+              >
+                <span className="grid h-5 w-5 place-items-center rounded bg-[#FEE500] text-[11px] font-black text-[#191919]">톡</span>
+                보험의 기준 오픈채팅
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <section className="mb-5 rounded-[14px] border border-[#dce6f1] bg-white px-6 py-5 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Star className="h-7 w-7 fill-[#172947] text-[#172947]" />
+              <p className="text-[17px] font-black text-[#10203a]">즐겨찾기</p>
+              <span className="rounded-full bg-[#f2f5f9] px-3 py-1 text-[12px] font-black text-[#4b5d76]">나만의 바로가기</span>
+            </div>
+            <button
+              onClick={() => setIsFavEditMode(!isFavEditMode)}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#dce6f1] bg-[#f8fafc] px-4 py-2 text-[12px] font-black text-[#21324d]"
+            >
+              <Star className="h-3.5 w-3.5" /> {isFavEditMode ? "완료" : "편집"}
+            </button>
+          </div>
+          {favoriteTools.length === 0 && !isFavEditMode ? (
+            <div className="mt-4 flex items-center gap-3 text-[14px] font-bold text-[#10203a]">
+              <Lightbulb className="h-5 w-5" />
+              <span>편집을 눌러 자주 쓰는 도구에 ★를 클릭하면 여기에 모입니다.</span>
+            </div>
+          ) : (
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+              {(isFavEditMode ? visibleConsultingTools : favoriteTools).map((menu) => {
+                const isFav = favorites.includes(menu.id)
+                return (
+                  <button
+                    key={menu.id}
+                    type="button"
+                    onClick={() => isFavEditMode ? toggleFavorite(menu.id) : handleNavigation(menu)}
+                    className="relative flex min-h-[74px] flex-col items-center justify-center gap-2 rounded-xl border border-[#dce6f1] bg-[#f8fafc] px-3 py-3 text-center transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                  >
+                    {isFavEditMode && <Star className={`absolute right-2 top-2 h-3.5 w-3.5 ${isFav ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />}
+                    <ToolIcon icon={menu.icon} className="h-5 w-5 text-[#0f3f86]" />
+                    <span className="text-[12px] font-black leading-tight text-[#10203a]">{menu.title}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </section>
+
+        {faceTools.length > 0 && (
+          <section className="mb-5 rounded-[14px] border border-[#dce6f1] bg-white px-5 py-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-3">
+              <p className="text-[18px] font-black text-[#10203a]">대면상담</p>
+              <span className="rounded-full bg-[#eaf3ff] px-3 py-1 text-[12px] font-black text-[#1b54ad]">고객 현장 활용 핵심 도구</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+              {faceTools.map((menu) => (
+                <button
+                  key={menu.id}
+                  type="button"
+                  onClick={() => !isConsultEditMode && handleNavigation(menu)}
+                  className="group relative flex min-h-[176px] flex-col items-center justify-center rounded-[10px] border border-[#dce6f1] bg-white px-4 py-5 text-center transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  {menu.isNew && <span className="absolute left-5 top-4 rounded-full bg-[#ff3158] px-2 py-0.5 text-[10px] font-black text-white">NEW</span>}
+                  <ToolIcon icon={menu.icon} className="mb-4 h-9 w-9 text-[#0a3a86]" />
+                  <p className="text-[16px] font-black text-[#10203a]">{menu.title}</p>
+                  <p className="mt-3 text-[12px] font-bold leading-5 text-[#64748b]">{menu.desc}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="mb-5 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-4">
+          {toolSections.map((category, index) => (
+            <div key={category.id} className={`p-5 ${index > 0 ? "border-t border-[#e8eef5] md:border-l md:border-t-0" : ""}`}>
+              <h2 className="text-[18px] font-black text-[#10203a]">{category.title}</h2>
+              <p className="mt-1 text-[12px] font-bold text-[#64748b]">{category.desc}</p>
+              <div className="mt-5 space-y-3">
+                {category.tools.slice(0, 4).map((tool) => (
+                  <button
+                    key={tool.id}
+                    type="button"
+                    onClick={() => !isConsultEditMode && handleNavigation(tool)}
+                    className="flex w-full items-center gap-3 rounded-lg border border-[#dce6f1] bg-white px-4 py-3 text-left transition hover:bg-[#f8fbff]"
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#f3f6fa] text-[#0a3a86]">
+                      <ToolIcon icon={tool.icon} className="h-4 w-4" />
+                    </span>
+                    <span className="flex-1 text-[14px] font-black text-[#10203a]">{tool.title}</span>
+                    {isConsultEditMode && tool.editable ? (
+                      <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} className="h-4 w-4 accent-[#082b5f]" onClick={(e) => e.stopPropagation()} />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-[#10203a]" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div style={cardBase} className="min-h-[178px] p-5">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Megaphone className="h-5 w-5 text-[#10203a]" />
+                <h2 className="text-[18px] font-black text-[#10203a]">공지사항</h2>
+              </div>
+              {isMaster && <button onClick={() => addAnnouncement("notice")} className="text-[12px] font-black text-[#1b54ad]">더보기 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
+            </div>
+            {announcements.filter((a) => a.category === "notice").slice(0, 2).map((ann) => (
+              <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="block w-full py-1 text-left">
+                <p className="text-[14px] font-black text-[#10203a]">{ann.title}</p>
+                <p className="mt-1 text-[13px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
+              </button>
+            ))}
+          </div>
+
+          <div style={cardBase} className="min-h-[178px] p-5">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Bell className="h-5 w-5 text-[#10203a]" />
+                <h2 className="text-[18px] font-black text-[#10203a]">업데이트 소식</h2>
+              </div>
+              {isMaster && <button onClick={() => addAnnouncement("update")} className="text-[12px] font-black text-[#1b54ad]">더보기 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
+            </div>
+            <div className="space-y-3">
+              {announcements.filter((a) => a.category === "update").slice(0, 2).map((ann) => (
+                <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="flex w-full items-start gap-3 border-b border-[#edf2f7] pb-3 text-left last:border-b-0">
+                  <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-600">NEW</span>
+                  <span>
+                    <span className="block text-[14px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, "")}</span>
+                    <span className="mt-1 block text-[13px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {selectedAnnouncement && (
+          <AnnouncementModal
+            item={selectedAnnouncement}
+            onClose={() => setSelectedAnnouncement(null)}
+            onSave={saveAnnouncement}
+            onDelete={deleteAnnouncement}
+            isMaster={isMaster}
+          />
+        )}
+      </div>
+    )
+  }
+
   const renderOfficeView = () => {
     if (isGuest || !isApproved) return (
       <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
@@ -433,384 +661,7 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-[1680px] min-w-0">
           {(
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
-      viewMode === 'office' ? renderOfficeView() : (
-        <div className="mx-auto max-w-[1680px] min-w-0 pb-6">
-
-          {/* 미승인/게스트 배너 */}
-          {!isApproved && (
-            <div style={{ marginBottom: 12, borderRadius: 10, border: "0.5px solid #fde68a", background: "#fffbeb", padding: "14px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <div style={{ flexShrink: 0, fontSize: 22 }}>{isGuest ? '🪪' : '⏳'}</div>
-              <div>
-                <p style={{ fontWeight: 700, color: "#92400e", fontSize: 14 }}>
-                  {isGuest ? '타사 게스트 계정입니다' : '관리자 승인 대기 중입니다'}
-                </p>
-                <p style={{ marginTop: 4, fontSize: 12, color: "#b45309", lineHeight: 1.5 }}>
-                  {isGuest
-                    ? '기본 공개 도구(아래)만 이용 가능합니다. 추가 기능은 시그널그룹 소속 가입 후 승인을 받아야 합니다.'
-                    : '승인 후 사무실 업무·전체 상담 도구를 이용할 수 있습니다. 관리자에게 승인을 요청하세요.'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* 인사 / 날짜 / 가이드 */}
-          <div style={{ background: "transparent", borderRadius: 0, padding: "6px 12px 24px", marginBottom: 2, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 14, boxShadow: "none", position: "relative", overflow: "visible" }}>
-            <div style={{ position: "absolute", inset: 0, background: "transparent", pointerEvents: "none" }} />
-            <div style={{ position: "relative", zIndex: 1 }}>
-              <h2 style={{ fontSize: 28, fontWeight: 900, color: "#10203a", letterSpacing: "-0.01em" }}>
-                {(user.name || user.email?.split('@')[0] || '')}님, 오늘도 좋은 하루 되세요!
-              </h2>
-              <p style={{ fontSize: 15, color: "#50627a", marginTop: 8, fontWeight: 700 }}>고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", position: "relative", zIndex: 1 }}>
-              <span style={{ background: "#ffffff", border: "1px solid #dbe5f0", borderRadius: 9, padding: "10px 17px", fontSize: 13, color: "#1f3150", fontWeight: 800, boxShadow: "0 3px 12px rgba(15,31,54,0.06)" }}>
-                📅 {selectedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}
-              </span>
-              <button
-                onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 9, padding: "10px 17px", fontSize: 13, fontWeight: 800, background: "#ffffff", color: "#1b54ad", border: "1px solid #dbe5f0", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 3px 12px rgba(15,31,54,0.06)" }}
-              >📘 일반 가이드</button>
-              <button
-                onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-                style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 9, padding: "10px 18px", fontSize: 13, fontWeight: 900, background: "#082b5f", color: "white", border: "1px solid #0f3f86", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 12px rgba(8,43,95,0.18)" }}
-              >⭐ 프로 가이드</button>
-              {isMaster && (
-                <button
-                  onClick={() => setIsConsultEditMode(!isConsultEditMode)}
-                  style={{ borderRadius: 9, padding: "10px 17px", fontSize: 13, fontWeight: 800, background: isConsultEditMode ? "#fee2e2" : "#ffffff", color: isConsultEditMode ? "#dc2626" : "#1f3150", border: isConsultEditMode ? "1px solid #fca5a5" : "1px solid #dbe5f0", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 3px 12px rgba(15,31,54,0.06)" }}
-                >
-                  {isConsultEditMode ? "편집 완료" : "노출 편집"}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* 즐겨찾기 */}
-          <div style={{ background: "white", border: "1px solid #e8d9b5", borderRadius: 14, padding: "15px 16px", marginBottom: 14, boxShadow: "0 2px 10px rgba(180,140,60,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#f59e0b,#d97706)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: "0 2px 6px rgba(217,119,6,0.3)" }}>⭐</div>
-                <p style={{ fontSize: 14, fontWeight: 800, color: "#0f1f36" }}>즐겨찾기</p>
-                <span style={{ fontSize: 10, color: "#92400e", background: "#fef9ec", padding: "2px 8px", borderRadius: 20, fontWeight: 600, border: "0.5px solid #f0d990" }}>나만의 바로가기</span>
-              </div>
-              <button
-                onClick={() => setIsFavEditMode(!isFavEditMode)}
-                style={{ fontSize: 11, fontWeight: 700, color: isFavEditMode ? "#dc2626" : "#78500e", background: isFavEditMode ? "#fee2e2" : "#fef3c7", border: isFavEditMode ? "1px solid #fca5a5" : "1px solid #fde68a", borderRadius: 8, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit" }}
-              >
-                {isFavEditMode ? "✓ 완료" : "★ 편집"}
-              </button>
-            </div>
-            {favoriteTools.length === 0 && !isFavEditMode && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: "#fffbeb", borderRadius: 9, border: "1px dashed #fcd34d" }}>
-                <span style={{ fontSize: 14 }}>💡</span>
-                <p style={{ fontSize: 12, color: "#92400e", fontWeight: 600 }}>
-                  <strong>편집</strong>을 눌러 자주 쓰는 도구에 ★을 클릭하면 여기에 모입니다.
-                </p>
-              </div>
-            )}
-            {isFavEditMode && (
-              <p style={{ fontSize: 11, color: "#a16207", background: "#fefce8", padding: "5px 10px", borderRadius: 7, marginBottom: 10, fontWeight: 600 }}>★ 아이콘 클릭으로 즐겨찾기를 추가·제거하세요.</p>
-            )}
-            {(favoriteTools.length > 0 || isFavEditMode) && (
-              <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-2" style={{ marginTop: favoriteTools.length > 0 || isFavEditMode ? 8 : 0 }}>
-                {(isFavEditMode ? visibleConsultingTools : favoriteTools).map((menu) => {
-                  const isFav = favorites.includes(menu.id);
-                  return (
-                    <div key={menu.id} style={{ position: "relative" }}>
-                      <button
-                        type="button"
-                        onClick={() => !isFavEditMode && handleNavigation(menu)}
-                        className="group hover:-translate-y-[2px] hover:shadow-md"
-                        style={{
-                          display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                          padding: "11px 5px", borderRadius: 11, width: "100%",
-                          border: `1.5px solid ${isFav ? "#fcd34d" : "#e2e8f0"}`,
-                          cursor: isFavEditMode ? "default" : "pointer",
-                          background: isFav ? "#fffbeb" : "#f8fafc",
-                          fontFamily: "inherit", transition: "all 0.18s ease"
-                        }}
-                      >
-                        <div style={{ width: 36, height: 36, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: isFav ? "#fef3c7" : "#eef4fb", color: isFav ? "#b45309" : "#185fa5", transition: "transform 0.18s" }} className="group-hover:scale-110">
-                          <ToolIcon icon={menu.icon} className="h-4 w-4" />
-                        </div>
-                        <p style={{ fontSize: 11, color: "#1e293b", textAlign: "center", lineHeight: 1.3, fontWeight: 700, wordBreak: "keep-all" }}>{menu.title}</p>
-                      </button>
-                      {isFavEditMode && (
-                        <button
-                          onClick={() => toggleFavorite(menu.id)}
-                          style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2 }}
-                        >
-                          <Star className="h-3.5 w-3.5" style={{ color: isFav ? "#f59e0b" : "#cbd5e1", fill: isFav ? "#f59e0b" : "none" }} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* 대면상담 카테고리 - PC 5칸 / 모바일 2~3칸 */}
-          {faceTools.length > 0 && (
-            <div style={{ background: "white", border: "1px solid #d0e0f0", borderRadius: 14, padding: "16px 16px 14px", marginBottom: 14, boxShadow: "0 2px 12px rgba(24,95,165,0.06)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 13 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#185fa5,#0e4a86)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, boxShadow: "0 2px 6px rgba(24,95,165,0.3)" }}>🤝</div>
-                <p style={{ fontSize: 14, fontWeight: 800, color: "#0f2d55" }}>대면상담</p>
-                <span style={{ fontSize: 10, color: "#185fa5", background: "#eff6ff", padding: "2px 8px", borderRadius: 20, fontWeight: 600, border: "0.5px solid #bfdbfe" }}>고객 현장 활용 핵심 도구</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-                {faceTools.map((menu) => (
-                  <button
-                    key={menu.id}
-                    type="button"
-                    onClick={() => !isConsultEditMode && handleNavigation(menu)}
-                    className="group hover:-translate-y-[3px] hover:shadow-lg"
-                    style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                      minHeight: 126,
-                      padding: "12px 7px 10px", borderRadius: 12,
-                      border: menu.isNew ? "2px solid #f59e0b" : "1.5px solid #c2def5",
-                      cursor: "pointer", background: "linear-gradient(155deg,#f5faff,#edf5fc)",
-                      fontFamily: "inherit", transition: "all 0.2s ease", position: "relative", boxShadow: "0 2px 6px rgba(24,95,165,0.06)"
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(155deg,#e8f4ff,#d6ecfc)";
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#d97706" : "#60a5fa";
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 6px 20px rgba(24,95,165,0.12)";
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(155deg,#f5faff,#edf5fc)";
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = menu.isNew ? "#f59e0b" : "#c8dff5";
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 2px 6px rgba(24,95,165,0.06)";
-                    }}
-                  >
-                    <div style={{ width: 40, height: 40, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: "#185fa5", color: "white", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(24,95,165,0.25)" }} className="group-hover:scale-110 group-hover:shadow-[0_4px_14px_rgba(24,95,165,0.4)]">
-                      <ToolIcon icon={menu.icon} className="h-4 w-4" />
-                    </div>
-                    <p style={{ fontSize: 12, color: "#0f2d55", textAlign: "center", lineHeight: 1.25, fontWeight: 800, wordBreak: "keep-all" }}>{menu.title}</p>
-                    <span style={{ fontSize: 9, color: "#5a7a92", lineHeight: 1.35, textAlign: "center", wordBreak: "keep-all" }}>{menu.desc}</span>
-                    {favorites.includes(menu.id) && !isFavEditMode && (
-                      <Star className="h-3 w-3" style={{ position: "absolute", top: 6, right: 6, color: "#f59e0b", fill: "#f59e0b" }} />
-                    )}
-                    {menu.isNew && (
-                      <span className="new-pulse-badge" style={{ position: "absolute", top: 7, left: 7, borderRadius: 999, padding: "2px 7px", fontSize: 9, fontWeight: 900, color: "white", letterSpacing: "0.04em" }}>
-                        NEW
-                      </span>
-                    )}
-                    {isFavEditMode && (
-                      <button
-                        onClick={e => { e.stopPropagation(); toggleFavorite(menu.id); }}
-                        style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", padding: 2 }}
-                      >
-                        <Star className="h-3.5 w-3.5" style={{ color: favorites.includes(menu.id) ? "#f59e0b" : "#c0d4e4", fill: favorites.includes(menu.id) ? "#f59e0b" : "none" }} />
-                      </button>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 전체 메뉴 - 아코디언 (face 제외, PC: 항상 열림, 모바일: 토글) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
-            {CONSULTING_TOOL_CATEGORIES.filter(c => c.id !== "face").map((category) => {
-              const tools = visibleConsultingTools.filter((tool) => tool.category === category.id);
-              if (tools.length === 0) return null;
-              const isOpen = openConsultCategories[category.id] !== false;
-
-              // ✅ 실제 category.id 기준으로 색상 매핑
-              const catStyle: Record<string, { bg: string; color: string; border: string; headerBg: string; iconBg: string }> = {
-                customer: { bg: "#dbeeff", color: "#1053b5", border: "#93c5fd", headerBg: "#eff6ff", iconBg: "#bfdbfe" },
-                coverage: { bg: "#d1fae5", color: "#065f46", border: "#6ee7b7", headerBg: "#ecfdf5", iconBg: "#a7f3d0" },
-                financial:{ bg: "#e0e7ff", color: "#3730a3", border: "#a5b4fc", headerBg: "#eef2ff", iconBg: "#c7d2fe" },
-                planning: { bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd", headerBg: "#f5f3ff", iconBg: "#ddd6fe" },
-                claims:   { bg: "#ffe4e6", color: "#9f1239", border: "#fca5a5", headerBg: "#fff1f2", iconBg: "#fecdd3" },
-              };
-              const catEmoji: Record<string, string> = {
-                customer: "👥", coverage: "🛡️", financial: "💰", planning: "📋", claims: "🏥",
-              };
-              const cs = catStyle[category.id] || { bg: "#f0f4f8", color: "#374151", border: "#d1d5db", headerBg: "#f9fafb", iconBg: "#e5e7eb" };
-
-              return (
-                <div key={category.id} style={{ background: "white", border: "1px solid #e8eef4", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.04)", transition: "box-shadow 0.2s" }}>
-                  {/* 카테고리 헤더 */}
-                  <button
-                    type="button"
-                    onClick={() => toggleConsultCategory(category.id)}
-                    className="w-full xl:pointer-events-none"
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, padding: "13px 14px",
-                      cursor: "pointer", background: cs.headerBg, border: "none",
-                      fontFamily: "inherit", width: "100%", textAlign: "left",
-                      borderBottom: isOpen ? "1px solid #eef2f7" : "none"
-                    }}
-                  >
-                    <div style={{ width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: cs.iconBg, color: cs.color, flexShrink: 0, fontSize: 17, boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}>
-                      {catEmoji[category.id] || "•"}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 15, fontWeight: 800, color: "#0f1f36" }}>{category.title}</p>
-                      <p style={{ fontSize: 11, color: "#64748b", marginTop: 2, fontWeight: 500 }}>{category.desc}</p>
-                    </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform xl:hidden ${isOpen ? "rotate-180" : ""}`} style={{ color: cs.color, opacity: 0.6 }} />
-                  </button>
-                  {/* 툴 목록 */}
-                  <div className={`xl:block ${isOpen ? "" : "hidden"}`}>
-                    <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: 5 }}>
-                      {tools.map((tool) => (
-                        <div
-                          key={tool.id}
-                          onClick={() => !isConsultEditMode && handleNavigation(tool)}
-                          className="group flex items-center gap-3 rounded-xl cursor-pointer"
-                          style={{
-                            padding: "10px 12px",
-                            border: `1.5px solid ${cs.bg}`,
-                            background: "white",
-                            transition: "all 0.18s ease",
-                            opacity: (isConsultEditMode && menuStatus[tool.id] === false) ? 0.4 : 1,
-                          }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLDivElement).style.borderColor = cs.border;
-                            (e.currentTarget as HTMLDivElement).style.background = cs.headerBg;
-                            (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
-                            (e.currentTarget as HTMLDivElement).style.boxShadow = "0 3px 10px rgba(0,0,0,0.07)";
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLDivElement).style.borderColor = cs.bg;
-                            (e.currentTarget as HTMLDivElement).style.background = "white";
-                            (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                            (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-                          }}
-                        >
-                          <div style={{ width: 32, height: 32, borderRadius: 8, background: cs.iconBg, color: cs.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "transform 0.18s" }} className="group-hover:scale-110">
-                            <ToolIcon icon={tool.icon} className="h-4 w-4" />
-                          </div>
-                          <p style={{ fontSize: 13, color: "#1e293b", flex: 1, fontWeight: 700, wordBreak: "keep-all" }}>{tool.title}</p>
-                          {isConsultEditMode && tool.editable
-                            ? <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} style={{ width: 14, height: 14, accentColor: "#1a2d42", flexShrink: 0 }} onClick={e => e.stopPropagation()} />
-                            : <span style={{ fontSize: 18, fontWeight: 300, color: cs.color, opacity: 0.5, transition: "all 0.18s", flexShrink: 0 }} className="group-hover:opacity-100 group-hover:translate-x-0.5">›</span>
-                          }
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 하단: 공지사항 + 업데이트 + 외부링크 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* 공지사항 */}
-            <div style={{ background: "white", border: "1px solid #e8eef5", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(26,45,66,0.05)" }}>
-              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 7, background: "linear-gradient(135deg,#1a2d42,#2a4060)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>📢</div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0f1f36" }}>공지사항</p>
-                </div>
-                {isMaster && (
-                  <button onClick={() => addAnnouncement('notice')} style={{ fontSize: 10, color: "#185fa5", background: "#eff6ff", border: "0.5px solid #bfdbfe", borderRadius: 6, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>+ 추가</button>
-                )}
-              </div>
-              <div style={{ padding: "10px 16px 12px" }}>
-                {announcements.filter(a => a.category === 'notice').slice(0, 3).map((ann, i, arr) => (
-                  <div key={ann.id}
-                    onClick={() => setSelectedAnnouncement(ann)}
-                    style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid #f3f6fa" : "none", cursor: "pointer" }}
-                    className="hover:opacity-70 transition-opacity"
-                  >
-                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#378add", flexShrink: 0, marginTop: 6 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, color: "#1a2d42", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600, lineHeight: 1.4 }}>{ann.title}</p>
-                      <p style={{ fontSize: 10, color: "#9ab4c8", marginTop: 2 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
-                    </div>
-                    <span style={{ fontSize: 10, color: "#c0d0e0", flexShrink: 0 }}>›</span>
-                  </div>
-                ))}
-                {announcements.filter(a => a.category === 'notice').length === 0 && (
-                  <p style={{ fontSize: 12, color: "#b8ccd8", textAlign: "center", padding: "16px 0" }}>공지사항이 없습니다.</p>
-                )}
-              </div>
-            </div>
-
-            {/* 업데이트 소식 */}
-            <div style={{ background: "white", border: "1px solid #e8eef5", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 10px rgba(26,45,66,0.05)" }}>
-              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #f0f4f8", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 7, background: "linear-gradient(135deg,#0f6e56,#0d5c48)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>🔔</div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#0f1f36" }}>업데이트 소식</p>
-                </div>
-                {isMaster && (
-                  <button onClick={() => addAnnouncement('update')} style={{ fontSize: 10, color: "#0f6e56", background: "#ecfdf5", border: "0.5px solid #a7f3d0", borderRadius: 6, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>+ 추가</button>
-                )}
-              </div>
-              <div style={{ padding: "10px 16px 12px" }}>
-                {announcements.filter(a => a.category === 'update').slice(0, 3).map((ann, i, arr) => (
-                  <div key={ann.id}
-                    onClick={() => setSelectedAnnouncement(ann)}
-                    style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 0", borderBottom: i < arr.length - 1 ? "1px solid #f3f6fa" : "none", cursor: "pointer" }}
-                    className="hover:opacity-70 transition-opacity"
-                  >
-                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 6, background: "#dcfce7", color: "#15803d", fontWeight: 700, flexShrink: 0, marginTop: 2 }}>NEW</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 12, color: "#1a2d42", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600, lineHeight: 1.4 }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
-                      <p style={{ fontSize: 10, color: "#9ab4c8", marginTop: 2 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
-                    </div>
-                    <span style={{ fontSize: 10, color: "#c0d0e0", flexShrink: 0 }}>›</span>
-                  </div>
-                ))}
-                {announcements.filter(a => a.category === 'update').length === 0 && (
-                  <p style={{ fontSize: 12, color: "#b8ccd8", textAlign: "center", padding: "16px 0" }}>업데이트 소식이 없습니다.</p>
-                )}
-              </div>
-            </div>
-
-            {/* 외부 링크 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <button
-                onClick={() => {
-                  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
-                  window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank")
-                }}
-                className="hover:-translate-y-[2px] hover:shadow-xl transition-all duration-200"
-                style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 14, background: "linear-gradient(135deg,#15803d,#166534)", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(21,128,61,0.2)" }}
-              >
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "white", flexShrink: 0, border: "1px solid rgba(255,255,255,0.25)" }}>N</div>
-                <div style={{ flex: 1, textAlign: "left" }}>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3, fontWeight: 500, letterSpacing: "0.04em" }}>커뮤니티</p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>보험의 기준 카페</p>
-                </div>
-                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 18 }}>›</span>
-              </button>
-              <button
-                onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
-                className="hover:-translate-y-[2px] hover:shadow-xl transition-all duration-200"
-                style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 14, background: "linear-gradient(135deg,#d97706,#b45309)", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 14px rgba(180,83,9,0.2)" }}
-              >
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "white", flexShrink: 0, border: "1px solid rgba(255,255,255,0.25)" }}>O</div>
-                <div style={{ flex: 1, textAlign: "left" }}>
-                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 3, fontWeight: 500, letterSpacing: "0.04em" }}>실시간 소통</p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "white" }}>보험의 기준 오픈채팅</p>
-                </div>
-                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 18 }}>›</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 공지사항 상세 팝업 */}
-          {selectedAnnouncement && (
-            <AnnouncementModal
-              item={selectedAnnouncement}
-              onClose={() => setSelectedAnnouncement(null)}
-              onSave={saveAnnouncement}
-              onDelete={deleteAnnouncement}
-              isMaster={isMaster}
-            />
-          )}
-
-        </div>
-      )
-          )}
+      viewMode === 'office' ? renderOfficeView() : renderConsultingView()          )}
         </div>
       </main>
     </div>
