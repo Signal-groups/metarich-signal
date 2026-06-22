@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  serverExternalPackages: ["exceljs"],
+  serverExternalPackages: ["exceljs", "pdf-parse"],
   outputFileTracingIncludes: {
     "/api/coverage-pro/excel-export": ["./public/templates/coverage/*.xlsx"],
   },

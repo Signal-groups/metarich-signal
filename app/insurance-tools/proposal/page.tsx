@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Activity,
+  AlertCircle,
   BadgeCheck,
   BarChart3,
   Bone,
   Car,
+  CheckCircle2,
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
@@ -15,6 +17,7 @@ import {
   FileText,
   HeartPulse,
   Home,
+  Loader2,
   PawPrint,
   Plus,
   ShieldCheck,
@@ -276,18 +279,124 @@ function MiniMetricBar({ label, value, max, color }: { label: string; value: num
   )
 }
 
-function UploadBox({ plan, onFile }: { plan: PlanData; onFile: (name: string) => void }) {
+type ParseStatus = "idle" | "loading" | "done" | "error"
+
+function PdfDropZone({
+  plan,
+  template,
+  onParsed,
+  onCustomerName,
+}: {
+  plan: PlanData
+  template: CategoryTemplate
+  onParsed: (patch: Partial<PlanData>) => void
+  onCustomerName?: (name: string) => void
+}) {
+  const [status, setStatus] = useState<ParseStatus>("idle")
+  const [errorMsg, setErrorMsg] = useState("")
+  const [isDragging, setIsDragging] = useState(false)
+
+  const runParse = async (file: File) => {
+    setStatus("loading")
+    setErrorMsg("")
+    onParsed({ fileName: file.name })
+
+    const fd = new FormData()
+    fd.append("file", file)
+    fd.append("categoryId", template.id)
+
+    try {
+      const res = await fetch("/api/parse-proposal-pdf", { method: "POST", body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.ok) {
+        setStatus("error")
+        setErrorMsg(json.error || "분석 실패")
+        return
+      }
+      const d = json.data as {
+        customerName?: string
+        company?: string
+        productName?: string
+        monthlyPremium?: string
+        paymentYears?: string
+        coverageYears?: string
+        metrics?: Record<string, string>
+      }
+
+      if (d.customerName) onCustomerName?.(d.customerName)
+
+      onParsed({
+        fileName: file.name,
+        company: d.company || plan.company,
+        productName: d.productName || plan.productName,
+        monthlyPremium: d.monthlyPremium || plan.monthlyPremium,
+        paymentYears: d.paymentYears || plan.paymentYears,
+        coverageYears: d.coverageYears || plan.coverageYears,
+        metrics: { ...plan.metrics, ...(d.metrics || {}) },
+      })
+      setStatus("done")
+    } catch {
+      setStatus("error")
+      setErrorMsg("네트워크 오류. 다시 시도해주세요.")
+    }
+  }
+
+  const handleFile = (file: File | undefined) => {
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setStatus("error"); setErrorMsg("PDF 파일만 가능합니다."); return
+    }
+    runParse(file)
+  }
+
+  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }
+  const onDragLeave = () => setIsDragging(false)
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setIsDragging(false)
+    handleFile(e.dataTransfer.files?.[0])
+  }
+
   return (
-    <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-sm font-black text-slate-500 transition hover:border-cyan-400 hover:bg-cyan-50">
-      <Upload className="h-5 w-5" />
-      <span>{plan.fileName || "기존 PDF 제안서 업로드"}</span>
-      <input
-        type="file"
-        accept=".pdf"
-        hidden
-        onChange={(event) => onFile(event.target.files?.[0]?.name || "")}
-      />
-    </label>
+    <div>
+      <label
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-6 text-sm font-black transition
+          ${isDragging ? "border-cyan-400 bg-cyan-50" : status === "done" ? "border-emerald-400 bg-emerald-50" : status === "error" ? "border-rose-300 bg-rose-50" : "border-slate-300 bg-slate-50 hover:border-cyan-400 hover:bg-cyan-50"}`}
+      >
+        {status === "loading" ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin text-cyan-500" />
+            <span className="text-cyan-600">PDF 분석 중...</span>
+          </>
+        ) : status === "done" ? (
+          <>
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            <span className="text-emerald-700">{plan.fileName} — 분석 완료</span>
+            <span className="text-[11px] font-bold text-emerald-500">클릭하면 다른 파일로 교체</span>
+          </>
+        ) : status === "error" ? (
+          <>
+            <AlertCircle className="h-5 w-5 text-rose-500" />
+            <span className="text-rose-600">{errorMsg}</span>
+            <span className="text-[11px] font-bold text-rose-400">클릭해서 다시 시도</span>
+          </>
+        ) : (
+          <>
+            <Upload className="h-5 w-5 text-slate-400" />
+            <span className="text-slate-500">{plan.fileName || "PDF 제안서 드래그 또는 클릭"}</span>
+            <span className="text-[11px] font-bold text-slate-400">업로드하면 보험사·상품명·보험료·담보를 자동으로 채웁니다</span>
+          </>
+        )}
+        <input
+          type="file"
+          accept=".pdf"
+          hidden
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+      </label>
+    </div>
   )
 }
 
@@ -299,6 +408,7 @@ function PlanEditor({
   onChange,
   onRemove,
   canRemove,
+  onCustomerName,
 }: {
   plan: PlanData
   index: number
@@ -307,6 +417,7 @@ function PlanEditor({
   onChange: (plan: PlanData) => void
   onRemove?: () => void
   canRemove?: boolean
+  onCustomerName?: (name: string) => void
 }) {
   const set = <K extends keyof PlanData>(key: K, value: PlanData[K]) => onChange({ ...plan, [key]: value })
   const setMetric = (key: string, value: string) => onChange({ ...plan, metrics: { ...plan.metrics, [key]: value } })
@@ -332,12 +443,17 @@ function PlanEditor({
         )}
       </div>
 
-      <UploadBox plan={plan} onFile={(name) => set("fileName", name)} />
+      <PdfDropZone
+        plan={plan}
+        template={template}
+        onParsed={(patch) => onChange({ ...plan, ...patch })}
+        onCustomerName={onCustomerName}
+      />
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <Input label="보험사" value={plan.company} onChange={(value) => set("company", value)} placeholder="예: ○○손해보험" />
         <Input label="상품명" value={plan.productName} onChange={(value) => set("productName", value)} placeholder="예: 건강보험 플랜" />
-        <Input label="월 보험료" value={plan.monthlyPremium} onChange={(value) => set("monthlyPremium", value)} placeholder="예: 50,000" suffix="원" />
+        <Input label="월 보험료" value={plan.monthlyPremium} onChange={(value) => set("monthlyPremium", value)} placeholder="예: 52,000" suffix="원" numeric />
         <div className="grid grid-cols-2 gap-3">
           <Input label="납입기간" value={plan.paymentYears} onChange={(value) => set("paymentYears", value)} placeholder="예: 20" suffix="년" />
           <Input label="보장/활용기간" value={plan.coverageYears} onChange={(value) => set("coverageYears", value)} placeholder="예: 100세" />
@@ -356,8 +472,9 @@ function PlanEditor({
               label={metric.label}
               value={plan.metrics[metric.key] || ""}
               onChange={(value) => setMetric(metric.key, value)}
-              placeholder={metric.kind === "text" ? metric.guide : "금액 입력"}
+              placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : "금액 입력"}
               suffix={metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
+              numeric={metric.kind === "money"}
             />
           ))}
         </div>
@@ -371,27 +488,48 @@ function PlanEditor({
   )
 }
 
+// 숫자 포맷: 입력값 → 쉼표 구분자 표시
+function formatNumber(raw: string): string {
+  const digits = raw.replace(/[^0-9]/g, "")
+  if (!digits) return ""
+  return Number(digits).toLocaleString("ko-KR")
+}
+
+// suffix가 있는 금액 필드는 숫자만 받아 쉼표 포맷 표시, 저장은 raw 숫자로
 function Input({
   label,
   value,
   onChange,
   placeholder,
   suffix,
+  numeric,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   placeholder?: string
   suffix?: string
+  numeric?: boolean
 }) {
+  const displayValue = numeric ? formatNumber(value) : value
+
+  const handleChange = (raw: string) => {
+    if (numeric) {
+      onChange(raw.replace(/[^0-9]/g, ""))
+    } else {
+      onChange(raw)
+    }
+  }
+
   return (
     <label className="block">
       <span className="mb-1 block text-[11px] font-black text-slate-500">{label}</span>
       <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-cyan-500">
         <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
+          value={displayValue}
+          onChange={(event) => handleChange(event.target.value)}
           placeholder={placeholder}
+          inputMode={numeric ? "numeric" : undefined}
           className="h-10 min-w-0 flex-1 px-3 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-300"
         />
         {suffix && <span className="flex items-center border-l border-slate-100 px-3 text-[11px] font-black text-slate-400">{suffix}</span>}
@@ -951,22 +1089,15 @@ export default function ProposalPage() {
               <h1 className="mt-1 text-2xl font-black text-[#102a4c]">제안서 생성</h1>
             </div>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setShowPreview(false)} className={`rounded-xl px-4 py-2 text-sm font-black ${!showPreview ? "bg-[#102a4c] text-white" : "bg-slate-100 text-slate-500"}`}>
-                입력
-              </button>
-              <button type="button" onClick={() => setShowPreview(true)} className={`rounded-xl px-4 py-2 text-sm font-black ${showPreview ? "bg-[#102a4c] text-white" : "bg-slate-100 text-slate-500"}`}>
+              <button type="button" onClick={() => setShowPreview(true)} className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A]">
                 미리보기
-              </button>
-              <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-black text-white">
-                <Download className="h-4 w-4" />
-                PDF 저장
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
 
-        {!showPreview ? (
-          <div className="no-print mx-auto grid max-w-[1440px] gap-5 px-6 py-6 xl:grid-cols-[360px_1fr]">
+        <div className="no-print mx-auto grid max-w-[1440px] gap-5 px-6 py-6 xl:grid-cols-[360px_1fr]">
             <aside className="space-y-5">
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
@@ -1016,7 +1147,7 @@ export default function ProposalPage() {
                   <div>
                     <h2 className="text-lg font-black text-slate-950">상품 정보 입력</h2>
                     <p className="text-sm font-bold text-slate-500">
-                      PDF는 참고용으로 업로드하고, 핵심 수치는 직접 확인 입력하는 방식입니다.
+                      PDF를 드래그앤드롭하면 주요 항목이 자동으로 채워집니다.
                     </p>
                   </div>
                   {mode === "compare" && (
@@ -1037,6 +1168,7 @@ export default function ProposalPage() {
                       onChange={(next) => updatePlan(plan.id, next)}
                       onRemove={() => removePlan(plan.id)}
                       canRemove={mode === "compare" && visiblePlans.length > 2}
+                      onCustomerName={(name) => setCustomerName((prev) => prev || name)}
                     />
                   ))}
                 </div>
@@ -1050,16 +1182,42 @@ export default function ProposalPage() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="no-print bg-[#1f2937] px-6 py-8">
-            <ProposalReport
-              template={template}
-              mode={mode}
-              plans={visiblePlans}
-              focus={focus}
-              customerName={customerName}
-              consultant={consultant}
-            />
+
+        {/* ── 미리보기 모달 ── */}
+        {showPreview && (
+          <div className="no-print fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm">
+            {/* 모달 헤더 */}
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#111827] px-6 py-3">
+              <p className="text-sm font-black text-white">제안서 미리보기</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-black text-white hover:bg-cyan-400"
+                >
+                  <Download className="h-4 w-4" />
+                  PDF 저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 text-white/70 hover:border-white/40 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            {/* 미리보기 스크롤 영역 */}
+            <div className="flex-1 overflow-y-auto bg-[#1f2937] px-6 py-8">
+              <ProposalReport
+                template={template}
+                mode={mode}
+                plans={visiblePlans}
+                focus={focus}
+                customerName={customerName}
+                consultant={consultant}
+              />
+            </div>
           </div>
         )}
 
