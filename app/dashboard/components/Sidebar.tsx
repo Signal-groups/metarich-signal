@@ -295,14 +295,14 @@ export default function Sidebar({
         </button>
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#082b5f] shadow-xl transition-all duration-300 ${isOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full lg:w-[300px] lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#0a3268] shadow-xl transition-all duration-300 ${isOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full lg:w-[300px] lg:translate-x-0'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden lg:flex'}`}>
           {/* Brand Logo Section */}
-          <div className="px-7 pt-6 pb-5 flex-shrink-0">
+          <div className="flex flex-shrink-0 justify-center px-7 pb-5 pt-6">
             <img
               src="/bohum-logo-sidebar.png"
               alt="보험의 기준"
-              className="h-[64px] w-[202px] object-contain"
+              className="block h-[64px] w-[202px] object-contain"
             />
           </div>
 
