@@ -21,6 +21,7 @@ import PdfExportBtn from './PdfExportBtn'
 import SessionList from './SessionList'
 import BenchmarkSettings from './BenchmarkSettings'
 import BenchmarkSummary from './BenchmarkSummary'
+import UnmappedPanel from './UnmappedPanel'
 
 const STORAGE_KEY   = 'coverage-pro-draft-session'
 const SESSION_ID_KEY = 'coverage-pro-session-id'
@@ -155,10 +156,11 @@ function parseGptsJson(raw: string): ProContract[] | null {
         const coverages = Array.isArray(item.coverages)
           ? (item.coverages as Array<Record<string, unknown>>).map((cov, ci) => {
               const name = String(cov.coverage_name ?? cov.name ?? cov['담보명'] ?? '')
+              const explicitRowKey = String(cov.row_key ?? cov.rowKey ?? '')
               return {
                 id: `json-cov-${idx}-${ci}`,
                 contractId: '',
-                rowKey: inferClientRowKey(name) ?? 'unknown',
+                rowKey: (explicitRowKey && explicitRowKey !== 'unknown') ? explicitRowKey : (inferClientRowKey(name) ?? 'unknown'),
                 name,
                 amount: parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0),
                 expiryDate: String(cov.end_date ?? cov.expiryDate ?? cov['만기'] ?? ''),
@@ -217,10 +219,11 @@ function parseGptsJson(raw: string): ProContract[] | null {
       const coverages = Array.isArray(item.coverages)
         ? (item.coverages as Array<Record<string, unknown>>).map((cov, ci) => {
             const name = String(cov.name ?? cov['담보명'] ?? '')
+            const explicitRowKey2 = String(cov.row_key ?? cov.rowKey ?? '')
             return {
               id: `json-cov-${idx}-${ci}`,
               contractId: '',
-              rowKey: inferClientRowKey(name) ?? 'unknown',
+              rowKey: (explicitRowKey2 && explicitRowKey2 !== 'unknown') ? explicitRowKey2 : (inferClientRowKey(name) ?? 'unknown'),
               name,
               amount: parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0),
               expiryDate: String(cov.expiryDate ?? cov['만기'] ?? ''),
@@ -657,6 +660,10 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                     prev.map((c) => (c.id === id ? { ...c, ...patch } : c))
                   )
                 }
+              />
+              <UnmappedPanel
+                contracts={contracts}
+                onUpdate={setContracts}
               />
               {/* JSON 다시 붙여넣기 허용 */}
               {!showJsonPaste ? (

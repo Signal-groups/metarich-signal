@@ -12,22 +12,32 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   // 예: "질병입원일당"이 "질병입원"보다 먼저, "허혈성심장"이 "심장질환"보다 먼저.
   // ──────────────────────────────────────────────────────────────────────
 
+  // ── 치매 (간병인 패턴보다 앞에 — "치매간병"이 nursing에 걸리지 않도록) ──
+  { patterns: ['치매진단', '치매간병', '치매급여금', '치매생활비', '경도인지장애', '알츠하이머', '치매'], rowKey: 'dementia_diagnosis' },
+
+  // ── 장기요양 ─────────────────────────────────────────────────────────
+  { patterns: ['장기요양등급', '노인장기요양', '장기요양보험', '장기요양', '요양등급'], rowKey: 'ltc_grade' },
+
+  // ── 중대질병(CI) — 암/뇌/심장 패턴보다 앞에 ─────────────────────────
+  { patterns: ['중대질병진단', '중대질병', '특정중대질병', 'ci진단', 'ci보험금'], rowKey: 'ci_diagnosis' },
+
   // ── 간병인·재가 (입원일당/실비 패턴보다 반드시 앞에) ─────────────────
   { patterns: ['간병인사용', '간병인질병', '간병인상해', '간병인간호', '병원사용간병', '병원간병', '간병인서비스', '간병인'], rowKey: 'nursing_hospital' },
   { patterns: ['요양병원간병', '요양병원입원', '요양병원재가', '요양간병', '요양병원'], rowKey: 'nursing_care_hospital' },
   { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
 
   // ── 입원일당 (실비 "입원" 패턴보다 앞에 위치해야 함) ─────────────────
-  // "질병입원일당"이 실비 "질병입원" 패턴에 걸리지 않도록 먼저 처리
   { patterns: ['질병입원일당', '질병 입원일당', '상급종합병원질병입원일당', '종합병원이하질병입원일당'], rowKey: 'hospital_disease_daily' },
   { patterns: ['상해입원일당', '상해 입원일당', '상급종합병원상해입원일당', '종합병원이하상해입원일당', '입원일당'], rowKey: 'hospital_injury_daily' },
 
-  // ── 실비 (간병인·입원일당 다음) ──────────────────────────────────────
+  // ── 3대비급여 (개별 항목 포함 — 실비보다 앞에) ───────────────────────
+  { patterns: ['3대비급여', '비급여도수치료', '도수치료', '비급여주사치료', '프롤로주사', '비급여mri', '비급여초음파', '응급실내원비', '응급실내원', '상급병실차액', '상급병실료'], rowKey: 'silson_3major' },
+
+  // ── 실비 (간병인·입원일당·3대비급여 다음) ────────────────────────────
   { patterns: ['질병입원의료비', '질병+상해입원', '상해+질병입원', '실손질병입원', '질병입원실손'], rowKey: 'silson_disease_inpatient' },
   { patterns: ['질병통원의료비', '질병외래의료비', '질병처방조제료', '질병통원실손', '실손질병통원', '질병통원'], rowKey: 'silson_disease_outpatient' },
   { patterns: ['상해입원의료비', '해외진료입원', '실손상해입원', '상해입원실손'], rowKey: 'silson_injury_inpatient' },
-  { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '실손상해통원', '상해통원실손', '상해통원', '실손의료비', '실손'], rowKey: 'silson_injury_outpatient' },
-  { patterns: ['3대비급여'], rowKey: 'silson_3major' },
+  { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '실손상해통원', '상해통원실손', '상해통원', '실손의료비', '의료실비', '실비', '실손'], rowKey: 'silson_injury_outpatient' },
 
   // ── 암 — 고액·표적 먼저 (일반 "암진단"보다 구체적) ───────────────────
   { patterns: ['고액항암치료비', '고액항암', '표적항암', '중입자항암'], rowKey: 'cancer_targeted' },
@@ -35,7 +45,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['양성자방사선', '양성자치료', '양성자'], rowKey: 'cancer_proton' },
   { patterns: ['세기조절방사선', 'imrt'], rowKey: 'cancer_imrt' },
   { patterns: ['항암방사선약물', '항암방사선', '방사선약물치료', '방사선치료'], rowKey: 'cancer_radiation' },
-  { patterns: ['항암약물', '항암 약물', '항암치료비', '항암치료'], rowKey: 'cancer_chemo' },
+  { patterns: ['항암약물', '항암 약물', '항암치료비', '항암화학요법', '항암화학치료', '화학요법항암', '항암치료'], rowKey: 'cancer_chemo' },
   { patterns: ['카티', 'cart'], rowKey: 'cancer_cart' },
   { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
   { patterns: ['암수술'], rowKey: 'cancer_surgery' },
@@ -52,7 +62,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['허혈성심장'], rowKey: 'heart_ischemic' },            // 심장질환보다 먼저!
   { patterns: ['급성심근경색', '심근경색'], rowKey: 'heart_acute_mi' },
   { patterns: ['심장질환진단', '심혈관질환'], rowKey: 'heart_vascular' },
-  { patterns: ['수술/시술비', '뇌심수술', '심뇌수술'], rowKey: 'two_major_surgery' },
+  { patterns: ['수술/시술비', '뇌심수술', '심뇌수술', '심장수술비', '뇌혈관수술', '심혈관수술'], rowKey: 'two_major_surgery' },
   { patterns: ['혈전용해'], rowKey: 'two_major_thrombolysis' },
   { patterns: ['중환자실'], rowKey: 'two_major_icu' },
 
@@ -62,12 +72,14 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['질병후유장해', '질병 후유'], rowKey: 'disability_disease' },
   { patterns: ['상해후유장해80', '상해80%', '재해80%', '상해80%이상', '상해80미만후유'], rowKey: 'disability_injury_80' },
   { patterns: ['상해후유장해', '재해후유장해', '상해 후유', '상해후유'], rowKey: 'disability_injury' },
+  // 고도장해·영구장해 (후유 선행로직 통과 후 폴스루 케이스)
+  { patterns: ['고도장해', '영구장해', '완전장해', '고도후유', '최고도장해'], rowKey: 'disability_injury_80' },
 
   // ── 사망 ─────────────────────────────────────────────────────────────
   { patterns: ['암사망'], rowKey: 'death_disease' },               // 암사망 → 질병사망
   { patterns: ['질병사망'], rowKey: 'death_disease' },
   { patterns: ['재해사망', '상해사망', '일반사망재해'], rowKey: 'death_injury' },
-  { patterns: ['일반사망', '사망보험금', '사망급여금'], rowKey: 'death_general' },
+  { patterns: ['일반사망', '사망보험금', '사망급여금', '사망보장'], rowKey: 'death_general' },
 
   // ── 수술비 — 1-5종/111대 먼저 (질병수술비보다 구체적) ─────────────────
   { patterns: ['1-5종', '1~5종', '종수술'], rowKey: 'surgery_1_5' },           // surgery_disease보다 앞에!
@@ -76,8 +88,8 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['상해수술비', '상해중수술', '특정상해수술', '상해수술'], rowKey: 'surgery_injury' },
 
   // ── 상해진단 ─────────────────────────────────────────────────────────
-  { patterns: ['골절'], rowKey: 'fracture_diagnosis' },
-  { patterns: ['화상'], rowKey: 'burn_diagnosis' },
+  { patterns: ['골절진단', '골절수술', '골절'], rowKey: 'fracture_diagnosis' },
+  { patterns: ['화상진단', '화상'], rowKey: 'burn_diagnosis' },
 
   // ── 운전자 ───────────────────────────────────────────────────────────
   { patterns: ['교통사고처리지원금', '교통사고처리지원', '교통사고처리', '자동차사고피해', '자동차사고', '대물대인'], rowKey: 'driver_accident' },
@@ -209,4 +221,8 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   cancer_major_benefit:      '주요치료비 — 암주요치료비(급여)',
   cancer_major_nonbenefit:   '주요치료비 — 암주요치료비(비급여)',
   vascular_major:            '주요치료비 — 뇌심(순환계)주요치료비',
+  // 신규
+  ci_diagnosis:              'CI — 중대질병진단',
+  dementia_diagnosis:        '치매 — 치매진단',
+  ltc_grade:                 '요양 — 장기요양등급',
 }

@@ -235,14 +235,67 @@ export default function RemodelComparison({
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
-      {/* ── 보험료 요약 ─────────────────────────────────────────────── */}
-      <div className="coverage-pro-card coverage-pro-card-pad">
-        <div className="coverage-pro-section-title">리모델링 제안</div>
-        <div className="coverage-pro-stat-grid">
-          <div className="coverage-pro-stat"><span>현재 월 보험료</span><b>{formatWon(currentPremium)}</b></div>
-          <div className="coverage-pro-stat"><span>해지 예정</span><b style={{ color: '#ef4444' }}>−{formatWon(removedPremium)}</b></div>
-          <div className="coverage-pro-stat"><span>신규 예정</span><b style={{ color: '#10b981' }}>+{formatWon(addedPremium)}</b></div>
-          <div className="coverage-pro-stat"><span>제안 후</span><b style={{ color: '#1a2744' }}>{formatWon(afterPremium)}</b></div>
+      {/* ── 보험료 요약 — Foliio 스타일 ──────────────────────────── */}
+      <div className="coverage-pro-card" style={{ overflow: 'hidden' }}>
+        {/* 다크 헤더 배너 */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1a2744 0%, #2d4a8a 100%)',
+          padding: '16px 24px 0',
+        }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: '0.1em', marginBottom: 4 }}>
+            맞춤형 보장 점검 및 리모델링 제안서
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginBottom: 16 }}>
+            비효율적인 보장은 비우고, 핵심 보장으로 든든하게 채웠습니다
+          </div>
+
+          {/* 3열 보험료 비교 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            {/* 기존 */}
+            <div style={{ padding: '16px 0', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 700, marginBottom: 6 }}>기존 월 보험료</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatWon(currentPremium)}</div>
+            </div>
+            {/* 차액 */}
+            <div style={{
+              padding: '12px 0 14px',
+              textAlign: 'center',
+              borderRight: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(201,169,110,0.15)',
+            }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 700, marginBottom: 4 }}>리모델링 차액</div>
+              <div style={{
+                display: 'inline-block',
+                background: '#c9a96e', color: '#1a2744',
+                borderRadius: 9999, padding: '4px 16px',
+                fontSize: 18, fontWeight: 900,
+                marginBottom: 2,
+              }}>
+                {afterPremium - currentPremium === 0
+                  ? '변동없음'
+                  : `${afterPremium < currentPremium ? '−' : '+'}${formatWon(Math.abs(afterPremium - currentPremium))}`}
+              </div>
+            </div>
+            {/* 제안 */}
+            <div style={{ padding: '16px 0', textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 700, marginBottom: 6 }}>제안 월 보험료</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: afterPremium < currentPremium ? '#10b981' : '#fff' }}>
+                {formatWon(afterPremium)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 해지/추가 요약 바 */}
+        <div style={{ display: 'flex', gap: 0, borderTop: '1px solid #e2e8f0' }}>
+          <div style={{ flex: 1, padding: '10px 16px', borderRight: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>해지 예정</span>
+            <span style={{ fontSize: 14, fontWeight: 900, color: '#ef4444', marginLeft: 8 }}>−{formatWon(removedPremium)}</span>
+          </div>
+          <div style={{ flex: 1, padding: '10px 16px' }}>
+            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>신규 추가</span>
+            <span style={{ fontSize: 14, fontWeight: 900, color: '#10b981', marginLeft: 8 }}>+{formatWon(addedPremium)}</span>
+          </div>
         </div>
       </div>
 

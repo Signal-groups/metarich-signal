@@ -9,9 +9,6 @@ import {
 } from './BenchmarkSettings'
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
 
-// ▼ PremiumTierCard는 보험료 비교 페이지로 이동됨 (app/insurance-tools/premium-compare/PremiumTierCard.tsx)
-
-
 function calcActuals(contracts: ProContract[]): Record<string, number> {
   const result: Record<string, number> = {}
   for (const contract of contracts) {
@@ -31,79 +28,92 @@ function fmt(v: number) {
     : `${v.toLocaleString()}만원`
 }
 
-// ── 행 컴포넌트 ─────────────────────────────────────────────────────────────
-function BRow({
-  label, actual, target, status, ratio, isChild,
-}: {
-  label: string
-  actual: number
-  target: number
-  status: 'ok' | 'warn' | 'miss' | 'skip'
-  ratio: number | null
-  isChild?: boolean
-}) {
-  const palette = {
-    ok:   { bg: '#f8fafc', border: '#e2e8f0', bar: '#64748b', badge: '#64748b', badgeBg: '#f1f5f9', text: '달성' },
-    warn: { bg: '#f8fafc', border: '#e2e8f0', bar: '#94a3b8', badge: '#94a3b8', badgeBg: '#f1f5f9', text: '부족' },
-    miss: { bg: '#f8fafc', border: '#e2e8f0', bar: '#cbd5e1', badge: '#cbd5e1', badgeBg: '#f1f5f9', text: '미가입' },
-    skip: { bg: '#f8fafc', border: '#e2e8f0', bar: '#e2e8f0', badge: '#e2e8f0', badgeBg: '#f1f5f9', text: '해당없음' },
-  }
-  const c = palette[status]
-  const pct = ratio !== null ? Math.min(100, Math.round(ratio * 100)) : null
-
+// 달성률 링 차트
+function ScoreRing({ achieved, total }: { achieved: number; total: number }) {
+  const pct = total > 0 ? Math.round((achieved / total) * 100) : 0
+  const r = 44
+  const circ = 2 * Math.PI * r
+  const dash = (pct / 100) * circ
+  const color = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444'
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: isChild ? '6px 12px 6px 28px' : '8px 12px',
-      background: c.bg, border: `1px solid ${c.border}`,
-      borderRadius: 8,
-    }}>
-      {/* 상태 도트 */}
-      <div style={{
-        width: 8, height: 8, borderRadius: '50%',
-        background: c.bar, flexShrink: 0,
-      }} />
-
-      {/* 담보명 */}
-      <span style={{
-        flex: 1, fontSize: isChild ? 12 : 13,
-        color: isChild ? '#475569' : '#1a2744',
-        fontWeight: isChild ? 400 : 600,
-      }}>
-        {label}
-      </span>
-
-      {/* 실제 / 기준 */}
-      <span style={{ fontSize: 12, color: '#1e293b', minWidth: 72, textAlign: 'right', fontWeight: 600 }}>
-        {target === 0 ? '-' : fmt(actual)}
-      </span>
-      <span style={{ fontSize: 11, color: '#94a3b8' }}>/</span>
-      <span style={{ fontSize: 12, color: '#64748b', minWidth: 72 }}>
-        {target === 0 ? '-' : `기준 ${fmt(target)}`}
-      </span>
-
-      {/* 진행 바 + 배지 */}
-      <div style={{ minWidth: 96, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {pct !== null && (
-          <>
-            <div style={{
-              height: 4, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%', width: `${pct}%`,
-                background: c.bar, borderRadius: 2, transition: 'width 0.4s',
-              }} />
-            </div>
-
-          </>
-        )}
-
+    <div style={{ position: 'relative', width: 120, height: 120 }}>
+      <svg viewBox="0 0 110 110" width="120" height="120">
+        <circle cx="55" cy="55" r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="10" />
+        <circle
+          cx="55" cy="55" r={r} fill="none"
+          stroke={color} strokeWidth="10"
+          strokeDasharray={`${dash} ${circ}`}
+          strokeDashoffset={circ / 4}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>{pct}%</div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginTop: 2 }}>{achieved}/{total}</div>
       </div>
     </div>
   )
 }
 
-// ── 메인 컴포넌트 ───────────────────────────────────────────────────────────
+// 항목 행
+function ItemRow({ label, actual, target, status, ratio, isChild }: {
+  label: string; actual: number; target: number
+  status: 'ok' | 'warn' | 'miss' | 'skip'; ratio: number | null; isChild?: boolean
+}) {
+  const cfg = {
+    ok:   { badgeText: '달성',   badgeBg: '#dcfce7', badgeColor: '#15803d', barColor: '#10b981' },
+    warn: { badgeText: '부족',   badgeBg: '#fef3c7', badgeColor: '#b45309', barColor: '#f59e0b' },
+    miss: { badgeText: '미가입', badgeBg: '#fee2e2', badgeColor: '#b91c1c', barColor: '#fca5a5' },
+    skip: { badgeText: '해당없음', badgeBg: '#f1f5f9', badgeColor: '#94a3b8', barColor: '#e2e8f0' },
+  }[status]
+  const pct = ratio !== null ? Math.min(100, Math.round(ratio * 100)) : null
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '1fr 90px 90px 60px 80px',
+      gap: 8, alignItems: 'center',
+      padding: isChild ? '7px 12px 7px 28px' : '9px 12px',
+      borderBottom: '1px solid #f1f5f9',
+    }}>
+      <span style={{ fontSize: isChild ? 12 : 13, color: isChild ? '#475569' : '#1a2744', fontWeight: isChild ? 400 : 600 }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', textAlign: 'right' }}>
+        {target === 0 ? '-' : fmt(actual)}
+      </span>
+      <span style={{ fontSize: 12, color: '#94a3b8', textAlign: 'right' }}>
+        {target === 0 ? '-' : fmt(target)}
+      </span>
+      <div>
+        {pct !== null && (
+          <div style={{ height: 6, background: '#e2e8f0', borderRadius: 9999, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: cfg.barColor, borderRadius: 9999 }} />
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <span style={{
+          display: 'inline-block', padding: '3px 10px', borderRadius: 9999,
+          fontSize: 11, fontWeight: 900, background: cfg.badgeBg, color: cfg.badgeColor, whiteSpace: 'nowrap',
+        }}>
+          {cfg.badgeText}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function StatPill({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 900, color }}>{value}개</span>
+    </div>
+  )
+}
+
 export default function BenchmarkSummary({ contracts, onOpenSettings }: {
   contracts: ProContract[]
   onOpenSettings?: () => void
@@ -112,7 +122,6 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
 
   useEffect(() => {
     setBenchmark(loadBenchmark())
-    // 설정 변경 감지 (다른 탭/컴포넌트에서 저장 시)
     const onStorage = () => setBenchmark(loadBenchmark())
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
@@ -121,125 +130,97 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
   if (!benchmark) return null
 
   const actuals = calcActuals(contracts)
-
-  // 그룹별로 렌더
   const groups = ['사망', '암', '2대질병', '주요치료비', '기타']
-  const grouped = groups.map((g) => ({
-    group: g,
-    items: BENCHMARK_ITEMS.filter((i) => i.group === g),
-  }))
+  const grouped = groups.map((g) => ({ group: g, items: BENCHMARK_ITEMS.filter((i) => i.group === g) }))
 
-  // 전체 달성률 계산 (해당없음 제외)
-  const scored = BENCHMARK_ITEMS.filter((item) => {
-    const target = benchmark[item.key]
-    return item.unit !== '여부' && target > 0
-  })
-  const achievedCount = scored.filter((item) => {
-    const actual = actuals[item.key] || 0
-    const target = benchmark[item.key] || 0
-    return actual >= target
+  const scored = BENCHMARK_ITEMS.filter((item) => item.unit !== '여부' && benchmark[item.key] > 0)
+  const achievedCount = scored.filter((item) => (actuals[item.key] || 0) >= (benchmark[item.key] || 0)).length
+  const warnCount = scored.filter((item) => {
+    const a = actuals[item.key] || 0; const t = benchmark[item.key] || 0
+    return a > 0 && a < t
   }).length
+  const missCount = scored.filter((item) => (actuals[item.key] || 0) === 0 && benchmark[item.key] > 0).length
 
   return (
-    <div className="coverage-pro-card coverage-pro-card-pad">
-      {/* ── 보험료 층위 비교 ── */}
+    <div className="coverage-pro-card" style={{ overflow: 'hidden' }}>
 
-      {/* 헤더 */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+      {/* 헤더 배너 */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a2744 0%, #2d4a8a 100%)',
+        padding: '20px 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20,
+      }}>
         <div>
-          <div className="coverage-pro-section-title" style={{ marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 700, letterSpacing: '0.08em', marginBottom: 4 }}>
             기준금액 대비 보장 현황
           </div>
-          <div className="coverage-pro-muted">
-            설정된 기준금액과 현재 보유 보장을 항목별로 비교합니다.
+          <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 10 }}>
+            보장 달성 분석 리포트
+          </div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <StatPill label="달성" value={achievedCount} color="#10b981" />
+            <StatPill label="부족" value={warnCount} color="#f59e0b" />
+            <StatPill label="미가입" value={missCount} color="#ef4444" />
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* 달성률 요약 */}
-          <div style={{
-            padding: '6px 14px',
-            background: '#1a2744', borderRadius: 20, color: '#fff', fontSize: 13, fontWeight: 700,
-          }}>
-            달성 {achievedCount} / {scored.length}
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <ScoreRing achieved={achievedCount} total={scored.length} />
           {onOpenSettings && (
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              style={{
-                padding: '6px 12px', fontSize: 12, fontWeight: 600,
-                border: '1px solid #e2e8f0', borderRadius: 8,
-                background: '#fff', color: '#64748b', cursor: 'pointer',
-              }}
-            >
-              ⚙ 기준 변경
+            <button type="button" onClick={onOpenSettings} style={{
+              padding: '8px 14px', fontSize: 12, fontWeight: 700,
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 8, background: 'rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.8)', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}>
+              기준 변경
             </button>
           )}
         </div>
       </div>
 
-      {/* 항목별 행 */}
-      <div style={{ display: 'grid', gap: 6 }}>
-        {grouped.map(({ group, items }) => {
-          if (!items.length) return null
-          return (
-            <div key={group}>
-              {/* 그룹 헤더 */}
-              <div style={{
-                fontSize: 11, fontWeight: 700, color: '#94a3b8',
-                letterSpacing: '0.05em', textTransform: 'uppercase',
-                margin: '10px 0 6px', paddingLeft: 4,
-              }}>
-                {group}
-              </div>
-              <div style={{ display: 'grid', gap: 4 }}>
-                {items.map((item) => {
-                  const actual = actuals[item.key] || 0
-                  const target = benchmark[item.key] || 0
-                  const isChild = item.label.startsWith('└')
-
-                  if (item.unit === '여부') {
-                    const has = actual > 0
-                    const needed = target > 0
-                    const status: 'ok' | 'miss' | 'skip' = !needed ? 'skip' : has ? 'ok' : 'miss'
-                    return (
-                      <BRow
-                        key={item.key}
-                        label={item.label}
-                        actual={has ? 1 : 0}
-                        target={needed ? 1 : 0}
-                        status={status}
-                        ratio={null}
-                        isChild={isChild}
-                      />
-                    )
-                  }
-
-                  const ratio = target > 0 ? actual / target : null
-                  const status: 'ok' | 'warn' | 'miss' | 'skip' =
-                    target === 0 ? 'skip'
-                    : ratio === null ? 'skip'
-                    : ratio >= 1 ? 'ok'
-                    : actual > 0 ? 'warn'
-                    : 'miss'
-
-                  return (
-                    <BRow
-                      key={item.key}
-                      label={item.label}
-                      actual={actual}
-                      target={target}
-                      status={status}
-                      ratio={ratio}
-                      isChild={isChild}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
+      {/* 테이블 헤더 */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 90px 90px 60px 80px',
+        gap: 8, padding: '10px 12px',
+        background: '#f8fafc', borderBottom: '2px solid #e2e8f0',
+      }}>
+        <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', letterSpacing: '0.05em' }}>담보 항목</span>
+        <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'right' }}>현재</span>
+        <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'right' }}>기준</span>
+        <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8' }}>달성률</span>
+        <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'right' }}>상태</span>
       </div>
+
+      {/* 항목별 */}
+      {grouped.map(({ group, items }) => {
+        if (!items.length) return null
+        return (
+          <div key={group}>
+            <div style={{
+              padding: '8px 12px 4px', fontSize: 10, fontWeight: 900,
+              color: '#c9a96e', letterSpacing: '0.1em', textTransform: 'uppercase',
+              background: '#fefef9', borderBottom: '1px solid #f1f5f9',
+            }}>
+              {group}
+            </div>
+            {items.map((item) => {
+              const actual = actuals[item.key] || 0
+              const target = benchmark[item.key] || 0
+              const isChild = item.label.startsWith('└')
+              if (item.unit === '여부') {
+                const has = actual > 0
+                const needed = target > 0
+                const status: 'ok' | 'miss' | 'skip' = !needed ? 'skip' : has ? 'ok' : 'miss'
+                return <ItemRow key={item.key} label={item.label} actual={has ? 1 : 0} target={needed ? 1 : 0} status={status} ratio={null} isChild={isChild} />
+              }
+              const ratio = target > 0 ? actual / target : null
+              const status: 'ok' | 'warn' | 'miss' | 'skip' =
+                target === 0 ? 'skip' : ratio === null ? 'skip' : ratio >= 1 ? 'ok' : actual > 0 ? 'warn' : 'miss'
+              return <ItemRow key={item.key} label={item.label} actual={actual} target={target} status={status} ratio={ratio} isChild={isChild} />
+            })}
+          </div>
+        )
+      })}
     </div>
   )
 }
