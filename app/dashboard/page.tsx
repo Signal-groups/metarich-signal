@@ -190,6 +190,7 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
+  const [menuSettingsSignal, setMenuSettingsSignal] = useState(0);
   const [isConsultEditMode, setIsConsultEditMode] = useState(false);
   const [openConsultCategories, setOpenConsultCategories] = useState<Record<string, boolean>>({
     customer: true,
@@ -437,6 +438,14 @@ export default function DashboardPage() {
                 <CalendarDays className="h-4 w-4" />
                 {selectedDate.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" })}
               </button>
+              {isMaster && (
+                <button
+                  onClick={() => setMenuSettingsSignal((prev) => prev + 1)}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#21324d] shadow-sm hover:border-[#0ea5e9] hover:text-[#0f4f86]"
+                >
+                  <Settings className="h-4 w-4" /> 메뉴 노출 설정
+                </button>
+              )}
               <button
                 onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
                 className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#1b54ad] shadow-sm"
@@ -653,6 +662,7 @@ export default function DashboardPage() {
         setIsOpen={setIsSidebarOpen}
         onOpenOffice={() => { setViewMode('office'); setActiveTab(null); }}
         onOpenConsulting={() => { setViewMode('consulting'); setActiveTab(null); }}
+        menuSettingsSignal={menuSettingsSignal}
         onTabChange={(val: string) => setActiveTab(val.startsWith('tab:') ? val.split(':')[1] : val)} 
         activeTab={activeTab} 
       />

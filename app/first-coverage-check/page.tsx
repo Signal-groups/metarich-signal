@@ -1768,6 +1768,8 @@ export default function FirstCoverageCheckPage() {
                     ))}
                   </ul>
                 </div>
+                  </div>
+                </details>
               </Panel>
             )}
 
@@ -1924,6 +1926,285 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
         <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0.5"}`} />
       </button>
     </label>
+  )
+}
+
+type ResultItem = {
+  title: string
+  need: number
+  ready: number
+  rate: number
+  gap: number
+  note: string
+  details?: { label: string; value: string }[]
+}
+
+function ResultCounselSummary({
+  customerName,
+  averageRate,
+  message,
+  mainGapItem,
+  topGapItems,
+  resultList,
+}: {
+  customerName: string
+  averageRate: number
+  message: string
+  mainGapItem: ResultItem
+  topGapItems: ResultItem[]
+  resultList: ResultItem[]
+}) {
+  return (
+    <div className="no-print space-y-4">
+      <section className="rounded-3xl border border-[#bcd6f0] bg-white p-5 shadow-sm">
+        <div className="grid gap-4 lg:grid-cols-[280px_1fr_280px]">
+          <div className="rounded-2xl bg-[#102a4c] p-5 text-white">
+            <p className="text-xs font-black text-white/65">{customerName}님의 현재 준비율</p>
+            <p className="mt-3 text-6xl font-black leading-none">{averageRate}%</p>
+            <p className="mt-4 text-xs font-bold leading-6 text-white/75">필요금액 대비 현재 준비된 비용을 기준으로 계산했습니다.</p>
+          </div>
+          <div className="rounded-2xl bg-[#f2f8ff] p-5">
+            <p className="text-sm font-black text-[#1a3a6e]">오늘 상담 결론</p>
+            <p className="mt-3 text-2xl font-black leading-tight text-slate-950">
+              가장 먼저 볼 공백은 {mainGapItem.title}입니다.
+            </p>
+            <p className="mt-3 text-sm font-bold leading-7 text-slate-600">{message}</p>
+          </div>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <p className="text-sm font-black text-amber-900">설명 순서</p>
+            <ol className="mt-3 space-y-2 text-sm font-black text-amber-900">
+              <li>1. 전체 준비율 확인</li>
+              <li>2. 공백 TOP 3 설명</li>
+              <li>3. 상세 보장분석으로 연결</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-lg font-black text-slate-950">핵심 공백 TOP 3</p>
+            <p className="mt-1 text-sm font-bold text-slate-500">부족한 항목만 먼저 보여 상담 흐름을 단순하게 만듭니다.</p>
+          </div>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">고객 설명용 요약</span>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {topGapItems.map((item, index) => (
+            <PriorityGapCard key={item.title} item={item} index={index} />
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-lg font-black text-slate-950">항목별 준비율</p>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {resultList.map((item) => (
+            <ResultProgressRow key={item.title} item={item} />
+          ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function PriorityGapCard({ item, index }: { item: ResultItem; index: number }) {
+  const tone = item.rate >= 70 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : item.rate >= 40 ? "border-amber-200 bg-amber-50 text-amber-700" : "border-rose-200 bg-rose-50 text-rose-700"
+  return (
+    <div className={`rounded-2xl border p-5 ${tone}`}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-black">우선 {index + 1}</span>
+        <span className="text-sm font-black">{item.rate}% 준비</span>
+      </div>
+      <p className="mt-4 text-xl font-black text-slate-950">{item.title}</p>
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-black">
+        <div className="rounded-xl bg-white/75 p-3">
+          <p className="text-slate-400">필요금액</p>
+          <p className="mt-1 text-slate-950">{man(item.need)}</p>
+        </div>
+        <div className="rounded-xl bg-white/75 p-3">
+          <p className="text-slate-400">현재 준비</p>
+          <p className="mt-1 text-slate-950">{man(item.ready)}</p>
+        </div>
+      </div>
+      <div className="mt-4 h-2 rounded-full bg-white/70">
+        <div className="h-2 rounded-full bg-current" style={{ width: `${Math.min(100, item.rate)}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function ResultProgressRow({ item }: { item: ResultItem }) {
+  const bar = item.rate >= 70 ? "bg-emerald-500" : item.rate >= 40 ? "bg-amber-400" : "bg-rose-500"
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-black text-slate-900">{item.title}</p>
+        <p className="text-sm font-black text-[#102a4c]">{item.rate}%</p>
+      </div>
+      <div className="mt-3 h-2 rounded-full bg-white">
+        <div className={`h-2 rounded-full ${bar}`} style={{ width: `${Math.min(100, item.rate)}%` }} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-slate-500">
+        <span>필요 {man(item.need)}</span>
+        <span>준비 {man(item.ready)}</span>
+        <span>남은 필요금액 {balanceText(item.gap)}</span>
+      </div>
+    </div>
+  )
+}
+
+function CoveragePrintReport({
+  customerName,
+  averageRate,
+  message,
+  mainGapItem,
+  topGapItems,
+  resultList,
+  currentCancerCase,
+  cancerBenefitLabel,
+  cancerDiagnosisBenefit,
+  cancerDiagnosisAfterLiving,
+  cancerTreatmentReady,
+  cancerTreatmentGap,
+  cancerTreatmentNeedTotal,
+  checkedTreatmentCount,
+}: {
+  customerName: string
+  averageRate: number
+  message: string
+  mainGapItem: ResultItem
+  topGapItems: ResultItem[]
+  resultList: ResultItem[]
+  currentCancerCase: typeof CANCER_CASES[number]
+  cancerBenefitLabel: string
+  cancerDiagnosisBenefit: number
+  cancerDiagnosisAfterLiving: number
+  cancerTreatmentReady: number
+  cancerTreatmentGap: number
+  cancerTreatmentNeedTotal: number
+  checkedTreatmentCount: number
+}) {
+  return (
+    <div className="coverage-print-report">
+      <section className="coverage-print-page bg-white p-[12mm]">
+        <PrintHeader title={`${customerName}님 보장 공백 상담 요약`} subtitle="첫 상담에서 바로 설명하기 위한 고객용 1페이지 요약입니다." page="01" />
+        <div className="mt-5 grid grid-cols-[0.9fr_1.25fr] gap-5">
+          <div className="rounded-3xl bg-[#102a4c] p-6 text-white">
+            <p className="text-sm font-black text-white/70">현재 준비율</p>
+            <p className="mt-4 text-[76px] font-black leading-none">{averageRate}%</p>
+            <p className="mt-5 text-sm font-bold leading-7 text-white/75">필요금액 대비 현재 준비된 비용 기준입니다.</p>
+            <div className="mt-6 rounded-2xl bg-white/10 p-4">
+              <p className="text-xs font-black text-white/60">우선 확인 공백</p>
+              <p className="mt-2 text-2xl font-black">{mainGapItem.title}</p>
+            </div>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+            <p className="text-sm font-black text-[#1a3a6e]">상담 결론</p>
+            <p className="mt-3 text-[28px] font-black leading-tight text-slate-950">{message}</p>
+            <div className="mt-5 grid grid-cols-3 gap-3">
+              {topGapItems.map((item, index) => (
+                <div key={item.title} className="rounded-2xl bg-white p-4">
+                  <p className="text-[11px] font-black text-slate-400">우선 {index + 1}</p>
+                  <p className="mt-2 text-base font-black text-slate-950">{item.title}</p>
+                  <p className="mt-2 text-2xl font-black text-rose-600">{item.rate}%</p>
+                  <p className="mt-1 text-[11px] font-bold text-slate-500">준비 {man(item.ready)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 rounded-3xl border border-slate-200 bg-white p-5">
+          <p className="text-base font-black text-slate-950">항목별 준비율</p>
+          <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3">
+            {resultList.map((item) => (
+              <PrintProgressRow key={item.title} item={item} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="coverage-print-page bg-white p-[12mm]">
+        <PrintHeader title="상세 근거 및 다음 상담 포인트" subtitle="설계사용 계산 근거입니다. 고객 설명 후 상세 보장분석으로 연결합니다." page="02" />
+        <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-5">
+          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+            <p className="text-lg font-black text-amber-900">암 치료비 구조</p>
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <PrintMetric label="선택 기준" value={currentCancerCase.name} />
+              <PrintMetric label={cancerBenefitLabel} value={man(cancerDiagnosisBenefit)} />
+              <PrintMetric label="치료비 필요" value={man(cancerTreatmentNeedTotal)} />
+              <PrintMetric label="생활비 차감 후 진단비" value={man(cancerDiagnosisAfterLiving)} />
+              <PrintMetric label="현재 준비된 치료비" value={man(cancerTreatmentReady)} />
+              <PrintMetric label="남은 필요금액" value={balanceText(cancerTreatmentGap)} />
+            </div>
+            <p className="mt-4 text-sm font-bold leading-7 text-amber-900">
+              암 보장은 먼저 1년 생활비를 따로 보고, 남는 진단비와 항암·표적항암·방사선 보장, 실손 예상액을 더해 치료비 준비금으로 설명합니다.
+            </p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+            <p className="text-lg font-black text-slate-950">다음 상담 연결</p>
+            <ol className="mt-4 space-y-3 text-sm font-bold leading-7 text-slate-700">
+              <li>1. 우선 공백 TOP 3의 실제 보장범위를 확인합니다.</li>
+              <li>2. 진단비, 치료비, 간병비를 분리해서 보완 방향을 정합니다.</li>
+              <li>3. 상세 보장분석에서 기존 증권과 신규 제안을 비교합니다.</li>
+              <li>4. 선택한 치료방법 항목은 {checkedTreatmentCount}개 기준으로 추가 설명합니다.</li>
+            </ol>
+          </div>
+        </div>
+        <div className="mt-5 rounded-3xl border border-slate-200 bg-white p-5">
+          <p className="text-base font-black text-slate-950">상세 항목 메모</p>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {topGapItems.map((item) => (
+              <div key={item.title} className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm font-black text-slate-950">{item.title}</p>
+                <p className="mt-2 text-xs font-bold leading-6 text-slate-500">{item.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function PrintHeader({ title, subtitle, page }: { title: string; subtitle: string; page: string }) {
+  return (
+    <div className="flex items-start justify-between border-b border-slate-200 pb-4">
+      <div>
+        <p className="text-[11px] font-black tracking-[0.22em] text-cyan-700">STANDARD OF INSURANCE</p>
+        <h1 className="mt-2 text-[28px] font-black text-slate-950">{title}</h1>
+        <p className="mt-1 text-sm font-bold text-slate-500">{subtitle}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-xl font-black text-[#102a4c]">보험의 기준</p>
+        <p className="mt-1 text-xs font-black text-slate-400">{page} / 02</p>
+      </div>
+    </div>
+  )
+}
+
+function PrintProgressRow({ item }: { item: ResultItem }) {
+  const bar = item.rate >= 70 ? "bg-emerald-500" : item.rate >= 40 ? "bg-amber-400" : "bg-rose-500"
+  return (
+    <div className="rounded-2xl bg-slate-50 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-black text-slate-900">{item.title}</p>
+        <p className="text-sm font-black text-[#102a4c]">{item.rate}%</p>
+      </div>
+      <div className="mt-2 h-2 rounded-full bg-white">
+        <div className={`h-2 rounded-full ${bar}`} style={{ width: `${Math.min(100, item.rate)}%` }} />
+      </div>
+      <p className="mt-2 text-[11px] font-bold text-slate-500">필요 {man(item.need)} · 준비 {man(item.ready)}</p>
+    </div>
+  )
+}
+
+function PrintMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-white p-4">
+      <p className="text-[11px] font-black text-slate-400">{label}</p>
+      <p className="mt-2 text-base font-black text-slate-950">{value}</p>
+    </div>
   )
 }
 
