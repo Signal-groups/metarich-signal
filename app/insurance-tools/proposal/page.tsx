@@ -2040,7 +2040,7 @@ export default function ProposalPage() {
                     onChange={(next) => updatePlan(plan.id, next)}
                     onRemove={plans.length > 1 ? () => removePlan(plan.id) : undefined}
                     canRemove={plans.length > 1}
-                    onCustomerName={index === 0 ? setCustomerName : undefined}
+                    onCustomerName={undefined}
                   />
                 ))}
                 {(mode === "compare" || mode === "cross") && plans.length < 4 && (
