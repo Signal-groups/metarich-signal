@@ -125,7 +125,7 @@ const categories: CategoryTemplate[] = [
     desc: "형사합의금, 변호사비, 벌금, 자부상 중심 비교",
     tone: "from-cyan-500 to-sky-600",
     icon: Car,
-    summary: "교통사고 처리 과정에서 실제 지출될 수 있는 비용담보를 한 장으로 정리합니다.",
+    summary: "교통사고 이후 발생할 수 있는 형사합의금, 변호사비, 벌금 부담을 미리 준비합니다.",
     infographic: "cards",
     reportTitle: "운전자 핵심 비용담보 비교",
     metrics: [
@@ -144,7 +144,7 @@ const categories: CategoryTemplate[] = [
     desc: "암·뇌·심장·수술·입원·간병 담보와 총보험료 비교",
     tone: "from-rose-500 to-orange-500",
     icon: HeartPulse,
-    summary: "같은 금액 비교보다 보장범위 차이까지 함께 설명하는 건강보험 비교표를 만듭니다.",
+    summary: "암·뇌·심장 질환과 수술·치료 과정에서 필요한 생활비와 치료비 공백을 함께 준비합니다.",
     infographic: "bars",
     reportTitle: "주요 질병·수술 담보 비교",
     metrics: [
@@ -181,7 +181,7 @@ const categories: CategoryTemplate[] = [
     desc: "상해·질병 간병일당, 181일 이상, 요양병원, 간호간병통합서비스 중심",
     tone: "from-emerald-500 to-teal-600",
     icon: Stethoscope,
-    summary: "입원 중 실제 발생하는 간병인 비용과 간호간병통합서비스 보장을 중심으로 정리합니다.",
+    summary: "입원과 회복 기간에 발생하는 간병인 비용과 간호간병통합서비스 이용 부담을 준비합니다.",
     infographic: "radar",
     reportTitle: "입원 간병비 보장 구조",
     metrics: [
@@ -199,7 +199,7 @@ const categories: CategoryTemplate[] = [
     desc: "방문요양, 주야간보호, 복지용구, 가족돌봄 활용",
     tone: "from-blue-500 to-indigo-600",
     icon: Home,
-    summary: "시설 입소 전 집에서 돌봄을 유지할 때 필요한 재가급여와 가족 부담을 정리합니다.",
+    summary: "집에서 돌봄을 이어가기 위해 필요한 재가급여 보완금과 가족의 돌봄 부담을 준비합니다.",
     infographic: "timeline",
     reportTitle: "재가 돌봄 활용 비교",
     metrics: [
@@ -217,7 +217,7 @@ const categories: CategoryTemplate[] = [
     desc: "통원, 입원, 수술, 슬개골, 피부질환, 자기부담금 비교",
     tone: "from-amber-400 to-orange-500",
     icon: PawPrint,
-    summary: "반려동물 치료비에서 자주 발생하는 통원·수술·면책 항목을 보기 쉽게 비교합니다.",
+    summary: "반려동물에게 자주 발생하는 통원·입원·수술 치료비 부담을 미리 준비합니다.",
     infographic: "cards",
     reportTitle: "반려동물 치료비 보장 비교",
     metrics: [
@@ -235,7 +235,7 @@ const categories: CategoryTemplate[] = [
     desc: "납입기간, 총납입, 10년 후 환급률, 적금 3% 비교",
     tone: "from-slate-700 to-cyan-600",
     icon: CircleDollarSign,
-    summary: "단기납 종신의 환급률을 월 적금 3% 구조와 비교해 활용 전략까지 설명합니다.",
+    summary: "목적자금 마련과 사망보장을 함께 고려해 장기 유지 시 활용 가능한 자금을 확인합니다.",
     infographic: "timeline",
     reportTitle: "단기납 종신 환급 활용 전략",
     metrics: [
@@ -253,7 +253,7 @@ const categories: CategoryTemplate[] = [
     desc: "충전·크라운·임플란트·브릿지·틀니·신경치료 담보 비교",
     tone: "from-sky-400 to-cyan-500",
     icon: Bone,
-    summary: "실제 치과 치료비와 보험금 지급 구조를 한 장에 정리합니다. 항목별 지급 조건과 한도를 비교해 실속있는 선택을 돕습니다.",
+    summary: "충전·크라운·임플란트처럼 반복적으로 발생할 수 있는 치과 치료비 부담을 준비합니다.",
     infographic: "cards",
     reportTitle: "치과 치료비 담보 비교",
     metrics: [
@@ -315,14 +315,17 @@ const detailGroups = (template: CategoryTemplate) => {
     const find = (keys: string[]) => keys.map((key) => template.metrics.find((metric) => metric.key === key)).filter(Boolean) as MetricDef[]
     return [
       { title: "암·뇌·심장 진단비 구조", metrics: find(["cancer", "minorCancer", "brain", "heart"]) },
-      { title: "치료비·수술비 보장 구조", metrics: find([
+      { title: "치료비 보장 구조", metrics: find([
         "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "heavyIon", "robotCancerSurgery",
         "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced",
+      ]) },
+      { title: "수술비 보장 구조", metrics: find([
         "injurySurgery", "diseaseSurgery", "injuryComprehensiveSurgery", "diseaseComprehensiveSurgery",
         "injuryAdvancedSurgery", "diseaseAdvancedSurgery", "injuryTypeSurgery", "diseaseTypeSurgery", "diseaseNSurgery",
       ]) },
       { title: "간병 보장 구조", metrics: find(["care"]) },
-    ].filter((group) => group.metrics.length)
+      { title: "추가 담보", metrics: [] },
+    ]
   }
   return chunkMetrics(template.metrics, 8).map((metrics, index) => ({
     title: index === 0 ? "담보별 상세 비교" : "담보별 상세 비교",
@@ -1063,7 +1066,7 @@ function ProposalReport({
       ? String(plan.metrics[metric.key] || "").trim()
       : num(plan.metrics[metric.key] || "") > 0
     )
-  ) || (template.id === "health" && group.title.includes("치료비") && hasCustomCoverage))
+  ) || (template.id === "health" && group.title.includes("추가 담보") && hasCustomCoverage))
   const scenarioPageNum = pageOffset + 3 + outputGroups.length
 
   return (
@@ -1155,7 +1158,7 @@ function ProposalReport({
                 plans={visiblePlans}
                 showCross={mode === "cross"}
                 metrics={group.metrics}
-                includeCustomRows={template.id !== "health" || group.title.includes("치료비")}
+                includeCustomRows={template.id !== "health" || group.title.includes("추가 담보")}
               />
             </section>
           </div>
@@ -1314,6 +1317,8 @@ function ShortLifeCostInsights({ plan }: { plan: PlanData }) {
 }
 
 function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plans: PlanData[] }) {
+  if (template.id === "health") return <HealthCoverageOverviewGraphic plans={plans} />
+
   const visibleMetrics = template.metrics
     .filter((metric) => metric.kind !== "text")
     .filter((metric) => plans.some((plan) => num(plan.metrics[metric.key] || "") > 0))
@@ -1321,11 +1326,11 @@ function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plan
   return (
     <div className="flex h-full flex-col">
       <h2 className="text-lg font-black text-slate-950">보장 인포그래픽</h2>
-      <p className="mt-1 text-xs font-bold text-slate-400">업로드 참고 이미지처럼 금액 차이를 시각적으로 보여주는 영역입니다.</p>
+      <p className="mt-1 text-xs font-bold text-slate-400">핵심 보장금액을 한눈에 확인할 수 있도록 정리했습니다.</p>
       <div className="mt-4 grid flex-1 gap-2">
         {visibleMetrics.length === 0 && (
           <div className="rounded-2xl bg-slate-50 p-5 text-sm font-bold text-slate-400">
-            입력된 보장금액이 없어 인포그래픽 항목을 생략합니다.
+            확인 가능한 보장금액이 없습니다.
           </div>
         )}
         {visibleMetrics.map((metric) => {
@@ -1346,6 +1351,50 @@ function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plan
                     color={index % 2 === 0 ? "bg-cyan-500" : index % 2 === 1 ? "bg-rose-400" : "bg-amber-400"}
                   />
                 ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const healthOverviewCards = [
+  { label: "일반암 진단비", keys: ["cancer"], tone: "border-rose-100 bg-rose-50 text-rose-700" },
+  { label: "유사암 진단비", keys: ["minorCancer"], tone: "border-pink-100 bg-pink-50 text-pink-700" },
+  { label: "뇌혈관 진단비", keys: ["brain"], tone: "border-cyan-100 bg-cyan-50 text-cyan-700" },
+  { label: "심장 진단비", keys: ["heart"], tone: "border-orange-100 bg-orange-50 text-orange-700" },
+  { label: "상해수술", sub: "종합/상급", keys: ["injuryComprehensiveSurgery", "injuryAdvancedSurgery", "injurySurgery"], tone: "border-slate-200 bg-slate-50 text-slate-700" },
+  { label: "질병수술", sub: "종합/상급", keys: ["diseaseComprehensiveSurgery", "diseaseAdvancedSurgery", "diseaseSurgery"], tone: "border-emerald-100 bg-emerald-50 text-emerald-700" },
+  { label: "종수술비", sub: "상해/질병", keys: ["injuryTypeSurgery", "diseaseTypeSurgery"], tone: "border-blue-100 bg-blue-50 text-blue-700" },
+  { label: "N대 수술비", keys: ["diseaseNSurgery"], tone: "border-violet-100 bg-violet-50 text-violet-700" },
+  { label: "간병인 보장", keys: ["care"], tone: "border-teal-100 bg-teal-50 text-teal-700", wide: true },
+]
+
+function HealthCoverageOverviewGraphic({ plans }: { plans: PlanData[] }) {
+  const cardValue = (keys: string[]) => {
+    const values = plans.map((plan) => keys.reduce((sum, key) => sum + num(plan.metrics[key] || ""), 0))
+    return Math.max(...values, 0)
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <h2 className="text-lg font-black text-slate-950">보장 인포그래픽</h2>
+      <p className="mt-1 text-xs font-bold text-slate-400">회사별 비교는 상세 페이지에서 보고, 여기서는 보장 구조만 압축해서 확인합니다.</p>
+      <div className="mt-4 grid flex-1 grid-cols-2 gap-2">
+        {healthOverviewCards.map((card) => {
+          const value = cardValue(card.keys)
+          return (
+            <div key={card.label} className={`${card.wide ? "col-span-2" : ""} rounded-2xl border p-3 ${card.tone}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-black leading-5">{card.label}</p>
+                  {card.sub && <p className="mt-0.5 text-[10px] font-black opacity-70">{card.sub}</p>}
+                </div>
+                <p className="shrink-0 rounded-full bg-white/80 px-2 py-1 text-xs font-black text-slate-900">
+                  {value > 0 ? `${won(value)}만원` : "-"}
+                </p>
               </div>
             </div>
           )
@@ -1533,7 +1582,7 @@ function ComparisonTable({
           {visibleMetrics.length === 0 && customRows.length === 0 && (
             <tr className="border-t border-slate-100">
               <td colSpan={plans.length + (showCross ? 2 : 1)} className="px-4 py-8 text-center text-xs font-bold text-slate-400">
-                입력된 담보가 없어 출력에서 생략됩니다.
+                확인 가능한 담보가 없습니다.
               </td>
             </tr>
           )}
