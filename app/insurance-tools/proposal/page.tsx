@@ -1001,8 +1001,9 @@ function ScenarioPage4({
             <h1 className="mt-1 text-[22px] font-black">{cfg.page4Title}</h1>
           </div>
           <div className="text-right">
-            <p className="text-xs font-bold text-white/70">{customerName || "고객"}님</p>
-            <p className="text-xs font-bold text-white/70">{consultant.name || "담당 설계사"}</p>
+            <p className="text-xs font-bold text-white/70">보험의 기준</p>
+            <p className="mt-1 text-base font-black">{consultant.name || "담당 설계사"}</p>
+            <p className="text-xs font-bold text-white/70">{consultant.phone}</p>
           </div>
         </div>
         <p className="mt-1 text-[11px] font-bold text-white/80">{cfg.page4Subtitle}</p>
@@ -1097,8 +1098,9 @@ function HealthTreatmentPage({
             <h1 className="mt-1 text-[22px] font-black">{cfg.title}</h1>
           </div>
           <div className="text-right">
-            <p className="text-xs font-bold text-white/70">{customerName || "고객"}님</p>
-            <p className="text-xs font-bold text-white/70">{consultant.name || "담당 설계사"}</p>
+            <p className="text-xs font-bold text-white/70">보험의 기준</p>
+            <p className="mt-1 text-base font-black">{consultant.name || "담당 설계사"}</p>
+            <p className="text-xs font-bold text-white/70">{consultant.phone}</p>
           </div>
         </div>
         <p className="mt-1 text-[11px] font-bold text-white/80">{cfg.subtitle}</p>
@@ -1646,12 +1648,12 @@ export default function ProposalPage() {
                 plans={visiblePlans}
                 focus={focus}
                 customerName={customerName}
-                consultant={consultant}
-              />
-            </div>
-          )}
-        </div>
-      </main>
-    </>
+              consultant={consultant}
+            />
+          </div>
+        )}
+      </div>
+    </main>
+  </>
   )
 }

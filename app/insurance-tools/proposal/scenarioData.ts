@@ -46,14 +46,15 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
       {
         icon: "🚸",
         label: "스쿨존 사고 (민식이법)",
-        situation: "스쿨존 내 어린이를 다치게 하면 특정범죄가중처벌법이 적용됩니다. 합의하지 못하면 최대 무기징역까지 가능해 형사합의금이 반드시 필요합니다.",
-        totalEstimate: "약 4,000 ~ 5,500만원",
+        situation: "스쿨존 내 어린이 사망사고 시 특정범죄가중처벌법 적용. 형사합의금 최대 3,000만원, 교통사고처리지원금은 사망 1명당 최대 2억원까지 지급됩니다.",
+        totalEstimate: "형사합의금 최대 3,000만원 + 지원금 최대 2억원",
         costItems: [
-          { label: "형사합의금", amount: "3,000 ~ 5,000만원", covered: true, coverLabel: "교통사고처리지원금" },
+          { label: "교통사고처리지원금 (사망 1명)", amount: "최대 2억원", covered: true, coverLabel: "교통사고처리지원금" },
+          { label: "형사합의금 (사망 기준)", amount: "최대 3,000만원", covered: true, coverLabel: "교통사고처리지원금" },
           { label: "벌금", amount: "최대 500만원", covered: true, coverLabel: "벌금 특약" },
           { label: "변호사 선임비", amount: "300 ~ 500만원", covered: true, coverLabel: "변호사선임비용" },
         ],
-        conclusion: "보험 없을 시 전액 자부담 → 운전자보험으로 대부분 해결"
+        conclusion: "사망사고 시 2억원 지원금 + 형사합의금 — 운전자보험 없이는 전액 자부담"
       },
       {
         icon: "🚦",
@@ -70,13 +71,14 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
       {
         icon: "🚗",
         label: "일반 인명사고 (추돌·부상 3주)",
-        situation: "급정거 또는 추돌로 탑승자가 3주 진단을 받으면 형사합의 절차가 시작됩니다. 단순 사고도 합의금 수백만원이 발생합니다.",
-        totalEstimate: "약 400 ~ 800만원",
+        situation: "급정거 또는 추돌로 탑승자가 3주 진단을 받으면 형사합의 절차가 시작됩니다. 단순 사고도 합의금 수백만원 + 대인벌금 최대 2,000만원이 발생합니다.",
+        totalEstimate: "약 500 ~ 1,000만원",
         costItems: [
           { label: "형사합의금", amount: "300 ~ 500만원", covered: true, coverLabel: "교통사고처리지원금" },
+          { label: "대인 벌금", amount: "최대 2,000만원", covered: true, coverLabel: "벌금 대인" },
           { label: "자동차사고 부상치료비", amount: "100 ~ 300만원", covered: true, coverLabel: "자동차사고부상치료비" },
         ],
-        conclusion: "소액 사고도 합의금 발생 — 월 수만원으로 수천만원 리스크 대비"
+        conclusion: "합의금 + 대인벌금 2,000만원 — 운전자보험으로 실질 대비 가능"
       }
     ]
   },
