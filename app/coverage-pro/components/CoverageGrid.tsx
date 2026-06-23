@@ -1,6 +1,7 @@
 'use client'
 
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
+import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 
 // 주요 보장 항목 — 카테고리별 정의
 const CATEGORY_GROUPS = [
@@ -11,6 +12,7 @@ const CATEGORY_GROUPS = [
       { rowKey: 'silson_disease_outpatient', label: '질병 통원 의료비' },
       { rowKey: 'silson_injury_inpatient',   label: '상해 입원 의료비' },
       { rowKey: 'silson_injury_outpatient',  label: '상해 통원 의료비' },
+      { rowKey: 'silson_3major',             label: '3대 비급여' },
     ],
   },
   {
@@ -20,6 +22,8 @@ const CATEGORY_GROUPS = [
       { rowKey: 'cancer_similar',   label: '유사암 진단비' },
       { rowKey: 'cancer_chemo',     label: '항암 치료비' },
       { rowKey: 'cancer_targeted',  label: '표적항암 치료비' },
+      { rowKey: 'cancer_major_benefit',    label: '암 주요치료비(급여)' },
+      { rowKey: 'cancer_major_nonbenefit', label: '암 주요치료비(비급여)' },
       { rowKey: 'cancer_surgery',   label: '암 수술비' },
     ],
   },
@@ -31,6 +35,7 @@ const CATEGORY_GROUPS = [
       { rowKey: 'brain_hemorrhage',  label: '뇌출혈 진단비' },
       { rowKey: 'heart_ischemic',    label: '허혈성심장 진단비' },
       { rowKey: 'heart_acute_mi',    label: '급성심근경색 진단비' },
+      { rowKey: 'vascular_major',    label: '2대 주요치료비' },
     ],
   },
   {
@@ -40,6 +45,7 @@ const CATEGORY_GROUPS = [
       { rowKey: 'disability_disease',   label: '질병 후유장해 3~100%' },
       { rowKey: 'death_general',        label: '일반 사망' },
       { rowKey: 'death_disease',        label: '질병 사망' },
+      { rowKey: 'death_injury',         label: '상해 사망' },
     ],
   },
   {
@@ -47,8 +53,18 @@ const CATEGORY_GROUPS = [
     items: [
       { rowKey: 'surgery_disease',        label: '질병 수술비' },
       { rowKey: 'surgery_injury',         label: '상해 수술비' },
+      { rowKey: 'surgery_1_5',            label: '1~5종 수술비' },
+      { rowKey: 'surgery_n_major',        label: 'N대 수술비' },
       { rowKey: 'hospital_disease_daily', label: '질병 입원일당' },
       { rowKey: 'hospital_injury_daily',  label: '상해 입원일당' },
+    ],
+  },
+  {
+    key: 'care', label: '간병 / 요양', color: '#14b8a6',
+    items: [
+      { rowKey: 'nursing_hospital',      label: '간병인 사용일당' },
+      { rowKey: 'nursing_care_hospital', label: '요양병원 간병' },
+      { rowKey: 'nursing_integrated',    label: '간호간병통합' },
     ],
   },
   {
@@ -57,6 +73,7 @@ const CATEGORY_GROUPS = [
       { rowKey: 'driver_fine',     label: '교통사고 벌금' },
       { rowKey: 'driver_lawyer',   label: '변호사 선임비용' },
       { rowKey: 'driver_accident', label: '교통사고 처리지원금' },
+      { rowKey: 'other_liability', label: '일상생활배상책임' },
     ],
   },
 ]
@@ -233,7 +250,7 @@ export default function CoverageGrid({ contracts }: { contracts: ProContract[] }
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#64748b' }} />
-                  <span style={{ fontSize: 12, color: '#1a2744', fontWeight: 600 }}>{rk}</span>
+                  <span style={{ fontSize: 12, color: '#1a2744', fontWeight: 600 }}>{ROW_KEY_LABEL[rk] ?? rk}</span>
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 900, color: '#64748b', whiteSpace: 'nowrap' }}>
                   {fmtAmt(amt)}

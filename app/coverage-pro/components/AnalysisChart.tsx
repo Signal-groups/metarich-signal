@@ -5,10 +5,10 @@ import type { ProContract } from '../../../lib/coverageAnalysis/types'
 const RADAR_GROUPS = [
   { key: 'death',    label: '사망',     match: ['death_'],                        recommend: 100_000_000 },
   { key: 'cancer',   label: '암진단',   match: ['cancer_general'],                recommend: 30_000_000 },
-  { key: 'brain',    label: '뇌질환',   match: ['brain_stroke', 'brain_vascular'], recommend: 20_000_000 },
-  { key: 'heart',    label: '심장',     match: ['heart_infarction', 'heart_ischemic', 'heart_acute_mi'], recommend: 20_000_000 },
+  { key: 'brain',    label: '뇌질환',   match: ['brain_stroke', 'brain_vascular', 'vascular_major'], recommend: 20_000_000 },
+  { key: 'heart',    label: '심장',     match: ['heart_ischemic', 'heart_acute_mi', 'vascular_major'], recommend: 20_000_000 },
   { key: 'surgery',  label: '수술비',   match: ['surgery_'],                      recommend: 5_000_000 },
-  { key: 'hospital', label: '입원일당', match: ['hospital_disease_daily'],        recommend: 200_000 },
+  { key: 'hospital', label: '입원/간병', match: ['hospital_disease_daily', 'hospital_injury_daily', 'nursing_hospital'], recommend: 200_000 },
 ]
 
 const PREMIUM_COLORS = ['#1a2744','#2d4a8a','#c9a96e','#0ea5e9','#10b981','#f59e0b','#8b5cf6']
@@ -29,10 +29,9 @@ function getPremiumRows(contracts: ProContract[]): PremiumRow[] {
 function getRadarData(contracts: ProContract[]) {
   return RADAR_GROUPS.map((group) => {
     const amount = contracts.flatMap((c) => c.coverages)
-      .filter((cov) => group.match.some((kw) => {
-        const base = kw.replace('_', '')
-        return cov.rowKey.startsWith(base) || cov.rowKey.includes(base)
-      }))
+      .filter((cov) => group.match.some((kw) =>
+        kw.endsWith('_') ? cov.rowKey.startsWith(kw) : cov.rowKey === kw
+      ))
       .reduce((sum, cov) => sum + Number(cov.amount || 0) * 10_000, 0)
     return { ...group, amount }
   })

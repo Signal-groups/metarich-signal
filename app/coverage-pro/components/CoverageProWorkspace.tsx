@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type {
-  OutputConfig, ProContract, ProCustomer, ProSession,
+  OutputConfig, ProContract, ProCoverage, ProCustomer, ProSession,
   RemodelProposal, StepNumber, StepStatus,
 } from '../../../lib/coverageAnalysis/types'
 import { createProSession, saveProSession } from '../../../lib/coverageAnalysis/session'
@@ -88,6 +88,71 @@ function parseAmountToMan(val: unknown): number {
 
 // ── GPTs JSON 파서 ──────────────────────────────────────────────────────
 // coverage_summary 키 → rowKey 매핑
+function parsePremiumToWon(val: unknown): number {
+  if (val === null || val === undefined) return 0
+  if (typeof val === 'number') {
+    if (!Number.isFinite(val) || val <= 0) return 0
+    return val >= 1000 ? Math.round(val) : Math.round(val * 10000)
+  }
+  const compact = String(val).trim().replace(/,/g, '').replace(/\s/g, '')
+  if (!compact) return 0
+  const eokMatch = compact.match(/^(\d+(?:\.\d+)?)억/)
+  if (eokMatch) return Math.round(Number(eokMatch[1]) * 100000000)
+  const manMatch = compact.match(/^(\d+(?:\.\d+)?)만/)
+  if (manMatch) return Math.round(Number(manMatch[1]) * 10000)
+  const num = Number(compact.replace(/[^\d.-]/g, ''))
+  if (!Number.isFinite(num) || num <= 0) return 0
+  return num >= 1000 ? Math.round(num) : Math.round(num * 10000)
+}
+
+function normalizeCoverageRows(
+  cov: Record<string, unknown>,
+  idx: number,
+  ci: number,
+): ProCoverage[] {
+  const name = String(cov.coverage_name ?? cov.name ?? cov['담보명'] ?? '')
+  const explicitRowKey = String(cov.row_key ?? cov.rowKey ?? '')
+  const amount = parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0)
+  const expiryDate = String(cov.end_date ?? cov.expiryDate ?? cov['만기'] ?? '')
+  const isRenewal = String(cov.coverage_type ?? '').includes('갱신') || Boolean(cov.isRenewal ?? false)
+  const normalizedName = name.replace(/\s+/g, '').toLowerCase()
+  const isGenericSilson =
+    !explicitRowKey &&
+    (normalizedName === '실손의료비' ||
+      normalizedName === '실손보험' ||
+      normalizedName === '실손' ||
+      normalizedName.includes('실손의료비'))
+
+  if (isGenericSilson) {
+    const inpatientAmount = amount || 5000
+    const outpatientAmount = Number(cov.outpatient_amount ?? cov.outpatientAmount ?? 0) || 25
+    return [
+      ['silson_disease_inpatient', `${name || '실손의료비'}(질병 입원)`, inpatientAmount],
+      ['silson_disease_outpatient', `${name || '실손의료비'}(질병 통원)`, outpatientAmount],
+      ['silson_injury_inpatient', `${name || '실손의료비'}(상해 입원)`, inpatientAmount],
+      ['silson_injury_outpatient', `${name || '실손의료비'}(상해 통원)`, outpatientAmount],
+    ].map(([rowKey, rowName, rowAmount], offset) => ({
+      id: `json-cov-${idx}-${ci}-${offset}`,
+      contractId: '',
+      rowKey: String(rowKey),
+      name: String(rowName),
+      amount: Number(rowAmount),
+      expiryDate,
+      isRenewal,
+    }))
+  }
+
+  return [{
+    id: `json-cov-${idx}-${ci}`,
+    contractId: '',
+    rowKey: (explicitRowKey && explicitRowKey !== 'unknown') ? explicitRowKey : (inferClientRowKey(name) ?? 'unknown'),
+    name,
+    amount,
+    expiryDate,
+    isRenewal,
+  }]
+}
+
 const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   cancer: 'cancer_general',
   similar_cancer: 'cancer_similar',
@@ -121,6 +186,29 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   death_general: 'death_general',
   death_disease: 'death_disease',
   death_injury: 'death_injury',
+  실손의료비: 'silson_disease_inpatient',
+  암진단비: 'cancer_general',
+  유사암진단비: 'cancer_similar',
+  항암치료비: 'cancer_chemo',
+  고액항암치료비: 'cancer_chemo',
+  암수술비: 'cancer_surgery',
+  뇌혈관질환진단비: 'brain_vascular',
+  뇌졸중진단비: 'brain_stroke',
+  뇌출혈진단비: 'brain_hemorrhage',
+  허혈성심장질환진단비: 'heart_ischemic',
+  급성심근경색진단비: 'heart_acute_mi',
+  질병수술비: 'surgery_disease',
+  상해수술비: 'surgery_injury',
+  질병입원일당: 'hospital_disease_daily',
+  상해입원일당: 'hospital_injury_daily',
+  간병인사용입원일당: 'nursing_hospital',
+  교통사고처리지원금: 'driver_accident',
+  변호사선임비용: 'driver_lawyer',
+  벌금: 'driver_fine',
+  가족일상생활배상책임: 'other_liability',
+  일상생활배상책임: 'other_liability',
+  상해사망: 'death_injury',
+  질병사망: 'death_disease',
 }
 
 function parsePolicyType(val: unknown): 'protection' | 'savings' {
@@ -154,29 +242,18 @@ function parseGptsJson(raw: string): ProContract[] | null {
       if (parsed.policies.length === 0) return null
       return parsed.policies.map((item: Record<string, unknown>, idx: number) => {
         const coverages = Array.isArray(item.coverages)
-          ? (item.coverages as Array<Record<string, unknown>>).map((cov, ci) => {
-              const name = String(cov.coverage_name ?? cov.name ?? cov['담보명'] ?? '')
-              const explicitRowKey = String(cov.row_key ?? cov.rowKey ?? '')
-              return {
-                id: `json-cov-${idx}-${ci}`,
-                contractId: '',
-                rowKey: (explicitRowKey && explicitRowKey !== 'unknown') ? explicitRowKey : (inferClientRowKey(name) ?? 'unknown'),
-                name,
-                amount: parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0),
-                expiryDate: String(cov.end_date ?? cov.expiryDate ?? cov['만기'] ?? ''),
-                isRenewal: cov.coverage_type === '갱신형' || Boolean(cov.isRenewal ?? false),
-              }
-            })
+          ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci))
           : []
+        const renewalText = String(item.renewal_type ?? item.renewalType ?? '')
         return {
           id: `json-${idx}-${Date.now()}`,
-          company: String(item.company ?? item['보험사'] ?? ''),
+          company: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
           productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
           policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
-          contractDate: String(item.start_date ?? item.contractDate ?? item['계약일'] ?? ''),
+          contractDate: String(item.policy_date ?? item.start_date ?? item.contractDate ?? item['계약일'] ?? ''),
           paymentPeriod: String(item.payment_period ?? item.paymentPeriod ?? item['납입기간'] ?? ''),
-          monthlyPremium: Math.round(Number(item.monthly_premium ?? item.monthlyPremium ?? item['월보험료'] ?? 0) * 10000),
-          isRenewal: Boolean(item.isRenewal ?? false),
+          monthlyPremium: parsePremiumToWon(item.premium ?? item.monthly_premium ?? item.monthlyPremium ?? item['월보험료'] ?? 0),
+          isRenewal: renewalText.includes('갱신') || Boolean(item.isRenewal ?? false),
           status: (['active','lapsed','expired'].includes(String(item.policy_status)) ? item.policy_status : 'active') as 'active' | 'lapsed' | 'expired',
           policyType: parsePolicyType(item.policy_type ?? item.policyType),
           coverages,
@@ -187,17 +264,17 @@ function parseGptsJson(raw: string): ProContract[] | null {
     // ── coverage_summary 포맷: 단일 계약 요약 ────────────────────────────
     const summary = parsed.coverage_summary as Record<string, unknown> | undefined
     if (summary && typeof summary === 'object') {
-      const company = String(parsed.company ?? parsed['보험사'] ?? '')
+      const company = String(parsed.insurer ?? parsed.company ?? parsed['보험사'] ?? '')
       const productName = String(parsed.product_name ?? parsed.productName ?? parsed['상품명'] ?? '')
-      const premium = Math.round(Number(parsed.monthly_premium ?? parsed.monthlyPremium ?? 0) * 10000)
+      const premium = parsePremiumToWon(parsed.premium ?? parsed.monthly_premium ?? parsed.monthlyPremium ?? 0)
       const coverages = Object.entries(summary)
-        .filter(([k]) => SUMMARY_KEY_TO_ROW[k] && typeof summary[k] === 'number' && (summary[k] as number) > 0)
+        .filter(([k]) => (SUMMARY_KEY_TO_ROW[k] || inferClientRowKey(k)) && Number(summary[k]) > 0)
         .map(([k, v], ci) => ({
           id: `sum-cov-${ci}`,
           contractId: 'summary',
-          rowKey: SUMMARY_KEY_TO_ROW[k],
+          rowKey: SUMMARY_KEY_TO_ROW[k] || inferClientRowKey(k) || 'unknown',
           name: k,
-          amount: Number(v),
+          amount: parseAmountToMan(v),
           isRenewal: false,
         }))
       if (coverages.length === 0) return null
@@ -217,28 +294,16 @@ function parseGptsJson(raw: string): ProContract[] | null {
     if (!Array.isArray(arr) || arr.length === 0) return null
     return arr.map((item: Record<string, unknown>, idx: number) => {
       const coverages = Array.isArray(item.coverages)
-        ? (item.coverages as Array<Record<string, unknown>>).map((cov, ci) => {
-            const name = String(cov.name ?? cov['담보명'] ?? '')
-            const explicitRowKey2 = String(cov.row_key ?? cov.rowKey ?? '')
-            return {
-              id: `json-cov-${idx}-${ci}`,
-              contractId: '',
-              rowKey: (explicitRowKey2 && explicitRowKey2 !== 'unknown') ? explicitRowKey2 : (inferClientRowKey(name) ?? 'unknown'),
-              name,
-              amount: parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0),
-              expiryDate: String(cov.expiryDate ?? cov['만기'] ?? ''),
-              isRenewal: Boolean(cov.isRenewal ?? false),
-            }
-          })
+        ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci))
         : []
       return {
         id: `json-${idx}-${Date.now()}`,
-        company: String(item.company ?? item['보험사'] ?? ''),
-        productName: String(item.productName ?? item['상품명'] ?? ''),
+        company: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
+        productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
         policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
-        contractDate: String(item.contractDate ?? item['계약일'] ?? ''),
+        contractDate: String(item.policy_date ?? item.contractDate ?? item['계약일'] ?? ''),
         paymentPeriod: String(item.paymentPeriod ?? item['납입기간'] ?? ''),
-        monthlyPremium: Number(item.monthlyPremium ?? item['월보험료'] ?? 0),
+        monthlyPremium: parsePremiumToWon(item.premium ?? item.monthly_premium ?? item.monthlyPremium ?? item['월보험료'] ?? 0),
         isRenewal: Boolean(item.isRenewal ?? false),
         status: 'active' as const,
         policyType: parsePolicyType(item.policy_type ?? item.policyType),
