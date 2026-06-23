@@ -170,8 +170,8 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
 
   // ── 간병보험 ─────────────────────────────────────────────────────────────
   care: {
-    page4Title: "기간별 보장 구조와 가족 간병 활용",
-    page4Subtitle: "간병보험은 입원 일수에 따라 지급금액이 달라집니다. 가족이 직접 간병할 때도 일당 청구가 가능합니다.",
+    page4Title: "입원 간병비와 통합서비스 보장 구조",
+    page4Subtitle: "간병보험은 상해·질병 입원 중 실제 발생하는 간병인 비용과 간호간병통합서비스 이용 구간을 구분해 봅니다.",
     cases: [
       {
         icon: "🛏️",
@@ -197,23 +197,23 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
       },
       {
         icon: "👨‍👩‍👧",
-        label: "가족 간병 청구 방법과 주의사항",
-        situation: "가족이 직접 간병할 때도 일당 청구가 가능합니다. 단, 필요 서류를 사전에 준비하지 않으면 지급이 거절될 수 있습니다.",
-        totalEstimate: "서류 미비 시 지급 거절",
+        label: "간호간병통합서비스 이용",
+        situation: "간호간병통합서비스 병동은 보호자나 사설 간병인 없이 병원 간호 인력이 돌봄을 제공합니다. 상해·질병 입원 사유별 지급 조건을 나누어 확인해야 합니다.",
+        totalEstimate: "통합병동 이용 시 별도 일당 청구",
         costItems: [
-          { label: "의사 소견서", amount: "필수 — 입원 중 발급", covered: true, coverLabel: "담당의 소견서" },
-          { label: "입원 확인서", amount: "필수 — 병원 발급", covered: true, coverLabel: "간호기록부 병행" },
-          { label: "간병인 사용 확인서", amount: "핵심 서류", covered: true, coverLabel: "일부 병원 미발급 주의" },
+          { label: "상해 통합서비스 일당", amount: "가입금액 기준", covered: true, coverLabel: "간호간병통합서비스 상해" },
+          { label: "질병 통합서비스 일당", amount: "가입금액 기준", covered: true, coverLabel: "간호간병통합서비스 질병" },
+          { label: "요양병원 입원 구간", amount: "약관상 별도 확인", covered: true, coverLabel: "요양병원 간병일당" },
         ],
-        conclusion: "요양병원 vs 일반병원 구분 필수 — 가입 전 약관 조건 반드시 확인"
+        conclusion: "일반병원·요양병원·통합병동을 구분해야 실제 청구 가능 금액이 정확해집니다"
       }
     ]
   },
 
   // ── 재가보험 (치매·장기요양) ──────────────────────────────────────────────
   homecare: {
-    page4Title: "등급별 국가지원금과 실질 보장 준비",
-    page4Subtitle: "2025년 장기요양 재가급여 기준. 국가지원 후 남은 본인부담을 보험으로 보완합니다.",
+    page4Title: "재가 돌봄과 치매 보장 준비",
+    page4Subtitle: "방문요양·주야간보호 같은 재가서비스와 치매 진단·표적치료 보장을 함께 확인합니다.",
     cases: [
       {
         icon: "🏅",

@@ -125,19 +125,19 @@ const categories: CategoryTemplate[] = [
   {
     id: "care",
     label: "간병보험",
-    desc: "간병인, 간호간병통합, 치매, 장기요양 등급 중심",
+    desc: "상해·질병 간병일당, 181일 이상, 요양병원, 간호간병통합서비스 중심",
     tone: "from-emerald-500 to-teal-600",
     icon: Stethoscope,
-    summary: "입원 간병비와 장기요양 리스크를 분리해 가족 부담을 줄이는 방향으로 설명합니다.",
+    summary: "입원 중 실제 발생하는 간병인 비용과 간호간병통합서비스 보장을 중심으로 정리합니다.",
     infographic: "radar",
-    reportTitle: "간병 리스크 대비 구조",
+    reportTitle: "입원 간병비 보장 구조",
     metrics: [
-      { key: "caregiverDaily", label: "간병인 사용일당", shortLabel: "간병인", unit: "만원", kind: "money", guide: "간병인 직접 사용 시 지급" },
-      { key: "integratedDaily", label: "간호간병통합일당", shortLabel: "통합병동", unit: "만원", kind: "money", guide: "간호간병통합서비스 병동 입원 시 지급" },
-      { key: "dementia", label: "치매 진단/간병", shortLabel: "치매", unit: "만원", kind: "money", guide: "CDR 등급·중증도 조건 확인" },
-      { key: "ltc1to2", label: "장기요양 1~2등급", shortLabel: "1~2등급", unit: "만원", kind: "money", guide: "중증 장기요양 상태 대비" },
-      { key: "ltc3to5", label: "장기요양 3~5등급", shortLabel: "3~5등급", unit: "만원", kind: "money", guide: "상대적으로 발생 가능성이 높은 등급" },
-      { key: "premiumType", label: "갱신/비갱신", shortLabel: "구조", kind: "text", guide: "장기 유지 보험료 변동 여부" },
+      { key: "injuryCareDaily", label: "상해 간병일당", shortLabel: "상해간병", unit: "만원", kind: "money", guide: "상해 입원 중 간병인 사용 시 일당" },
+      { key: "diseaseCareDaily", label: "질병 간병일당", shortLabel: "질병간병", unit: "만원", kind: "money", guide: "질병 입원 중 간병인 사용 시 일당" },
+      { key: "after181Daily", label: "181일 이상 간병담보", shortLabel: "181일+", unit: "만원", kind: "money", guide: "장기 입원 181일 이상 구간 보장 여부와 일당" },
+      { key: "nursingHospitalDaily", label: "요양병원 간병일당", shortLabel: "요양병원", unit: "만원", kind: "money", guide: "요양병원 입원 시 간병 관련 일당" },
+      { key: "injuryIntegratedDaily", label: "간호간병통합서비스 상해", shortLabel: "통합상해", unit: "만원", kind: "money", guide: "상해로 간호간병통합서비스 병동 입원 시 지급" },
+      { key: "diseaseIntegratedDaily", label: "간호간병통합서비스 질병", shortLabel: "통합질병", unit: "만원", kind: "money", guide: "질병으로 간호간병통합서비스 병동 입원 시 지급" },
     ],
   },
   {
@@ -152,10 +152,10 @@ const categories: CategoryTemplate[] = [
     metrics: [
       { key: "visitCare", label: "방문요양", shortLabel: "방문요양", unit: "만원", kind: "money", guide: "방문요양 이용 시 보완금액" },
       { key: "dayNight", label: "주야간보호", shortLabel: "주야간", unit: "만원", kind: "money", guide: "낮 시간 돌봄센터 이용 부담" },
-      { key: "welfareTool", label: "복지용구", shortLabel: "복지용구", unit: "만원", kind: "money", guide: "침대·휠체어 등 보조기구" },
       { key: "familyCare", label: "가족돌봄 지원", shortLabel: "가족돌봄", unit: "만원", kind: "money", guide: "가족 돌봄 공백 보완" },
-      { key: "facility", label: "시설 전환 대비", shortLabel: "시설대비", unit: "만원", kind: "money", guide: "요양원·요양병원 전환 가능성" },
-      { key: "grade", label: "대상 등급", shortLabel: "등급", kind: "text", guide: "장기요양등급별 보장 조건" },
+      { key: "dementiaDiagnosis", label: "치매 진단비", shortLabel: "치매진단", unit: "만원", kind: "money", guide: "경도·중등도·중증 치매 진단 조건 확인" },
+      { key: "dementiaTargetTreatment", label: "치매 표적치료보장", shortLabel: "표적치료", unit: "만원", kind: "money", guide: "치매 관련 특정 치료·검사 지급 조건 확인" },
+      { key: "grade", label: "대상 등급", shortLabel: "등급", kind: "text", guide: "장기요양등급 또는 치매 단계별 보장 조건" },
     ],
   },
   {
@@ -227,25 +227,39 @@ const focusOptions: { id: CompareFocus; label: string; desc: string }[] = [
 const won = (value: number) => new Intl.NumberFormat("ko-KR").format(Math.round(value))
 const num = (value: string) => Number(String(value).replace(/[^0-9.-]/g, "")) || 0
 const formatKrw = (value: number) => `${won(value)}원`
+const formatManApprox = (value: number) => `약 ${won(Math.round(value / 10000))}만원`
 const formatPremium = (plan: PlanData) => {
   const value = num(plan.monthlyPremium)
   if (!value) return "-"
   return plan.isDollar ? `$${won(value)}` : formatKrw(value)
 }
-const metricText = (metric: MetricDef, value: string) => {
-  if (!value) return "-"
+const isShortLifeDollarMetric = (metric: MetricDef) => metric.key === "deathBenefit" || metric.key === "refundAmount"
+const metricText = (metric: MetricDef, value: string, plan?: PlanData) => {
+  if (!value) {
+    if (metric.key === "liquidity") return metric.guide
+    return "-"
+  }
+  if (plan?.isDollar && isShortLifeDollarMetric(metric)) {
+    const usd = num(value)
+    const krw = usd * (num(plan.exchangeRate ?? "") || 1400)
+    return `$${won(usd)} (${formatManApprox(krw)})`
+  }
   if (metric.kind === "money") return `${won(num(value))}${metric.unit || "만원"}`
   if (metric.kind === "percent") return `${value}${String(value).includes("%") ? "" : "%"}`
   return value
 }
 const createId = () => Math.random().toString(36).slice(2, 9)
+const shortLifePurposeOptions = ["자녀 학자금", "결혼자금", "노후자금", "의료비통장"]
+const shortLifeDefaultCaution = "중도해지시 납입한 보험료보다 적거나 없을 수 있습니다. 이 상품은 사망보장을 목적으로하는 보장성 상품입니다. 해지환급금을 활용한 단기 저축 목적으로 안내드렸습니다."
 
 function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
   const metrics = Object.fromEntries(template.metrics.map((metric) => [metric.key, ""]))
   if (template.id === "driver") {
     metrics.trafficSupport = "20000"
+    metrics.lawyer = "500"
     metrics.finePerson = "3000"
     metrics.fineProperty = "500"
+    metrics.injury = "30"
   }
   return {
     id: createId(),
@@ -395,6 +409,9 @@ function PdfDropZone({
       }
 
       if (d.customerName) onCustomerName?.(d.customerName)
+      const parsedMetrics = Object.fromEntries(
+        Object.entries(d.metrics || {}).filter(([, value]) => String(value || "").trim() !== "")
+      )
 
       onParsed({
         fileName: file.name,
@@ -403,7 +420,7 @@ function PdfDropZone({
         monthlyPremium: d.monthlyPremium || plan.monthlyPremium,
         paymentYears: d.paymentYears || plan.paymentYears,
         coverageYears: d.coverageYears || plan.coverageYears,
-        metrics: { ...plan.metrics, ...(d.metrics || {}) },
+        metrics: { ...plan.metrics, ...parsedMetrics },
       })
       setStatus("done")
     } catch {
@@ -492,6 +509,9 @@ function PlanEditor({
 }) {
   const set = <K extends keyof PlanData>(key: K, value: PlanData[K]) => onChange({ ...plan, [key]: value })
   const setMetric = (key: string, value: string) => onChange({ ...plan, metrics: { ...plan.metrics, [key]: value } })
+  const visibleMetrics = template.id === "shortlife"
+    ? template.metrics.filter((metric) => metric.key !== "purpose")
+    : template.metrics
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -556,6 +576,7 @@ function PlanEditor({
           suffix={plan.isDollar ? "$" : "원"}
           numeric
         />
+        <Input label="납입기간" value={plan.paymentYears} onChange={(value) => set("paymentYears", value)} placeholder="예: 20" suffix="년" />
         {plan.isDollar && plan.monthlyPremium && (plan.exchangeRate || "1400") && (
           <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
             <div>
@@ -566,10 +587,9 @@ function PlanEditor({
             </div>
           </div>
         )}
-        <div className={plan.isDollar && plan.monthlyPremium ? "grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3"}>
-          <Input label="납입기간" value={plan.paymentYears} onChange={(value) => set("paymentYears", value)} placeholder="예: 20" suffix="년" />
+        {template.id !== "shortlife" && (
           <Input label="보장/활용기간" value={plan.coverageYears} onChange={(value) => set("coverageYears", value)} placeholder="예: 100세" />
-        </div>
+        )}
       </div>
 
       <div className="mt-5">
@@ -578,18 +598,27 @@ function PlanEditor({
           <p className="text-sm font-black text-slate-900">카테고리별 핵심 항목</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          {template.metrics.map((metric) => (
+          {visibleMetrics.map((metric) => (
             <Input
               key={metric.key}
               label={metric.label}
               value={plan.metrics[metric.key] || ""}
               onChange={(value) => setMetric(metric.key, value)}
               placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : metric.hint || "금액 입력"}
-              suffix={metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
+              suffix={plan.isDollar && isShortLifeDollarMetric(metric) ? "$" : metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
               numeric={metric.kind === "money"}
             />
           ))}
         </div>
+        {template.id === "shortlife" && plan.isDollar && (
+          <ShortLifeDollarPreview plan={plan} />
+        )}
+        {template.id === "shortlife" && (
+          <ShortLifePurposeSelector
+            value={plan.metrics.purpose || ""}
+            onChange={(value) => setMetric("purpose", value)}
+          />
+        )}
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -597,6 +626,76 @@ function PlanEditor({
         <TextArea label="주의사항 메모" value={plan.cautions} onChange={(value) => set("cautions", value)} placeholder="예: 일부 담보 갱신형 여부 확인 필요" />
       </div>
     </section>
+  )
+}
+
+function ShortLifeDollarPreview({ plan }: { plan: PlanData }) {
+  const fx = num(plan.exchangeRate ?? "") || 1400
+  const items = [
+    { label: "사망보험금", value: plan.metrics.deathBenefit },
+    { label: "해지환급금", value: plan.metrics.refundAmount },
+  ].filter((item) => num(item.value || "") > 0)
+
+  if (!items.length) return null
+
+  return (
+    <div className="mt-3 grid gap-2 md:grid-cols-2">
+      {items.map((item) => {
+        const usd = num(item.value || "")
+        const krw = usd * fx
+        return (
+          <div key={item.label} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-[10px] font-black text-amber-700">{item.label} 원화 환산</p>
+            <p className="mt-1 text-sm font-black text-amber-950">
+              ${won(usd)} <span className="text-amber-700">({formatManApprox(krw)})</span>
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function ShortLifePurposeSelector({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const selected = value.split(",").map((item) => item.trim()).filter(Boolean)
+  const manual = selected.filter((item) => !shortLifePurposeOptions.includes(item)).join(", ")
+  const toggle = (option: string) => {
+    const next = selected.includes(option)
+      ? selected.filter((item) => item !== option)
+      : [...selected, option]
+    onChange(next.join(", "))
+  }
+  const setManual = (manualValue: string) => {
+    const fixed = selected.filter((item) => shortLifePurposeOptions.includes(item))
+    const custom = manualValue.split(",").map((item) => item.trim()).filter(Boolean)
+    onChange([...fixed, ...custom].join(", "))
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[11px] font-black text-slate-500">활용 목적</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {shortLifePurposeOptions.map((option) => {
+          const active = selected.includes(option)
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => toggle(option)}
+              className={`rounded-full border px-3 py-2 text-xs font-black transition ${active ? "border-[#102a4c] bg-[#102a4c] text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}
+            >
+              {option}
+            </button>
+          )
+        })}
+      </div>
+      <Input
+        label="수동 입력"
+        value={manual}
+        onChange={setManual}
+        placeholder="예: 비상자금, 상속·증여"
+      />
+    </div>
   )
 }
 
@@ -857,7 +956,7 @@ function ProposalReport({
               <h2 className="text-lg font-black text-slate-950">장단점 요약</h2>
               <div className="mt-4 space-y-3">
                 {visiblePlans.map((plan, index) => (
-                  <PlanMemo key={plan.id} plan={plan} index={index} />
+                  <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
                 ))}
               </div>
             </div>
@@ -919,7 +1018,7 @@ function PlanSnapshot({ template, plans }: { template: CategoryTemplate; plans: 
             {template.metrics.slice(0, 4).map((metric) => (
               <div key={metric.key} className="rounded-xl bg-white p-3">
                 <p className="text-[10px] font-black text-slate-400">{metric.shortLabel || metric.label}</p>
-                <p className="mt-1 text-sm font-black text-slate-900">{metricText(metric, plan.metrics[metric.key])}</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</p>
               </div>
             ))}
           </div>
@@ -1168,7 +1267,7 @@ function ComparisonTable({ template, plans }: { template: CategoryTemplate; plan
             <tr key={metric.key} className="border-t border-slate-100">
               <td className="px-4 py-3 text-xs font-black text-slate-500">{metric.label}</td>
               {plans.map((plan) => (
-                <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{metricText(metric, plan.metrics[metric.key])}</td>
+                <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</td>
               ))}
               <td className="px-4 py-3 text-[11px] font-bold leading-5 text-slate-500">{metric.guide}</td>
             </tr>
@@ -1179,12 +1278,13 @@ function ComparisonTable({ template, plans }: { template: CategoryTemplate; plan
   )
 }
 
-function PlanMemo({ plan, index }: { plan: PlanData; index: number }) {
+function PlanMemo({ plan, index, template }: { plan: PlanData; index: number; template: CategoryTemplate }) {
+  const caution = plan.cautions || (template.id === "shortlife" ? shortLifeDefaultCaution : "갱신 여부, 지급 조건, 보장범위 차이를 확인하세요.")
   return (
     <div className="rounded-2xl bg-white p-4">
       <p className="text-sm font-black text-slate-950">{plan.company || `${String.fromCharCode(65 + index)}안`}</p>
       <p className="mt-2 text-xs font-bold leading-6 text-emerald-700">장점: {plan.strengths || "핵심 담보와 보험료를 기준으로 상담 메모를 입력하세요."}</p>
-      <p className="mt-1 text-xs font-bold leading-6 text-rose-700">주의: {plan.cautions || "갱신 여부, 지급 조건, 보장범위 차이를 확인하세요."}</p>
+      <p className="mt-1 text-xs font-bold leading-6 text-rose-700">주의: {caution}</p>
     </div>
   )
 }
