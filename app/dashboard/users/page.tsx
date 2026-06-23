@@ -400,164 +400,196 @@ export default function StaffManagementPage() {
             <p className="text-xs font-black uppercase tracking-[0.25em] text-[#1a3a6e]">Metarich Staff</p>
             <h1 className="mt-2 text-3xl font-black text-slate-950">직원 관리</h1>
             <p className="mt-2 text-sm font-bold text-slate-500">메타리치 시그널그룹 직원 전체 관리</p>
-            <div className="mt-4 flex gap-2">
-              <button onClick={() => setActiveTab("users")} className={"rounded-xl px-4 py-2 text-[13px] font-black transition " + (activeTab === "users" ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
-                직원 목록
-              </button>
-              <button onClick={() => setActiveTab("roles")} className={"rounded-xl px-4 py-2 text-[13px] font-black transition " + (activeTab === "roles" ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
-                등급별 권한
-              </button>
-              <button onClick={() => setActiveTab("analytics")} className={"rounded-xl px-4 py-2 text-[13px] font-black transition " + (activeTab === "analytics" ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
-                사용 분석
-              </button>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span className="rounded-full bg-[#eef3fb] px-3 py-1 text-[11px] font-black text-[#1a3a6e]">
+                전체 {users.length.toLocaleString()}명
+              </span>
+              <span className="rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-[11px] font-black text-amber-700">
+                미승인 {users.filter((u) => !enabled(u.is_approved)).length.toLocaleString()}명
+              </span>
             </div>
           </div>
-          <div className="rounded-2xl bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white">
-            총 직원 {users.length.toLocaleString()}명
-          </div>
+          <button
+            onClick={saveAllVisibleUsers}
+            disabled={savingAll}
+            className="hidden md:block rounded-2xl bg-[#1a3a6e] px-6 py-3 text-[13px] font-black text-white shadow-lg hover:bg-[#2563eb] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {savingAll ? "저장 중..." : `현재 목록 일괄 저장 (${filteredUsers.length.toLocaleString()}명)`}
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] space-y-4 px-4 py-6">
-        {activeTab === "analytics" ? (
-          <UsageAnalytics />
-        ) : activeTab === "roles" ? (
-          <section className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#1a3a6e]">Role Preset</p>
-              <h2 className="mt-2 text-2xl font-black text-slate-950">등급별 권한 설정</h2>
-              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
-                메뉴를 하나씩 켜고 끄는 방식이 아니라, 직원 등급과 승인 상태를 기준으로 접근 권한이 자동 적용됩니다.
-                게스트 승인과 설계사 승인의 차이는 여기에서 직원 단위로 정리해 주세요.
-              </p>
-            </div>
+      {/* 탭 네비게이션 */}
+      <div className="sticky top-0 z-10 border-b border-white/80 bg-white/95 px-4 shadow-sm backdrop-blur">
+        <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto no-scrollbar">
+          {([
+            { id: "users" as const, label: "직원 목록", icon: "👥" },
+            { id: "roles" as const, label: "등급별 메뉴 설정", icon: "🔐" },
+            { id: "analytics" as const, label: "사용 현황", icon: "📊" },
+          ]).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-5 py-4 text-[13px] font-black transition-colors ${
+                activeTab === tab.id
+                  ? "border-[#1a3a6e] text-[#1a3a6e]"
+                  : "border-transparent text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-            <UserFilters
-              search={search} onSearchChange={setSearch}
-              companyType={companyType} onCompanyTypeChange={(v) => { setCompanyType(v); if (v === "external") setHeadquarter("") }}
-              headquarter={headquarter} onHeadquarterChange={setHeadquarter}
-              rank={rank} onRankChange={setRank}
-              approved={approved} onApprovedChange={setApproved}
-              sortBy={sortBy} onSortByChange={setSortBy}
-              totalCount={users.length} filteredCount={filteredUsers.length}
-            />
+      <main className="mx-auto max-w-[1400px] space-y-5 px-4 py-6">
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              {rolePresets.map((preset) => (
-                <article key={preset.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <h3 className="text-xl font-black text-slate-950">{preset.title}</h3>
-                      <p className="mt-1 text-sm font-bold leading-6 text-slate-500">{preset.desc}</p>
-                    </div>
-                    <div className="flex shrink-0 flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => applyRolePreset(preset.id, "selected")}
-                        disabled={selectedIds.size === 0}
-                        className="rounded-xl border border-[#1a3a6e] bg-white px-4 py-2 text-xs font-black text-[#1a3a6e] transition hover:bg-[#eff6ff] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        선택 직원 적용
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyRolePreset(preset.id, "filtered")}
-                        disabled={filteredUsers.length === 0}
-                        className="rounded-xl bg-[#1a3a6e] px-4 py-2 text-xs font-black text-white transition hover:bg-[#2563eb] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        현재 목록 적용
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl bg-emerald-50 p-4">
-                      <p className="text-xs font-black text-emerald-700">열리는 메뉴</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {preset.enabledMenus.map((menu) => (
-                          <span key={menu} className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 shadow-sm">{menu}</span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs font-black text-slate-500">닫히는 메뉴</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {(preset.blockedMenus.length > 0 ? preset.blockedMenus : ["별도 제한 없음"]).map((menu) => (
-                          <span key={menu} className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 shadow-sm">{menu}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <BulkActions selectedIds={selectedIds} onBulkApprove={bulkApprove} onBulkRankChange={bulkRankChange} />
-            <UserTable
-              users={filteredUsers} selectedIds={selectedIds}
-              onSelectChange={onSelectChange} onSelectAll={onSelectAll}
-              onDraftChange={(u) => setUsers((prev) => prev.map((item) => item.id === u.id ? { ...item, ...u } : item))}
-              onSave={saveUser} onResetPassword={setResetUser}
-              onDelete={deleteUser}
-              duplicateIds={duplicateIds}
-              viewerId={viewer?.id ?? ""}
-            />
-            {resetUser && (
-              <ResetPasswordModal
-                user={resetUser} requesterId={viewer?.id ?? ""}
-                onSuccess={() => setResetUser(null)} onClose={() => setResetUser(null)}
-              />
-            )}
-          </section>
-        ) : (
+        {/* ── 탭 1: 직원 목록 ────────────────────────────────── */}
+        {activeTab === "users" && (
           <>
             <UserFilters
-              search={search} onSearchChange={setSearch}
-              companyType={companyType} onCompanyTypeChange={(v) => { setCompanyType(v); if (v === "external") setHeadquarter("") }}
-              headquarter={headquarter} onHeadquarterChange={setHeadquarter}
-              rank={rank} onRankChange={setRank}
-              approved={approved} onApprovedChange={setApproved}
-              sortBy={sortBy} onSortByChange={setSortBy}
-              totalCount={users.length} filteredCount={filteredUsers.length}
+              search={search}
+              onSearchChange={setSearch}
+              companyType={companyType}
+              onCompanyTypeChange={setCompanyType}
+              headquarter={headquarter}
+              onHeadquarterChange={setHeadquarter}
+              rank={rank}
+              onRankChange={setRank}
+              approved={approved}
+              onApprovedChange={setApproved}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
             />
-            <BulkActions selectedIds={selectedIds} onBulkApprove={bulkApprove} onBulkRankChange={bulkRankChange} />
-            <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-              <p className="text-sm font-bold text-slate-500">대외 인원은 타사로 표시되며, 회사명 기준으로 저장됩니다.</p>
-              <button
-                type="button" onClick={saveAllVisibleUsers}
-                disabled={savingAll || filteredUsers.length === 0}
-                className="rounded-xl bg-[#1a3a6e] px-5 py-3 text-sm font-black text-white transition hover:bg-[#2563eb] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {savingAll ? "일괄 저장 중..." : "현재 목록 일괄 저장 (" + filteredUsers.length.toLocaleString() + "명)"}
-              </button>
-            </section>
-            {duplicateIds.size > 0 && (
-              <div className="flex items-center gap-3 rounded-2xl border border-orange-200 bg-orange-50 px-5 py-3">
-                <span className="text-xl">⚠️</span>
-                <div>
-                  <p className="text-sm font-black text-orange-700">중복 의심 계정 {duplicateIds.size}건 감지됨</p>
-                  <p className="text-xs font-bold text-orange-500">같은 이름+전화번호로 여러 계정이 가입된 경우입니다. 주황색으로 표시된 계정을 확인 후 불필요한 계정을 삭제해주세요.</p>
-                </div>
-              </div>
-            )}
+            <BulkActions
+              selectedIds={selectedIds}
+              onBulkApprove={bulkApprove}
+              onBulkRankChange={bulkRankChange}
+            />
             <UserTable
-              users={filteredUsers} selectedIds={selectedIds}
-              onSelectChange={onSelectChange} onSelectAll={onSelectAll}
-              onDraftChange={(u) => setUsers((prev) => prev.map((item) => item.id === u.id ? { ...item, ...u } : item))}
-              onSave={saveUser} onResetPassword={setResetUser}
+              users={filteredUsers}
+              selectedIds={selectedIds}
+              onSelectChange={onSelectChange}
+              onSelectAll={onSelectAll}
+              onDraftChange={(user) => setUsers((prev) => prev.map((u) => u.id === user.id ? user : u))}
+              onSave={saveUser}
+              onResetPassword={setResetUser}
               onDelete={deleteUser}
               duplicateIds={duplicateIds}
               viewerId={viewer?.id ?? ""}
             />
-            {resetUser && (
-              <ResetPasswordModal
-                user={resetUser} requesterId={viewer?.id ?? ""}
-                onSuccess={() => setResetUser(null)} onClose={() => setResetUser(null)}
-              />
-            )}
+            <button
+              onClick={saveAllVisibleUsers}
+              disabled={savingAll}
+              className="md:hidden w-full rounded-2xl bg-[#1a3a6e] px-6 py-3 text-[13px] font-black text-white disabled:opacity-50"
+            >
+              {savingAll ? "저장 중..." : `현재 목록 일괄 저장 (${filteredUsers.length.toLocaleString()}명)`}
+            </button>
           </>
         )}
+
+        {/* ── 탭 2: 등급별 메뉴 설정 ────────────────────────── */}
+        {activeTab === "roles" && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-1 text-lg font-black text-slate-900">등급별 접근 권한 안내</h2>
+              <p className="mb-6 text-[13px] font-bold text-slate-500">각 등급 프리셋의 설명과 접근 가능 메뉴를 확인하고, 선택 직원 또는 전체 필터 직원에게 일괄 적용합니다.</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {rolePresets.map((preset) => {
+                  const colorMap: Record<string, string> = {
+                    guest: "border-slate-300 bg-slate-50",
+                    guest_approved: "border-sky-300 bg-sky-50",
+                    agent: "border-indigo-300 bg-indigo-50",
+                    full: "border-emerald-300 bg-emerald-50",
+                  }
+                  const btnMap: Record<string, string> = {
+                    guest: "bg-slate-700 hover:bg-slate-800",
+                    guest_approved: "bg-sky-600 hover:bg-sky-700",
+                    agent: "bg-indigo-600 hover:bg-indigo-700",
+                    full: "bg-emerald-600 hover:bg-emerald-700",
+                  }
+                  return (
+                    <div key={preset.id} className={`rounded-2xl border-2 p-5 ${colorMap[preset.id]}`}>
+                      <h3 className="mb-1 text-[15px] font-black text-slate-900">{preset.title}</h3>
+                      <p className="mb-4 text-[11px] font-bold text-slate-500 leading-relaxed">{preset.desc}</p>
+                      <div className="mb-4 space-y-1.5">
+                        {preset.enabledMenus.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-black text-emerald-600 mb-1">✓ 접근 가능</p>
+                            {preset.enabledMenus.map((m) => (
+                              <p key={m} className="text-[11px] font-bold text-slate-700">• {m}</p>
+                            ))}
+                          </div>
+                        )}
+                        {preset.blockedMenus.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-[10px] font-black text-rose-500 mb-1">✗ 차단</p>
+                            {preset.blockedMenus.map((m) => (
+                              <p key={m} className="text-[11px] font-bold text-slate-400">• {m}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => applyRolePreset(preset.id, "selected")}
+                          className={`w-full rounded-xl px-4 py-2.5 text-[12px] font-black text-white transition ${btnMap[preset.id]}`}
+                        >
+                          선택 직원에게 적용
+                        </button>
+                        <button
+                          onClick={() => applyRolePreset(preset.id, "filtered")}
+                          className={`w-full rounded-xl border-2 px-4 py-2.5 text-[12px] font-black transition bg-white ${btnMap[preset.id].replace("bg-", "border-").replace("hover:bg-", "hover:border-")} text-slate-700 hover:text-slate-900`}
+                        >
+                          현재 필터 전체 적용
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 직원 목록 간소화 버전 (roles 탭에서 선택용) */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-[14px] font-black text-slate-900">직원 선택 ({selectedIds.size > 0 ? `${selectedIds.size}명 선택됨` : "없음"})</h3>
+                <button onClick={() => setSelectedIds(new Set())} className="text-[11px] font-bold text-slate-400 hover:text-slate-600">선택 초기화</button>
+              </div>
+              <div className="max-h-72 overflow-y-auto space-y-1.5">
+                {users.map((user) => {
+                  const checked = selectedIds.has(user.id)
+                  const rankLabel: Record<string, string> = { guest: "게스트", agent: "설계사", manager: "지점장", leader: "사업부장", headquarters: "본부장", master: "마스터" }
+                  return (
+                    <label key={user.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition ${checked ? "border-[#1a3a6e] bg-[#eef3fb]" : "border-slate-100 bg-slate-50 hover:bg-slate-100"}`}>
+                      <input type="checkbox" checked={checked} onChange={(e) => onSelectChange(user.id, e.target.checked)} className="h-4 w-4 accent-[#1a3a6e]" />
+                      <span className="flex-1 text-[13px] font-black text-slate-800">{user.name || user.email}</span>
+                      <span className="text-[11px] font-bold text-slate-400">{rankLabel[String(user.rank || "guest")] || user.rank}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${enabled(user.is_approved) ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-600"}`}>
+                        {enabled(user.is_approved) ? "승인" : "미승인"}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── 탭 3: 사용 현황 ────────────────────────────────── */}
+        {activeTab === "analytics" && (
+          <UsageAnalytics users={users} />
+        )}
+
       </main>
+
+      {resetUser && (
+        <ResetPasswordModal
+          user={resetUser}
+          onClose={() => setResetUser(null)}
+        />
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import type { StaffUser } from "./UserRow"
 import { supabase } from "@/lib/supabase"
 
 type PeriodKey = "7d" | "30d" | "90d"
@@ -50,7 +51,7 @@ function BarRow({ label, value, max, color = "bg-[#1a3a6e]", sub }: {
   )
 }
 
-export default function UsageAnalytics() {
+export default function UsageAnalytics({ users = [] }: { users?: StaffUser[] }) {
   const [period, setPeriod] = useState<PeriodKey>("30d")
   const [loading, setLoading] = useState(true)
   const [pageStats, setPageStats] = useState<PageStat[]>([])
@@ -60,6 +61,9 @@ export default function UsageAnalytics() {
   const [totalViews, setTotalViews] = useState(0)
   const [activeUsers, setActiveUsers] = useState(0)
   const [errorMessage, setErrorMessage] = useState("")
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [userLogs, setUserLogs] = useState<Array<{ page: string; page_label: string; created_at: string }>>([])
+  const [userLogsLoading, setUserLogsLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -151,6 +155,23 @@ export default function UsageAnalytics() {
 
   useEffect(() => { load() }, [load])
 
+  const loadUserLogs = useCallback(async (userId: string) => {
+    setUserLogsLoading(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) { setUserLogsLoading(false); return }
+    const res = await fetch(`/api/admin/usage?period=${period}&userId=${userId}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    const json = await res.json().catch(() => ({}))
+    const logs = (json.logs || []) as Array<{ page: string; page_label: string; created_at: string }>
+    setUserLogs(logs)
+    setUserLogsLoading(false)
+  }, [period])
+
+  useEffect(() => {
+    if (selectedUserId) loadUserLogs(selectedUserId)
+  }, [selectedUserId, loadUserLogs])
+
   const maxPage = pageStats[0]?.count ?? 1
   const maxUser = userStats[0]?.count ?? 1
   const maxHour = Math.max(...hourStats.map((h) => h.count), 1)
@@ -212,22 +233,52 @@ export default function UsageAnalytics() {
 
           {/* 사용자별 활동량 */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="mb-4 text-[14px] font-black text-slate-800">👤 사용자별 활동량</h3>
+            <h3 className="mb-4 text-[14px] font-black text-slate-800">👤 사용자별 활동량 <span className="text-[11px] font-bold text-slate-400">(클릭 시 상세)</span></h3>
             {userStats.length === 0
               ? <p className="text-[13px] text-slate-400">데이터 없음</p>
               : userStats.map((u, i) => {
                   const lastDate = new Date(u.last_seen)
                   const diffH = Math.round((Date.now() - lastDate.getTime()) / 3600_000)
                   const lastLabel = diffH < 1 ? "방금" : diffH < 24 ? `${diffH}시간 전` : `${Math.floor(diffH/24)}일 전`
+                  const isSelected = selectedUserId === u.user_id
                   return (
-                    <BarRow
-                      key={u.user_id}
-                      label={u.name || u.email}
-                      value={u.count}
-                      max={maxUser}
-                      color={i === 0 ? "bg-emerald-500" : i < 3 ? "bg-emerald-400" : "bg-slate-300"}
-                      sub={lastLabel}
-                    />
+                    <div key={u.user_id}>
+                      <button
+                        className={`w-full text-left rounded-xl px-2 py-1 transition ${isSelected ? "bg-slate-100" : "hover:bg-slate-50"}`}
+                        onClick={() => setSelectedUserId(isSelected ? null : u.user_id)}
+                      >
+                        <BarRow
+                          label={u.name || u.email}
+                          value={u.count}
+                          max={maxUser}
+                          color={i === 0 ? "bg-emerald-500" : i < 3 ? "bg-emerald-400" : "bg-slate-300"}
+                          sub={lastLabel}
+                        />
+                      </button>
+                      {isSelected && (
+                        <div className="ml-2 mt-1 mb-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                          {userLogsLoading ? (
+                            <p className="text-[12px] text-slate-400">로딩 중...</p>
+                          ) : userLogs.length === 0 ? (
+                            <p className="text-[12px] text-slate-400">접속 이력 없음</p>
+                          ) : (
+                            <div className="max-h-48 overflow-y-auto space-y-1">
+                              <p className="text-[10px] font-black text-slate-500 mb-2">최근 접속 이력 ({userLogs.length}건)</p>
+                              {userLogs.slice(0, 30).map((log, li) => {
+                                const d = new Date(log.created_at)
+                                const label = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`
+                                return (
+                                  <div key={li} className="flex items-center gap-2">
+                                    <span className="text-[10px] text-slate-400 w-20 shrink-0">{label}</span>
+                                    <span className="text-[11px] font-bold text-slate-700">{log.page_label || log.page}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
           </section>
@@ -289,7 +340,7 @@ export default function UsageAnalytics() {
       )}
 
       <p className="text-[11px] text-slate-400">
-        * CRM 메뉴 방문 기준. 데이터는 추적 코드 적용 이후부터 누적됩니다.
+        * 추적 코드 적용 페이지 방문 기준. 데이터는 추적 이후부터 누적됩니다.
       </p>
     </div>
   )

@@ -12,6 +12,8 @@
 import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import LoadingScreen from "./LoadingScreen"
+import { supabase } from "../../lib/supabase"
+import { trackPageView } from "../../lib/trackActivity"
 
 const INITIAL_MS = 1400   // 최초 오픈 표시 시간 (ms)
 const NAVIGATE_MS = 950   // 페이지 이동 표시 시간 (ms)
@@ -37,12 +39,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 경로 변경 감지
+  // 경로 변경 감지 + 트래킹
   useEffect(() => {
     if (prevPath.current !== null && prevPath.current !== pathname) {
       prevPath.current = pathname
       showFor(NAVIGATE_MS)
     }
+    // 페이지 방문 트래킹 (로그인 상태일 때만)
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) void trackPageView(session.user.id, pathname)
+    })
   }, [pathname])
 
   return (

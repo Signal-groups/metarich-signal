@@ -54,11 +54,15 @@ export async function GET(req: NextRequest) {
   const days = PERIOD_DAYS[period] || PERIOD_DAYS["30d"]
   const since = new Date(Date.now() - days * 86400_000).toISOString()
 
-  const { data: logs, error: logsError } = await serviceSupabase
+  const userId = req.nextUrl.searchParams.get("userId")
+  let logsQuery = serviceSupabase
     .from("user_activity_logs")
     .select("user_id, page, page_label, created_at")
     .gte("created_at", since)
     .order("created_at", { ascending: false })
+    .limit(2000)
+  if (userId) logsQuery = logsQuery.eq("user_id", userId)
+  const { data: logs, error: logsError } = await logsQuery
 
   if (logsError) return NextResponse.json({ error: logsError.message }, { status: 500 })
 
