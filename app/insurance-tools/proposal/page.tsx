@@ -31,7 +31,7 @@ import { canAccessProposalGenerator, isApprovedUser, normalizeRole, ROLE_PRIORIT
 import LoadingScreen from "../../components/LoadingScreen"
 import { CATEGORY_SCENARIOS } from "./scenarioData"
 
-type ProposalMode = "single" | "compare" | "bundle"
+type ProposalMode = "single" | "compare" | "cross" | "bundle"
 type CategoryId = "driver" | "health" | "care" | "homecare" | "pet" | "shortlife" | "dental"
 type CompareFocus = "balance" | "premium" | "coverage" | "scope" | "refund"
 type MetricKind = "money" | "text" | "percent"
@@ -72,6 +72,7 @@ type PlanData = {
   metrics: Record<string, string>
   isDollar?: boolean
   exchangeRate?: string
+  additionalCoverage?: string
 }
 
 type ConsultantInfo = {
@@ -625,6 +626,16 @@ function PlanEditor({
         <TextArea label="장점 메모" value={plan.strengths} onChange={(value) => set("strengths", value)} placeholder="예: 보험료 대비 자부상 보장이 높음" />
         <TextArea label="주의사항 메모" value={plan.cautions} onChange={(value) => set("cautions", value)} placeholder="예: 일부 담보 갱신형 여부 확인 필요" />
       </div>
+      {mode === "cross" && (
+        <div className="mt-3">
+          <TextArea
+            label="추가 보장 (교차설계용)"
+            value={plan.additionalCoverage || ""}
+            onChange={(value) => set("additionalCoverage", value)}
+            placeholder="예: 실손의료비 특약 — 본인부담금 80% 보장, 입원 5만원/일"
+          />
+        </div>
+      )}
     </section>
   )
 }
@@ -765,7 +776,7 @@ function TextArea({ label, value, onChange, placeholder }: { label: string; valu
 
 function CategorySelector({ selected, onSelect }: { selected: CategoryTemplate; onSelect: (template: CategoryTemplate) => void }) {
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2">
       {categories.map((template) => {
         const active = selected.id === template.id
         return (
@@ -773,17 +784,12 @@ function CategorySelector({ selected, onSelect }: { selected: CategoryTemplate; 
             key={template.id}
             type="button"
             onClick={() => onSelect(template)}
-            className={`rounded-2xl border p-4 text-left transition ${active ? "border-cyan-400 bg-cyan-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}
+            className={`flex flex-col items-center gap-2 rounded-2xl border p-3 transition ${active ? "border-cyan-400 bg-cyan-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}
           >
-            <div className="flex items-start gap-3">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${template.tone} text-white`}>
-                <CategoryIcon template={template} />
-              </div>
-              <div>
-                <p className="text-sm font-black text-slate-950">{template.label}</p>
-                <p className="mt-1 text-xs font-bold leading-5 text-slate-500">{template.desc}</p>
-              </div>
+            <div className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${template.tone} text-white`}>
+              <CategoryIcon template={template} />
             </div>
+            <p className="text-center text-[11px] font-black leading-tight text-slate-900">{template.label}</p>
           </button>
         )
       })}
@@ -792,27 +798,25 @@ function CategorySelector({ selected, onSelect }: { selected: CategoryTemplate; 
 }
 
 function ModeSelector({ mode, onMode }: { mode: ProposalMode; onMode: (mode: ProposalMode) => void }) {
-  const items = [
-    { id: "single" as ProposalMode, title: "단일 제안서", desc: "긴 PDF 제안서를 핵심 요약형 상담 자료로 정리" },
-    { id: "compare" as ProposalMode, title: "비교 제안서", desc: "동일 상품군을 여러 보험사 기준으로 비교" },
-    { id: "bundle" as ProposalMode, title: "번들 제안서", desc: "복수 카테고리를 한 번에 — 표지 + 카테고리별 페이지 출력" },
+  const items: { id: ProposalMode; label: string; icon: typeof FileText }[] = [
+    { id: "single",  label: "단일제안", icon: FileText },
+    { id: "compare", label: "비교제안", icon: BarChart3 },
+    { id: "cross",   label: "교차설계", icon: Activity },
+    { id: "bundle",  label: "통합제안", icon: ShieldCheck },
   ]
   return (
-    <div className="grid gap-3 md:grid-cols-3">
-      {items.map((item) => {
-        const active = mode === item.id
+    <div className="grid grid-cols-4 gap-2">
+      {items.map(({ id, label, icon: Icon }) => {
+        const active = mode === id
         return (
           <button
-            key={item.id}
+            key={id}
             type="button"
-            onClick={() => onMode(item.id)}
-            className={`rounded-2xl border p-4 text-left transition ${active ? "border-[#102a4c] bg-[#f2f7fb]" : "border-slate-200 bg-white hover:border-slate-300"}`}
+            onClick={() => onMode(id)}
+            className={`flex flex-col items-center gap-1.5 rounded-2xl border py-3 transition ${active ? "border-[#102a4c] bg-[#102a4c] text-white shadow-sm" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}
           >
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-black text-slate-950">{item.title}</p>
-              {active && <BadgeCheck className="h-4 w-4 text-cyan-600" />}
-            </div>
-            <p className="mt-2 text-xs font-bold leading-5 text-slate-500">{item.desc}</p>
+            <Icon className="h-4 w-4" />
+            <span className="text-[10px] font-black leading-tight">{label}</span>
           </button>
         )
       })}
@@ -820,21 +824,29 @@ function ModeSelector({ mode, onMode }: { mode: ProposalMode; onMode: (mode: Pro
   )
 }
 
-function FocusSelector({ focus, onFocus, disabled }: { focus: CompareFocus; onFocus: (focus: CompareFocus) => void; disabled?: boolean }) {
+function FocusSelector({ focus, onFocus, disabled }: { focus: CompareFocus[]; onFocus: (focus: CompareFocus[]) => void; disabled?: boolean }) {
+  const toggle = (id: CompareFocus) => {
+    const next = focus.includes(id)
+      ? (focus.filter((f) => f !== id).length ? focus.filter((f) => f !== id) : [id])
+      : [...focus, id]
+    onFocus(next)
+  }
   return (
     <div className="flex flex-wrap gap-2">
-      {focusOptions.map((option) => (
-        <button
-          key={option.id}
-          type="button"
-          disabled={disabled}
-          onClick={() => onFocus(option.id)}
-          className={`rounded-full border px-3 py-2 text-xs font-black transition ${focus === option.id ? "border-[#102a4c] bg-[#102a4c] text-white" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"} ${disabled ? "opacity-40" : ""}`}
-          title={option.desc}
-        >
-          {option.label}
-        </button>
-      ))}
+      {focusOptions.map((option) => {
+        const active = focus.includes(option.id)
+        return (
+          <button
+            key={option.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => toggle(option.id)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${active ? "border-[#102a4c] bg-[#102a4c] text-white" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"} ${disabled ? "opacity-40" : ""}`}
+          >
+            {option.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -949,7 +961,7 @@ function ProposalReport({
         <div className="grid flex-1 grid-cols-[1.15fr_0.85fr] gap-5 p-8">
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-black text-slate-950">담보별 상세 비교</h2>
-            <ComparisonTable template={template} plans={visiblePlans} />
+            <ComparisonTable template={template} plans={visiblePlans} showCross={mode === "cross"} />
           </section>
           <section className="flex flex-col gap-4">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -966,13 +978,23 @@ function ProposalReport({
         <PageNum num={pageOffset + 3} />
       </ReportPage>
 
-      {/* 4페이지: 사례 인포그래픽 */}
-      <ReportPage last={template.id !== "health"}>
-        <ScenarioPage4 template={template} customerName={customerName} consultant={consultant} pageNum={pageOffset + 4} />
-      </ReportPage>
+      {/* 4페이지: 교차설계면 합산 커버리지, 아니면 사례 인포그래픽 */}
+      {mode === "cross" ? (
+        <CrossCoveragePage
+          template={template}
+          plans={visiblePlans}
+          customerName={customerName}
+          consultant={consultant}
+          pageNum={pageOffset + 4}
+        />
+      ) : (
+        <ReportPage last={template.id !== "health"}>
+          <ScenarioPage4 template={template} customerName={customerName} consultant={consultant} pageNum={pageOffset + 4} />
+        </ReportPage>
+      )}
 
-      {/* 5페이지: 건강보험 치료단계 (health만) */}
-      {template.id === "health" && (
+      {/* 5페이지: 건강보험 치료단계 (health + 비교/단일 모드만) */}
+      {template.id === "health" && mode !== "cross" && (
         <ReportPage last>
           <HealthTreatmentPage customerName={customerName} consultant={consultant} pageNum={pageOffset + 5} />
         </ReportPage>
@@ -1275,6 +1297,147 @@ function ComparisonTable({ template, plans }: { template: CategoryTemplate; plan
         </tbody>
       </table>
     </div>
+  )
+}
+
+// ── 교차설계 전용: 합산 보장 vs 실제 치료비 비교 페이지 ──────────────────────
+const TREATMENT_COSTS: Record<string, { label: string; min: number; max: number; unit: string }[]> = {
+  health: [
+    { label: "암 진단 + 1년 치료비", min: 3000, max: 5000, unit: "만원" },
+    { label: "뇌졸중 급성기 치료", min: 1500, max: 3500, unit: "만원" },
+    { label: "심근경색 시술·재활", min: 2000, max: 4000, unit: "만원" },
+  ],
+  care: [
+    { label: "연간 간병인 비용", min: 1800, max: 3600, unit: "만원" },
+    { label: "요양원 입소 1년", min: 1200, max: 2400, unit: "만원" },
+    { label: "치매 진단 초기 치료", min: 800, max: 2000, unit: "만원" },
+  ],
+  driver: [
+    { label: "형사합의금 (중상해)", min: 500, max: 3000, unit: "만원" },
+    { label: "대인 벌금", min: 300, max: 2000, unit: "만원" },
+    { label: "변호사 선임비", min: 200, max: 500, unit: "만원" },
+  ],
+  dental: [
+    { label: "임플란트 3개", min: 300, max: 450, unit: "만원" },
+    { label: "크라운 5개", min: 200, max: 350, unit: "만원" },
+    { label: "틀니 1개", min: 100, max: 200, unit: "만원" },
+  ],
+  pet: [
+    { label: "슬개골 수술", min: 80, max: 150, unit: "만원" },
+    { label: "입원 5일", min: 30, max: 80, unit: "만원" },
+    { label: "피부·알러지 연간", min: 20, max: 60, unit: "만원" },
+  ],
+}
+
+function CrossCoveragePage({
+  template,
+  plans,
+  customerName,
+  consultant,
+  pageNum,
+}: {
+  template: CategoryTemplate
+  plans: PlanData[]
+  customerName: string
+  consultant: ConsultantInfo
+  pageNum: number
+}) {
+  const moneyMetrics = template.metrics.filter((m) => m.kind === "money")
+  const metricSums = Object.fromEntries(
+    moneyMetrics.map((m) => [m.key, plans.reduce((s, p) => s + num(p.metrics[m.key]), 0)])
+  )
+  const totalMonthly = plans.reduce((s, p) => s + num(p.monthlyPremium), 0)
+  const costs = TREATMENT_COSTS[template.id] || []
+  const maxCoverage = Math.max(...Object.values(metricSums), 1)
+
+  return (
+    <ReportPage last>
+      <ReportHeader template={template} mode="cross" customerName={customerName} consultant={consultant} />
+      <div className="grid flex-1 grid-cols-[1fr_1fr] gap-5 p-8">
+        {/* 좌: 합산 보장 구조 */}
+        <section className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">교차설계 합산 보장</p>
+            <p className="mt-2 text-[28px] font-black text-emerald-900">{plans.length}개사 분산 설계</p>
+            <p className="mt-1 text-sm font-bold text-emerald-700">월 합산 {won(totalMonthly)}원 · {plans.map((p) => p.company || "?사").join(" + ")}</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="mb-3 text-xs font-black text-slate-500">담보별 합산 보장금액</p>
+            <div className="space-y-3">
+              {moneyMetrics.slice(0, 5).map((m) => {
+                const sum = metricSums[m.key] || 0
+                const pct = maxCoverage > 0 ? Math.max(4, (sum / maxCoverage) * 100) : 4
+                const colors = ["bg-cyan-500", "bg-emerald-500", "bg-amber-400", "bg-rose-400", "bg-purple-500"]
+                const ci = moneyMetrics.indexOf(m) % colors.length
+                return (
+                  <div key={m.key}>
+                    <div className="mb-1 flex justify-between text-[10px] font-black text-slate-500">
+                      <span>{m.shortLabel || m.label}</span>
+                      <span className="text-emerald-700">{sum > 0 ? `${won(sum)}만원` : "-"}</span>
+                    </div>
+                    <div className="h-5 overflow-hidden rounded-full bg-slate-100">
+                      <div className={`h-5 rounded-full ${colors[ci]}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* 우: 실제 치료비 대비 */}
+        <section className="flex flex-col gap-4">
+          <p className="text-lg font-black text-slate-950">합산 보장 vs 실제 치료비</p>
+          <p className="text-xs font-bold text-slate-400">치료비 최대 기준 — 실제 비용은 증상·기관에 따라 다를 수 있습니다.</p>
+
+          {costs.length > 0 ? (
+            <div className="space-y-4">
+              {costs.map((cost, i) => {
+                // 가장 관련성 높은 메트릭 합산으로 커버율 계산
+                const topMetricSum = Math.max(...Object.values(metricSums).filter((v) => v > 0), 0)
+                const coverRatio = Math.min(100, cost.max > 0 ? (topMetricSum / cost.max) * 100 : 0)
+                const covered = coverRatio >= 80
+                return (
+                  <div key={i} className="rounded-2xl bg-slate-50 p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm font-black text-slate-900">{cost.label}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${covered ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                        {covered ? "충분 커버" : "부분 커버"}
+                      </span>
+                    </div>
+                    <p className="mb-2 text-[10px] font-bold text-slate-500">실제 비용: {cost.min}~{cost.max}만원</p>
+                    <div className="relative h-6 overflow-hidden rounded-full bg-slate-200">
+                      {/* 치료비 기준 바 (회색) */}
+                      <div className="absolute inset-0 rounded-full bg-slate-200" />
+                      {/* 합산 보장 바 */}
+                      <div
+                        className={`absolute inset-y-0 left-0 rounded-full ${covered ? "bg-emerald-500" : "bg-amber-400"} flex items-center justify-end pr-2 text-[9px] font-black text-white`}
+                        style={{ width: `${Math.min(100, coverRatio)}%` }}
+                      >
+                        {coverRatio.toFixed(0)}%
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-slate-50 p-5">
+              <p className="text-sm font-bold text-slate-500">이 카테고리의 치료비 기준 데이터를 준비 중입니다.</p>
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+            <p className="text-xs font-black text-cyan-900">교차설계 전략 포인트</p>
+            <p className="mt-1.5 text-[11px] font-bold leading-5 text-cyan-800">
+              한 회사의 한도 제한을 여러 회사 분산으로 보완합니다. 합산 보장 총액이 실제 치료비를 충분히 커버하는지 확인 후 비중을 조정하세요.
+            </p>
+          </div>
+        </section>
+      </div>
+      <PageNum num={pageNum} />
+    </ReportPage>
   )
 }
 
@@ -1598,7 +1761,7 @@ function ProposalBundle({
   )
 }
 
-function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, plans: PlanData[], focus: CompareFocus) {
+function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, plans: PlanData[], focus: CompareFocus | CompareFocus[]) {
   if (template.id === "shortlife" && plans[0]) {
     const d = shortLifeDerived(plans[0])
     return {
@@ -1613,7 +1776,8 @@ function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, pla
     }
   }
   const lowest = bestPremium(plans)
-  const focusLabel = focusOptions.find((item) => item.id === focus)?.label || "균형형"
+  const primaryFocus = Array.isArray(focus) ? focus[0] : focus
+  const focusLabel = focusOptions.find((item) => item.id === primaryFocus)?.label || "균형형"
   return {
     title: `${focusLabel} 기준으로 ${plans.length}개 보험사를 비교합니다`,
     body: lowest
@@ -1630,7 +1794,7 @@ export default function ProposalPage() {
   const [mode, setMode] = useState<ProposalMode>("single")
   const [template, setTemplate] = useState<CategoryTemplate>(categories[1])
   const [plans, setPlans] = useState<PlanData[]>(() => normalizePlans(categories[1], 2))
-  const [focus, setFocus] = useState<CompareFocus>("balance")
+  const [focus, setFocus] = useState<CompareFocus[]>(["balance"])
   const [customerName, setCustomerName] = useState("")
   const [consultant, setConsultant] = useState<ConsultantInfo>({ name: "", phone: "" })
   const [showPreview, setShowPreview] = useState(false)
@@ -1673,11 +1837,12 @@ export default function ProposalPage() {
   }, [router])
 
   const visiblePlans = useMemo(() => mode === "single" ? plans.slice(0, 1) : plans, [mode, plans])
+  const primaryFocus = focus[0] ?? "balance"
 
   const selectCategory = (next: CategoryTemplate) => {
     setTemplate(next)
     setPlans(normalizePlans(next, Math.max(2, mode === "single" ? 2 : plans.length)))
-    if (next.id === "shortlife") setFocus("refund")
+    if (next.id === "shortlife") setFocus(["refund"])
   }
 
   const updatePlan = (id: string, next: PlanData) => {
@@ -1754,168 +1919,132 @@ export default function ProposalPage() {
         </div>
 
         <div className="no-print mx-auto grid max-w-[1440px] gap-5 px-6 py-6 xl:grid-cols-[360px_1fr]">
-          <aside className="space-y-5">
+          <aside className="space-y-4">
+            {/* 고객·설계사 정보 — 최상단 고정, PDF 업로드로 변경 안 됨 */}
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <FileText className="h-5 w-5 text-cyan-600" />
-                <h2 className="text-base font-black text-slate-950">생성 방식</h2>
-              </div>
-              <ModeSelector mode={mode} onMode={(next) => setMode(next)} />
-            </section>
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <Activity className="h-5 w-5 text-cyan-600" />
-                <h2 className="text-base font-black text-slate-950">비교 기준</h2>
-              </div>
-              <FocusSelector focus={focus} onFocus={setFocus} disabled={mode === "single" && template.id !== "shortlife"} />
-            </section>
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <Bone className="h-5 w-5 text-cyan-600" />
-                <h2 className="text-base font-black text-slate-950">고객·설계사 정보</h2>
-              </div>
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">고객 · 설계사</p>
               <div className="space-y-3">
-                <Input label="고객명" value={customerName} onChange={setCustomerName} placeholder="예: 배진우" />
+                <Input label="고객명" value={customerName} onChange={setCustomerName} placeholder="예: 홍길동" />
                 <Input label="설계사명" value={consultant.name} onChange={(value) => setConsultant((prev) => ({ ...prev, name: value }))} />
                 <Input label="연락처" value={consultant.phone} onChange={(value) => setConsultant((prev) => ({ ...prev, phone: value }))} />
               </div>
             </section>
+
+            {/* 생성 방식 */}
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">생성 방식</p>
+              <ModeSelector mode={mode} onMode={(next) => setMode(next)} />
+            </section>
+
+            {/* 비교 기준 — 복수 선택 */}
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">비교 기준 (복수 선택)</p>
+              <FocusSelector focus={focus} onFocus={setFocus} disabled={mode === "single" && template.id !== "shortlife"} />
+            </section>
+
+            {/* 보장 카테고리 */}
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">보장 카테고리</p>
+              <CategorySelector selected={template} onSelect={selectCategory} />
+            </section>
           </aside>
 
           <div className="space-y-5">
-            {mode === "bundle" ? (
-              <>
-                <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <h2 className="mb-1 text-lg font-black text-slate-950">보장 카테고리 선택</h2>
-                  <p className="mb-4 text-sm font-bold text-slate-500">포함할 카테고리를 2개 이상 선택하세요. 카테고리별 제안서가 합산 출력됩니다.</p>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {categories.map((cat) => {
-                      const active = bundleIds.includes(cat.id)
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            setBundleIds((prev) =>
-                              active
-                                ? prev.filter((id) => id !== cat.id)
-                                : [...prev, cat.id]
-                            )
-                          }}
-                          className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-cyan-400 bg-cyan-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}
-                        >
-                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${cat.tone} text-white`}>
-                            <CategoryIcon template={cat} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-black text-slate-950">{cat.label}</p>
-                            <p className="text-[10px] font-bold text-slate-400">{cat.desc}</p>
-                          </div>
-                          {active && <CheckCircle2 className="h-5 w-5 text-cyan-500" />}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </section>
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-cyan-600" />
+                <h2 className="text-base font-black text-slate-950">보장 유형 선택</h2>
+              </div>
+              <CategorySelector selected={template} onSelect={selectCategory} />
+            </section>
 
-                {bundleIds.length > 0 && (
-                  <section className="space-y-4">
-                    <h2 className="text-lg font-black text-slate-950">카테고리별 상품 입력</h2>
-                    <div className="grid gap-4 xl:grid-cols-2">
-                      {bundleIds.map((catId) => {
-                        const tpl = categories.find((c) => c.id === catId)
-                        if (!tpl) return null
-                        const plan = bundlePlans[catId]
-                        return (
-                          <PlanEditor
-                            key={catId}
-                            plan={plan}
-                            index={0}
-                            template={tpl}
-                            mode="single"
-                            onChange={(next) => setBundlePlans((prev) => ({ ...prev, [catId]: next }))}
-                            onCustomerName={(name) => setCustomerName((prev) => prev || name)}
-                          />
-                        )
-                      })}
-                    </div>
-                  </section>
-                )}
-              </>
+            {mode === "bundle" ? (
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-cyan-600" />
+                  <h2 className="text-base font-black text-slate-950">번들 구성</h2>
+                </div>
+                <div className="mb-5 flex flex-wrap gap-2">
+                  {categories.map((c) => {
+                    const active = bundleIds.includes(c.id)
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setBundleIds((prev) =>
+                          active ? prev.filter((id) => id !== c.id) : [...prev, c.id]
+                        )}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${active ? "border-cyan-500 bg-cyan-500 text-white" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}
+                      >
+                        {c.label}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="space-y-6">
+                  {bundleIds.map((id) => {
+                    const tpl = categories.find((c) => c.id === id)
+                    if (!tpl) return null
+                    return (
+                      <div key={id}>
+                        <div className={`mb-3 flex items-center gap-2 rounded-2xl bg-gradient-to-r ${tpl.tone} px-4 py-3 text-white`}>
+                          <CategoryIcon template={tpl} />
+                          <p className="text-sm font-black">{tpl.label}</p>
+                        </div>
+                        <PlanEditor
+                          plan={bundlePlans[id]}
+                          template={tpl}
+                          mode="single"
+                          index={0}
+                          onChange={(next) => setBundlePlans((prev) => ({ ...prev, [id]: next }))}
+                          onCustomerName={setCustomerName}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
             ) : (
               <>
-                <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="mb-4 flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-lg font-black text-slate-950">상품 카테고리</h2>
-                      <p className="mt-1 text-sm font-bold text-slate-500">카테고리를 선택하면 입력 항목과 출력 인포그래픽이 자동으로 바뀝니다.</p>
-                    </div>
-                    <div className={`hidden rounded-2xl bg-gradient-to-br ${template.tone} p-3 text-white md:block`}>
-                      <CategoryIcon template={template} />
-                    </div>
-                  </div>
-                  <CategorySelector selected={template} onSelect={selectCategory} />
-                </section>
-
-                <section className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-lg font-black text-slate-950">상품 정보 입력</h2>
-                      <p className="text-sm font-bold text-slate-500">
-                        PDF를 드래그앤드롭하면 주요 항목이 자동으로 채워집니다.
-                      </p>
-                    </div>
-                    {mode === "compare" && (
-                      <button type="button" onClick={addPlan} className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-3 text-sm font-black text-white">
-                        <Plus className="h-4 w-4" />
-                        보험사 추가
-                      </button>
-                    )}
-                  </div>
-                  <div className={`grid gap-4 ${mode === "compare" ? "xl:grid-cols-2" : "max-w-3xl"}`}>
-                    {visiblePlans.map((plan, index) => (
-                      <PlanEditor
-                        key={plan.id}
-                        plan={plan}
-                        index={index}
-                        template={template}
-                        mode={mode}
-                        onChange={(next) => updatePlan(plan.id, next)}
-                        onRemove={() => removePlan(plan.id)}
-                        canRemove={mode === "compare" && visiblePlans.length > 2}
-                        onCustomerName={(name) => setCustomerName((prev) => prev || name)}
-                      />
-                    ))}
-                  </div>
-                </section>
+                {plans.map((plan, index) => (
+                  <PlanEditor
+                    key={plan.id}
+                    plan={plan}
+                    template={template}
+                    mode={mode}
+                    index={index}
+                    onChange={(next) => updatePlan(plan.id, next)}
+                    onRemove={plans.length > 1 ? () => removePlan(plan.id) : undefined}
+                    canRemove={plans.length > 1}
+                    onCustomerName={index === 0 ? setCustomerName : undefined}
+                  />
+                ))}
+                {mode === "compare" && plans.length < 4 && (
+                  <button
+                    type="button"
+                    onClick={addPlan}
+                    className="flex w-full items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-slate-300 bg-white py-4 text-sm font-black text-slate-400 transition hover:border-cyan-400 hover:text-cyan-600"
+                  >
+                    <Plus className="h-5 w-5" />
+                    상품 추가
+                  </button>
+                )}
               </>
             )}
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowPreview(true)}
-                disabled={mode === "bundle" && bundleIds.length < 2}
-                className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-6 py-4 text-sm font-black text-white shadow-sm disabled:opacity-40"
-              >
-                제안서 미리보기
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
           </div>
         </div>
 
         {showPreview && (
-          <div className="no-print fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm">
-            <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#111827] px-6 py-3">
-              <p className="text-sm font-black text-white">제안서 미리보기</p>
-              <div className="flex items-center gap-2">
+          <div className="no-print fixed inset-0 z-50 overflow-y-auto bg-[#d8e4f0] py-8">
+            <div className="mx-auto mb-6 flex max-w-[1240px] items-center justify-between px-6">
+              <p className="text-sm font-black text-[#102a4c]">
+                미리보기 — PDF 저장은 브라우저 인쇄 (Ctrl+P) 를 이용하세요
+              </p>
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-black text-white hover:bg-cyan-400"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A]"
                 >
                   <Download className="h-4 w-4" />
                   PDF 저장
@@ -1923,55 +2052,32 @@ export default function ProposalPage() {
                 <button
                   type="button"
                   onClick={() => setShowPreview(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 text-white/70 hover:border-white/40 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto bg-[#1f2937] px-6 py-8">
-              {mode === "bundle" ? (
-                <ProposalBundle
-                  sections={bundleIds.map((id) => ({ templateId: id, plan: bundlePlans[id] }))}
-                  focus={focus}
-                  customerName={customerName}
-                  consultant={consultant}
-                />
-              ) : (
-                <ProposalReport
-                  template={template}
-                  mode={mode}
-                  plans={visiblePlans}
-                  focus={focus}
-                  customerName={customerName}
-                  consultant={consultant}
-                />
-              )}
-            </div>
-          </div>
-        )}
 
-        <div className="print-only">
-          {mode === "bundle" ? (
-            <ProposalBundle
-              sections={bundleIds.map((id) => ({ templateId: id, plan: bundlePlans[id] }))}
-              focus={focus}
-              customerName={customerName}
-              consultant={consultant}
-            />
-          ) : (
-            <div className="proposal-print-area">
+            {mode === "bundle" ? (
+              <ProposalBundle
+                sections={bundleIds.map((id) => ({ templateId: id, plan: bundlePlans[id] }))}
+                focus={primaryFocus}
+                customerName={customerName}
+                consultant={consultant}
+              />
+            ) : (
               <ProposalReport
                 template={template}
                 mode={mode}
                 plans={visiblePlans}
-                focus={focus}
+                focus={primaryFocus}
                 customerName={customerName}
                 consultant={consultant}
               />
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </main>
     </>
   )

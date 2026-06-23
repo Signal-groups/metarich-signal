@@ -376,5 +376,4 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
       }
     ]
   }
-
 }

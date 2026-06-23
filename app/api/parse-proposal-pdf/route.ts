@@ -116,13 +116,14 @@ export async function POST(request: NextRequest) {
 
 반드시 아래 JSON 형식만 출력하세요. 찾을 수 없으면 빈 문자열("")로 남기세요.
 금액은 만원 단위 숫자만 (예: 일반암 5000만원 → "5000").
-월납보험료는 원 단위 숫자만 (예: 52,380원 → "52380").
+월납보험료는 원 단위 숫자만, 쉼표 제거 (예: 52,380원 → "52380").
+교차설계(여러 회사 분산)인 경우 첫 번째 상품 기준으로 추출하세요.
 
 {
   "customerName": "피보험자 또는 계약자 이름",
   "company": "보험사명",
   "productName": "상품명(가장 핵심 상품명)",
-  "monthlyPremium": "월납보험료 원 단위 숫자만",
+  "monthlyPremium": "월납보험료 원 단위 숫자만 (예: 52380 → \"52380\")",
   "paymentYears": "납입기간 숫자만(예: 20)",
   "coverageYears": "보장기간(예: 100세 또는 종신)",
   "metrics": {
@@ -155,11 +156,13 @@ ${pdfText}
         { status: 500 }
       )
     }
-
-    const result = JSON.parse(jsonMatch[0])
-    return NextResponse.json({ ok: true, data: result })
+    const parsed = JSON.parse(jsonMatch[0])
+    return NextResponse.json({ ok: true, data: parsed })
   } catch (err) {
-    const message = err instanceof Error ? err.message : "알 수 없는 오류"
-    return NextResponse.json({ error: `AI 분석 실패: ${message}` }, { status: 500 })
+    console.error("parse-proposal-pdf error:", err)
+    return NextResponse.json(
+      { error: "PDF 파싱 중 오류가 발생했습니다." },
+      { status: 500 }
+    )
   }
 }
