@@ -179,7 +179,9 @@ export default function Sidebar({
     if (!isApproved) return tool.guestVisible === true;
     // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출. fixed=true 항목은 항상 노출
     if (tool.access === "office") return canUseOffice && (tool.fixed || menuStatus[tool.id] || isEditMode);
-    return tool.access === "public" || (tool.access === "approved" && (menuStatus[tool.id] || isEditMode));
+    if (tool.access === "approved") return isStaff && (tool.fixed || menuStatus[tool.id] || isEditMode);
+    if (tool.access === "guest_approved") return isApproved && (tool.fixed || menuStatus[tool.id] || isEditMode);
+    return tool.access === "public";
   });
   const highlightTools = visibleConsultTools.filter((tool) => tool.highlight);
 
@@ -418,6 +420,14 @@ export default function Sidebar({
                   onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank", "noopener,noreferrer")}
                 />
               )}
+              {isMaster && (
+                <NavItem
+                  icon="⚙️"
+                  label="메뉴 노출 설정"
+                  active={isConsultModalOpen}
+                  onClick={() => setIsConsultModalOpen(true)}
+                />
+              )}
 
             </nav>
 
@@ -503,7 +513,7 @@ export default function Sidebar({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-xl rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
             <div className="bg-black p-6 flex justify-between items-center">
-              <h3 className="text-[#d4af37] font-black text-xl tracking-tighter">상담 도구</h3>
+              <h3 className="text-[#d4af37] font-black text-xl tracking-tighter">메뉴 노출 설정</h3>
               <div className="flex items-center gap-3">
                 {isMaster && (
                   <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[10px] px-3 py-1 rounded-full font-black ${isEditMode ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 border border-white/20'}`}>
@@ -513,6 +523,35 @@ export default function Sidebar({
                 <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black">×</button>
               </div>
             </div>
+            {isMaster && isEditMode && (
+              <div className="bg-[#111] px-6 py-3 flex items-center gap-2 flex-wrap border-b border-white/10">
+                <span className="text-[10px] font-black text-white/40 mr-1">프리셋</span>
+                {([
+                  { label: "게스트 승인", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio"], off: ["show_insu","show_finance"] },
+                  { label: "설계사 전체", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"], off: [] },
+                  { label: "모두 끄기", keys: [], off: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"] },
+                ] as const).map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={async () => {
+                      const all = [...preset.keys, ...preset.off];
+                      const updates: Record<string, boolean> = {};
+                      preset.keys.forEach((k) => { updates[k] = true; });
+                      preset.off.forEach((k) => { updates[k] = false; });
+                      const newStatus = { ...menuStatus, ...updates };
+                      setMenuStatus(newStatus);
+                      if (onMenuStatusChange) onMenuStatusChange(newStatus);
+                      await Promise.all(all.map((k) =>
+                        supabase.from("team_settings").upsert({ key: k, value: String(updates[k]) }, { onConflict: "key" })
+                      ));
+                    }}
+                    className="text-[10px] px-3 py-1 rounded-full font-black bg-white/10 text-white/70 border border-white/20 hover:bg-[#d4af37] hover:text-black transition"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            )}
             
             <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto no-scrollbar">
               {highlightTools.length > 0 && (

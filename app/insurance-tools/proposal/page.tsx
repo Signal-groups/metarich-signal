@@ -1974,14 +1974,6 @@ export default function ProposalPage() {
           </aside>
 
           <div className="space-y-5">
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-cyan-600" />
-                <h2 className="text-base font-black text-slate-950">보장 유형 선택</h2>
-              </div>
-              <CategorySelector selected={template} onSelect={selectCategory} />
-            </section>
-
             {mode === "bundle" ? (
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
@@ -2106,3 +2098,4 @@ export default function ProposalPage() {
     </>
   )
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        

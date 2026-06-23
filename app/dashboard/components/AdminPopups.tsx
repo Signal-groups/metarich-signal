@@ -445,6 +445,29 @@ export default function AdminPopups({
                         </td>
                         {normalizeRole(viewer) === "master" && (
                           <td className="p-4 text-center md:p-6">
+                            {/* 등급 프리셋 버튼 */}
+                            <div className="mb-3 flex flex-wrap gap-1.5 justify-center">
+                              {([
+                                { label: "게스트", color: "bg-slate-100 text-slate-600", payload: { is_approved: false, office_access: false, crm_access: false, claim_access: false, branding_access: false } },
+                                { label: "게스트 승인", color: "bg-sky-100 text-sky-700", payload: { is_approved: true, office_access: false, crm_access: false, claim_access: false, branding_access: false } },
+                                { label: "설계사", color: "bg-indigo-100 text-indigo-700", payload: { is_approved: true, office_access: true, crm_access: false, claim_access: false, branding_access: false } },
+                                { label: "전체", color: "bg-emerald-100 text-emerald-700", payload: { is_approved: true, office_access: true, crm_access: true, claim_access: true, branding_access: true } },
+                              ] as const).map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => {
+                                    Object.entries(preset.payload).forEach(([field, value]) => {
+                                      updateUserInfo(user.id, field as any, String(value))
+                                    })
+                                  }}
+                                  className={`rounded-full px-2.5 py-1 text-[10px] font-black transition hover:opacity-80 ${preset.color}`}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                            {/* 개별 체크박스 */}
                             <div className="grid min-w-[240px] grid-cols-2 gap-3">
                               {([
                                 ["crm_access", "CRM"],

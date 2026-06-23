@@ -9,7 +9,7 @@ export type ConsultingTool = {
   cardColor: string;
   fixed?: boolean;
   staffOnly?: boolean;
-  access: "public" | "approved" | "office";
+  access: "public" | "guest_approved" | "approved" | "office";
   guestVisible?: boolean;  // true = 미승인·게스트도 볼 수 있는 도구
   highlight?: boolean;
   isNew?: boolean;
@@ -198,8 +198,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/insurance-tools/coverage-stats",
     color: "border-sky-500",
     cardColor: "border-sky-500 text-sky-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     editable: true,
     category: "coverage",
   },
@@ -212,8 +211,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/insurance-tools/car-accident",
     color: "border-indigo-500",
     cardColor: "border-indigo-500 text-indigo-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     guestVisible: true,
     editable: true,
     category: "planning",
@@ -241,8 +239,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/insurance-tools/premium-compare",
     color: "border-indigo-500",
     cardColor: "border-indigo-500 text-indigo-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     editable: true,
     category: "coverage",
   },
@@ -255,8 +252,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/insurance-tools/surgery",
     color: "border-rose-500",
     cardColor: "border-rose-500 text-rose-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     editable: true,
     category: "claims",
   },
@@ -269,8 +265,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/insurance-tools/disability",
     color: "border-rose-500",
     cardColor: "border-rose-500 text-rose-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     editable: true,
     category: "claims",
   },
@@ -283,8 +278,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/underwriting/index.html",
     color: "border-sky-500",
     cardColor: "border-sky-500 text-sky-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     editable: true,
     category: "coverage",
   },
@@ -311,8 +305,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/financial-calc",
     color: "border-indigo-500",
     cardColor: "border-indigo-500 text-indigo-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     editable: true,
     category: "financial",
   },
@@ -325,8 +318,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     url: "/financial-portfolio",
     color: "border-teal-500",
     cardColor: "border-teal-500 text-teal-600",
-    staffOnly: true,
-    access: "approved",
+    access: "guest_approved",
     editable: true,
     category: "financial",
   },
