@@ -296,10 +296,9 @@ function shortLifeDerived(plan: PlanData) {
   const refund = explicitRefund || (totalPaid * rate / 100)
   const monthlyRate = 0.03 / 12
   const payMonths = years * 12
-  const horizonMonths = Math.max(payMonths, horizonYears * 12)
   let savingFuture = 0
   for (let i = 0; i < payMonths; i += 1) {
-    savingFuture += monthly * Math.pow(1 + monthlyRate, horizonMonths - i)
+    savingFuture += monthly * Math.pow(1 + monthlyRate, payMonths - i)
   }
   return {
     monthly,
@@ -991,7 +990,7 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
   return (
     <div>
       <h2 className="text-lg font-black text-slate-950">단기납 종신 vs 월 적금 3%</h2>
-      <p className="mt-1 text-xs font-bold text-slate-400">같은 월 납입금 기준으로 {horizonLabel} 예상 수령액을 비교합니다.</p>
+      <p className="mt-1 text-xs font-bold text-slate-400">같은 월 납입금을 보험료와 적금으로 각각 냈을 때의 결과를 비교합니다.</p>
 
       <div className="mt-4 grid grid-cols-4 gap-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-3">
@@ -1014,7 +1013,7 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3">
           <p className="text-[10px] font-black text-rose-700">적금 3% 예상</p>
           <p className="mt-1 text-base font-black text-rose-700">{wonMan(savingFuture)}</p>
-          <p className="text-[10px] font-black text-rose-500">이자 +{wonMan(savingGain)}</p>
+          <p className="text-[10px] font-black text-rose-500">{derived.years}년 납입 · 이자 +{wonMan(savingGain)}</p>
         </div>
       </div>
 
@@ -1439,7 +1438,7 @@ function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, pla
     const d = shortLifeDerived(plans[0])
     return {
       title: `총납입 ${wonMan(d.totalPaid)}, 예상 환급률 ${d.refundRate.toFixed(1)}%`,
-      body: `월 ${formatKrw(d.monthly)}씩 ${d.years}년 납입하는 구조입니다. ${d.horizonYears}년 후 환급금은 약 ${wonMan(d.refund)}으로 계산되며, 월 적금 3%는 같은 납입금과 같은 확인 시점으로 비교합니다.`,
+      body: `월 ${formatKrw(d.monthly)}씩 ${d.years}년 납입하는 구조입니다. ${d.horizonYears}년 후 환급금은 약 ${wonMan(d.refund)}으로 계산되며, 월 적금 3%는 같은 월 납입금을 납입기간 동안 적립했을 때의 예상액과 비교합니다.`,
     }
   }
   if (mode === "single") {
