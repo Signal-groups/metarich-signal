@@ -152,12 +152,15 @@ const categories: CategoryTemplate[] = [
       { key: "minorCancer", label: "유사암 진단비", shortLabel: "유사암", unit: "만원", kind: "money", group: "진단비", guide: "갑상선암·기타피부암·경계성종양·제자리암 기준" },
       { key: "brain", label: "뇌혈관질환 진단비", shortLabel: "뇌혈관", unit: "만원", kind: "money", group: "진단비", guide: "뇌출혈·뇌졸중·뇌혈관질환 중 보장범위 확인" },
       { key: "heart", label: "허혈성심장질환 진단비", shortLabel: "허혈성", unit: "만원", kind: "money", group: "진단비", guide: "급성심근경색·허혈성심장질환 중 보장범위 확인" },
-      { key: "diseaseSurgery", label: "질병 수술비", shortLabel: "질병수술", unit: "만원", kind: "money", group: "수술비", guide: "상세 지급 내역은 약관참조" },
-      { key: "diseaseTypeSurgery", label: "질병 1~5종 수술비 (5종 기준)", shortLabel: "질병5종", unit: "만원", kind: "money", group: "수술비", guide: "5종 기준 금액 입력. 상세 지급 내역은 약관참조", hint: "5종 기준" },
-      { key: "diseaseNSurgery", label: "질병 N대 수술비 (최대금액)", shortLabel: "질병N대", unit: "만원", kind: "money", group: "수술비", guide: "가장 큰 지급금액 기준 입력. 상세 지급 내역은 약관참조", hint: "최대금액" },
-      { key: "injurySurgery", label: "상해 수술비", shortLabel: "상해수술", unit: "만원", kind: "money", group: "수술비", guide: "상세 지급 내역은 약관참조" },
-      { key: "injuryTypeSurgery", label: "상해 1~5종 수술비 (5종 기준)", shortLabel: "상해5종", unit: "만원", kind: "money", group: "수술비", guide: "5종 기준 금액 입력. 상세 지급 내역은 약관참조", hint: "5종 기준" },
-      { key: "injuryNSurgery", label: "상해 N대 수술비 (최대금액)", shortLabel: "상해N대", unit: "만원", kind: "money", group: "수술비", guide: "가장 큰 지급금액 기준 입력. 상세 지급 내역은 약관참조", hint: "최대금액" },
+      { key: "injurySurgery", label: "상해 일반 수술비", shortLabel: "상해 일반", unit: "만원", kind: "money", group: "수술비", guide: "상해 일반 수술비. 상세 지급 내역은 약관참조" },
+      { key: "diseaseSurgery", label: "질병 일반 수술비", shortLabel: "질병 일반", unit: "만원", kind: "money", group: "수술비", guide: "질병 일반 수술비. 상세 지급 내역은 약관참조" },
+      { key: "injuryComprehensiveSurgery", label: "상해 종합 수술비", shortLabel: "상해 종합", unit: "만원", kind: "money", group: "수술비", guide: "상해 종합 수술비. 상세 지급 내역은 약관참조" },
+      { key: "diseaseComprehensiveSurgery", label: "질병 종합 수술비", shortLabel: "질병 종합", unit: "만원", kind: "money", group: "수술비", guide: "질병 종합 수술비. 상세 지급 내역은 약관참조" },
+      { key: "injuryAdvancedSurgery", label: "상해 상급 수술비", shortLabel: "상해 상급", unit: "만원", kind: "money", group: "수술비", guide: "상해 상급 수술비. 상세 지급 내역은 약관참조" },
+      { key: "diseaseAdvancedSurgery", label: "질병 상급 수술비", shortLabel: "질병 상급", unit: "만원", kind: "money", group: "수술비", guide: "질병 상급 수술비. 상세 지급 내역은 약관참조" },
+      { key: "injuryTypeSurgery", label: "상해 종수술비", shortLabel: "상해 종수술", unit: "만원", kind: "money", group: "수술비", guide: "종수술비 기준 금액 입력. 상세 지급 내역은 약관참조", hint: "최대 또는 기준금액" },
+      { key: "diseaseTypeSurgery", label: "질병 종수술비", shortLabel: "질병 종수술", unit: "만원", kind: "money", group: "수술비", guide: "종수술비 기준 금액 입력. 상세 지급 내역은 약관참조", hint: "최대 또는 기준금액" },
+      { key: "diseaseNSurgery", label: "질병 N대 수술비", shortLabel: "질병 N대", unit: "만원", kind: "money", group: "수술비", guide: "질병 N대 수술비 최대금액 기준. 상세 지급 내역은 약관참조", hint: "최대금액" },
       { key: "chemoDrug", label: "항암 약물치료", shortLabel: "항암약물", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
       { key: "chemoRadiation", label: "항암 방사선치료", shortLabel: "항암방사선", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
       { key: "targetDrug", label: "표적항암 약물치료", shortLabel: "표적약물", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
@@ -312,7 +315,12 @@ const detailGroups = (template: CategoryTemplate) => {
     const find = (keys: string[]) => keys.map((key) => template.metrics.find((metric) => metric.key === key)).filter(Boolean) as MetricDef[]
     return [
       { title: "암·뇌·심장 진단비 구조", metrics: find(["cancer", "minorCancer", "brain", "heart"]) },
-      { title: "치료비 보장 구조", metrics: find(["surgery"]) },
+      { title: "치료비·수술비 보장 구조", metrics: find([
+        "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "heavyIon", "robotCancerSurgery",
+        "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced",
+        "injurySurgery", "diseaseSurgery", "injuryComprehensiveSurgery", "diseaseComprehensiveSurgery",
+        "injuryAdvancedSurgery", "diseaseAdvancedSurgery", "injuryTypeSurgery", "diseaseTypeSurgery", "diseaseNSurgery",
+      ]) },
       { title: "간병 보장 구조", metrics: find(["care"]) },
     ].filter((group) => group.metrics.length)
   }
@@ -604,6 +612,7 @@ function PlanEditor({
     else acc.push({ title, metrics: [metric] })
     return acc
   }, [])
+  const surgeryGroup = metricGroups.find((group) => group.title === "수술비")
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -698,19 +707,27 @@ function PlanEditor({
                   {template.id === "health" && <span className="text-[10px] font-bold text-slate-400">미선택 담보는 빈칸으로 두세요</span>}
                 </div>
               )}
-              <div className="grid gap-3 md:grid-cols-2">
-                {group.metrics.map((metric) => (
-                  <Input
-                    key={metric.key}
-                    label={metric.label}
-                    value={plan.metrics[metric.key] || ""}
-                    onChange={(value) => setMetric(metric.key, value)}
-                    placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : metric.hint || "금액 입력"}
-                    suffix={plan.isDollar && isShortLifeDollarMetric(metric) ? "$" : metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
-                    numeric={metric.kind === "money"}
-                  />
-                ))}
-              </div>
+              {template.id === "health" && group.title === "수술비" && surgeryGroup ? (
+                <HealthSurgeryInputGrid
+                  metrics={surgeryGroup.metrics}
+                  values={plan.metrics}
+                  onChange={setMetric}
+                />
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {group.metrics.map((metric) => (
+                    <Input
+                      key={metric.key}
+                      label={metric.label}
+                      value={plan.metrics[metric.key] || ""}
+                      onChange={(value) => setMetric(metric.key, value)}
+                      placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : metric.hint || "금액 입력"}
+                      suffix={plan.isDollar && isShortLifeDollarMetric(metric) ? "$" : metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
+                      numeric={metric.kind === "money"}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1038,7 +1055,16 @@ function ProposalReport({
   const lowest = bestPremium(visiblePlans)
   const recommendation = buildRecommendation(template, mode, visiblePlans, focus)
   const groups = detailGroups(template)
-  const scenarioPageNum = pageOffset + 3 + groups.length
+  const hasCustomCoverage = visiblePlans.some((plan) => (plan.customCoverages ?? []).some((item) =>
+    item.name.trim() || item.amount.trim() || item.note.trim()
+  ))
+  const outputGroups = groups.filter((group) => group.metrics.some((metric) =>
+    visiblePlans.some((plan) => metric.kind === "text"
+      ? String(plan.metrics[metric.key] || "").trim()
+      : num(plan.metrics[metric.key] || "") > 0
+    )
+  ) || (template.id === "health" && group.title.includes("치료비") && hasCustomCoverage))
+  const scenarioPageNum = pageOffset + 3 + outputGroups.length
 
   return (
     <div className="proposal-print-area">
@@ -1065,6 +1091,14 @@ function ProposalReport({
                 보험료만 낮은 안보다 실제 사고·질병 상황에서 지급되는 담보와 보장범위를 함께 비교해야 합니다. 같은 금액이라도 지급 조건이 다르면 상담 해석이 달라집니다.
               </p>
             </div>
+            <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h2 className="text-sm font-black text-slate-950">각 보험사별 설계 목적</h2>
+              <div className={`mt-3 grid gap-3 ${visiblePlans.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {visiblePlans.map((plan, index) => (
+                  <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
+                ))}
+              </div>
+            </section>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -1103,16 +1137,16 @@ function ProposalReport({
         <PageNum num={pageOffset + 2} />
       </ReportPage>
 
-      {groups.map((group, chunkIndex) => (
+      {outputGroups.map((group, chunkIndex) => (
         <ReportPage key={`detail-${chunkIndex}`}>
           <ReportHeader template={template} customerName={customerName} consultant={consultant} />
-          <div className="flex flex-1 flex-col gap-4 p-8">
-            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex flex-1 flex-col p-8">
+            <section className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-black text-slate-950">{group.title}</h2>
-                {groups.length > 1 && (
+                {outputGroups.length > 1 && (
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black text-slate-500">
-                    {chunkIndex + 1}/{groups.length}
+                    {chunkIndex + 1}/{outputGroups.length}
                   </span>
                 )}
               </div>
@@ -1123,14 +1157,6 @@ function ProposalReport({
                 metrics={group.metrics}
                 includeCustomRows={template.id !== "health" || group.title.includes("치료비")}
               />
-            </section>
-            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h2 className="text-sm font-black text-slate-950">각 보험사별 설계 목적</h2>
-              <div className={`mt-3 grid gap-3 ${visiblePlans.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
-                {visiblePlans.map((plan, index) => (
-                  <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
-                ))}
-              </div>
             </section>
           </div>
           <PageNum num={pageOffset + 3 + chunkIndex} />
@@ -1288,17 +1314,29 @@ function ShortLifeCostInsights({ plan }: { plan: PlanData }) {
 }
 
 function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plans: PlanData[] }) {
+  const visibleMetrics = template.metrics
+    .filter((metric) => metric.kind !== "text")
+    .filter((metric) => plans.some((plan) => num(plan.metrics[metric.key] || "") > 0))
+    .slice(0, 7)
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <h2 className="text-lg font-black text-slate-950">보장 인포그래픽</h2>
       <p className="mt-1 text-xs font-bold text-slate-400">업로드 참고 이미지처럼 금액 차이를 시각적으로 보여주는 영역입니다.</p>
-      <div className="mt-5 grid gap-4">
-        {template.metrics.filter((metric) => metric.kind !== "text").slice(0, 5).map((metric) => {
+      <div className="mt-4 grid flex-1 gap-2">
+        {visibleMetrics.length === 0 && (
+          <div className="rounded-2xl bg-slate-50 p-5 text-sm font-bold text-slate-400">
+            입력된 보장금액이 없어 인포그래픽 항목을 생략합니다.
+          </div>
+        )}
+        {visibleMetrics.map((metric) => {
           const max = metricMax(plans, metric)
           return (
-            <div key={metric.key} className="rounded-2xl bg-slate-50 p-4">
-              <p className="mb-3 text-sm font-black text-slate-900">{metric.label}</p>
-              <div className="grid gap-3">
+            <div key={metric.key} className="grid grid-cols-[145px_1fr] gap-3 rounded-2xl bg-slate-50 p-3">
+              <div className="flex flex-col justify-center">
+                <p className="text-sm font-black leading-5 text-slate-900">{metric.label}</p>
+                <p className="mt-1 text-[10px] font-bold text-slate-400">{metric.group || "보장금액"}</p>
+              </div>
+              <div className="grid content-center gap-1.5">
                 {plans.map((plan, index) => (
                   <MiniMetricBar
                     key={plan.id}
@@ -1458,6 +1496,10 @@ function ComparisonTable({
       .filter((item) => item.name.trim() || item.amount.trim() || item.note.trim())
       .map((item) => item.name.trim() || "추가 담보"))
   )) : []
+  const visibleMetrics = metrics.filter((metric) => {
+    if (metric.kind === "text") return plans.some((plan) => String(plan.metrics[metric.key] || "").trim())
+    return plans.some((plan) => num(plan.metrics[metric.key] || "") > 0)
+  })
 
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
@@ -1479,7 +1521,7 @@ function ComparisonTable({
             {plans.map((plan) => <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
             {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
           </tr>
-          {metrics.map((metric) => (
+          {visibleMetrics.map((metric) => (
             <tr key={metric.key} className="border-t border-slate-100">
               <td className="px-4 py-2.5 text-xs font-black text-slate-500">{metric.label}</td>
               {plans.map((plan) => (
@@ -1488,6 +1530,13 @@ function ComparisonTable({
               {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{sumMetric(metric)}</td>}
             </tr>
           ))}
+          {visibleMetrics.length === 0 && customRows.length === 0 && (
+            <tr className="border-t border-slate-100">
+              <td colSpan={plans.length + (showCross ? 2 : 1)} className="px-4 py-8 text-center text-xs font-bold text-slate-400">
+                입력된 담보가 없어 출력에서 생략됩니다.
+              </td>
+            </tr>
+          )}
           {customRows.map((name) => (
             <tr key={name} className="border-t border-slate-100 bg-slate-50/60">
               <td className="px-4 py-2.5 text-xs font-black text-slate-500">{name}</td>
@@ -1668,13 +1717,70 @@ function PlanMemo({ plan, index, template }: { plan: PlanData; index: number; te
   )
 }
 
+const healthSurgeryRows = [
+  { label: "일반", injuryKey: "injurySurgery", diseaseKey: "diseaseSurgery" },
+  { label: "종합", injuryKey: "injuryComprehensiveSurgery", diseaseKey: "diseaseComprehensiveSurgery" },
+  { label: "상급", injuryKey: "injuryAdvancedSurgery", diseaseKey: "diseaseAdvancedSurgery" },
+  { label: "종수술비", injuryKey: "injuryTypeSurgery", diseaseKey: "diseaseTypeSurgery" },
+  { label: "N대 수술비", injuryKey: "", diseaseKey: "diseaseNSurgery" },
+]
+
+function HealthSurgeryInputGrid({
+  metrics,
+  values,
+  onChange,
+}: {
+  metrics: MetricDef[]
+  values: Record<string, string>
+  onChange: (key: string, value: string) => void
+}) {
+  const metricByKey = Object.fromEntries(metrics.map((metric) => [metric.key, metric]))
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="grid grid-cols-[120px_1fr_1fr] bg-slate-100 text-xs font-black text-slate-600">
+        <div className="px-3 py-2">구분</div>
+        <div className="px-3 py-2 text-center">상해</div>
+        <div className="px-3 py-2 text-center">질병</div>
+      </div>
+      {healthSurgeryRows.map((row) => (
+        <div key={row.label} className="grid grid-cols-[120px_1fr_1fr] border-t border-slate-100">
+          <div className="flex items-center px-3 py-2 text-xs font-black text-slate-700">{row.label}</div>
+          {[row.injuryKey, row.diseaseKey].map((key, index) => {
+            const metric = key ? metricByKey[key] : undefined
+            if (!metric) {
+              return (
+                <div key={`${row.label}-${index}`} className="flex items-center justify-center bg-slate-50 px-3 py-2 text-[11px] font-bold text-slate-300">
+                  해당 없음
+                </div>
+              )
+            }
+            return (
+              <div key={key} className="px-2 py-2">
+                <Input
+                  label=""
+                  value={values[key] || ""}
+                  onChange={(value) => onChange(key, value)}
+                  placeholder={metric.hint || "금액 입력"}
+                  suffix="만원"
+                  numeric
+                />
+              </div>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const healthCaseDefs = [
   {
     icon: "🎗️",
     title: "일반암 진단",
     livingMonths: 12,
     treatmentCost: 2000,
-    keys: ["cancer", "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "heavyIon", "robotCancerSurgery", "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
+    keys: ["cancer", "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "heavyIon", "robotCancerSurgery", "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "diseaseSurgery", "diseaseComprehensiveSurgery", "diseaseAdvancedSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
     source: "일반암 진단비 + 항암치료 + 암 주요치료비 + 질병수술비",
     note: "항암·표적·방사선·중입자 등 치료비 담보가 있으면 치료비 공백을 보완합니다.",
   },
@@ -1683,7 +1789,7 @@ const healthCaseDefs = [
     title: "유방암·유사암 진단",
     livingMonths: 12,
     treatmentCost: 1500,
-    keys: ["minorCancer", "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
+    keys: ["minorCancer", "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "diseaseSurgery", "diseaseComprehensiveSurgery", "diseaseAdvancedSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
     source: "유사암 진단비 + 항암치료 + 암 주요치료비 + 질병수술비",
     note: "소액암·유사암 분류와 감액 조건이 있어 일반암과 별도로 확인합니다.",
   },
@@ -1692,7 +1798,7 @@ const healthCaseDefs = [
     title: "뇌혈관 질환",
     livingMonths: 6,
     treatmentCost: 2500,
-    keys: ["brain", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery", "care"],
+    keys: ["brain", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced", "diseaseSurgery", "diseaseComprehensiveSurgery", "diseaseAdvancedSurgery", "diseaseTypeSurgery", "diseaseNSurgery", "care"],
     source: "뇌혈관 진단비 + 2대 주요치료비 + 질병수술비 + 간병",
     note: "뇌출혈·뇌졸중·뇌혈관질환 중 어디까지 보장되는지에 따라 준비금 차이가 큽니다.",
   },
@@ -1701,7 +1807,7 @@ const healthCaseDefs = [
     title: "심장 질환",
     livingMonths: 3,
     treatmentCost: 1750,
-    keys: ["heart", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
+    keys: ["heart", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced", "diseaseSurgery", "diseaseComprehensiveSurgery", "diseaseAdvancedSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
     source: "허혈성심장질환 진단비 + 2대 주요치료비 + 질병수술비",
     note: "급성심근경색만인지, 허혈성심장질환까지인지 보장 범위를 함께 봅니다.",
   },
@@ -1711,7 +1817,7 @@ const lifestyleCase = {
   icon: "🏥",
   title: "생활질환·수술",
   needed: 800,
-  keys: ["diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery", "injurySurgery", "injuryTypeSurgery", "injuryNSurgery"],
+  keys: ["diseaseSurgery", "diseaseComprehensiveSurgery", "diseaseAdvancedSurgery", "diseaseTypeSurgery", "diseaseNSurgery", "injurySurgery", "injuryComprehensiveSurgery", "injuryAdvancedSurgery", "injuryTypeSurgery"],
   source: "질병수술비 + 종수술비 + 실손의료비",
 }
 
@@ -2417,7 +2523,7 @@ export default function ProposalPage() {
       `}</style>
 
       <main className="min-h-screen bg-[#eef3f8] text-slate-950">
-        <div className="no-print border-b border-slate-200 bg-white px-6 py-4">
+        <div className="no-print sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-6 py-4 shadow-sm backdrop-blur">
           <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">Proposal Builder</p>
@@ -2489,7 +2595,7 @@ export default function ProposalPage() {
         </div>
 
         <div className="no-print mx-auto grid max-w-[1440px] gap-5 px-6 py-6 xl:grid-cols-[360px_1fr]">
-          <aside className="space-y-4">
+          <aside className="space-y-4 xl:sticky xl:top-[104px] xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto xl:pr-1">
             {/* 고객·설계사 정보 — 최상단 고정, PDF 업로드로 변경 안 됨 */}
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">고객 · 설계사</p>
