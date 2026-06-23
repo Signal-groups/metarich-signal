@@ -15,8 +15,8 @@ import LoadingScreen from "./LoadingScreen"
 import { supabase } from "../../lib/supabase"
 import { trackPageView } from "../../lib/trackActivity"
 
-const INITIAL_MS = 1400   // 최초 오픈 표시 시간 (ms)
-const NAVIGATE_MS = 950   // 페이지 이동 표시 시간 (ms)
+const INITIAL_MS = 1000   // 최초 오픈 표시 시간 (ms)
+const NAVIGATE_MS = 500   // 페이지 이동 표시 시간 (ms)
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)

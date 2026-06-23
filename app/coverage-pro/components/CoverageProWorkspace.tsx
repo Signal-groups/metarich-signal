@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import type {
   OutputConfig, ProContract, ProCoverage, ProCustomer, ProSession,
   RemodelProposal, StepNumber, StepStatus,
@@ -314,7 +314,6 @@ function parseGptsJson(raw: string): ProContract[] | null {
 }
 
 export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?: StepNumber }) {
-  const router       = useRouter()
   const searchParams = useSearchParams()
   const requestedCustomerId = searchParams.get('customerId') || ''
   const draft = useMemo(() => readDraft(), [])
@@ -409,7 +408,9 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
 
   const moveStep = (step: StepNumber) => {
     setCurrentStep(step)
-    router.replace(`/coverage-pro/local/step-${step}`, { scroll: false })
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `/coverage-pro/local/step-${step}`)
+    }
   }
 
   const nextStep = () => {

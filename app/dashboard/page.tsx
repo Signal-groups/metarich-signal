@@ -210,27 +210,15 @@ export default function DashboardPage() {
       }
       if (!session) return router.replace("/login");
 
-      // 2. 서버 측 사용자 검증 — 네트워크 오류 시 session 정보로 폴백
-      let userId: string | null = null;
-      const { data: authUser, error: authError } = await supabase.auth.getUser();
-      if (authError || !authUser.user) {
-        // 토큰 갱신 타이밍 오류: session은 있으나 getUser 실패 → session.user로 폴백
-        if (session.user?.id) {
-          userId = session.user.id;
-        } else {
-          await supabase.auth.signOut().catch(() => {});
-          return router.replace("/login");
-        }
-      } else {
-        userId = authUser.user.id;
-      }
+      // 2. session.user.id로 직접 사용 (getUser() 불필요 — 네트워크 1회 절약)
+      const userId = session.user?.id;
+      if (!userId) { await supabase.auth.signOut().catch(() => {}); return router.replace("/login"); }
 
       // 3. DB 사용자 정보 조회
       let { data: userInfo } = await supabase.from("users").select("*").eq("id", userId).maybeSingle();
       if (!userInfo) {
         try {
-          const fallbackUser = authUser?.user ?? session.user;
-          userInfo = await ensureUserProfile(supabase, fallbackUser);
+          userInfo = await ensureUserProfile(supabase, session.user);
         } catch {
           userInfo = null;
         }

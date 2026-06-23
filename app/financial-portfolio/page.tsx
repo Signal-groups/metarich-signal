@@ -362,13 +362,16 @@ export default function FinancialPortfolioPage() {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace(`/login?redirectTo=${encodeURIComponent("/financial-portfolio")}`); return }
-      const { data: userData } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle()
+      // users + portfolios 병렬 조회
+      const [{ data: userData }, { data: rows, error }] = await Promise.all([
+        supabase.from("users").select("*").eq("id", session.user.id).maybeSingle(),
+        supabase.from("financial_portfolios").select("id, portfolio").order("updated_at", { ascending: false }),
+      ])
       const userInfo = userData || session.user
       const role = normalizeRole(userInfo)
       const isPlannerOrAbove = ["agent","manager","leader","headquarters","master"].includes(role)
       if (!(role === "master" || (isPlannerOrAbove && isApprovedUser(userInfo)))) { setAllowed(false); return }
       setAdvisorId(session.user.id)
-      const { data: rows, error } = await supabase.from("financial_portfolios").select("id, portfolio").order("updated_at", { ascending: false })
       if (!error && rows && rows.length > 0) {
         const loaded = rows.map(r => ({ ...starter, ...(r.portfolio as Partial<ClientPortfolio>), id: r.id as string }))
         setClients(loaded); setSelectedId(loaded[0].id)

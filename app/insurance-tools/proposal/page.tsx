@@ -15,11 +15,13 @@ import {
   ClipboardList,
   Download,
   FileText,
+  FolderOpen,
   HeartPulse,
   Home,
   Loader2,
   PawPrint,
   Plus,
+  Save,
   ShieldCheck,
   Stethoscope,
   Upload,
@@ -94,6 +96,20 @@ type CategorySection = {
   templateId: CategoryId
   plan: PlanData
 }
+
+type ProposalDraft = {
+  savedAt: string
+  mode: ProposalMode
+  templateId: CategoryId
+  plans: PlanData[]
+  focus: CompareFocus[]
+  customerName: string
+  consultant: ConsultantInfo
+  bundleIds: CategoryId[]
+  bundlePlans: Record<CategoryId, PlanData>
+}
+
+const PROPOSAL_DRAFT_KEY = "metarich_proposal_latest"
 
 const categories: CategoryTemplate[] = [
   {
@@ -278,6 +294,11 @@ const metricText = (metric: MetricDef, value: string, plan?: PlanData) => {
 const createId = () => Math.random().toString(36).slice(2, 9)
 const shortLifePurposeOptions = ["자녀 학자금", "결혼자금", "노후자금", "의료비통장"]
 const shortLifeDefaultCaution = "중도해지시 납입한 보험료보다 적거나 없을 수 있습니다. 이 상품은 사망보장을 목적으로하는 보장성 상품입니다. 해지환급금을 활용한 단기 저축 목적으로 안내드렸습니다."
+const chunkMetrics = (metrics: MetricDef[], size: number) => {
+  const chunks: MetricDef[][] = []
+  for (let i = 0; i < metrics.length; i += size) chunks.push(metrics.slice(i, i + size))
+  return chunks.length ? chunks : [[]]
+}
 
 function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
   const metrics = Object.fromEntries(template.metrics.map((metric) => [metric.key, ""]))
@@ -994,6 +1015,8 @@ function ProposalReport({
   const visiblePlans = mode === "single" ? plans.slice(0, 1) : plans
   const lowest = bestPremium(visiblePlans)
   const recommendation = buildRecommendation(template, mode, visiblePlans, focus)
+  const detailChunks = chunkMetrics(template.metrics, mode === "cross" ? 5 : 6)
+  const scenarioPageNum = pageOffset + 3 + detailChunks.length
 
   return (
     <div className="proposal-print-area">
@@ -1058,27 +1081,44 @@ function ProposalReport({
         <PageNum num={pageOffset + 2} />
       </ReportPage>
 
-      <ReportPage>
-        <ReportHeader template={template} mode={mode} customerName={customerName} consultant={consultant} />
-        <div className="grid flex-1 grid-cols-[1.15fr_0.85fr] gap-5 p-8">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5">
-            <h2 className="text-lg font-black text-slate-950">담보별 상세 비교</h2>
-            <ComparisonTable template={template} plans={visiblePlans} showCross={mode === "cross"} />
-          </section>
-          <section className="flex flex-col gap-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <h2 className="text-lg font-black text-slate-950">장단점 요약</h2>
-              <div className="mt-4 space-y-3">
-                {visiblePlans.map((plan, index) => (
-                  <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
-                ))}
+      {detailChunks.map((metrics, chunkIndex) => (
+        <ReportPage key={`detail-${chunkIndex}`}>
+          <ReportHeader template={template} mode={mode} customerName={customerName} consultant={consultant} />
+          <div className="grid flex-1 grid-cols-[1.15fr_0.85fr] gap-5 p-8">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-black text-slate-950">담보별 상세 비교</h2>
+                {detailChunks.length > 1 && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black text-slate-500">
+                    {chunkIndex + 1}/{detailChunks.length}
+                  </span>
+                )}
               </div>
-            </div>
-
-          </section>
-        </div>
-        <PageNum num={pageOffset + 3} />
-      </ReportPage>
+              <ComparisonTable template={template} plans={visiblePlans} showCross={mode === "cross"} metrics={metrics} />
+            </section>
+            <section className="flex flex-col gap-4">
+              {chunkIndex === 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                  <h2 className="text-lg font-black text-slate-950">장단점 요약</h2>
+                  <div className="mt-4 space-y-3">
+                    {visiblePlans.map((plan, index) => (
+                      <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-5">
+                  <h2 className="text-lg font-black text-cyan-950">추가 담보 확인</h2>
+                  <p className="mt-3 text-xs font-bold leading-6 text-cyan-800">
+                    담보 수가 많아 가독성을 위해 다음 페이지로 나누어 표기했습니다. 각 담보의 지급 조건과 갱신 여부는 청약 전 약관 기준으로 다시 확인합니다.
+                  </p>
+                </div>
+              )}
+            </section>
+          </div>
+          <PageNum num={pageOffset + 3 + chunkIndex} />
+        </ReportPage>
+      ))}
 
       {/* 4페이지: 교차설계면 합산 커버리지, 아니면 사례 인포그래픽 */}
       {mode === "cross" ? (
@@ -1087,18 +1127,18 @@ function ProposalReport({
           plans={visiblePlans}
           customerName={customerName}
           consultant={consultant}
-          pageNum={pageOffset + 4}
+          pageNum={scenarioPageNum}
         />
       ) : (
         <ReportPage last={template.id !== "health"}>
-          <ScenarioPage4 template={template} customerName={customerName} consultant={consultant} pageNum={pageOffset + 4} />
+          <ScenarioPage4 template={template} customerName={customerName} consultant={consultant} pageNum={scenarioPageNum} />
         </ReportPage>
       )}
 
       {/* 5페이지: 건강보험 치료단계 (health + 비교/단일 모드만) */}
       {template.id === "health" && mode !== "cross" && (
         <ReportPage last>
-          <HealthTreatmentPage customerName={customerName} consultant={consultant} pageNum={pageOffset + 5} />
+          <HealthTreatmentPage customerName={customerName} consultant={consultant} pageNum={scenarioPageNum + 1} />
         </ReportPage>
       )}
     </div>
@@ -1366,7 +1406,17 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
   )
 }
 
-function ComparisonTable({ template, plans, showCross = false }: { template: CategoryTemplate; plans: PlanData[]; showCross?: boolean }) {
+function ComparisonTable({
+  template,
+  plans,
+  showCross = false,
+  metrics = template.metrics,
+}: {
+  template: CategoryTemplate
+  plans: PlanData[]
+  showCross?: boolean
+  metrics?: MetricDef[]
+}) {
   const sumMetric = (metric: MetricDef) => {
     if (metric.kind === "percent") {
       const values = plans.map((plan) => num(plan.metrics[metric.key])).filter((value) => value > 0)
@@ -1408,7 +1458,7 @@ function ComparisonTable({ template, plans, showCross = false }: { template: Cat
             {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
             <td className="px-4 py-3 text-[11px] font-bold text-slate-500">보험료와 담보 범위를 함께 판단</td>
           </tr>
-          {template.metrics.map((metric) => (
+          {metrics.map((metric) => (
             <tr key={metric.key} className="border-t border-slate-100">
               <td className="px-4 py-3 text-xs font-black text-slate-500">{metric.label}</td>
               {plans.map((plan) => (
@@ -1936,6 +1986,7 @@ export default function ProposalPage() {
   const [customerName, setCustomerName] = useState("")
   const [consultant, setConsultant] = useState<ConsultantInfo>({ name: "", phone: "" })
   const [showPreview, setShowPreview] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "loaded" | "empty">("idle")
   const [bundleIds, setBundleIds] = useState<CategoryId[]>(["health", "driver"])
   const [bundlePlans, setBundlePlans] = useState<Record<CategoryId, PlanData>>(() => {
     const init = {} as Record<CategoryId, PlanData>
@@ -1968,7 +2019,7 @@ export default function ProposalPage() {
       setAllowed(canUse)
       setLockedReason(reason)
       setChecking(false)
-      setConsultant({ name: profile?.name || "", phone: profile?.phone || "" })
+      setConsultant((prev) => prev.name || prev.phone ? prev : { name: profile?.name || "", phone: profile?.phone || "" })
     }
     checkAccess()
     return () => { alive = false }
@@ -1976,6 +2027,73 @@ export default function ProposalPage() {
 
   const visiblePlans = useMemo(() => mode === "single" ? plans.slice(0, 1) : plans, [mode, plans])
   const primaryFocus = focus[0] ?? "balance"
+
+  const buildDraft = (): ProposalDraft => ({
+    savedAt: new Date().toISOString(),
+    mode,
+    templateId: template.id,
+    plans,
+    focus,
+    customerName,
+    consultant,
+    bundleIds,
+    bundlePlans,
+  })
+
+  const applyDraft = (draft: ProposalDraft) => {
+    const nextTemplate = categories.find((category) => category.id === draft.templateId) || categories[1]
+    setMode(draft.mode || "single")
+    setTemplate(nextTemplate)
+    setPlans(draft.plans?.length ? draft.plans : normalizePlans(nextTemplate, 2))
+    setFocus(draft.focus?.length ? draft.focus : ["balance"])
+    setCustomerName(draft.customerName || "")
+    setConsultant(draft.consultant || { name: "", phone: "" })
+    setBundleIds(draft.bundleIds?.length ? draft.bundleIds : ["health", "driver"])
+    setBundlePlans({ ...Object.fromEntries(categories.map((c) => [c.id, emptyPlan(c, 0)])), ...(draft.bundlePlans || {}) } as Record<CategoryId, PlanData>)
+  }
+
+  const saveDraft = () => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem(PROPOSAL_DRAFT_KEY, JSON.stringify(buildDraft()))
+    setSaveStatus("saved")
+    window.setTimeout(() => setSaveStatus("idle"), 1800)
+  }
+
+  const loadDraft = (openPreview = false) => {
+    if (typeof window === "undefined") return false
+    const raw = window.localStorage.getItem(PROPOSAL_DRAFT_KEY)
+    if (!raw) {
+      setSaveStatus("empty")
+      window.setTimeout(() => setSaveStatus("idle"), 1800)
+      return false
+    }
+    try {
+      applyDraft(JSON.parse(raw) as ProposalDraft)
+      setSaveStatus("loaded")
+      if (openPreview) setShowPreview(true)
+      window.setTimeout(() => setSaveStatus("idle"), 1800)
+      return true
+    } catch {
+      setSaveStatus("empty")
+      window.setTimeout(() => setSaveStatus("idle"), 1800)
+      return false
+    }
+  }
+
+  const openPreviewTab = () => {
+    saveDraft()
+    const url = new URL("/insurance-tools/proposal", window.location.origin)
+    url.searchParams.set("preview", "latest")
+    const previewWindow = window.open(url.toString(), "_blank")
+    if (!previewWindow) setShowPreview(true)
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("preview") === "latest") loadDraft(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const selectCategory = (next: CategoryTemplate) => {
     setTemplate(next)
@@ -2050,9 +2168,30 @@ export default function ProposalPage() {
               <h1 className="mt-1 text-2xl font-black text-[#102a4c]">제안서 생성</h1>
             </div>
             <div className="flex items-center gap-2">
+              {saveStatus !== "idle" && (
+                <span className={`rounded-full px-3 py-1 text-xs font-black ${saveStatus === "saved" ? "bg-emerald-100 text-emerald-700" : saveStatus === "loaded" ? "bg-cyan-100 text-cyan-700" : "bg-amber-100 text-amber-700"}`}>
+                  {saveStatus === "saved" ? "저장됨" : saveStatus === "loaded" ? "불러옴" : "저장 없음"}
+                </span>
+              )}
               <button
                 type="button"
-                onClick={() => setShowPreview(true)}
+                onClick={saveDraft}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-cyan-300 hover:text-cyan-700"
+              >
+                <Save className="h-4 w-4" />
+                저장
+              </button>
+              <button
+                type="button"
+                onClick={() => loadDraft(false)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-cyan-300 hover:text-cyan-700"
+              >
+                <FolderOpen className="h-4 w-4" />
+                최근 불러오기
+              </button>
+              <button
+                type="button"
+                onClick={openPreviewTab}
                 disabled={mode === "bundle" && bundleIds.length < 2}
                 className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A] disabled:opacity-40"
               >
@@ -2178,6 +2317,14 @@ export default function ProposalPage() {
                 미리보기 — PDF 저장은 브라우저 인쇄 (Ctrl+P) 를 이용하세요
               </p>
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={saveDraft}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"
+                >
+                  <Save className="h-4 w-4" />
+                  제안서 저장
+                </button>
                 <button
                   type="button"
                   onClick={() => window.print()}
