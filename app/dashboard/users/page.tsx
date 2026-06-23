@@ -351,23 +351,28 @@ export default function StaffManagementPage() {
     setSelectedIds(new Set())
   }
 
-  const applyRolePreset = async (presetId: RolePresetId, target: "selected" | "filtered") => {
+  const applyRolePreset = async (presetId: RolePresetId, target: "selected" | "filtered" | "by_rank") => {
+    const rankMap: Record<RolePresetId, string[]> = {
+      guest: ["guest"],
+      guest_approved: ["guest"],
+      agent: ["agent"],
+      full: ["manager", "leader", "headquarters"],
+    }
     const targetUsers = target === "selected"
       ? users.filter((user) => selectedIds.has(user.id))
-      : filteredUsers
+      : target === "filtered"
+      ? filteredUsers
+      : users.filter((user) => rankMap[presetId].includes(String(user.rank || "guest")))
 
     if (targetUsers.length === 0) {
-      alert(target === "selected" ? "먼저 직원을 선택해 주세요." : "현재 조건에 해당하는 직원이 없습니다.")
+      alert("해당하는 직원이 없습니다.")
       return
     }
 
     const preset = rolePresets.find((item) => item.id === presetId)
     if (!preset) return
 
-    const message = target === "selected"
-      ? `선택한 직원 ${targetUsers.length.toLocaleString()}명에게 '${preset.title}' 기준을 적용할까요?`
-      : `현재 필터에 보이는 직원 ${targetUsers.length.toLocaleString()}명에게 '${preset.title}' 기준을 적용할까요?`
-    if (!confirm(message)) return
+    if (!confirm(`'${preset.title}' 설정을 ${targetUsers.length}명에게 적용할까요?`)) return
 
     const payload = rolePresetPayload(presetId)
     const ids = targetUsers.map((user) => user.id)
@@ -380,7 +385,7 @@ export default function StaffManagementPage() {
     const idSet = new Set(ids)
     setUsers((prev) => prev.map((user) => idSet.has(user.id) ? { ...user, ...payload } : user))
     setSelectedIds(new Set())
-    alert(`${targetUsers.length.toLocaleString()}명에게 '${preset.title}' 기준을 적용했습니다.`)
+    alert(`${targetUsers.length}명에게 '${preset.title}' 기준을 적용했습니다.`)
   }
 
   if (loading) return (
@@ -461,6 +466,8 @@ export default function StaffManagementPage() {
               onApprovedChange={setApproved}
               sortBy={sortBy}
               onSortByChange={setSortBy}
+              totalCount={users.length}
+              filteredCount={filteredUsers.length}
             />
             <BulkActions
               selectedIds={selectedIds}
@@ -491,88 +498,61 @@ export default function StaffManagementPage() {
 
         {/* ── 탭 2: 등급별 메뉴 설정 ────────────────────────── */}
         {activeTab === "roles" && (
-          <div className="space-y-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="mb-1 text-lg font-black text-slate-900">등급별 접근 권한 안내</h2>
-              <p className="mb-6 text-[13px] font-bold text-slate-500">각 등급 프리셋의 설명과 접근 가능 메뉴를 확인하고, 선택 직원 또는 전체 필터 직원에게 일괄 적용합니다.</p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {rolePresets.map((preset) => {
-                  const colorMap: Record<string, string> = {
-                    guest: "border-slate-300 bg-slate-50",
-                    guest_approved: "border-sky-300 bg-sky-50",
-                    agent: "border-indigo-300 bg-indigo-50",
-                    full: "border-emerald-300 bg-emerald-50",
-                  }
-                  const btnMap: Record<string, string> = {
-                    guest: "bg-slate-700 hover:bg-slate-800",
-                    guest_approved: "bg-sky-600 hover:bg-sky-700",
-                    agent: "bg-indigo-600 hover:bg-indigo-700",
-                    full: "bg-emerald-600 hover:bg-emerald-700",
-                  }
-                  return (
-                    <div key={preset.id} className={`rounded-2xl border-2 p-5 ${colorMap[preset.id]}`}>
-                      <h3 className="mb-1 text-[15px] font-black text-slate-900">{preset.title}</h3>
-                      <p className="mb-4 text-[11px] font-bold text-slate-500 leading-relaxed">{preset.desc}</p>
-                      <div className="mb-4 space-y-1.5">
-                        {preset.enabledMenus.length > 0 && (
-                          <div>
-                            <p className="text-[10px] font-black text-emerald-600 mb-1">✓ 접근 가능</p>
-                            {preset.enabledMenus.map((m) => (
-                              <p key={m} className="text-[11px] font-bold text-slate-700">• {m}</p>
-                            ))}
-                          </div>
-                        )}
-                        {preset.blockedMenus.length > 0 && (
-                          <div className="mt-2">
-                            <p className="text-[10px] font-black text-rose-500 mb-1">✗ 차단</p>
-                            {preset.blockedMenus.map((m) => (
-                              <p key={m} className="text-[11px] font-bold text-slate-400">• {m}</p>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => applyRolePreset(preset.id, "selected")}
-                          className={`w-full rounded-xl px-4 py-2.5 text-[12px] font-black text-white transition ${btnMap[preset.id]}`}
-                        >
-                          선택 직원에게 적용
-                        </button>
-                        <button
-                          onClick={() => applyRolePreset(preset.id, "filtered")}
-                          className={`w-full rounded-xl border-2 px-4 py-2.5 text-[12px] font-black transition bg-white ${btnMap[preset.id].replace("bg-", "border-").replace("hover:bg-", "hover:border-")} text-slate-700 hover:text-slate-900`}
-                        >
-                          현재 필터 전체 적용
-                        </button>
-                      </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-1 text-lg font-black text-slate-900">등급별 접근 권한 설정</h2>
+            <p className="mb-6 text-[13px] font-bold text-slate-500">각 등급 카드의 버튼을 누르면 해당 rank 직원 전체에게 설정이 일괄 적용됩니다.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {rolePresets.map((preset) => {
+                const rankMap: Record<string, string[]> = {
+                  guest: ["guest"],
+                  guest_approved: ["guest"],
+                  agent: ["agent"],
+                  full: ["manager", "leader", "headquarters"],
+                }
+                const affectedCount = users.filter((u) => rankMap[preset.id].includes(String(u.rank || "guest"))).length
+                const colorMap: Record<string, string> = {
+                  guest: "border-slate-300 bg-slate-50",
+                  guest_approved: "border-sky-300 bg-sky-50",
+                  agent: "border-indigo-300 bg-indigo-50",
+                  full: "border-emerald-300 bg-emerald-50",
+                }
+                const btnMap: Record<string, string> = {
+                  guest: "bg-slate-700 hover:bg-slate-800",
+                  guest_approved: "bg-sky-600 hover:bg-sky-700",
+                  agent: "bg-indigo-600 hover:bg-indigo-700",
+                  full: "bg-emerald-600 hover:bg-emerald-700",
+                }
+                return (
+                  <div key={preset.id} className={`rounded-2xl border-2 p-5 ${colorMap[preset.id]}`}>
+                    <h3 className="mb-1 text-[15px] font-black text-slate-900">{preset.title}</h3>
+                    <p className="mb-4 text-[11px] font-bold text-slate-500 leading-relaxed">{preset.desc}</p>
+                    <div className="mb-4 space-y-1.5">
+                      {preset.enabledMenus.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-black text-emerald-600 mb-1">✓ 접근 가능</p>
+                          {preset.enabledMenus.map((m) => (
+                            <p key={m} className="text-[11px] font-bold text-slate-700">• {m}</p>
+                          ))}
+                        </div>
+                      )}
+                      {preset.blockedMenus.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-[10px] font-black text-rose-500 mb-1">✗ 차단</p>
+                          {preset.blockedMenus.map((m) => (
+                            <p key={m} className="text-[11px] font-bold text-slate-400">• {m}</p>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* 직원 목록 간소화 버전 (roles 탭에서 선택용) */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-[14px] font-black text-slate-900">직원 선택 ({selectedIds.size > 0 ? `${selectedIds.size}명 선택됨` : "없음"})</h3>
-                <button onClick={() => setSelectedIds(new Set())} className="text-[11px] font-bold text-slate-400 hover:text-slate-600">선택 초기화</button>
-              </div>
-              <div className="max-h-72 overflow-y-auto space-y-1.5">
-                {users.map((user) => {
-                  const checked = selectedIds.has(user.id)
-                  const rankLabel: Record<string, string> = { guest: "게스트", agent: "설계사", manager: "지점장", leader: "사업부장", headquarters: "본부장", master: "마스터" }
-                  return (
-                    <label key={user.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition ${checked ? "border-[#1a3a6e] bg-[#eef3fb]" : "border-slate-100 bg-slate-50 hover:bg-slate-100"}`}>
-                      <input type="checkbox" checked={checked} onChange={(e) => onSelectChange(user.id, e.target.checked)} className="h-4 w-4 accent-[#1a3a6e]" />
-                      <span className="flex-1 text-[13px] font-black text-slate-800">{user.name || user.email}</span>
-                      <span className="text-[11px] font-bold text-slate-400">{rankLabel[String(user.rank || "guest")] || user.rank}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${enabled(user.is_approved) ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-600"}`}>
-                        {enabled(user.is_approved) ? "승인" : "미승인"}
-                      </span>
-                    </label>
-                  )
-                })}
-              </div>
+                    <button
+                      onClick={() => applyRolePreset(preset.id, "by_rank")}
+                      className={`w-full rounded-xl px-4 py-2.5 text-[12px] font-black text-white transition ${btnMap[preset.id]}`}
+                    >
+                      전체 적용 {affectedCount > 0 ? `(${affectedCount}명)` : ""}
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
