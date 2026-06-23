@@ -220,9 +220,4 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   // 주요치료비
   cancer_major_benefit:      '주요치료비 — 암주요치료비(급여)',
   cancer_major_nonbenefit:   '주요치료비 — 암주요치료비(비급여)',
-  vascular_major:            '주요치료비 — 뇌심(순환계)주요치료비',
-  // 신규
-  ci_diagnosis:              'CI — 중대질병진단',
-  dementia_diagnosis:        '치매 — 치매진단',
-  ltc_grade:                 '요양 — 장기요양등급',
-}
+  vascular_major:            '주요치료비 
