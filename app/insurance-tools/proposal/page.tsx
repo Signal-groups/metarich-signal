@@ -70,6 +70,8 @@ type PlanData = {
   strengths: string
   cautions: string
   metrics: Record<string, string>
+  isDollar?: boolean
+  exchangeRate?: string
 }
 
 type ConsultantInfo = {
@@ -221,6 +223,8 @@ function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
     monthlyPremium: "",
     paymentYears: template.id === "shortlife" ? "5" : "",
     coverageYears: template.id === "shortlife" ? "종신" : "",
+    isDollar: false,
+    exchangeRate: "",
     fileName: "",
     memo: "",
     strengths: index === 0 ? "핵심 담보 중심으로 구성" : "",
@@ -244,11 +248,19 @@ function metricMax(plans: PlanData[], metric: MetricDef) {
 }
 
 function shortLifeDerived(plan: PlanData) {
-  const monthly = num(plan.monthlyPremium)
+  const fx = plan.isDollar ? (num(plan.exchangeRate ?? "") || 1400) : 1
+  const monthlyRaw = num(plan.monthlyPremium)
+  const monthly = monthlyRaw * fx          // 항상 KRW 기준으로 계산
+  const monthlyUsd = plan.isDollar ? monthlyRaw : 0
   const years = num(plan.paymentYears) || 5
   const totalPaid = monthly * 12 * years
   const rate = num(plan.metrics.refundRate)
-  const explicitRefund = num(plan.metrics.refundAmount)
+  const explicitRefundRaw = num(plan.metrics.refundAmount)
+  // 원화 상품: refundAmount는 만원 단위 → ×10000 하여 원으로 통일
+  // 달러 상품: refundAmount는 달러 단위 → ×환율 하여 원으로 통일
+  const explicitRefund = plan.isDollar
+    ? explicitRefundRaw * fx
+    : explicitRefundRaw * 10000
   const refund = explicitRefund || (totalPaid * rate / 100)
   const monthlyRate = 0.03 / 12
   const months = years * 12
@@ -258,6 +270,8 @@ function shortLifeDerived(plan: PlanData) {
   }
   return {
     monthly,
+    monthlyUsd,
+    fx,
     years,
     totalPaid,
     refund,
@@ -458,11 +472,52 @@ function PlanEditor({
         onCustomerName={onCustomerName}
       />
 
+      {template.id === "shortlife" && (
+        <div className="mt-5 flex items-center gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <span className="text-sm font-black text-amber-900">납입 통화</span>
+          <div className="flex overflow-hidden rounded-xl border border-amber-300">
+            <button
+              type="button"
+              onClick={() => onChange({ ...plan, isDollar: false, exchangeRate: "" })}
+              className={`px-4 py-1.5 text-sm font-black transition-colors ${!plan.isDollar ? "bg-amber-500 text-white" : "bg-white text-amber-700 hover:bg-amber-50"}`}
+            >원화 ₩</button>
+            <button
+              type="button"
+              onClick={() => onChange({ ...plan, isDollar: true, exchangeRate: plan.exchangeRate || "1400" })}
+              className={`px-4 py-1.5 text-sm font-black transition-colors ${plan.isDollar ? "bg-amber-500 text-white" : "bg-white text-amber-700 hover:bg-amber-50"}`}
+            >달러 $</button>
+          </div>
+          {plan.isDollar && (
+            <div className="flex flex-1 items-center gap-2">
+              <span className="text-xs font-black text-amber-700 whitespace-nowrap">적용 환율</span>
+              <Input label="" value={plan.exchangeRate || ""} onChange={(value) => onChange({ ...plan, exchangeRate: value })} placeholder="예: 1400" suffix="원/$" numeric />
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         <Input label="보험사" value={plan.company} onChange={(value) => set("company", value)} placeholder="예: ○○손해보험" />
         <Input label="상품명" value={plan.productName} onChange={(value) => set("productName", value)} placeholder="예: 건강보험 플랜" />
-        <Input label="월 보험료" value={plan.monthlyPremium} onChange={(value) => set("monthlyPremium", value)} placeholder="예: 52,000" suffix="원" numeric />
-        <div className="grid grid-cols-2 gap-3">
+        <Input
+          label={plan.isDollar ? "월 보험료 (달러)" : "월 보험료"}
+          value={plan.monthlyPremium}
+          onChange={(value) => set("monthlyPremium", value)}
+          placeholder={plan.isDollar ? "예: 200" : "예: 52,000"}
+          suffix={plan.isDollar ? "$" : "원"}
+          numeric
+        />
+        {plan.isDollar && plan.monthlyPremium && (plan.exchangeRate || "1400") && (
+          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
+            <div>
+              <p className="text-[10px] font-black text-slate-400">원화 환산 (월)</p>
+              <p className="mt-0.5 text-base font-black text-slate-800">
+                {new Intl.NumberFormat("ko-KR").format(Math.round(Number(plan.monthlyPremium.replace(/,/g,"")) * Number((plan.exchangeRate||"1400").replace(/,/g,""))))}원
+              </p>
+            </div>
+          </div>
+        )}
+        <div className={plan.isDollar && plan.monthlyPremium ? "grid grid-cols-2 gap-3" : "grid grid-cols-2 gap-3"}>
           <Input label="납입기간" value={plan.paymentYears} onChange={(value) => set("paymentYears", value)} placeholder="예: 20" suffix="년" />
           <Input label="보장/활용기간" value={plan.coverageYears} onChange={(value) => set("coverageYears", value)} placeholder="예: 100세" />
         </div>
@@ -754,14 +809,7 @@ function ProposalReport({
                 ))}
               </div>
             </div>
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-              <p className="text-sm font-black text-amber-900">상담 시 확인할 내용</p>
-              <ul className="mt-3 space-y-2 text-xs font-bold leading-6 text-amber-900">
-                <li>약관상 지급 조건, 면책·감액기간, 갱신 여부를 최종 확인합니다.</li>
-                <li>PDF 자동 추출 전까지는 업로드 파일을 참고하고 핵심 수치는 설계사가 확인 입력합니다.</li>
-                <li>고객에게는 보험료, 보장금액, 보장범위를 분리해서 설명합니다.</li>
-              </ul>
-            </div>
+
           </section>
         </div>
         <PageNum num={pageOffset + 3} />
@@ -887,39 +935,125 @@ function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plan
   )
 }
 
+// 만원 단위 포맷 헬퍼
+const wonMan = (v: number) => `${new Intl.NumberFormat("ko-KR").format(Math.round(v / 10000))}만원`
+
+// 납입원금/이익 분리 바 컴포넌트
+function SplitBar({ label, total, principal, gainColor, labelRight }: {
+  label: string
+  total: number        // 전체 길이 기준 (max)
+  principal: number    // 납입원금 (항상 고정)
+  gainColor: string    // 이익/이자 부분 색상
+  labelRight: string
+}) {
+  const pct = Math.max(4, Math.min(100, (total / Math.max(1, total)) * 100))
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
+        <span>{label}</span>
+        <span>{labelRight}</span>
+      </div>
+      <div className="h-7 w-full rounded-full bg-white overflow-hidden flex">
+        {total > 0 && (() => {
+          const principalPct = Math.min(100, (principal / total) * 100)
+          const gainPct = Math.max(0, 100 - principalPct)
+          return (
+            <>
+              <div
+                className="flex h-7 items-center justify-end bg-slate-400 rounded-l-full text-[10px] font-black text-white px-2 shrink-0"
+                style={{ width: `${principalPct}%` }}
+              />
+              {gainPct > 0 && (
+                <div
+                  className={`flex h-7 items-center justify-end rounded-r-full text-[10px] font-black text-white px-2 ${gainColor}`}
+                  style={{ width: `${gainPct}%` }}
+                />
+              )}
+            </>
+          )
+        })()}
+      </div>
+    </div>
+  )
+}
+
 function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
   const first = plans[0]
   const derived = first ? shortLifeDerived(first) : null
   if (!first || !derived) return null
-  const max = Math.max(1, derived.totalPaid, derived.refund, derived.savingFuture)
+  const { totalPaid, refund, savingFuture, refundRate } = derived
+  // 이익 계산
+  const insuranceGain = Math.max(0, refund - totalPaid)
+  const savingGain = Math.max(0, savingFuture - totalPaid)
+
   return (
     <div>
       <h2 className="text-lg font-black text-slate-950">단기납 종신 vs 월 적금 3%</h2>
-      <p className="mt-1 text-xs font-bold text-slate-400">월 적금은 첫 달 납입금만 12개월 가까이 이자가 붙고, 이후 납입금은 11/12, 10/12처럼 이자 적용 기간이 줄어듭니다.</p>
-      <div className="mt-5 grid grid-cols-3 gap-3">
-        <SummaryTile label="총납입금액" value={`${won(derived.totalPaid)}원`} />
-        <SummaryTile label="예상 환급금" value={`${won(derived.refund)}원`} />
-        <SummaryTile label="환급률" value={`${derived.refundRate.toFixed(1)}%`} />
+      <p className="mt-1 text-xs font-bold text-slate-400">월 적금은 이자 적용 기간이 납입 순서에 따라 달라져 체감 수익이 단순 3%보다 낮습니다.</p>
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <SummaryTile label="총납입금액" value={wonMan(totalPaid)} />
+        <SummaryTile label="예상 환급금" value={wonMan(refund)} />
+        <SummaryTile label="환급률" value={`${refundRate.toFixed(1)}%`} />
       </div>
-      <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-        {[
-          ["총납입", derived.totalPaid, "bg-slate-500"],
-          ["10년 후 환급금", derived.refund, "bg-cyan-500"],
-          ["월 적금 3% 예상", derived.savingFuture, "bg-rose-400"],
-        ].map(([label, value, color]) => (
-          <div key={String(label)} className="mb-4 last:mb-0">
-            <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
-              <span>{String(label)}</span>
-              <span>{won(Number(value))}원</span>
-            </div>
-            <div className="h-7 rounded-full bg-white">
-              <div className={`flex h-7 items-center justify-end rounded-full pr-3 text-[10px] font-black text-white ${String(color)}`} style={{ width: `${Math.max(8, Math.min(100, (Number(value) / max) * 100))}%` }}>
-                {won(Number(value))}
-              </div>
+
+      {/* 범례 */}
+      <div className="mt-4 flex items-center gap-4 text-[11px] font-black text-slate-500">
+        <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-400" />납입원금</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500" />단기납 이익</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-rose-400" />적금 이자</span>
+      </div>
+
+      <div className="mt-3 rounded-2xl bg-slate-50 p-5 space-y-4">
+        {/* 총납입: 납입원금만 */}
+        <div>
+          <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
+            <span>총납입 (납입원금)</span>
+            <span>{wonMan(totalPaid)}</span>
+          </div>
+          <div className="h-7 rounded-full bg-white overflow-hidden">
+            <div className="h-7 w-full rounded-full bg-slate-400 flex items-center justify-end pr-3 text-[10px] font-black text-white">
+              {wonMan(totalPaid)}
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* 10년 후 환급금: 납입원금 + 이익 */}
+        <div>
+          <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
+            <span>10년 후 환급금</span>
+            <span>{wonMan(refund)} {insuranceGain > 0 && <span className="text-emerald-600">(+{wonMan(insuranceGain)})</span>}</span>
+          </div>
+          <div className="h-7 rounded-full bg-white overflow-hidden flex">
+            {refund > 0 && (() => {
+              const pPct = Math.min(100, (totalPaid / refund) * 100)
+              const gPct = 100 - pPct
+              return (<>
+                <div className="bg-slate-400 h-7 flex items-center" style={{ width: `${pPct}%` }} />
+                {gPct > 0 && <div className="bg-emerald-500 h-7 flex items-center justify-end rounded-r-full pr-3 text-[10px] font-black text-white flex-1">+{wonMan(insuranceGain)}</div>}
+              </>)
+            })()}
+          </div>
+        </div>
+
+        {/* 월 적금 3%: 납입원금 + 이자 */}
+        <div>
+          <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
+            <span>월 적금 3% 예상</span>
+            <span>{wonMan(savingFuture)} {savingGain > 0 && <span className="text-rose-500">(+{wonMan(savingGain)})</span>}</span>
+          </div>
+          <div className="h-7 rounded-full bg-white overflow-hidden flex">
+            {savingFuture > 0 && (() => {
+              const pPct = Math.min(100, (totalPaid / savingFuture) * 100)
+              const gPct = 100 - pPct
+              return (<>
+                <div className="bg-slate-400 h-7 flex items-center" style={{ width: `${pPct}%` }} />
+                {gPct > 0 && <div className="bg-rose-400 h-7 flex items-center justify-end rounded-r-full pr-3 text-[10px] font-black text-white flex-1">+{wonMan(savingGain)}</div>}
+              </>)
+            })()}
+          </div>
+        </div>
       </div>
+
       <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
         <p className="text-sm font-black text-cyan-900">활용 전략</p>
         <p className="mt-2 text-xs font-bold leading-6 text-cyan-800">
