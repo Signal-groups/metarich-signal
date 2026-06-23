@@ -43,7 +43,15 @@ type MetricDef = {
   unit?: string
   kind?: MetricKind
   guide: string
-  hint?: string   // 입력 필드 placeholder용 보조 안내
+  hint?: string
+  group?: string
+}
+
+type CustomCoverage = {
+  id: string
+  name: string
+  amount: string
+  note: string
 }
 
 type CategoryTemplate = {
@@ -73,6 +81,7 @@ type PlanData = {
   isDollar?: boolean
   exchangeRate?: string
   additionalCoverage?: string
+  customCoverages?: CustomCoverage[]
 }
 
 type ConsultantInfo = {
@@ -102,6 +111,7 @@ const categories: CategoryTemplate[] = [
       { key: "finePerson", label: "벌금 대인", shortLabel: "대인벌금", unit: "만원", kind: "money", guide: "대인 사고 벌금 한도" },
       { key: "fineProperty", label: "벌금 대물", shortLabel: "대물벌금", unit: "만원", kind: "money", guide: "대물 벌금 한도" },
       { key: "injury", label: "자동차사고부상치료비 (14급 기준)", shortLabel: "자부상14급", unit: "만원", kind: "money", guide: "14급 기준 금액 입력 — 급수별 지급금액 비례 차이 확인", hint: "14급 기준 금액" },
+      { key: "liability", label: "일상생활배상책임", shortLabel: "일배책", unit: "만원", kind: "money", guide: "가족 일상생활 중 타인 신체·재물 피해 배상책임 한도", hint: "기본 10,000" },
       { key: "renewal", label: "갱신 여부", shortLabel: "갱신", kind: "text", guide: "갱신형은 향후 보험료 변동 가능" },
     ],
   },
@@ -115,12 +125,28 @@ const categories: CategoryTemplate[] = [
     infographic: "bars",
     reportTitle: "주요 질병·수술 담보 비교",
     metrics: [
-      { key: "cancer", label: "일반암 진단비", shortLabel: "일반암", unit: "만원", kind: "money", guide: "일반암 기준 진단비" },
-      { key: "minorCancer", label: "유사암 진단비", shortLabel: "유사암", unit: "만원", kind: "money", guide: "갑상선암·기타피부암 등 소액암 기준" },
-      { key: "brain", label: "뇌 보장", shortLabel: "뇌", unit: "만원", kind: "money", guide: "뇌출혈·뇌졸중·뇌혈관질환 중 범위 확인" },
-      { key: "heart", label: "심장 보장", shortLabel: "심장", unit: "만원", kind: "money", guide: "급성심근경색·허혈성·심혈관질환 중 범위 확인" },
-      { key: "surgery", label: "질병수술비", shortLabel: "수술비", unit: "만원", kind: "money", guide: "질병수술비, N대수술비, 종수술비 구조 확인" },
-      { key: "care", label: "간병 보장", shortLabel: "간병", unit: "만원", kind: "money", guide: "간병인 사용일당 또는 간호간병통합 보장" },
+      { key: "cancer", label: "일반암 진단비", shortLabel: "일반암", unit: "만원", kind: "money", group: "진단비", guide: "일반암 기준 진단비" },
+      { key: "minorCancer", label: "유사암 진단비", shortLabel: "유사암", unit: "만원", kind: "money", group: "진단비", guide: "갑상선암·기타피부암·경계성종양·제자리암 기준" },
+      { key: "brain", label: "뇌혈관질환 진단비", shortLabel: "뇌혈관", unit: "만원", kind: "money", group: "진단비", guide: "뇌출혈·뇌졸중·뇌혈관질환 중 보장범위 확인" },
+      { key: "heart", label: "허혈성심장질환 진단비", shortLabel: "허혈성", unit: "만원", kind: "money", group: "진단비", guide: "급성심근경색·허혈성심장질환 중 보장범위 확인" },
+      { key: "diseaseSurgery", label: "질병 수술비", shortLabel: "질병수술", unit: "만원", kind: "money", group: "수술비", guide: "상세 지급 내역은 약관참조" },
+      { key: "diseaseTypeSurgery", label: "질병 1~5종 수술비 (5종 기준)", shortLabel: "질병5종", unit: "만원", kind: "money", group: "수술비", guide: "5종 기준 금액 입력. 상세 지급 내역은 약관참조", hint: "5종 기준" },
+      { key: "diseaseNSurgery", label: "질병 N대 수술비 (최대금액)", shortLabel: "질병N대", unit: "만원", kind: "money", group: "수술비", guide: "가장 큰 지급금액 기준 입력. 상세 지급 내역은 약관참조", hint: "최대금액" },
+      { key: "injurySurgery", label: "상해 수술비", shortLabel: "상해수술", unit: "만원", kind: "money", group: "수술비", guide: "상세 지급 내역은 약관참조" },
+      { key: "injuryTypeSurgery", label: "상해 1~5종 수술비 (5종 기준)", shortLabel: "상해5종", unit: "만원", kind: "money", group: "수술비", guide: "5종 기준 금액 입력. 상세 지급 내역은 약관참조", hint: "5종 기준" },
+      { key: "injuryNSurgery", label: "상해 N대 수술비 (최대금액)", shortLabel: "상해N대", unit: "만원", kind: "money", group: "수술비", guide: "가장 큰 지급금액 기준 입력. 상세 지급 내역은 약관참조", hint: "최대금액" },
+      { key: "chemoDrug", label: "항암 약물치료", shortLabel: "항암약물", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
+      { key: "chemoRadiation", label: "항암 방사선치료", shortLabel: "항암방사선", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
+      { key: "targetDrug", label: "표적항암 약물치료", shortLabel: "표적약물", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
+      { key: "targetRadiation", label: "표적항암 방사선치료", shortLabel: "표적방사선", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
+      { key: "heavyIon", label: "중입자치료", shortLabel: "중입자", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
+      { key: "robotCancerSurgery", label: "로봇 암수술", shortLabel: "로봇암수술", unit: "만원", kind: "money", group: "항암치료", guide: "상세 지급 내역은 약관참조" },
+      { key: "cancerMajorTreatmentGeneral", label: "암 주요치료비 (일반)", shortLabel: "암주요 일반", unit: "만원", kind: "money", group: "주요치료비", guide: "암 주요치료비 일반 기준. 상세 지급 내역은 약관참조" },
+      { key: "cancerMajorTreatmentNonCovered", label: "암 주요치료비 (비급여)", shortLabel: "암주요 비급여", unit: "만원", kind: "money", group: "주요치료비", guide: "암 주요치료비 비급여 기준. 상세 지급 내역은 약관참조" },
+      { key: "twoMajorTreatmentComprehensive", label: "2대 주요치료비 (종합)", shortLabel: "2대종합", unit: "만원", kind: "money", group: "주요치료비", guide: "뇌·심장 주요치료비 종합 기준. 상세 지급 내역은 약관참조" },
+      { key: "twoMajorTreatmentAdvanced", label: "2대 주요치료비 (상급)", shortLabel: "2대상급", unit: "만원", kind: "money", group: "주요치료비", guide: "뇌·심장 주요치료비 상급 기준. 상세 지급 내역은 약관참조" },
+      { key: "care", label: "간병 보장", shortLabel: "간병", unit: "만원", kind: "money", group: "간병·생활", guide: "간병인사용일당 또는 간호간병통합 보장" },
+      { key: "liability", label: "일상생활배상책임", shortLabel: "일배책", unit: "만원", kind: "money", group: "간병·생활", guide: "가족 일상생활 중 타인 신체·재물 피해 배상책임 한도", hint: "기본 10,000" },
     ],
   },
   {
@@ -261,6 +287,7 @@ function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
     metrics.finePerson = "3000"
     metrics.fineProperty = "500"
     metrics.injury = "30"
+    metrics.liability = "10000"
   }
   return {
     id: createId(),
@@ -276,6 +303,7 @@ function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
     strengths: index === 0 ? "핵심 담보 중심으로 구성" : "",
     cautions: "",
     metrics,
+    customCoverages: [],
   }
 }
 
@@ -510,9 +538,29 @@ function PlanEditor({
 }) {
   const set = <K extends keyof PlanData>(key: K, value: PlanData[K]) => onChange({ ...plan, [key]: value })
   const setMetric = (key: string, value: string) => onChange({ ...plan, metrics: { ...plan.metrics, [key]: value } })
+  const customCoverages = plan.customCoverages ?? []
+  const addCustomCoverage = () => onChange({
+    ...plan,
+    customCoverages: [...customCoverages, { id: createId(), name: "", amount: "", note: "" }],
+  })
+  const updateCustomCoverage = (id: string, patch: Partial<CustomCoverage>) => onChange({
+    ...plan,
+    customCoverages: customCoverages.map((item) => item.id === id ? { ...item, ...patch } : item),
+  })
+  const removeCustomCoverage = (id: string) => onChange({
+    ...plan,
+    customCoverages: customCoverages.filter((item) => item.id !== id),
+  })
   const visibleMetrics = template.id === "shortlife"
     ? template.metrics.filter((metric) => metric.key !== "purpose")
     : template.metrics
+  const metricGroups = visibleMetrics.reduce<Array<{ title: string; metrics: MetricDef[] }>>((acc, metric) => {
+    const title = metric.group || "기본 담보"
+    const found = acc.find((item) => item.title === title)
+    if (found) found.metrics.push(metric)
+    else acc.push({ title, metrics: [metric] })
+    return acc
+  }, [])
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -598,17 +646,29 @@ function PlanEditor({
           <ClipboardList className="h-4 w-4 text-cyan-600" />
           <p className="text-sm font-black text-slate-900">카테고리별 핵심 항목</p>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {visibleMetrics.map((metric) => (
-            <Input
-              key={metric.key}
-              label={metric.label}
-              value={plan.metrics[metric.key] || ""}
-              onChange={(value) => setMetric(metric.key, value)}
-              placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : metric.hint || "금액 입력"}
-              suffix={plan.isDollar && isShortLifeDollarMetric(metric) ? "$" : metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
-              numeric={metric.kind === "money"}
-            />
+        <div className="space-y-4">
+          {metricGroups.map((group) => (
+            <div key={group.title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              {metricGroups.length > 1 && (
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-black text-slate-700">{group.title}</p>
+                  {template.id === "health" && <span className="text-[10px] font-bold text-slate-400">미선택 담보는 빈칸으로 두세요</span>}
+                </div>
+              )}
+              <div className="grid gap-3 md:grid-cols-2">
+                {group.metrics.map((metric) => (
+                  <Input
+                    key={metric.key}
+                    label={metric.label}
+                    value={plan.metrics[metric.key] || ""}
+                    onChange={(value) => setMetric(metric.key, value)}
+                    placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : metric.hint || "금액 입력"}
+                    suffix={plan.isDollar && isShortLifeDollarMetric(metric) ? "$" : metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
+                    numeric={metric.kind === "money"}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
         {template.id === "shortlife" && plan.isDollar && (
@@ -619,6 +679,48 @@ function PlanEditor({
             value={plan.metrics.purpose || ""}
             onChange={(value) => setMetric("purpose", value)}
           />
+        )}
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-black text-slate-900">추가 보장 담보</p>
+            <p className="mt-1 text-[11px] font-bold text-slate-400">기본 항목에 없는 담보를 직접 추가하고, 상담용 설명을 남길 수 있습니다.</p>
+          </div>
+          <button
+            type="button"
+            onClick={addCustomCoverage}
+            className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-[#102a4c] px-3 py-2 text-xs font-black text-white hover:bg-[#2D4A8A]"
+          >
+            <Plus className="h-4 w-4" />
+            담보 추가
+          </button>
+        </div>
+        {customCoverages.length === 0 ? (
+          <p className="rounded-xl bg-white px-4 py-3 text-xs font-bold text-slate-400">추가할 담보가 있으면 담보 추가를 눌러 입력하세요.</p>
+        ) : (
+          <div className="space-y-3">
+            {customCoverages.map((item) => (
+              <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="grid gap-3 md:grid-cols-[1fr_180px_40px]">
+                  <Input label="담보명" value={item.name} onChange={(value) => updateCustomCoverage(item.id, { name: value })} placeholder="예: 특정질병입원일당" />
+                  <Input label="보장금액" value={item.amount} onChange={(value) => updateCustomCoverage(item.id, { amount: value })} placeholder="예: 5" suffix="만원" numeric />
+                  <button
+                    type="button"
+                    onClick={() => removeCustomCoverage(item.id)}
+                    className="mt-5 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-400 hover:border-rose-200 hover:text-rose-600"
+                    aria-label="추가 담보 삭제"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-3">
+                  <TextArea label="추가보장 설명" value={item.note} onChange={(value) => updateCustomCoverage(item.id, { note: value })} placeholder="예: 특정 조건 충족 시 지급, 상세 지급 내역은 약관참조" />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -1278,6 +1380,11 @@ function ComparisonTable({ template, plans, showCross = false }: { template: Cat
     const monthly = plan.isDollar ? num(plan.monthlyPremium) * (num(plan.exchangeRate ?? "") || 1400) : num(plan.monthlyPremium)
     return sum + monthly
   }, 0)
+  const customRows = Array.from(new Set(
+    plans.flatMap((plan) => (plan.customCoverages ?? [])
+      .filter((item) => item.name.trim() || item.amount.trim() || item.note.trim())
+      .map((item) => item.name.trim() || "추가 담보"))
+  ))
 
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
@@ -1309,6 +1416,20 @@ function ComparisonTable({ template, plans, showCross = false }: { template: Cat
               ))}
               {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">{sumMetric(metric)}</td>}
               <td className="px-4 py-3 text-[11px] font-bold leading-5 text-slate-500">{metric.guide}</td>
+            </tr>
+          ))}
+          {customRows.map((name) => (
+            <tr key={name} className="border-t border-slate-100 bg-slate-50/60">
+              <td className="px-4 py-3 text-xs font-black text-slate-500">{name}</td>
+              {plans.map((plan) => {
+                const item = (plan.customCoverages ?? []).find((coverage) => (coverage.name.trim() || "추가 담보") === name)
+                const amount = item?.amount ? `${won(num(item.amount))}만원` : "-"
+                return <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{amount}</td>
+              })}
+              {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">개별 확인</td>}
+              <td className="px-4 py-3 text-[11px] font-bold leading-5 text-slate-500">
+                {plans.map((plan) => (plan.customCoverages ?? []).find((coverage) => (coverage.name.trim() || "추가 담보") === name)?.note).filter(Boolean).join(" / ") || "추가보장 설명란 참조"}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -2098,3 +2219,4 @@ export default function ProposalPage() {
     </>
   )
 }
+
