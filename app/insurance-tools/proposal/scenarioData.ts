@@ -336,5 +336,45 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
         conclusion: "해지 없이 약관대출로 의료비 마련 — 상환 후 사망보장도 계속 유지"
       }
     ]
+  },
+  dental: {
+    page4Title: "치과 치료비, 실제로 얼마나 드나요?",
+    page4Subtitle: "보험 없이 치료받으면 한 번의 사고로 수백만 원이 발생할 수 있습니다.",
+    cases: [
+      {
+        icon: "🦷",
+        label: "임플란트 1개",
+        situation: "외상이나 충치로 치아를 발거한 후 임플란트를 식립합니다. 65세 미만은 건강보험 적용이 제한되어 사실상 전액 비급여입니다.",
+        totalEstimate: "약 100 ~ 150만원/개",
+        costItems: [
+          { label: "임플란트 비용 (비급여)", amount: "100 ~ 150만원/개", covered: false },
+          { label: "치아보험 지급금 (예시)", amount: "최대 130만원/개", covered: true, coverLabel: "임플란트 담보" },
+        ],
+        conclusion: "1개 발생 시 전액 또는 대부분을 보험금으로 충당 가능"
+      },
+      {
+        icon: "👑",
+        label: "크라운 3개",
+        situation: "충치 진행으로 신경치료 후 크라운을 씌웁니다. 비급여 항목으로 전액 자부담이 일반적입니다.",
+        totalEstimate: "약 120 ~ 180만원",
+        costItems: [
+          { label: "크라운 비용 (비급여, 3개 기준)", amount: "120 ~ 180만원", covered: false },
+          { label: "치아보험 지급금 (예시 50만원×3)", amount: "최대 150만원", covered: true, coverLabel: "크라운 담보" },
+        ],
+        conclusion: "연간 3개 한도 상품 기준 크라운 비용 대부분 보전 가능"
+      },
+      {
+        icon: "🦴",
+        label: "틀니 (부분·완전)",
+        situation: "여러 치아 상실 후 부분틀니 또는 완전틀니를 제작합니다. 65세 미만은 건강보험 적용이 어렵습니다.",
+        totalEstimate: "약 100 ~ 200만원",
+        costItems: [
+          { label: "틀니 제작비 (비급여)", amount: "100 ~ 200만원", covered: false },
+          { label: "치아보험 지급금 (예시)", amount: "최대 130만원", covered: true, coverLabel: "틀니 담보" },
+        ],
+        conclusion: "치아보험으로 고령 전 틀니 발생 비용 실질 보전 가능"
+      }
+    ]
   }
+
 }

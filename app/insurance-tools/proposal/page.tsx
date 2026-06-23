@@ -32,7 +32,7 @@ import LoadingScreen from "../../components/LoadingScreen"
 import { CATEGORY_SCENARIOS } from "./scenarioData"
 
 type ProposalMode = "single" | "compare" | "bundle"
-type CategoryId = "driver" | "health" | "care" | "homecare" | "pet" | "shortlife"
+type CategoryId = "driver" | "health" | "care" | "homecare" | "pet" | "shortlife" | "dental"
 type CompareFocus = "balance" | "premium" | "coverage" | "scope" | "refund"
 type MetricKind = "money" | "text" | "percent"
 
@@ -194,6 +194,26 @@ const categories: CategoryTemplate[] = [
       { key: "liquidity", label: "유동성 주의", shortLabel: "주의", kind: "text", guide: "중도해지 시점별 환급률 확인" },
     ],
   },
+  {
+    id: "dental",
+    label: "치아보험",
+    desc: "충전·크라운·임플란트·브릿지·틀니·신경치료 담보 비교",
+    tone: "from-sky-400 to-cyan-500",
+    icon: Bone,
+    summary: "실제 치과 치료비와 보험금 지급 구조를 한 장에 정리합니다. 항목별 지급 조건과 한도를 비교해 실속있는 선택을 돕습니다.",
+    infographic: "cards",
+    reportTitle: "치과 치료비 담보 비교",
+    metrics: [
+      { key: "filling", label: "충전치료 (금·도재)", shortLabel: "충전", unit: "만원", kind: "money", guide: "치아 1개당 지급금액 (아말감·금·도재 구분)" },
+      { key: "crown", label: "크라운 (치관치료)", shortLabel: "크라운", unit: "만원", kind: "money", guide: "치아 1개당 지급금액 — 연간 한도 확인" },
+      { key: "implant", label: "임플란트", shortLabel: "임플란트", unit: "만원", kind: "money", guide: "치아 1개당 지급금액 — 연간 3개 한도 등 조건 확인" },
+      { key: "bridge", label: "브릿지 (가공치)", shortLabel: "브릿지", unit: "만원", kind: "money", guide: "치아 1개당 지급금액 — 연간 한도 확인" },
+      { key: "denture", label: "틀니 (의치)", shortLabel: "틀니", unit: "만원", kind: "money", guide: "보철물당 지급금액 — 연간 1회 한도 등 조건 확인" },
+      { key: "rootCanal", label: "신경치료 (치수치료)", shortLabel: "신경치료", unit: "만원", kind: "money", guide: "치아 1개당 지급금액" },
+      { key: "scaling", label: "스케일링", shortLabel: "스케일링", unit: "만원", kind: "money", guide: "연 1회 한도 금액" },
+      { key: "waiting", label: "면책·감액기간", shortLabel: "면책", kind: "text", guide: "면책 90일, 충전·크라운 1년 감액 등 조건 확인" },
+    ],
+  },
 ]
 
 const focusOptions: { id: CompareFocus; label: string; desc: string }[] = [
@@ -206,6 +226,12 @@ const focusOptions: { id: CompareFocus; label: string; desc: string }[] = [
 
 const won = (value: number) => new Intl.NumberFormat("ko-KR").format(Math.round(value))
 const num = (value: string) => Number(String(value).replace(/[^0-9.-]/g, "")) || 0
+const formatKrw = (value: number) => `${won(value)}원`
+const formatPremium = (plan: PlanData) => {
+  const value = num(plan.monthlyPremium)
+  if (!value) return "-"
+  return plan.isDollar ? `$${won(value)}` : formatKrw(value)
+}
 const metricText = (metric: MetricDef, value: string) => {
   if (!value) return "-"
   if (metric.kind === "money") return `${won(num(value))}${metric.unit || "만원"}`
@@ -216,6 +242,11 @@ const createId = () => Math.random().toString(36).slice(2, 9)
 
 function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
   const metrics = Object.fromEntries(template.metrics.map((metric) => [metric.key, ""]))
+  if (template.id === "driver") {
+    metrics.trafficSupport = "20000"
+    metrics.finePerson = "3000"
+    metrics.fineProperty = "500"
+  }
   return {
     id: createId(),
     company: "",
@@ -253,6 +284,7 @@ function shortLifeDerived(plan: PlanData) {
   const monthly = monthlyRaw * fx          // 항상 KRW 기준으로 계산
   const monthlyUsd = plan.isDollar ? monthlyRaw : 0
   const years = num(plan.paymentYears) || 5
+  const horizonYears = num(plan.metrics.refundYear) || 10
   const totalPaid = monthly * 12 * years
   const rate = num(plan.metrics.refundRate)
   const explicitRefundRaw = num(plan.metrics.refundAmount)
@@ -263,21 +295,23 @@ function shortLifeDerived(plan: PlanData) {
     : explicitRefundRaw * 10000
   const refund = explicitRefund || (totalPaid * rate / 100)
   const monthlyRate = 0.03 / 12
-  const months = years * 12
+  const payMonths = years * 12
+  const horizonMonths = Math.max(payMonths, horizonYears * 12)
   let savingFuture = 0
-  for (let i = 0; i < months; i += 1) {
-    savingFuture += monthly * Math.pow(1 + monthlyRate, months - i)
+  for (let i = 0; i < payMonths; i += 1) {
+    savingFuture += monthly * Math.pow(1 + monthlyRate, horizonMonths - i)
   }
   return {
     monthly,
     monthlyUsd,
     fx,
     years,
+    horizonYears,
     totalPaid,
     refund,
     savingFuture,
     gap: refund - savingFuture,
-    refundRate: totalPaid ? (refund / totalPaid) * 100 : rate,
+    refundRate: rate || (totalPaid ? (refund / totalPaid) * 100 : 0),
   }
 }
 
@@ -750,7 +784,7 @@ function ProposalReport({
             <div className="mt-4 grid grid-cols-3 gap-3">
               <SummaryTile label="상품군" value={template.label} />
               <SummaryTile label="비교 기준" value={focusOptions.find((item) => item.id === focus)?.label || "균형형"} />
-              <SummaryTile label="월 보험료 최저" value={lowest ? `${lowest.company || "입력 상품"} ${won(num(lowest.monthlyPremium))}원` : "-"} />
+              <SummaryTile label="월 보험료 최저" value={lowest ? `${lowest.company || "입력 상품"} ${formatPremium(lowest)}` : "-"} />
             </div>
             <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
               <p className="text-sm font-black text-cyan-900">고객 설명 포인트</p>
@@ -861,7 +895,7 @@ function PlanSnapshot({ template, plans }: { template: CategoryTemplate; plans: 
               <p className="text-sm font-black text-slate-950">{plan.company || `${String.fromCharCode(65 + index)} 보험사`}</p>
               <p className="text-xs font-bold text-slate-400">{plan.productName || "상품명 미입력"}</p>
             </div>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-cyan-700">{won(num(plan.monthlyPremium))}원</span>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-cyan-700">{formatPremium(plan)}</span>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2">
             {template.metrics.slice(0, 4).map((metric) => (
@@ -878,7 +912,7 @@ function PlanSnapshot({ template, plans }: { template: CategoryTemplate; plans: 
 }
 
 function PremiumCard({ plan, index }: { plan: PlanData; index: number }) {
-  const monthly = num(plan.monthlyPremium)
+  const monthly = plan.isDollar ? num(plan.monthlyPremium) * (num(plan.exchangeRate ?? "") || 1400) : num(plan.monthlyPremium)
   const years = num(plan.paymentYears) || 20
   const total = monthly * 12 * years
   const color = index % 2 === 0 ? "bg-cyan-500" : "bg-rose-400"
@@ -894,11 +928,11 @@ function PremiumCard({ plan, index }: { plan: PlanData; index: number }) {
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-white p-3">
           <p className="text-[10px] font-black text-slate-400">월 보험료</p>
-          <p className="mt-1 text-lg font-black text-slate-950">{won(monthly)}원</p>
+          <p className="mt-1 text-lg font-black text-slate-950">{formatPremium(plan)}</p>
         </div>
         <div className="rounded-xl bg-white p-3">
           <p className="text-[10px] font-black text-slate-400">총 납입 예상</p>
-          <p className="mt-1 text-lg font-black text-slate-950">{won(total)}원</p>
+          <p className="mt-1 text-lg font-black text-slate-950">{total > 0 ? formatKrw(total) : "-"}</p>
         </div>
       </div>
     </div>
@@ -938,118 +972,99 @@ function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plan
 // 만원 단위 포맷 헬퍼
 const wonMan = (v: number) => `${new Intl.NumberFormat("ko-KR").format(Math.round(v / 10000))}만원`
 
-// 납입원금/이익 분리 바 컴포넌트
-function SplitBar({ label, total, principal, gainColor, labelRight }: {
-  label: string
-  total: number        // 전체 길이 기준 (max)
-  principal: number    // 납입원금 (항상 고정)
-  gainColor: string    // 이익/이자 부분 색상
-  labelRight: string
-}) {
-  const pct = Math.max(4, Math.min(100, (total / Math.max(1, total)) * 100))
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
-        <span>{label}</span>
-        <span>{labelRight}</span>
-      </div>
-      <div className="h-7 w-full rounded-full bg-white overflow-hidden flex">
-        {total > 0 && (() => {
-          const principalPct = Math.min(100, (principal / total) * 100)
-          const gainPct = Math.max(0, 100 - principalPct)
-          return (
-            <>
-              <div
-                className="flex h-7 items-center justify-end bg-slate-400 rounded-l-full text-[10px] font-black text-white px-2 shrink-0"
-                style={{ width: `${principalPct}%` }}
-              />
-              {gainPct > 0 && (
-                <div
-                  className={`flex h-7 items-center justify-end rounded-r-full text-[10px] font-black text-white px-2 ${gainColor}`}
-                  style={{ width: `${gainPct}%` }}
-                />
-              )}
-            </>
-          )
-        })()}
-      </div>
-    </div>
-  )
-}
-
 function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
   const first = plans[0]
   const derived = first ? shortLifeDerived(first) : null
   if (!first || !derived) return null
-  const { totalPaid, refund, savingFuture, refundRate } = derived
-  // 이익 계산
-  const insuranceGain = Math.max(0, refund - totalPaid)
-  const savingGain = Math.max(0, savingFuture - totalPaid)
+  const { totalPaid, refund, savingFuture, refundRate, horizonYears } = derived
+  const insuranceGain = refund - totalPaid          // 음수 가능
+  const savingGain    = savingFuture - totalPaid    // 항상 양수
+  const maxVal = Math.max(totalPaid, refund, savingFuture, 1)
+  const refundPct = Math.max(4, (refund / maxVal) * 100)
+  const savingPct = Math.max(4, (savingFuture / maxVal) * 100)
+  const principalPct = Math.max(4, (totalPaid / maxVal) * 100)
+  const gap = refund - savingFuture
+  const gapLabel = gap >= 0 ? "단기납 환급금 우위" : "월 적금 예상액 우위"
+  const gapColor = gap >= 0 ? "text-emerald-700" : "text-rose-600"
+  const horizonLabel = `${horizonYears}년 후`
 
   return (
     <div>
       <h2 className="text-lg font-black text-slate-950">단기납 종신 vs 월 적금 3%</h2>
-      <p className="mt-1 text-xs font-bold text-slate-400">월 적금은 이자 적용 기간이 납입 순서에 따라 달라져 체감 수익이 단순 3%보다 낮습니다.</p>
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <SummaryTile label="총납입금액" value={wonMan(totalPaid)} />
-        <SummaryTile label="예상 환급금" value={wonMan(refund)} />
-        <SummaryTile label="환급률" value={`${refundRate.toFixed(1)}%`} />
+      <p className="mt-1 text-xs font-bold text-slate-400">같은 월 납입금 기준으로 {horizonLabel} 예상 수령액을 비교합니다.</p>
+
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+          <p className="text-[10px] font-black text-slate-500">총 납입원금</p>
+          <p className="mt-1 text-base font-black text-slate-800">{wonMan(totalPaid)}</p>
+          <p className="text-[10px] font-black text-slate-400">{derived.years}년납 기준</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+          <p className="text-[10px] font-black text-emerald-700">입력 환급률</p>
+          <p className="mt-1 text-base font-black text-emerald-800">{refundRate.toFixed(1)}%</p>
+          <p className="text-[10px] font-black text-emerald-600">총납입 대비</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+          <p className="text-[10px] font-black text-slate-500">{horizonLabel} 환급금</p>
+          <p className="mt-1 text-base font-black text-slate-900">{wonMan(refund)}</p>
+          <p className={`text-[10px] font-black ${insuranceGain >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+            납입금 대비 {insuranceGain >= 0 ? "+" : "-"}{wonMan(Math.abs(insuranceGain))}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3">
+          <p className="text-[10px] font-black text-rose-700">적금 3% 예상</p>
+          <p className="mt-1 text-base font-black text-rose-700">{wonMan(savingFuture)}</p>
+          <p className="text-[10px] font-black text-rose-500">이자 +{wonMan(savingGain)}</p>
+        </div>
       </div>
 
-      {/* 범례 */}
-      <div className="mt-4 flex items-center gap-4 text-[11px] font-black text-slate-500">
-        <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-400" />납입원금</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500" />단기납 이익</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-rose-400" />적금 이자</span>
-      </div>
-
-      <div className="mt-3 rounded-2xl bg-slate-50 p-5 space-y-4">
-        {/* 총납입: 납입원금만 */}
-        <div>
-          <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
-            <span>총납입 (납입원금)</span>
-            <span>{wonMan(totalPaid)}</span>
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-black text-slate-500">비교 결론</p>
+            <p className={`mt-1 text-xl font-black ${gapColor}`}>{gapLabel}</p>
           </div>
-          <div className="h-7 rounded-full bg-white overflow-hidden">
-            <div className="h-7 w-full rounded-full bg-slate-400 flex items-center justify-end pr-3 text-[10px] font-black text-white">
-              {wonMan(totalPaid)}
+          <div className="rounded-2xl bg-white px-4 py-2 text-right">
+            <p className="text-[10px] font-black text-slate-400">차이</p>
+            <p className={`text-lg font-black ${gapColor}`}>{gap >= 0 ? "+" : "-"}{wonMan(Math.abs(gap))}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <div className="mb-1 flex justify-between text-xs font-black text-slate-500">
+              <span>납입원금</span>
+              <span>{wonMan(totalPaid)}</span>
+            </div>
+            <div className="h-3 rounded-full bg-white">
+              <div className="h-3 rounded-full bg-slate-400" style={{ width: `${principalPct}%` }} />
             </div>
           </div>
-        </div>
 
-        {/* 10년 후 환급금: 납입원금 + 이익 */}
-        <div>
-          <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
-            <span>10년 후 환급금</span>
-            <span>{wonMan(refund)} {insuranceGain > 0 && <span className="text-emerald-600">(+{wonMan(insuranceGain)})</span>}</span>
+          <div className="grid grid-cols-[88px_1fr_92px] items-center gap-3">
+            <div>
+              <p className="text-xs font-black text-emerald-800">단기납 종신</p>
+              <p className="text-[10px] font-bold text-slate-400">환급금</p>
+            </div>
+            <div className="h-10 overflow-hidden rounded-full bg-white">
+              <div className="flex h-10 items-center justify-end rounded-full bg-emerald-500 px-3 text-[11px] font-black text-white" style={{ width: `${refundPct}%` }}>
+                {wonMan(refund)}
+              </div>
+            </div>
+            <p className="text-right text-xs font-black text-emerald-700">{refundRate.toFixed(1)}%</p>
           </div>
-          <div className="h-7 rounded-full bg-white overflow-hidden flex">
-            {refund > 0 && (() => {
-              const pPct = Math.min(100, (totalPaid / refund) * 100)
-              const gPct = 100 - pPct
-              return (<>
-                <div className="bg-slate-400 h-7 flex items-center" style={{ width: `${pPct}%` }} />
-                {gPct > 0 && <div className="bg-emerald-500 h-7 flex items-center justify-end rounded-r-full pr-3 text-[10px] font-black text-white flex-1">+{wonMan(insuranceGain)}</div>}
-              </>)
-            })()}
-          </div>
-        </div>
 
-        {/* 월 적금 3%: 납입원금 + 이자 */}
-        <div>
-          <div className="mb-1 flex items-center justify-between text-xs font-black text-slate-500">
-            <span>월 적금 3% 예상</span>
-            <span>{wonMan(savingFuture)} {savingGain > 0 && <span className="text-rose-500">(+{wonMan(savingGain)})</span>}</span>
-          </div>
-          <div className="h-7 rounded-full bg-white overflow-hidden flex">
-            {savingFuture > 0 && (() => {
-              const pPct = Math.min(100, (totalPaid / savingFuture) * 100)
-              const gPct = 100 - pPct
-              return (<>
-                <div className="bg-slate-400 h-7 flex items-center" style={{ width: `${pPct}%` }} />
-                {gPct > 0 && <div className="bg-rose-400 h-7 flex items-center justify-end rounded-r-full pr-3 text-[10px] font-black text-white flex-1">+{wonMan(savingGain)}</div>}
-              </>)
-            })()}
+          <div className="grid grid-cols-[88px_1fr_92px] items-center gap-3">
+            <div>
+              <p className="text-xs font-black text-rose-700">월 적금</p>
+              <p className="text-[10px] font-bold text-slate-400">연 3%</p>
+            </div>
+            <div className="h-10 overflow-hidden rounded-full bg-white">
+              <div className="flex h-10 items-center justify-end rounded-full bg-rose-400 px-3 text-[11px] font-black text-white" style={{ width: `${savingPct}%` }}>
+                {wonMan(savingFuture)}
+              </div>
+            </div>
+            <p className="text-right text-xs font-black text-rose-600">+{wonMan(savingGain)}</p>
           </div>
         </div>
       </div>
@@ -1082,7 +1097,7 @@ function ComparisonTable({ template, plans }: { template: CategoryTemplate; plan
         <tbody>
           <tr className="border-t border-slate-100">
             <td className="px-4 py-3 text-xs font-black text-slate-500">월 보험료</td>
-            {plans.map((plan) => <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{won(num(plan.monthlyPremium))}원</td>)}
+            {plans.map((plan) => <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
             <td className="px-4 py-3 text-[11px] font-bold text-slate-500">보험료와 담보 범위를 함께 판단</td>
           </tr>
           {template.metrics.map((metric) => (
@@ -1311,7 +1326,7 @@ function BundleCoverPage({
   customerName: string
   consultant: ConsultantInfo
 }) {
-  const totalMonthly = sections.reduce((sum, s) => sum + (Number(s.plan.monthlyPremium.replace(/[^0-9]/g, "")) || 0), 0)
+  const totalMonthly = sections.reduce((sum, s) => sum + (s.plan.isDollar ? num(s.plan.monthlyPremium) * (num(s.plan.exchangeRate ?? "") || 1400) : num(s.plan.monthlyPremium)), 0)
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
 
   return (
@@ -1341,7 +1356,7 @@ function BundleCoverPage({
                     <p className="text-xs font-bold text-slate-400">{s.plan.company || "보험사 미입력"} · {s.plan.productName || "상품명 미입력"}</p>
                   </div>
                   <p className="text-sm font-black text-cyan-700">
-                    {s.plan.monthlyPremium ? `${Number(s.plan.monthlyPremium.replace(/[^0-9]/g, "")).toLocaleString("ko-KR")}원` : "-"}
+                    {formatPremium(s.plan)}
                   </p>
                 </div>
               )
@@ -1352,7 +1367,7 @@ function BundleCoverPage({
             <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
               <p className="text-sm font-black text-cyan-900">월 합산 보험료</p>
               <p className="mt-2 text-[32px] font-black text-[#102a4c]">
-                {totalMonthly > 0 ? `${totalMonthly.toLocaleString("ko-KR")}원` : "미입력"}
+                {totalMonthly > 0 ? formatKrw(totalMonthly) : "미입력"}
               </p>
               <p className="mt-1 text-xs font-bold text-cyan-700">{sections.length}개 보장 영역 합산</p>
             </div>
@@ -1386,30 +1401,35 @@ function ProposalBundle({
   customerName: string
   consultant: ConsultantInfo
 }) {
-  let pageCounter = 2
+  const sectionsWithOffsets = sections.reduce<{
+    section: CategorySection
+    template: CategoryTemplate
+    pageOffset: number
+    pageCount: number
+  }[]>((acc, section) => {
+    const template = categories.find((c) => c.id === section.templateId)
+    if (!template) return acc
+    const previous = acc.at(-1)
+    const pageOffset = previous ? previous.pageOffset + previous.pageCount : 1
+    const pageCount = CATEGORY_SCENARIOS[template.id]?.page5 ? 5 : 4
+    return [...acc, { section, template, pageOffset, pageCount }]
+  }, [])
 
   return (
     <div className="proposal-print-area">
       <BundleCoverPage sections={sections} customerName={customerName} consultant={consultant} />
-      {sections.map((s) => {
-        const tpl = categories.find((c) => c.id === s.templateId)
-        if (!tpl) return null
-        const startPage = pageCounter
-        pageCounter += CATEGORY_SCENARIOS[tpl.id]?.page5 ? 5 : 4
-
-        return (
-          <ProposalReport
-            key={s.templateId}
-            template={tpl}
-            mode="single"
-            plans={[s.plan]}
-            focus={focus}
-            customerName={customerName}
-            consultant={consultant}
-            pageOffset={startPage - 1}
-          />
-        )
-      })}
+      {sectionsWithOffsets.map(({ section, template, pageOffset }) => (
+        <ProposalReport
+          key={section.templateId}
+          template={template}
+          mode="single"
+          plans={[section.plan]}
+          focus={focus}
+          customerName={customerName}
+          consultant={consultant}
+          pageOffset={pageOffset}
+        />
+      ))}
     </div>
   )
 }
@@ -1418,8 +1438,8 @@ function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, pla
   if (template.id === "shortlife" && plans[0]) {
     const d = shortLifeDerived(plans[0])
     return {
-      title: `총납입 ${won(d.totalPaid)}원, 예상 환급률 ${d.refundRate.toFixed(1)}%`,
-      body: `월 ${won(d.monthly)}원씩 ${d.years}년 납입하는 구조입니다. 10년 후 환급금은 약 ${won(d.refund)}원으로 계산되며, 월 적금 3%는 매월 납입금의 이자 적용 기간이 달라 단순 3%와 체감 수익이 다릅니다.`,
+      title: `총납입 ${wonMan(d.totalPaid)}, 예상 환급률 ${d.refundRate.toFixed(1)}%`,
+      body: `월 ${formatKrw(d.monthly)}씩 ${d.years}년 납입하는 구조입니다. ${d.horizonYears}년 후 환급금은 약 ${wonMan(d.refund)}으로 계산되며, 월 적금 3%는 같은 납입금과 같은 확인 시점으로 비교합니다.`,
     }
   }
   if (mode === "single") {
