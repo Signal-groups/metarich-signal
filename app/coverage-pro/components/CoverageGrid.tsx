@@ -250,4 +250,31 @@ export default function CoverageGrid({ contracts }: { contracts: ProContract[] }
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: '#64748b' }} />
-             
+                  <span style={{ fontSize: 12, color: '#1a2744', fontWeight: 600 }}>{ROW_KEY_LABEL[rk] ?? rk}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 900, color: '#64748b', whiteSpace: 'nowrap' }}>
+                  {fmtAmt(amt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {contracts.length === 0 && (
+        <div className="coverage-pro-card coverage-pro-card-pad" style={{ textAlign: 'center', color: '#94a3b8' }}>
+          불러온 보험계약이 없습니다.
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MiniStat({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 900, color: valueColor ?? '#fff' }}>{value}</div>
+    </div>
+  )
+}

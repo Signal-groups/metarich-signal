@@ -163,4 +163,8 @@ ${pdfText}
   } catch (err) {
     console.error("parse-proposal-pdf error:", err)
     return NextResponse.json(
-      { error: "PDF 파싱 중 오�
+      { error: "PDF 파싱 중 오류가 발생했습니다." },
+      { status: 500 }
+    )
+  }
+}

@@ -662,4 +662,9 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-[1680px] min-w-0">
           {(
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
-      viewMode ==
+      viewMode === 'office' ? renderOfficeView() : renderConsultingView()          )}
+        </div>
+      </main>
+    </div>
+  )
+}

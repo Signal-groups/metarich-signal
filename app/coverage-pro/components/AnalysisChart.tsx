@@ -239,4 +239,6 @@ function SummaryCol({ label, count, color, bordered }: { label: string; count: n
       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 700, marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 32, fontWeight: 900, color }}>{count}</div>
       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>항목</div>
-    <
+    </div>
+  )
+}
