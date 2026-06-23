@@ -777,7 +777,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
           )}
 
           {/* ══════════════ STEP 4 — 보장 확인 ═══════════════════════ */}
-          {currentStep === 4 && <CoverageGrid contracts={contracts} />}
+          {currentStep === 4 && <CoverageGrid contracts={contracts} onUpdate={setContracts} />}
 
           {/* ══════════════ STEP 5 — 분석 결과 ═══════════════════════ */}
           {currentStep === 5 && <AnalysisChart contracts={contracts} />}
@@ -837,7 +837,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                       {label}
                     </label>
                   ))}
-                </div>
+                  </div>
               </div>
 
               {/* 요약 + 다운로드 */}

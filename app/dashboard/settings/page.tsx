@@ -61,7 +61,7 @@ export default function SettingsPage() {
     if (!userId) return
     setSaving(true)
     try {
-      await supabase.from("users").update({ name, phone }).eq("id", userId)
+      await supabase.from("users").update({ name, phone, email }).eq("id", userId)
       await supabase.from("team_settings").upsert(
         { key: `user_${userId}_channels`, value: JSON.stringify(channels) },
         { onConflict: "key" }
@@ -106,7 +106,7 @@ export default function SettingsPage() {
         <div style={{ background: "#eef4fb", border: "0.5px solid #b5d4f4", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 10 }}>
           <span style={{ fontSize: 15, color: "#185fa5", flexShrink: 0 }}>ℹ️</span>
           <p style={{ fontSize: 12, color: "#0c447c", lineHeight: 1.7 }}>
-            아래 정보는 <strong>DM 발송 자동 서명</strong>, <strong>고객 담당자 정보</strong>, <strong>설계사 브랜딩 AI</strong>에서 자동으로 활용됩니다. 한 번만 입력하면 됩니다.
+            아래 정보는 <strong>DM 발송 자동 서명</strong>, <strong>고객 담당자 정보</strong>, <strong>설계사 브랜딩 AI</strong>에서 자동으로 활용됩니다. 한 번만 입력하면 됩니다. 이메일은 <strong>고객 연락용 표시 이메일</strong>이며, 로그인 이메일과 별도입니다.
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export default function SettingsPage() {
                 { label: "직함 / 직급", val: rank, set: (v: string) => {}, type: "text", icon: "🪪", readOnly: true },
                 { label: "소속", val: dept, set: (v: string) => {}, type: "text", icon: "🏢", readOnly: true },
                 { label: "전화번호", val: phone, set: setPhone, type: "tel", icon: "📞" },
-                { label: "이메일", val: email, set: (v: string) => {}, type: "email", icon: "✉️", readOnly: true },
+                { label: "이메일 (연락처)", val: email, set: setEmail, type: "email", icon: "✉️" },
               ].map(({ label, val, set, type, icon, readOnly }) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ fontSize: 11, color: "#7a9ab2" }}>{label}</label>

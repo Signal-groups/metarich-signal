@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import {
   Activity,
   AlertCircle,
-  BadgeCheck,
   BarChart3,
   Bone,
   Car,
@@ -109,7 +108,15 @@ type ProposalDraft = {
   bundlePlans: Record<CategoryId, PlanData>
 }
 
+type StoredProposalDraft = ProposalDraft & {
+  id: string
+  title: string
+  userId: string
+}
+
 const PROPOSAL_DRAFT_KEY = "metarich_proposal_latest"
+const PROPOSAL_DRAFTS_KEY_PREFIX = "metarich_proposal_drafts"
+const MAX_PROPOSAL_DRAFTS = 10
 
 const categories: CategoryTemplate[] = [
   {
@@ -271,6 +278,7 @@ const won = (value: number) => new Intl.NumberFormat("ko-KR").format(Math.round(
 const num = (value: string) => Number(String(value).replace(/[^0-9.-]/g, "")) || 0
 const formatKrw = (value: number) => `${won(value)}원`
 const formatManApprox = (value: number) => `약 ${won(Math.round(value / 10000))}만원`
+const man = (value: number) => `${won(value)}만원`
 const formatPremium = (plan: PlanData) => {
   const value = num(plan.monthlyPremium)
   if (!value) return "-"
@@ -298,6 +306,20 @@ const chunkMetrics = (metrics: MetricDef[], size: number) => {
   const chunks: MetricDef[][] = []
   for (let i = 0; i < metrics.length; i += size) chunks.push(metrics.slice(i, i + size))
   return chunks.length ? chunks : [[]]
+}
+const detailGroups = (template: CategoryTemplate) => {
+  if (template.id === "health") {
+    const find = (keys: string[]) => keys.map((key) => template.metrics.find((metric) => metric.key === key)).filter(Boolean) as MetricDef[]
+    return [
+      { title: "암·뇌·심장 진단비 구조", metrics: find(["cancer", "minorCancer", "brain", "heart"]) },
+      { title: "치료비 보장 구조", metrics: find(["surgery"]) },
+      { title: "간병 보장 구조", metrics: find(["care"]) },
+    ].filter((group) => group.metrics.length)
+  }
+  return chunkMetrics(template.metrics, 8).map((metrics, index) => ({
+    title: index === 0 ? "담보별 상세 비교" : "담보별 상세 비교",
+    metrics,
+  }))
 }
 
 function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
@@ -974,7 +996,7 @@ function FocusSelector({ focus, onFocus, disabled }: { focus: CompareFocus[]; on
   )
 }
 
-function ReportHeader({ template, mode, customerName, consultant }: { template: CategoryTemplate; mode: ProposalMode; customerName: string; consultant: ConsultantInfo }) {
+function ReportHeader({ template, customerName, consultant }: { template: CategoryTemplate; customerName: string; consultant: ConsultantInfo }) {
   return (
     <div className={`rounded-t-[28px] bg-gradient-to-r ${template.tone} px-8 py-6 text-white`}>
       <div className="flex items-start justify-between gap-6">
@@ -1015,13 +1037,13 @@ function ProposalReport({
   const visiblePlans = mode === "single" ? plans.slice(0, 1) : plans
   const lowest = bestPremium(visiblePlans)
   const recommendation = buildRecommendation(template, mode, visiblePlans, focus)
-  const detailChunks = chunkMetrics(template.metrics, mode === "cross" ? 5 : 6)
-  const scenarioPageNum = pageOffset + 3 + detailChunks.length
+  const groups = detailGroups(template)
+  const scenarioPageNum = pageOffset + 3 + groups.length
 
   return (
     <div className="proposal-print-area">
       <ReportPage>
-        <ReportHeader template={template} mode={mode} customerName={customerName} consultant={consultant} />
+        <ReportHeader template={template} customerName={customerName} consultant={consultant} />
         <div className="grid flex-1 grid-cols-[1.05fr_1fr] gap-5 p-8">
           <section>
             <div className="mb-4 flex items-center gap-2">
@@ -1057,7 +1079,7 @@ function ProposalReport({
       </ReportPage>
 
       <ReportPage>
-        <ReportHeader template={template} mode={mode} customerName={customerName} consultant={consultant} />
+        <ReportHeader template={template} customerName={customerName} consultant={consultant} />
         <div className="grid flex-1 grid-cols-[0.9fr_1.1fr] gap-5 p-8">
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-black text-slate-950">비용 분석</h2>
@@ -1081,39 +1103,34 @@ function ProposalReport({
         <PageNum num={pageOffset + 2} />
       </ReportPage>
 
-      {detailChunks.map((metrics, chunkIndex) => (
+      {groups.map((group, chunkIndex) => (
         <ReportPage key={`detail-${chunkIndex}`}>
-          <ReportHeader template={template} mode={mode} customerName={customerName} consultant={consultant} />
-          <div className="grid flex-1 grid-cols-[1.15fr_0.85fr] gap-5 p-8">
+          <ReportHeader template={template} customerName={customerName} consultant={consultant} />
+          <div className="flex flex-1 flex-col gap-4 p-8">
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-black text-slate-950">담보별 상세 비교</h2>
-                {detailChunks.length > 1 && (
+                <h2 className="text-lg font-black text-slate-950">{group.title}</h2>
+                {groups.length > 1 && (
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black text-slate-500">
-                    {chunkIndex + 1}/{detailChunks.length}
+                    {chunkIndex + 1}/{groups.length}
                   </span>
                 )}
               </div>
-              <ComparisonTable template={template} plans={visiblePlans} showCross={mode === "cross"} metrics={metrics} />
+              <ComparisonTable
+                template={template}
+                plans={visiblePlans}
+                showCross={mode === "cross"}
+                metrics={group.metrics}
+                includeCustomRows={template.id !== "health" || group.title.includes("치료비")}
+              />
             </section>
-            <section className="flex flex-col gap-4">
-              {chunkIndex === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <h2 className="text-lg font-black text-slate-950">장단점 요약</h2>
-                  <div className="mt-4 space-y-3">
-                    {visiblePlans.map((plan, index) => (
-                      <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-5">
-                  <h2 className="text-lg font-black text-cyan-950">추가 담보 확인</h2>
-                  <p className="mt-3 text-xs font-bold leading-6 text-cyan-800">
-                    담보 수가 많아 가독성을 위해 다음 페이지로 나누어 표기했습니다. 각 담보의 지급 조건과 갱신 여부는 청약 전 약관 기준으로 다시 확인합니다.
-                  </p>
-                </div>
-              )}
+            <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h2 className="text-sm font-black text-slate-950">각 보험사별 설계 목적</h2>
+              <div className={`mt-3 grid gap-3 ${visiblePlans.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {visiblePlans.map((plan, index) => (
+                  <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
+                ))}
+              </div>
             </section>
           </div>
           <PageNum num={pageOffset + 3 + chunkIndex} />
@@ -1131,7 +1148,11 @@ function ProposalReport({
         />
       ) : (
         <ReportPage last={template.id !== "health"}>
-          <ScenarioPage4 template={template} customerName={customerName} consultant={consultant} pageNum={scenarioPageNum} />
+          {template.id === "health" ? (
+            <HealthReadinessPage plans={visiblePlans} customerName={customerName} consultant={consultant} pageNum={scenarioPageNum} />
+          ) : (
+            <ScenarioPage4 template={template} customerName={customerName} consultant={consultant} pageNum={scenarioPageNum} />
+          )}
         </ReportPage>
       )}
 
@@ -1411,11 +1432,13 @@ function ComparisonTable({
   plans,
   showCross = false,
   metrics = template.metrics,
+  includeCustomRows = true,
 }: {
   template: CategoryTemplate
   plans: PlanData[]
   showCross?: boolean
   metrics?: MetricDef[]
+  includeCustomRows?: boolean
 }) {
   const sumMetric = (metric: MetricDef) => {
     if (metric.kind === "percent") {
@@ -1430,56 +1453,50 @@ function ComparisonTable({
     const monthly = plan.isDollar ? num(plan.monthlyPremium) * (num(plan.exchangeRate ?? "") || 1400) : num(plan.monthlyPremium)
     return sum + monthly
   }, 0)
-  const customRows = Array.from(new Set(
+  const customRows = includeCustomRows ? Array.from(new Set(
     plans.flatMap((plan) => (plan.customCoverages ?? [])
       .filter((item) => item.name.trim() || item.amount.trim() || item.note.trim())
       .map((item) => item.name.trim() || "추가 담보"))
-  ))
+  )) : []
 
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="bg-slate-50">
-            <th className="w-[170px] px-4 py-3 text-xs font-black text-slate-500">비교 항목</th>
+            <th className="w-[170px] px-4 py-2.5 text-xs font-black text-slate-500">비교 항목</th>
             {plans.map((plan, index) => (
-              <th key={plan.id} className="px-4 py-3 text-xs font-black text-slate-700">
+              <th key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-700">
                 {plan.company || `${String.fromCharCode(65 + index)}안`}
               </th>
             ))}
-            {showCross && <th className="px-4 py-3 text-xs font-black text-emerald-700">합산 보장</th>}
-            <th className="px-4 py-3 text-xs font-black text-slate-500">해석</th>
+            {showCross && <th className="px-4 py-2.5 text-xs font-black text-emerald-700">합산 보장</th>}
           </tr>
         </thead>
         <tbody>
           <tr className="border-t border-slate-100">
-            <td className="px-4 py-3 text-xs font-black text-slate-500">월 보험료</td>
-            {plans.map((plan) => <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
-            {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
-            <td className="px-4 py-3 text-[11px] font-bold text-slate-500">보험료와 담보 범위를 함께 판단</td>
+            <td className="px-4 py-2.5 text-xs font-black text-slate-500">월 보험료</td>
+            {plans.map((plan) => <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
+            {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
           </tr>
           {metrics.map((metric) => (
             <tr key={metric.key} className="border-t border-slate-100">
-              <td className="px-4 py-3 text-xs font-black text-slate-500">{metric.label}</td>
+              <td className="px-4 py-2.5 text-xs font-black text-slate-500">{metric.label}</td>
               {plans.map((plan) => (
-                <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</td>
+                <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</td>
               ))}
-              {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">{sumMetric(metric)}</td>}
-              <td className="px-4 py-3 text-[11px] font-bold leading-5 text-slate-500">{metric.guide}</td>
+              {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{sumMetric(metric)}</td>}
             </tr>
           ))}
           {customRows.map((name) => (
             <tr key={name} className="border-t border-slate-100 bg-slate-50/60">
-              <td className="px-4 py-3 text-xs font-black text-slate-500">{name}</td>
+              <td className="px-4 py-2.5 text-xs font-black text-slate-500">{name}</td>
               {plans.map((plan) => {
                 const item = (plan.customCoverages ?? []).find((coverage) => (coverage.name.trim() || "추가 담보") === name)
                 const amount = item?.amount ? `${won(num(item.amount))}만원` : "-"
-                return <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{amount}</td>
+                return <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{amount}</td>
               })}
-              {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">개별 확인</td>}
-              <td className="px-4 py-3 text-[11px] font-bold leading-5 text-slate-500">
-                {plans.map((plan) => (plan.customCoverages ?? []).find((coverage) => (coverage.name.trim() || "추가 담보") === name)?.note).filter(Boolean).join(" / ") || "추가보장 설명란 참조"}
-              </td>
+              {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">개별 확인</td>}
             </tr>
           ))}
         </tbody>
@@ -1534,20 +1551,31 @@ function CrossCoveragePage({
   const metricSums = Object.fromEntries(
     moneyMetrics.map((m) => [m.key, plans.reduce((s, p) => s + num(p.metrics[m.key]), 0)])
   )
-  const totalMonthly = plans.reduce((s, p) => s + num(p.monthlyPremium), 0)
+  const totalMonthly = plans.reduce((s, p) => {
+    const exchangeRate = num(p.exchangeRate ?? "") || 1400
+    return s + (p.isDollar ? num(p.monthlyPremium) * exchangeRate : num(p.monthlyPremium))
+  }, 0)
   const costs = TREATMENT_COSTS[template.id] || []
   const maxCoverage = Math.max(...Object.values(metricSums), 1)
 
   return (
     <ReportPage last>
-      <ReportHeader template={template} mode="cross" customerName={customerName} consultant={consultant} />
+      <ReportHeader template={template} customerName={customerName} consultant={consultant} />
       <div className="grid flex-1 grid-cols-[1fr_1fr] gap-5 p-8">
         {/* 좌: 합산 보장 구조 */}
         <section className="flex flex-col gap-4">
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-600">교차설계 합산 보장</p>
             <p className="mt-2 text-[28px] font-black text-emerald-900">{plans.length}개사 분산 설계</p>
-            <p className="mt-1 text-sm font-bold text-emerald-700">월 합산 {won(totalMonthly)}원 · {plans.map((p) => p.company || "?사").join(" + ")}</p>
+            <p className="mt-1 text-sm font-bold text-emerald-700">월 합산 {formatKrw(totalMonthly)} · {plans.map((p) => p.company || "?사").join(" + ")}</p>
+            <div className={`mt-4 grid gap-2 ${plans.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
+              {plans.map((plan, index) => (
+                <div key={plan.id} className="rounded-xl border border-emerald-100 bg-white px-3 py-2">
+                  <p className="text-[10px] font-black text-slate-400">{plan.company || `${String.fromCharCode(65 + index)}안`}</p>
+                  <p className="mt-1 text-sm font-black text-emerald-800">{formatPremium(plan)}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -1632,11 +1660,183 @@ function CrossCoveragePage({
 function PlanMemo({ plan, index, template }: { plan: PlanData; index: number; template: CategoryTemplate }) {
   const caution = plan.cautions || (template.id === "shortlife" ? shortLifeDefaultCaution : "갱신 여부, 지급 조건, 보장범위 차이를 확인하세요.")
   return (
-    <div className="rounded-2xl bg-white p-4">
+    <div className="rounded-2xl bg-white p-3">
       <p className="text-sm font-black text-slate-950">{plan.company || `${String.fromCharCode(65 + index)}안`}</p>
-      <p className="mt-2 text-xs font-bold leading-6 text-emerald-700">장점: {plan.strengths || "핵심 담보와 보험료를 기준으로 상담 메모를 입력하세요."}</p>
-      <p className="mt-1 text-xs font-bold leading-6 text-rose-700">주의: {caution}</p>
+      <p className="mt-2 text-[11px] font-bold leading-5 text-emerald-700">설계 목적: {plan.strengths || "담보 역할과 보험료 기준으로 설계 목적을 입력하세요."}</p>
+      <p className="mt-1 text-[11px] font-bold leading-5 text-rose-700">확인: {caution}</p>
     </div>
+  )
+}
+
+const healthCaseDefs = [
+  {
+    icon: "🎗️",
+    title: "일반암 진단",
+    livingMonths: 12,
+    treatmentCost: 2000,
+    keys: ["cancer", "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "heavyIon", "robotCancerSurgery", "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
+    source: "일반암 진단비 + 항암치료 + 암 주요치료비 + 질병수술비",
+    note: "항암·표적·방사선·중입자 등 치료비 담보가 있으면 치료비 공백을 보완합니다.",
+  },
+  {
+    icon: "🌸",
+    title: "유방암·유사암 진단",
+    livingMonths: 12,
+    treatmentCost: 1500,
+    keys: ["minorCancer", "chemoDrug", "chemoRadiation", "targetDrug", "targetRadiation", "cancerMajorTreatmentGeneral", "cancerMajorTreatmentNonCovered", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
+    source: "유사암 진단비 + 항암치료 + 암 주요치료비 + 질병수술비",
+    note: "소액암·유사암 분류와 감액 조건이 있어 일반암과 별도로 확인합니다.",
+  },
+  {
+    icon: "🧠",
+    title: "뇌혈관 질환",
+    livingMonths: 6,
+    treatmentCost: 2500,
+    keys: ["brain", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery", "care"],
+    source: "뇌혈관 진단비 + 2대 주요치료비 + 질병수술비 + 간병",
+    note: "뇌출혈·뇌졸중·뇌혈관질환 중 어디까지 보장되는지에 따라 준비금 차이가 큽니다.",
+  },
+  {
+    icon: "❤️",
+    title: "심장 질환",
+    livingMonths: 3,
+    treatmentCost: 1750,
+    keys: ["heart", "twoMajorTreatmentComprehensive", "twoMajorTreatmentAdvanced", "diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery"],
+    source: "허혈성심장질환 진단비 + 2대 주요치료비 + 질병수술비",
+    note: "급성심근경색만인지, 허혈성심장질환까지인지 보장 범위를 함께 봅니다.",
+  },
+]
+
+const lifestyleCase = {
+  icon: "🏥",
+  title: "생활질환·수술",
+  needed: 800,
+  keys: ["diseaseSurgery", "diseaseTypeSurgery", "diseaseNSurgery", "injurySurgery", "injuryTypeSurgery", "injuryNSurgery"],
+  source: "질병수술비 + 종수술비 + 실손의료비",
+}
+
+function healthPreparedForPlan(plan: PlanData, keys: string[]) {
+  return keys.reduce((sum, key) => sum + num(plan.metrics[key] || ""), 0)
+}
+
+function HealthReadinessPage({
+  plans,
+  customerName,
+  consultant,
+  pageNum = 4,
+}: {
+  plans: PlanData[]
+  customerName: string
+  consultant: ConsultantInfo
+  pageNum?: number
+}) {
+  const livingCost = 250
+  const caseRows = healthCaseDefs.map((item) => {
+    const livingNeed = item.livingMonths * livingCost
+    const needed = livingNeed + item.treatmentCost
+    const preparedByPlan = plans.map((plan, index) => ({
+      label: plan.company || `${String.fromCharCode(65 + index)}안`,
+      value: healthPreparedForPlan(plan, item.keys),
+    }))
+    const best = preparedByPlan.reduce((selected, current) => current.value > selected.value ? current : selected, preparedByPlan[0] || { label: "-", value: 0 })
+    return { ...item, livingNeed, needed, preparedByPlan, best }
+  })
+  const lifestylePrepared = plans.map((plan, index) => ({
+    label: plan.company || `${String.fromCharCode(65 + index)}안`,
+    value: healthPreparedForPlan(plan, lifestyleCase.keys),
+  }))
+  const lifestyleBest = lifestylePrepared.reduce((selected, current) => current.value > selected.value ? current : selected, lifestylePrepared[0] || { label: "-", value: 0 })
+
+  return (
+    <>
+      <div className="shrink-0 rounded-t-[28px] bg-gradient-to-r from-rose-500 to-orange-500 px-8 py-4 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black tracking-[0.2em] text-white/70">질병별 필요자금 대비 준비금</p>
+            <h1 className="mt-1 text-[22px] font-black">{customerName || "고객"}님은 얼마까지 준비되어 있나</h1>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-white/70">보험의 기준</p>
+            <p className="mt-1 text-base font-black">{consultant.name || "담당 설계사"}</p>
+            <p className="text-xs font-bold text-white/70">{consultant.phone}</p>
+          </div>
+        </div>
+        <p className="mt-1 text-[11px] font-bold text-white/80">월 생활비 250만원 기준: 암 1년, 뇌 6개월, 심장 3개월의 소득 공백을 함께 계산합니다.</p>
+      </div>
+
+      <div className="flex-1 p-8">
+        <div className="grid grid-cols-4 gap-3">
+          {caseRows.map((item) => {
+            const pct = Math.min(100, item.needed > 0 ? (item.best.value / item.needed) * 100 : 0)
+            const gap = item.best.value - item.needed
+            return (
+              <div key={item.title} className="flex min-h-[290px] flex-col rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-black text-slate-950">{item.icon} {item.title}</p>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${gap >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                    {gap >= 0 ? "준비 가능" : "부족"}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-slate-50 p-2">
+                    <p className="text-[9px] font-black text-slate-400">생활비 공백</p>
+                    <p className="mt-1 text-xs font-black text-slate-900">{man(item.livingNeed)}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 p-2">
+                    <p className="text-[9px] font-black text-slate-400">치료비 기준</p>
+                    <p className="mt-1 text-xs font-black text-slate-900">{man(item.treatmentCost)}</p>
+                  </div>
+                </div>
+                <div className="mt-3 rounded-xl bg-rose-50 p-3">
+                  <p className="text-[10px] font-black text-rose-700">필요 평균비용</p>
+                  <p className="mt-1 text-xl font-black text-rose-800">{man(item.needed)}</p>
+                </div>
+                <div className="mt-3">
+                  <div className="mb-1 flex items-center justify-between text-[10px] font-black text-slate-500">
+                    <span>{item.best.label} 준비금</span>
+                    <span className="text-cyan-700">{man(item.best.value)}</span>
+                  </div>
+                  <div className="h-4 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-4 rounded-full bg-cyan-500" style={{ width: `${Math.max(5, pct)}%` }} />
+                  </div>
+                </div>
+                <p className="mt-3 text-[10px] font-bold leading-5 text-slate-500">{item.source}</p>
+                <p className="mt-auto pt-2 text-[10px] font-bold leading-5 text-slate-400">{item.note}</p>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-4 grid grid-cols-[1fr_1.25fr] gap-4">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-sm font-black text-emerald-900">{lifestyleCase.icon} {lifestyleCase.title}</p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="rounded-xl bg-white p-3">
+                <p className="text-[10px] font-black text-slate-400">예상 치료비</p>
+                <p className="mt-1 text-base font-black text-slate-950">{man(lifestyleCase.needed)}</p>
+              </div>
+              <div className="rounded-xl bg-white p-3">
+                <p className="text-[10px] font-black text-slate-400">{lifestyleBest.label}</p>
+                <p className="mt-1 text-base font-black text-emerald-700">{man(lifestyleBest.value)}</p>
+              </div>
+              <div className="rounded-xl bg-white p-3">
+                <p className="text-[10px] font-black text-slate-400">보완 담보</p>
+                <p className="mt-1 text-xs font-black leading-5 text-slate-900">종수술비 + 실손</p>
+              </div>
+            </div>
+            <p className="mt-2 text-[10px] font-bold leading-5 text-emerald-800">생활질환은 진단비보다 질병수술비, 1~5종 수술비, 실손의료비가 반복 치료비를 줄이는 역할을 합니다.</p>
+          </div>
+          <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+            <p className="text-sm font-black text-cyan-900">고객 설명 문장</p>
+            <p className="mt-2 text-xs font-bold leading-6 text-cyan-800">
+              진단비는 생활비 공백을 메우는 목돈이고, 항암·주요치료비·2대 주요치료비·질병수술비는 실제 치료 과정에서 반복 발생하는 비용을 줄이는 보장입니다.
+              실손의료비가 있다면 급여·비급여 치료비 청구와 함께 중복 활용할 수 있어, 진단비만 보는 것보다 실제 회복기간 기준으로 준비 여부를 판단해야 합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+      <PageNum num={pageNum} />
+    </>
   )
 }
 
@@ -1662,7 +1862,7 @@ function ScenarioPage4({
       <div className={`shrink-0 rounded-t-[28px] bg-gradient-to-r ${template.tone} px-8 py-4 text-white`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-black tracking-[0.2em] text-white/70">실제 사례로 보는 위험과 보장</p>
+            <p className="text-[10px] font-black tracking-[0.2em] text-white/70">{customerName || "고객"}님 실제 사례로 보는 위험과 보장</p>
             <h1 className="mt-1 text-[22px] font-black">{cfg.page4Title}</h1>
           </div>
           <div className="text-right">
@@ -1759,7 +1959,7 @@ function HealthTreatmentPage({
       <div className="shrink-0 rounded-t-[28px] bg-gradient-to-r from-rose-500 to-orange-500 px-8 py-4 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-black tracking-[0.2em] text-white/70">보장 구조 심층 분석</p>
+            <p className="text-[10px] font-black tracking-[0.2em] text-white/70">{customerName || "고객"}님 보장 구조 심층 분석</p>
             <h1 className="mt-1 text-[22px] font-black">{cfg.title}</h1>
           </div>
           <div className="text-right">
@@ -1987,6 +2187,9 @@ export default function ProposalPage() {
   const [consultant, setConsultant] = useState<ConsultantInfo>({ name: "", phone: "" })
   const [showPreview, setShowPreview] = useState(false)
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "loaded" | "empty">("idle")
+  const [currentUserId, setCurrentUserId] = useState("")
+  const [savedDrafts, setSavedDrafts] = useState<StoredProposalDraft[]>([])
+  const [showDraftMenu, setShowDraftMenu] = useState(false)
   const [bundleIds, setBundleIds] = useState<CategoryId[]>(["health", "driver"])
   const [bundlePlans, setBundlePlans] = useState<Record<CategoryId, PlanData>>(() => {
     const init = {} as Record<CategoryId, PlanData>
@@ -2019,6 +2222,7 @@ export default function ProposalPage() {
       setAllowed(canUse)
       setLockedReason(reason)
       setChecking(false)
+      setCurrentUserId(session.user.id)
       setConsultant((prev) => prev.name || prev.phone ? prev : { name: profile?.name || "", phone: profile?.phone || "" })
     }
     checkAccess()
@@ -2027,6 +2231,31 @@ export default function ProposalPage() {
 
   const visiblePlans = useMemo(() => mode === "single" ? plans.slice(0, 1) : plans, [mode, plans])
   const primaryFocus = focus[0] ?? "balance"
+  const draftStorageKey = (userId = currentUserId) => `${PROPOSAL_DRAFTS_KEY_PREFIX}_${userId || "guest"}`
+
+  const readDrafts = (userId = currentUserId): StoredProposalDraft[] => {
+    if (typeof window === "undefined") return []
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(draftStorageKey(userId)) || "[]")
+      return Array.isArray(parsed) ? parsed.slice(0, MAX_PROPOSAL_DRAFTS) : []
+    } catch {
+      return []
+    }
+  }
+
+  const writeDrafts = (drafts: StoredProposalDraft[], userId = currentUserId) => {
+    if (typeof window === "undefined") return
+    const next = drafts.slice(0, MAX_PROPOSAL_DRAFTS)
+    window.localStorage.setItem(draftStorageKey(userId), JSON.stringify(next))
+    setSavedDrafts(next)
+  }
+
+  const draftTitle = (draft: ProposalDraft) => {
+    const category = categories.find((item) => item.id === draft.templateId)?.label || "제안서"
+    const name = draft.customerName?.trim() || "고객명 없음"
+    const date = new Date(draft.savedAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+    return `${name} · ${category} · ${date}`
+  }
 
   const buildDraft = (): ProposalDraft => ({
     savedAt: new Date().toISOString(),
@@ -2047,29 +2276,40 @@ export default function ProposalPage() {
     setPlans(draft.plans?.length ? draft.plans : normalizePlans(nextTemplate, 2))
     setFocus(draft.focus?.length ? draft.focus : ["balance"])
     setCustomerName(draft.customerName || "")
-    setConsultant(draft.consultant || { name: "", phone: "" })
+    setConsultant((prev) => ({
+      name: draft.consultant?.name || prev.name || "",
+      phone: draft.consultant?.phone || prev.phone || "",
+    }))
     setBundleIds(draft.bundleIds?.length ? draft.bundleIds : ["health", "driver"])
     setBundlePlans({ ...Object.fromEntries(categories.map((c) => [c.id, emptyPlan(c, 0)])), ...(draft.bundlePlans || {}) } as Record<CategoryId, PlanData>)
   }
 
   const saveDraft = () => {
     if (typeof window === "undefined") return
-    window.localStorage.setItem(PROPOSAL_DRAFT_KEY, JSON.stringify(buildDraft()))
+    const draft = buildDraft()
+    const stored: StoredProposalDraft = {
+      ...draft,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title: draftTitle(draft),
+      userId: currentUserId || "guest",
+    }
+    const next = [stored, ...readDrafts().filter((item) => item.id !== stored.id)].slice(0, MAX_PROPOSAL_DRAFTS)
+    writeDrafts(next)
+    window.localStorage.setItem(PROPOSAL_DRAFT_KEY, JSON.stringify(stored))
     setSaveStatus("saved")
     window.setTimeout(() => setSaveStatus("idle"), 1800)
   }
 
-  const loadDraft = (openPreview = false) => {
-    if (typeof window === "undefined") return false
-    const raw = window.localStorage.getItem(PROPOSAL_DRAFT_KEY)
-    if (!raw) {
+  const loadDraftItem = (draft: ProposalDraft | null, openPreview = false) => {
+    if (!draft) {
       setSaveStatus("empty")
       window.setTimeout(() => setSaveStatus("idle"), 1800)
       return false
     }
     try {
-      applyDraft(JSON.parse(raw) as ProposalDraft)
+      applyDraft(draft)
       setSaveStatus("loaded")
+      setShowDraftMenu(false)
       if (openPreview) setShowPreview(true)
       window.setTimeout(() => setSaveStatus("idle"), 1800)
       return true
@@ -2077,6 +2317,18 @@ export default function ProposalPage() {
       setSaveStatus("empty")
       window.setTimeout(() => setSaveStatus("idle"), 1800)
       return false
+    }
+  }
+
+  const loadDraft = (openPreview = false) => {
+    const latest = readDrafts()[0]
+    if (latest) return loadDraftItem(latest, openPreview)
+    if (typeof window === "undefined") return loadDraftItem(null, openPreview)
+    try {
+      const legacy = window.localStorage.getItem(PROPOSAL_DRAFT_KEY)
+      return loadDraftItem(legacy ? JSON.parse(legacy) as ProposalDraft : null, openPreview)
+    } catch {
+      return loadDraftItem(null, openPreview)
     }
   }
 
@@ -2090,10 +2342,12 @@ export default function ProposalPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    if (!currentUserId) return
+    setSavedDrafts(readDrafts(currentUserId))
     const params = new URLSearchParams(window.location.search)
     if (params.get("preview") === "latest") loadDraft(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [currentUserId])
 
   const selectCategory = (next: CategoryTemplate) => {
     setTemplate(next)
@@ -2146,12 +2400,14 @@ export default function ProposalPage() {
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 0; }
-          body { background: white !important; }
-          main { background: white !important; padding: 0 !important; min-height: 0 !important; }
+          html, body { width: 297mm !important; margin: 0 !important; background: white !important; overflow: visible !important; }
+          body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          main { display: block !important; background: white !important; padding: 0 !important; min-height: 0 !important; overflow: visible !important; }
           .no-print { display: none !important; }
           .print-only { display: block !important; }
-          .proposal-print-area { background: white; }
-          .proposal-page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
+          .preview-shell { position: static !important; inset: auto !important; display: block !important; width: 297mm !important; overflow: visible !important; background: white !important; padding: 0 !important; }
+          .proposal-print-area { display: block !important; width: 297mm !important; background: white !important; }
+          .proposal-page { width: 297mm !important; height: 210mm !important; box-shadow: none !important; margin: 0 !important; overflow: hidden !important; break-after: page; page-break-after: always; }
           .proposal-page:last-child { break-after: avoid; page-break-after: avoid; }
         }
         @media screen {
@@ -2181,14 +2437,44 @@ export default function ProposalPage() {
                 <Save className="h-4 w-4" />
                 저장
               </button>
-              <button
-                type="button"
-                onClick={() => loadDraft(false)}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-cyan-300 hover:text-cyan-700"
-              >
-                <FolderOpen className="h-4 w-4" />
-                최근 불러오기
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const drafts = readDrafts()
+                    setSavedDrafts(drafts)
+                    if (drafts.length === 0) loadDraft(false)
+                    else setShowDraftMenu((prev) => !prev)
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-cyan-300 hover:text-cyan-700"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  최근 불러오기
+                </button>
+                {showDraftMenu && savedDrafts.length > 0 && (
+                  <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div className="border-b border-slate-100 px-4 py-3">
+                      <p className="text-xs font-black text-slate-500">최근 저장 제안서</p>
+                      <p className="mt-0.5 text-[11px] font-bold text-slate-400">로그인한 직원 기준 최대 10개까지 보관됩니다.</p>
+                    </div>
+                    <div className="max-h-[360px] overflow-y-auto p-2">
+                      {savedDrafts.map((draft) => (
+                        <button
+                          key={draft.id}
+                          type="button"
+                          onClick={() => loadDraftItem(draft)}
+                          className="block w-full rounded-xl px-3 py-2.5 text-left hover:bg-slate-50"
+                        >
+                          <p className="truncate text-sm font-black text-slate-800">{draft.title || draftTitle(draft)}</p>
+                          <p className="mt-0.5 text-[11px] font-bold text-slate-400">
+                            {new Date(draft.savedAt).toLocaleString("ko-KR")}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={openPreviewTab}
@@ -2311,12 +2597,17 @@ export default function ProposalPage() {
         </div>
 
         {showPreview && (
-          <div className="no-print fixed inset-0 z-50 overflow-y-auto bg-[#d8e4f0] py-8">
-            <div className="mx-auto mb-6 flex max-w-[1240px] items-center justify-between px-6">
+          <div className="preview-shell fixed inset-0 z-50 overflow-y-auto bg-[#d8e4f0] py-8">
+            <div className="no-print mx-auto mb-6 flex max-w-[1240px] items-center justify-between px-6">
               <p className="text-sm font-black text-[#102a4c]">
                 미리보기 — PDF 저장은 브라우저 인쇄 (Ctrl+P) 를 이용하세요
               </p>
               <div className="flex items-center gap-3">
+                {saveStatus !== "idle" && (
+                  <span className={`rounded-full px-3 py-1 text-xs font-black ${saveStatus === "saved" ? "bg-emerald-100 text-emerald-700" : saveStatus === "loaded" ? "bg-cyan-100 text-cyan-700" : "bg-amber-100 text-amber-700"}`}>
+                    {saveStatus === "saved" ? "저장됨" : saveStatus === "loaded" ? "불러옴" : "저장 없음"}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={saveDraft}

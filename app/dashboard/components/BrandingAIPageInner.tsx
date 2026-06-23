@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef, useCallback } from "react"
+import { supabase } from "../../../lib/supabase"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 설계사 브랜딩 AI — WYSIWYG 빌더 v3
@@ -438,6 +439,31 @@ export default function BrandingAIPageInner({ user: _user }: { user?: any }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   useEffect(()=>{ ls_set("bai_v3_user", info) }, [info])
+
+  // users 테이블에서 phone/email/name 자동 로드 (localStorage에 없을 때만)
+  useEffect(() => {
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data } = await supabase
+        .from("users")
+        .select("name, phone, email, rank, department_name, headquarter_name")
+        .eq("id", session.user.id)
+        .maybeSingle()
+      if (!data) return
+      setInfo(prev => ({
+        ...prev,
+        name: prev.name && prev.name !== DEFAULT_USER.name ? prev.name : (data.name || prev.name),
+        phone: prev.phone || data.phone || "",
+        email: prev.email || data.email || session.user.email || "",
+        title: prev.title && prev.title !== DEFAULT_USER.title ? prev.title : (data.rank || prev.title),
+        company: prev.company && prev.company !== DEFAULT_USER.company ? prev.company
+          : (data.headquarter_name || data.department_name || prev.company),
+      }))
+    }
+    load()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const tpl = TEMPLATES.find(t=>t.id===tplId)!
 

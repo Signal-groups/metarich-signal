@@ -1,7 +1,11 @@
 'use client'
 
-import type { ProContract } from '../../../lib/coverageAnalysis/types'
+import { useState } from 'react'
+import type { ProContract, ProCoverage } from '../../../lib/coverageAnalysis/types'
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
+
+// 최대값으로 집계할 rowKey (수술비 — 종별 최고 금액이 의미 있음)
+const MAX_ROW_KEYS = new Set(['surgery_1_5', 'surgery_n_major'])
 
 // 주요 보장 항목 — 카테고리별 정의
 const CATEGORY_GROUPS = [
@@ -18,34 +22,34 @@ const CATEGORY_GROUPS = [
   {
     key: 'cancer', label: '암 진단 / 치료', color: '#8b5cf6',
     items: [
-      { rowKey: 'cancer_general',   label: '일반암 진단비' },
-      { rowKey: 'cancer_similar',   label: '유사암 진단비' },
-      { rowKey: 'cancer_chemo',     label: '항암 치료비' },
-      { rowKey: 'cancer_targeted',  label: '표적항암 치료비' },
+      { rowKey: 'cancer_general',          label: '일반암 진단비' },
+      { rowKey: 'cancer_similar',          label: '유사암 진단비' },
+      { rowKey: 'cancer_chemo',            label: '항암 치료비' },
+      { rowKey: 'cancer_targeted',         label: '표적항암 치료비' },
       { rowKey: 'cancer_major_benefit',    label: '암 주요치료비(급여)' },
       { rowKey: 'cancer_major_nonbenefit', label: '암 주요치료비(비급여)' },
-      { rowKey: 'cancer_surgery',   label: '암 수술비' },
+      { rowKey: 'cancer_surgery',          label: '암 수술비' },
     ],
   },
   {
     key: 'vascular', label: '뇌 / 심장 (2대질병)', color: '#ef4444',
     items: [
-      { rowKey: 'brain_vascular',    label: '뇌혈관 진단비' },
-      { rowKey: 'brain_stroke',      label: '뇌졸중 진단비' },
-      { rowKey: 'brain_hemorrhage',  label: '뇌출혈 진단비' },
-      { rowKey: 'heart_ischemic',    label: '허혈성심장 진단비' },
-      { rowKey: 'heart_acute_mi',    label: '급성심근경색 진단비' },
-      { rowKey: 'vascular_major',    label: '2대 주요치료비' },
+      { rowKey: 'brain_vascular',   label: '뇌혈관 진단비' },
+      { rowKey: 'brain_stroke',     label: '뇌졸중 진단비' },
+      { rowKey: 'brain_hemorrhage', label: '뇌출혈 진단비' },
+      { rowKey: 'heart_ischemic',   label: '허혈성심장 진단비' },
+      { rowKey: 'heart_acute_mi',   label: '급성심근경색 진단비' },
+      { rowKey: 'vascular_major',   label: '2대 주요치료비' },
     ],
   },
   {
     key: 'disability', label: '후유장해 / 사망', color: '#1a2744',
     items: [
-      { rowKey: 'disability_injury',    label: '상해 후유장해 3~100%' },
-      { rowKey: 'disability_disease',   label: '질병 후유장해 3~100%' },
-      { rowKey: 'death_general',        label: '일반 사망' },
-      { rowKey: 'death_disease',        label: '질병 사망' },
-      { rowKey: 'death_injury',         label: '상해 사망' },
+      { rowKey: 'disability_injury',   label: '상해 후유장해 3~100%' },
+      { rowKey: 'disability_disease',  label: '질병 후유장해 3~100%' },
+      { rowKey: 'death_general',       label: '일반 사망' },
+      { rowKey: 'death_disease',       label: '질병 사망' },
+      { rowKey: 'death_injury',        label: '상해 사망' },
     ],
   },
   {
@@ -53,8 +57,8 @@ const CATEGORY_GROUPS = [
     items: [
       { rowKey: 'surgery_disease',        label: '질병 수술비' },
       { rowKey: 'surgery_injury',         label: '상해 수술비' },
-      { rowKey: 'surgery_1_5',            label: '1~5종 수술비' },
-      { rowKey: 'surgery_n_major',        label: 'N대 수술비' },
+      { rowKey: 'surgery_1_5',            label: '1~5종 수술비 (최고종)' },
+      { rowKey: 'surgery_n_major',        label: 'N대 수술비 (최고액)' },
       { rowKey: 'hospital_disease_daily', label: '질병 입원일당' },
       { rowKey: 'hospital_injury_daily',  label: '상해 입원일당' },
     ],
@@ -76,17 +80,34 @@ const CATEGORY_GROUPS = [
       { rowKey: 'other_liability', label: '일상생활배상책임' },
     ],
   },
+  {
+    key: 'extra', label: '치매 / CI / 기타', color: '#6366f1',
+    items: [
+      { rowKey: 'ci_diagnosis',        label: '중대질병(CI) 진단비' },
+      { rowKey: 'dementia_diagnosis',  label: '치매 진단비' },
+      { rowKey: 'ltc_grade',           label: '장기요양등급' },
+      { rowKey: 'fracture_diagnosis',  label: '골절 진단비' },
+      { rowKey: 'burn_diagnosis',      label: '화상 진단비' },
+    ],
+  },
 ]
 
+// 최대값/합산 집계
 function aggregateByRowKey(contracts: ProContract[]): Record<string, number> {
-  const result: Record<string, number> = {}
+  const sum: Record<string, number> = {}
+  const max: Record<string, number> = {}
   for (const c of contracts) {
     for (const cov of c.coverages) {
       if (!cov.rowKey || cov.rowKey === 'unknown') continue
-      result[cov.rowKey] = (result[cov.rowKey] || 0) + Number(cov.amount || 0)
+      const v = Number(cov.amount || 0)
+      if (MAX_ROW_KEYS.has(cov.rowKey)) {
+        max[cov.rowKey] = Math.max(max[cov.rowKey] || 0, v)
+      } else {
+        sum[cov.rowKey] = (sum[cov.rowKey] || 0) + v
+      }
     }
   }
-  return result
+  return { ...sum, ...max }
 }
 
 function fmtAmt(v: number): string {
@@ -96,20 +117,173 @@ function fmtAmt(v: number): string {
   return `${v}원`
 }
 
-export default function CoverageGrid({ contracts }: { contracts: ProContract[] }) {
+// 수동 추가 계약 ID
+const MANUAL_CONTRACT_ID = '__manual__'
+
+function ensureManualContract(contracts: ProContract[]): ProContract[] {
+  if (contracts.find((c) => c.id === MANUAL_CONTRACT_ID)) return contracts
+  return [
+    ...contracts,
+    {
+      id: MANUAL_CONTRACT_ID,
+      company: '수동 입력',
+      productName: '직접 추가 담보',
+      monthlyPremium: 0,
+      status: 'active' as const,
+      policyType: 'protection' as const,
+      coverages: [],
+    },
+  ]
+}
+
+// 편집 폼 모달
+function EditModal({
+  rowKey, label, currentAmount, onSave, onClose,
+}: {
+  rowKey: string; label: string; currentAmount: number
+  onSave: (amount: number) => void; onClose: () => void
+}) {
+  const [val, setVal] = useState(currentAmount > 0 ? String(currentAmount) : '')
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: '#fff', borderRadius: 14,
+        padding: '28px 28px 24px',
+        minWidth: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ fontSize: 11, color: '#c9a96e', fontWeight: 900, letterSpacing: '0.08em', marginBottom: 6 }}>
+          담보 {currentAmount > 0 ? '수정' : '추가'}
+        </div>
+        <div style={{ fontSize: 17, fontWeight: 900, color: '#1a2744', marginBottom: 20 }}>{label}</div>
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>
+          가입금액 (만원)
+        </label>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <input
+            type="number"
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            placeholder="예: 3000"
+            autoFocus
+            style={{
+              flex: 1, border: '1.5px solid #1a2744', borderRadius: 8,
+              padding: '10px 12px', fontSize: 15, fontWeight: 700,
+              color: '#1a2744', outline: 'none',
+            }}
+            onKeyDown={(e) => { if (e.key === 'Enter') onSave(Number(val) || 0) }}
+          />
+          <span style={{ display: 'flex', alignItems: 'center', fontSize: 13, color: '#94a3b8', fontWeight: 700 }}>만원</span>
+        </div>
+        {/* 빠른 선택 */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+          {[500, 1000, 2000, 3000, 5000, 10000].map((v) => (
+            <button
+              key={v} type="button"
+              onClick={() => setVal(String(v))}
+              style={{
+                padding: '4px 10px', fontSize: 11, fontWeight: 700,
+                border: '1px solid #e2e8f0', borderRadius: 9999,
+                background: val === String(v) ? '#1a2744' : '#f8fafc',
+                color: val === String(v) ? '#fff' : '#64748b',
+                cursor: 'pointer',
+              }}
+            >
+              {fmtAmt(v)}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button type="button" onClick={onClose} style={{
+            padding: '9px 18px', fontSize: 13, fontWeight: 700,
+            border: '1px solid #e2e8f0', borderRadius: 8,
+            background: '#fff', color: '#64748b', cursor: 'pointer',
+          }}>
+            취소
+          </button>
+          {currentAmount > 0 && (
+            <button type="button" onClick={() => onSave(0)} style={{
+              padding: '9px 18px', fontSize: 13, fontWeight: 700,
+              border: '1px solid #fee2e2', borderRadius: 8,
+              background: '#fff', color: '#ef4444', cursor: 'pointer',
+            }}>
+              삭제
+            </button>
+          )}
+          <button type="button" onClick={() => onSave(Number(val) || 0)} style={{
+            padding: '9px 20px', fontSize: 13, fontWeight: 900,
+            border: 'none', borderRadius: 8,
+            background: '#1a2744', color: '#fff', cursor: 'pointer',
+          }}>
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function CoverageGrid({
+  contracts,
+  onUpdate,
+}: {
+  contracts: ProContract[]
+  onUpdate?: (updated: ProContract[]) => void
+}) {
+  const [editTarget, setEditTarget] = useState<{ rowKey: string; label: string; currentAmount: number } | null>(null)
   const amounts = aggregateByRowKey(contracts)
 
-  // 전체 커버리지 통계
   const allItems = CATEGORY_GROUPS.flatMap((g) => g.items)
   const coveredCount = allItems.filter((item) => (amounts[item.rowKey] || 0) > 0).length
   const totalCount = allItems.length
 
-  // 미매핑 담보 (rowKey가 그룹에 없는 것)
   const knownKeys = new Set(allItems.map((i) => i.rowKey))
   const extraRows = Object.entries(amounts)
     .filter(([rk]) => !knownKeys.has(rk) && rk !== 'unknown')
     .sort((a, b) => b[1] - a[1])
     .slice(0, 12)
+
+  function handleSave(rowKey: string, newAmount: number) {
+    if (!onUpdate) return
+    let updated = [...contracts]
+    // 수동 계약 찾기 or 생성
+    updated = ensureManualContract(updated)
+    updated = updated.map((c) => {
+      if (c.id !== MANUAL_CONTRACT_ID) return c
+      const existing = c.coverages.find((cv) => cv.rowKey === rowKey)
+      let coverages: ProCoverage[]
+      if (newAmount === 0) {
+        // 삭제: 수동 계약에서만 제거
+        coverages = c.coverages.filter((cv) => cv.rowKey !== rowKey)
+      } else if (existing) {
+        coverages = c.coverages.map((cv) =>
+          cv.rowKey === rowKey ? { ...cv, amount: newAmount } : cv
+        )
+      } else {
+        coverages = [
+          ...c.coverages,
+          {
+            id: `manual-${rowKey}-${Date.now()}`,
+            contractId: MANUAL_CONTRACT_ID,
+            rowKey,
+            name: ROW_KEY_LABEL[rowKey] ?? rowKey,
+            amount: newAmount,
+          },
+        ]
+      }
+      return { ...c, coverages }
+    })
+    // 수동 계약 담보가 0개면 제거
+    updated = updated.filter(
+      (c) => c.id !== MANUAL_CONTRACT_ID || c.coverages.length > 0
+    )
+    onUpdate(updated)
+  }
+
+  const canEdit = !!onUpdate
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -145,7 +319,7 @@ export default function CoverageGrid({ contracts }: { contracts: ProContract[] }
           </div>
         </div>
         <div style={{ display: 'flex', gap: 20 }}>
-          <MiniStat label="계약 수" value={`${contracts.length}건`} />
+          <MiniStat label="계약 수" value={`${contracts.filter(c => c.id !== MANUAL_CONTRACT_ID).length}건`} />
           <MiniStat label="미가입" value={`${totalCount - coveredCount}개`} valueColor="#ef4444" />
         </div>
       </div>
@@ -160,7 +334,6 @@ export default function CoverageGrid({ contracts }: { contracts: ProContract[] }
 
         return (
           <div key={group.key} className="coverage-pro-card" style={{ overflow: 'hidden' }}>
-            {/* 그룹 헤더 */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 18px',
@@ -181,47 +354,62 @@ export default function CoverageGrid({ contracts }: { contracts: ProContract[] }
               </div>
             </div>
 
-            {/* 담보 항목 그리드 */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
               gap: 0,
             }}>
               {groupItems.map((item, idx) => {
                 const hasIt = item.amount > 0
+                const isMaxKey = MAX_ROW_KEYS.has(item.rowKey)
                 return (
                   <div key={item.rowKey} style={{
-                    padding: '12px 18px',
+                    padding: '10px 16px',
                     borderRight: (idx + 1) % 2 === 1 ? '1px solid #f1f5f9' : undefined,
                     borderBottom: '1px solid #f1f5f9',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <div style={{
                         width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
                         background: hasIt ? group.color : '#d1d5db',
                       }} />
-                      <span style={{ fontSize: 12, color: hasIt ? '#1a2744' : '#94a3b8', fontWeight: hasIt ? 600 : 400 }}>
+                      <span style={{ fontSize: 12, color: hasIt ? '#1a2744' : '#94a3b8', fontWeight: hasIt ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.label}
                       </span>
                     </div>
-                    {hasIt ? (
-                      <span style={{
-                        fontSize: 12, fontWeight: 900, color: group.color,
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {fmtAmt(item.amount)}
-                      </span>
-                    ) : (
-                      <span style={{
-                        fontSize: 10, fontWeight: 900,
-                        padding: '2px 8px', borderRadius: 9999,
-                        background: '#f1f5f9', color: '#94a3b8',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        미가입
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      {hasIt ? (
+                        <span style={{ fontSize: 12, fontWeight: 900, color: group.color, whiteSpace: 'nowrap' }}>
+                          {fmtAmt(item.amount)}{isMaxKey ? ' (최고)' : ''}
+                        </span>
+                      ) : (
+                        <span style={{
+                          fontSize: 10, fontWeight: 900,
+                          padding: '2px 8px', borderRadius: 9999,
+                          background: '#f1f5f9', color: '#94a3b8', whiteSpace: 'nowrap',
+                        }}>
+                          미가입
+                        </span>
+                      )}
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => setEditTarget({ rowKey: item.rowKey, label: item.label, currentAmount: item.amount })}
+                          title={hasIt ? '수정' : '추가'}
+                          style={{
+                            width: 22, height: 22, borderRadius: 6,
+                            border: '1px solid ' + (hasIt ? '#e2e8f0' : group.color),
+                            background: hasIt ? '#f8fafc' : group.color + '18',
+                            color: hasIt ? '#94a3b8' : group.color,
+                            cursor: 'pointer', fontSize: 11, fontWeight: 900,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          }}
+                        >
+                          {hasIt ? '✎' : '+'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -240,10 +428,10 @@ export default function CoverageGrid({ contracts }: { contracts: ProContract[] }
             <div style={{ width: 4, height: 20, borderRadius: 2, background: '#64748b' }} />
             <span style={{ fontSize: 14, fontWeight: 900, color: '#1a2744' }}>기타 보장</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 0 }}>
             {extraRows.map(([rk, amt], idx) => (
               <div key={rk} style={{
-                padding: '12px 18px',
+                padding: '10px 16px',
                 borderRight: (idx + 1) % 2 === 1 ? '1px solid #f1f5f9' : undefined,
                 borderBottom: '1px solid #f1f5f9',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
@@ -265,6 +453,20 @@ export default function CoverageGrid({ contracts }: { contracts: ProContract[] }
         <div className="coverage-pro-card coverage-pro-card-pad" style={{ textAlign: 'center', color: '#94a3b8' }}>
           불러온 보험계약이 없습니다.
         </div>
+      )}
+
+      {/* 편집 모달 */}
+      {editTarget && (
+        <EditModal
+          rowKey={editTarget.rowKey}
+          label={editTarget.label}
+          currentAmount={editTarget.currentAmount}
+          onSave={(amount) => {
+            handleSave(editTarget.rowKey, amount)
+            setEditTarget(null)
+          }}
+          onClose={() => setEditTarget(null)}
+        />
       )}
     </div>
   )

@@ -29,12 +29,12 @@ export default function SettingsPage() {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      const { data } = await supabase.from('users').select('id, name, phone, role').eq('id', session.user.id).maybeSingle()
+      const { data } = await supabase.from('users').select('id, name, phone, email, role').eq('id', session.user.id).maybeSingle()
       setProfile({
         id: session.user.id,
         name: data?.name || '',
         phone: data?.phone || '',
-        email: session.user.email || '',
+        email: data?.email || session.user.email || '',
         role: data?.role || '',
       })
       try {
@@ -48,7 +48,7 @@ export default function SettingsPage() {
 
   const saveProfile = async () => {
     if (!profile.id) return
-    const { error } = await supabase.from('users').update({ name: profile.name, phone: profile.phone }).eq('id', profile.id)
+    const { error } = await supabase.from('users').update({ name: profile.name, phone: profile.phone, email: profile.email }).eq('id', profile.id)
     setMessage(error ? `저장 실패: ${error.message}` : '내 정보가 저장되었습니다.')
     setTimeout(() => setMessage(''), 2200)
   }
@@ -96,8 +96,8 @@ export default function SettingsPage() {
               <Field label="연락처">
                 <input className="form-input" value={profile.phone} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} placeholder="010-0000-0000" />
               </Field>
-              <Field label="이메일">
-                <input className="form-input" value={profile.email} disabled />
+              <Field label="이메일 (연락처)">
+                <input className="form-input" value={profile.email} onChange={(event) => setProfile({ ...profile, email: event.target.value })} placeholder="연락처용 이메일" />
               </Field>
               <Field label="권한">
                 <input className="form-input" value={profile.role || '-'} disabled />
