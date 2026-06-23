@@ -39,9 +39,7 @@ const PAGE_LABELS: Record<string, string> = {
   "/insurance-tools/proposal":     "제안서 생성",
   "/underwriting":                 "인수 기준 확인",
   "/gongsi":                       "보험상품 공시",
-  "/insurance-survey":             "보험 설문",
   "/card-consult":                 "카드상담",
-  "/card-consult":                 "카드상담(공통)",
   "/dm":                           "DM(공통)",
 }
 

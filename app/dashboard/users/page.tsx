@@ -567,7 +567,12 @@ export default function StaffManagementPage() {
       {resetUser && (
         <ResetPasswordModal
           user={resetUser}
+          requesterId={viewer?.id ?? ""}
           onClose={() => setResetUser(null)}
+          onSuccess={() => {
+            setResetUser(null)
+            void loadUsers()
+          }}
         />
       )}
     </div>
