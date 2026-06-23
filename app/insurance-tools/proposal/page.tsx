@@ -43,6 +43,7 @@ type MetricDef = {
   unit?: string
   kind?: MetricKind
   guide: string
+  hint?: string   // 입력 필드 placeholder용 보조 안내
 }
 
 type CategoryTemplate = {
@@ -97,7 +98,7 @@ const categories: CategoryTemplate[] = [
       { key: "lawyer", label: "변호사선임비용", shortLabel: "변호사비", unit: "만원", kind: "money", guide: "경찰조사·검찰·재판 단계별 지급 조건 확인" },
       { key: "finePerson", label: "벌금 대인", shortLabel: "대인벌금", unit: "만원", kind: "money", guide: "대인 사고 벌금 한도" },
       { key: "fineProperty", label: "벌금 대물", shortLabel: "대물벌금", unit: "만원", kind: "money", guide: "대물 벌금 한도" },
-      { key: "injury", label: "자동차사고부상치료비", shortLabel: "자부상", unit: "만원", kind: "money", guide: "부상 급수별 지급금액 차이 확인" },
+      { key: "injury", label: "자동차사고부상치료비 (14급 기준)", shortLabel: "자부상14급", unit: "만원", kind: "money", guide: "14급 기준 금액 입력 — 급수별 지급금액 비례 차이 확인", hint: "14급 기준 금액" },
       { key: "renewal", label: "갱신 여부", shortLabel: "갱신", kind: "text", guide: "갱신형은 향후 보험료 변동 가능" },
     ],
   },
@@ -479,7 +480,7 @@ function PlanEditor({
               label={metric.label}
               value={plan.metrics[metric.key] || ""}
               onChange={(value) => setMetric(metric.key, value)}
-              placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : "금액 입력"}
+              placeholder={metric.kind === "text" ? metric.guide : metric.kind === "percent" ? "예: 107.5" : metric.hint || "금액 입력"}
               suffix={metric.kind === "money" ? metric.unit : metric.kind === "percent" ? "%" : undefined}
               numeric={metric.kind === "money"}
             />
@@ -642,7 +643,7 @@ function ReportHeader({ template, mode, customerName, consultant }: { template: 
         <div>
           <p className="text-[11px] font-black tracking-[0.2em] text-white/70">맞춤형 보장 점검 및 제안서</p>
           <h1 className="mt-2 text-[28px] font-black tracking-[-0.01em]">
-            {customerName || "고객"}님을 위한 {mode === "single" ? "핵심 요약 플랜" : "맞춤 비교 플랜"}
+            {customerName || "고객"}님 {template.label} 보장 제안
           </h1>
           <p className="mt-2 text-sm font-bold text-white/80">{template.summary}</p>
         </div>
@@ -1399,13 +1400,13 @@ export default function ProposalPage() {
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 0; }
-          body * { visibility: hidden !important; }
-          .proposal-print-area, .proposal-print-area * { visibility: visible !important; }
-          .proposal-print-area { position: fixed; inset: 0; background: white; }
-          .print-only { display: block !important; }
-          .proposal-page { box-shadow: none !important; page-break-after: always; break-after: page; position: relative; }
-          .proposal-page:last-child { page-break-after: avoid; break-after: avoid; }
+          body { background: white !important; }
+          main { background: white !important; padding: 0 !important; min-height: 0 !important; }
           .no-print { display: none !important; }
+          .print-only { display: block !important; }
+          .proposal-print-area { background: white; }
+          .proposal-page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
+          .proposal-page:last-child { break-after: avoid; page-break-after: avoid; }
         }
         @media screen {
           .proposal-page { position: relative; margin: 0 auto 24px; }
@@ -1648,12 +1649,12 @@ export default function ProposalPage() {
                 plans={visiblePlans}
                 focus={focus}
                 customerName={customerName}
-              consultant={consultant}
-            />
-          </div>
-        )}
-      </div>
-    </main>
-  </>
+                consultant={consultant}
+              />
+            </div>
+          )}
+        </div>
+      </main>
+    </>
   )
 }
