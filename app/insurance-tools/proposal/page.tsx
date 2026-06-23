@@ -1264,7 +1264,21 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
   )
 }
 
-function ComparisonTable({ template, plans }: { template: CategoryTemplate; plans: PlanData[] }) {
+function ComparisonTable({ template, plans, showCross = false }: { template: CategoryTemplate; plans: PlanData[]; showCross?: boolean }) {
+  const sumMetric = (metric: MetricDef) => {
+    if (metric.kind === "percent") {
+      const values = plans.map((plan) => num(plan.metrics[metric.key])).filter((value) => value > 0)
+      return values.length ? `${(values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1)}%` : "-"
+    }
+    if (metric.kind !== "money") return "-"
+    const total = plans.reduce((sum, plan) => sum + num(plan.metrics[metric.key]), 0)
+    return total > 0 ? `${won(total)}${metric.unit || "만원"}` : "-"
+  }
+  const totalPremium = plans.reduce((sum, plan) => {
+    const monthly = plan.isDollar ? num(plan.monthlyPremium) * (num(plan.exchangeRate ?? "") || 1400) : num(plan.monthlyPremium)
+    return sum + monthly
+  }, 0)
+
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
       <table className="w-full border-collapse text-left">
@@ -1276,6 +1290,7 @@ function ComparisonTable({ template, plans }: { template: CategoryTemplate; plan
                 {plan.company || `${String.fromCharCode(65 + index)}안`}
               </th>
             ))}
+            {showCross && <th className="px-4 py-3 text-xs font-black text-emerald-700">합산 보장</th>}
             <th className="px-4 py-3 text-xs font-black text-slate-500">해석</th>
           </tr>
         </thead>
@@ -1283,6 +1298,7 @@ function ComparisonTable({ template, plans }: { template: CategoryTemplate; plan
           <tr className="border-t border-slate-100">
             <td className="px-4 py-3 text-xs font-black text-slate-500">월 보험료</td>
             {plans.map((plan) => <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
+            {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
             <td className="px-4 py-3 text-[11px] font-bold text-slate-500">보험료와 담보 범위를 함께 판단</td>
           </tr>
           {template.metrics.map((metric) => (
@@ -1291,6 +1307,7 @@ function ComparisonTable({ template, plans }: { template: CategoryTemplate; plan
               {plans.map((plan) => (
                 <td key={plan.id} className="px-4 py-3 text-xs font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</td>
               ))}
+              {showCross && <td className="px-4 py-3 text-xs font-black text-emerald-700">{sumMetric(metric)}</td>}
               <td className="px-4 py-3 text-[11px] font-bold leading-5 text-slate-500">{metric.guide}</td>
             </tr>
           ))}
@@ -1845,6 +1862,13 @@ export default function ProposalPage() {
     if (next.id === "shortlife") setFocus(["refund"])
   }
 
+  const selectMode = (next: ProposalMode) => {
+    setMode(next)
+    if ((next === "compare" || next === "cross") && plans.length < 2) {
+      setPlans(normalizePlans(template, 2))
+    }
+  }
+
   const updatePlan = (id: string, next: PlanData) => {
     setPlans((prev) => prev.map((plan) => plan.id === id ? next : plan))
   }
@@ -1933,7 +1957,7 @@ export default function ProposalPage() {
             {/* 생성 방식 */}
             <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">생성 방식</p>
-              <ModeSelector mode={mode} onMode={(next) => setMode(next)} />
+              <ModeSelector mode={mode} onMode={selectMode} />
             </section>
 
             {/* 비교 기준 — 복수 선택 */}
@@ -1997,7 +2021,7 @@ export default function ProposalPage() {
                           mode="single"
                           index={0}
                           onChange={(next) => setBundlePlans((prev) => ({ ...prev, [id]: next }))}
-                          onCustomerName={setCustomerName}
+                          onCustomerName={undefined}
                         />
                       </div>
                     )
@@ -2019,7 +2043,7 @@ export default function ProposalPage() {
                     onCustomerName={index === 0 ? setCustomerName : undefined}
                   />
                 ))}
-                {mode === "compare" && plans.length < 4 && (
+                {(mode === "compare" || mode === "cross") && plans.length < 4 && (
                   <button
                     type="button"
                     onClick={addPlan}

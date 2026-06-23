@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse")
+export const runtime = "nodejs"
 
 // 카테고리별 추출 대상 담보 정의
 const CATEGORY_METRICS: Record<string, { key: string; label: string; hint: string }[]> = {
@@ -89,7 +88,10 @@ export async function POST(request: NextRequest) {
 
   let pdfText = ""
   try {
-    const pdfData = await pdfParse(buffer, { max: 15 })
+    const { PDFParse } = await import("pdf-parse")
+    const parser = new PDFParse({ data: buffer })
+    const pdfData = await parser.getText({ partial: [1, 15] })
+    await parser.destroy()
     pdfText = pdfData.text
       .replace(/\s{3,}/g, "  ")
       .slice(0, 10000)
@@ -161,8 +163,4 @@ ${pdfText}
   } catch (err) {
     console.error("parse-proposal-pdf error:", err)
     return NextResponse.json(
-      { error: "PDF 파싱 중 오류가 발생했습니다." },
-      { status: 500 }
-    )
-  }
-}
+      { error: "PDF 파싱 중 오�
