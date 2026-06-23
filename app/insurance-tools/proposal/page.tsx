@@ -29,8 +29,9 @@ import { supabase } from "../../../lib/supabase"
 import { ensureUserProfile } from "../../../lib/userProfile"
 import { canAccessProposalGenerator, isApprovedUser, normalizeRole, ROLE_PRIORITY } from "../../../lib/roles"
 import LoadingScreen from "../../components/LoadingScreen"
+import { CATEGORY_SCENARIOS } from "./scenarioData"
 
-type ProposalMode = "single" | "compare"
+type ProposalMode = "single" | "compare" | "bundle"
 type CategoryId = "driver" | "health" | "care" | "homecare" | "pet" | "shortlife"
 type CompareFocus = "balance" | "premium" | "coverage" | "scope" | "refund"
 type MetricKind = "money" | "text" | "percent"
@@ -73,6 +74,12 @@ type PlanData = {
 type ConsultantInfo = {
   name: string
   phone: string
+}
+
+// 번들 모드: 카테고리별 단일 플랜 묶음
+type CategorySection = {
+  templateId: CategoryId
+  plan: PlanData
 }
 
 const categories: CategoryTemplate[] = [
@@ -584,9 +591,10 @@ function ModeSelector({ mode, onMode }: { mode: ProposalMode; onMode: (mode: Pro
   const items = [
     { id: "single" as ProposalMode, title: "단일 제안서", desc: "긴 PDF 제안서를 핵심 요약형 상담 자료로 정리" },
     { id: "compare" as ProposalMode, title: "비교 제안서", desc: "동일 상품군을 여러 보험사 기준으로 비교" },
+    { id: "bundle" as ProposalMode, title: "번들 제안서", desc: "복수 카테고리를 한 번에 — 표지 + 카테고리별 페이지 출력" },
   ]
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-3">
       {items.map((item) => {
         const active = mode === item.id
         return (
@@ -594,13 +602,13 @@ function ModeSelector({ mode, onMode }: { mode: ProposalMode; onMode: (mode: Pro
             key={item.id}
             type="button"
             onClick={() => onMode(item.id)}
-            className={`rounded-2xl border p-5 text-left transition ${active ? "border-[#102a4c] bg-[#f2f7fb]" : "border-slate-200 bg-white hover:border-slate-300"}`}
+            className={`rounded-2xl border p-4 text-left transition ${active ? "border-[#102a4c] bg-[#f2f7fb]" : "border-slate-200 bg-white hover:border-slate-300"}`}
           >
             <div className="flex items-center justify-between">
-              <p className="text-base font-black text-slate-950">{item.title}</p>
-              {active && <BadgeCheck className="h-5 w-5 text-cyan-600" />}
+              <p className="text-sm font-black text-slate-950">{item.title}</p>
+              {active && <BadgeCheck className="h-4 w-4 text-cyan-600" />}
             </div>
-            <p className="mt-2 text-sm font-bold leading-6 text-slate-500">{item.desc}</p>
+            <p className="mt-2 text-xs font-bold leading-5 text-slate-500">{item.desc}</p>
           </button>
         )
       })}
@@ -655,6 +663,7 @@ function ProposalReport({
   focus,
   customerName,
   consultant,
+  pageOffset = 0,
 }: {
   template: CategoryTemplate
   mode: ProposalMode
@@ -662,6 +671,7 @@ function ProposalReport({
   focus: CompareFocus
   customerName: string
   consultant: ConsultantInfo
+  pageOffset?: number
 }) {
   const visiblePlans = mode === "single" ? plans.slice(0, 1) : plans
   const lowest = bestPremium(visiblePlans)
@@ -702,7 +712,7 @@ function ProposalReport({
             <PlanSnapshot template={template} plans={visiblePlans} />
           </section>
         </div>
-        <PageNum num={1} />
+        <PageNum num={pageOffset + 1} />
       </ReportPage>
 
       <ReportPage>
@@ -724,10 +734,10 @@ function ProposalReport({
             )}
           </section>
         </div>
-        <PageNum num={2} />
+        <PageNum num={pageOffset + 2} />
       </ReportPage>
 
-      <ReportPage last>
+      <ReportPage>
         <ReportHeader template={template} mode={mode} customerName={customerName} consultant={consultant} />
         <div className="grid flex-1 grid-cols-[1.15fr_0.85fr] gap-5 p-8">
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -753,8 +763,20 @@ function ProposalReport({
             </div>
           </section>
         </div>
-        <PageNum num={3} />
+        <PageNum num={pageOffset + 3} />
       </ReportPage>
+
+      {/* 4페이지: 사례 인포그래픽 */}
+      <ReportPage last={template.id !== "health"}>
+        <ScenarioPage4 template={template} customerName={customerName} consultant={consultant} pageNum={pageOffset + 4} />
+      </ReportPage>
+
+      {/* 5페이지: 건강보험 치료단계 (health만) */}
+      {template.id === "health" && (
+        <ReportPage last>
+          <HealthTreatmentPage customerName={customerName} consultant={consultant} pageNum={pageOffset + 5} />
+        </ReportPage>
+      )}
     </div>
   )
 }
@@ -953,6 +975,308 @@ function PlanMemo({ plan, index }: { plan: PlanData; index: number }) {
   )
 }
 
+// ── 4페이지: 사례 인포그래픽 ──────────────────────────────────────────────
+function ScenarioPage4({
+  template,
+  customerName,
+  consultant,
+  pageNum = 4,
+}: {
+  template: CategoryTemplate
+  customerName: string
+  consultant: ConsultantInfo
+  pageNum?: number
+}) {
+  const cfg = CATEGORY_SCENARIOS[template.id]
+  if (!cfg) return null
+  const { cases } = cfg
+
+  return (
+    <>
+      {/* 페이지 헤더 */}
+      <div className={`shrink-0 rounded-t-[28px] bg-gradient-to-r ${template.tone} px-8 py-4 text-white`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black tracking-[0.2em] text-white/70">실제 사례로 보는 위험과 보장</p>
+            <h1 className="mt-1 text-[22px] font-black">{cfg.page4Title}</h1>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-white/70">{customerName || "고객"}님</p>
+            <p className="text-xs font-bold text-white/70">{consultant.name || "담당 설계사"}</p>
+          </div>
+        </div>
+        <p className="mt-1 text-[11px] font-bold text-white/80">{cfg.page4Subtitle}</p>
+      </div>
+
+      {/* A안: 3개 사례 카드 */}
+      <div className="flex-1 px-8 pt-5">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="rounded-full bg-[#102a4c] px-3 py-1 text-[11px] font-black text-white">A안 — 실제 비용 사례</span>
+          <span className="text-[11px] font-bold text-slate-500">준비하지 않으면 전액 자부담이 발생합니다</span>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          {cases.map((c, idx) => (
+            <div key={idx} className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{c.icon}</span>
+                <div>
+                  <p className="text-[12px] font-black text-slate-950">{c.label}</p>
+                  <p className="text-[10px] font-bold text-rose-600">{c.totalEstimate}</p>
+                </div>
+              </div>
+              <p className="mt-2 text-[10px] font-bold leading-5 text-slate-500">{c.situation}</p>
+              <div className="mt-3 space-y-1.5">
+                {c.costItems.map((item, ii) => (
+                  <div key={ii} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-1.5">
+                    <span className="text-[10px] font-black text-slate-600">{item.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-slate-900">{item.amount}</span>
+                      {item.covered && item.coverLabel && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-700">{item.coverLabel}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* B안: 타임라인 → 결론 */}
+        <div className="mt-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="rounded-full bg-cyan-600 px-3 py-1 text-[11px] font-black text-white">B안 — 보험으로 준비하면</span>
+            <span className="text-[11px] font-bold text-slate-500">사고·질병 발생 → 청구 → 보장 확인</span>
+          </div>
+          <div className="flex items-center gap-0">
+            {cases.map((c, idx) => (
+              <div key={idx} className="flex flex-1 items-center">
+                <div className="flex-1 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+                  <p className="text-[11px] font-black text-cyan-900">{c.icon} {c.label}</p>
+                  <p className="mt-1 text-[10px] font-bold text-cyan-700">{c.conclusion}</p>
+                </div>
+                {idx < cases.length - 1 && (
+                  <ChevronRight className="mx-1 h-5 w-5 shrink-0 text-cyan-400" />
+                )}
+              </div>
+            ))}
+            <ChevronRight className="mx-1 h-5 w-5 shrink-0 text-emerald-500" />
+            <div className="flex w-36 shrink-0 flex-col items-center justify-center rounded-2xl bg-emerald-600 px-4 py-4 text-center">
+              <CheckCircle2 className="mb-1 h-5 w-5 text-white" />
+              <p className="text-[12px] font-black text-white">제안서로 준비하면</p>
+              <p className="text-[11px] font-black text-emerald-200">보장 가능</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <PageNum num={pageNum} />
+    </>
+  )
+}
+
+// ── 5페이지: 건강보험 치료단계 ────────────────────────────────────────────
+function HealthTreatmentPage({
+  customerName,
+  consultant,
+  pageNum = 5,
+}: {
+  customerName: string
+  consultant: ConsultantInfo
+  pageNum?: number
+}) {
+  const cfg = CATEGORY_SCENARIOS.health?.page5
+  if (!cfg) return null
+
+  return (
+    <>
+      <div className="shrink-0 rounded-t-[28px] bg-gradient-to-r from-rose-500 to-orange-500 px-8 py-4 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black tracking-[0.2em] text-white/70">보장 구조 심층 분석</p>
+            <h1 className="mt-1 text-[22px] font-black">{cfg.title}</h1>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-white/70">{customerName || "고객"}님</p>
+            <p className="text-xs font-bold text-white/70">{consultant.name || "담당 설계사"}</p>
+          </div>
+        </div>
+        <p className="mt-1 text-[11px] font-bold text-white/80">{cfg.subtitle}</p>
+      </div>
+
+      <div className="flex-1 px-8 pt-5">
+        {/* 치료 단계 흐름 */}
+        <div className="flex items-stretch gap-2">
+          {cfg.steps.map((step, idx) => (
+            <div key={idx} className="flex flex-1 items-center">
+              <div className="flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl">{step.icon}</span>
+                  <p className="text-[12px] font-black text-slate-950">{step.step}</p>
+                </div>
+                <div className="mt-2 rounded-xl bg-rose-50 px-3 py-2">
+                  <p className="text-[10px] font-black text-rose-700">비용</p>
+                  <p className="text-[10px] font-bold leading-5 text-rose-900">{step.cost}</p>
+                </div>
+                <div className="mt-2 rounded-xl bg-cyan-50 px-3 py-2">
+                  <p className="text-[10px] font-black text-cyan-700">담보</p>
+                  <p className="text-[10px] font-bold text-cyan-900">{step.coverage}</p>
+                </div>
+                <p className="mt-2 text-[10px] font-bold leading-5 text-slate-500">{step.note}</p>
+              </div>
+              {idx < cfg.steps.length - 1 && (
+                <ChevronRight className="mx-1 h-4 w-4 shrink-0 text-slate-300" />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* 급여 vs 비급여 범례 */}
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-black text-slate-900">급여 항목 (본인부담 5 ~ 20%)</p>
+            <p className="mt-2 text-xs font-bold leading-6 text-slate-600">
+              국가에서 보장하는 항목입니다. 실손보험이 본인부담금을 보완합니다. 주로 입원비·수술비·기본 약제비가 해당됩니다.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+            <p className="text-sm font-black text-rose-900">비급여 항목 (100% 자부담)</p>
+            <p className="mt-2 text-xs font-bold leading-6 text-rose-700">
+              표적항암제·면역항암제·선택진료비·상급병실료 등입니다. 1회 수백만원이 발생할 수 있으며 실손보험에서 별도 청구합니다.
+            </p>
+          </div>
+        </div>
+
+        {/* 결론 */}
+        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <p className="text-sm font-black text-emerald-900">이중 보장 구조 완성</p>
+          </div>
+          <p className="mt-2 text-xs font-bold leading-6 text-emerald-800">{cfg.conclusion}</p>
+        </div>
+      </div>
+
+      <PageNum num={pageNum} />
+    </>
+  )
+}
+
+// ── 번들 모드: 커버 페이지 ────────────────────────────────────────────────
+
+// ── 번들 모드: 커버 페이지 ────────────────────────────────────────────────
+function BundleCoverPage({
+  sections,
+  customerName,
+  consultant,
+}: {
+  sections: CategorySection[]
+  customerName: string
+  consultant: ConsultantInfo
+}) {
+  const totalMonthly = sections.reduce((sum, s) => sum + (Number(s.plan.monthlyPremium.replace(/[^0-9]/g, "")) || 0), 0)
+  const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
+
+  return (
+    <ReportPage>
+      <div className="flex h-full flex-col">
+        <div className="rounded-t-[28px] bg-gradient-to-br from-[#1A2744] to-[#2D4A8A] px-10 py-8 text-white">
+          <p className="text-[11px] font-black tracking-[0.22em] text-white/60">맞춤형 통합 보장 제안서</p>
+          <h1 className="mt-3 text-[36px] font-black leading-tight">
+            {customerName || "고객"}님을 위한<br />통합 보장 플랜
+          </h1>
+          <p className="mt-3 text-sm font-bold text-white/70">{today} · 메타리치 시그널그룹</p>
+        </div>
+
+        <div className="flex-1 grid grid-cols-2 gap-4 p-8">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-black text-slate-500">이번 제안에 포함된 보장 영역</p>
+            {sections.map((s, idx) => {
+              const tpl = categories.find((c) => c.id === s.templateId)
+              if (!tpl) return null
+              return (
+                <div key={idx} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tpl.tone} text-white`}>
+                    <CategoryIcon template={tpl} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-slate-950">{tpl.label}</p>
+                    <p className="text-xs font-bold text-slate-400">{s.plan.company || "보험사 미입력"} · {s.plan.productName || "상품명 미입력"}</p>
+                  </div>
+                  <p className="text-sm font-black text-cyan-700">
+                    {s.plan.monthlyPremium ? `${Number(s.plan.monthlyPremium.replace(/[^0-9]/g, "")).toLocaleString("ko-KR")}원` : "-"}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="flex flex-col justify-between">
+            <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
+              <p className="text-sm font-black text-cyan-900">월 합산 보험료</p>
+              <p className="mt-2 text-[32px] font-black text-[#102a4c]">
+                {totalMonthly > 0 ? `${totalMonthly.toLocaleString("ko-KR")}원` : "미입력"}
+              </p>
+              <p className="mt-1 text-xs font-bold text-cyan-700">{sections.length}개 보장 영역 합산</p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-[10px] font-black text-slate-400">담당 설계사</p>
+              <p className="mt-2 text-xl font-black text-slate-950">{consultant.name || "설계사명"}</p>
+              <p className="text-sm font-bold text-slate-500">{consultant.phone || "연락처"}</p>
+              <p className="mt-3 text-[10px] font-bold leading-5 text-slate-400">
+                본 제안서는 상담 자료로 제공되며, 최종 보험료와 보장 내용은 청약 시 약관 기준을 따릅니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <PageNum num={1} />
+      </div>
+    </ReportPage>
+  )
+}
+
+// ── 번들 제안서 출력 ──────────────────────────────────────────────────────
+function ProposalBundle({
+  sections,
+  focus,
+  customerName,
+  consultant,
+}: {
+  sections: CategorySection[]
+  focus: CompareFocus
+  customerName: string
+  consultant: ConsultantInfo
+}) {
+  let pageCounter = 2
+
+  return (
+    <div className="proposal-print-area">
+      <BundleCoverPage sections={sections} customerName={customerName} consultant={consultant} />
+      {sections.map((s) => {
+        const tpl = categories.find((c) => c.id === s.templateId)
+        if (!tpl) return null
+        const startPage = pageCounter
+        pageCounter += CATEGORY_SCENARIOS[tpl.id]?.page5 ? 5 : 4
+
+        return (
+          <ProposalReport
+            key={s.templateId}
+            template={tpl}
+            mode="single"
+            plans={[s.plan]}
+            focus={focus}
+            customerName={customerName}
+            consultant={consultant}
+            pageOffset={startPage - 1}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, plans: PlanData[], focus: CompareFocus) {
   if (template.id === "shortlife" && plans[0]) {
     const d = shortLifeDerived(plans[0])
@@ -989,6 +1313,12 @@ export default function ProposalPage() {
   const [customerName, setCustomerName] = useState("")
   const [consultant, setConsultant] = useState<ConsultantInfo>({ name: "", phone: "" })
   const [showPreview, setShowPreview] = useState(false)
+  const [bundleIds, setBundleIds] = useState<CategoryId[]>(["health", "driver"])
+  const [bundlePlans, setBundlePlans] = useState<Record<CategoryId, PlanData>>(() => {
+    const init = {} as Record<CategoryId, PlanData>
+    categories.forEach((c) => { init[c.id] = emptyPlan(c, 0) })
+    return init
+  })
 
   useEffect(() => {
     let alive = true
@@ -1089,7 +1419,12 @@ export default function ProposalPage() {
               <h1 className="mt-1 text-2xl font-black text-[#102a4c]">제안서 생성</h1>
             </div>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setShowPreview(true)} className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A]">
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                disabled={mode === "bundle" && bundleIds.length < 2}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A] disabled:opacity-40"
+              >
                 미리보기
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -1098,95 +1433,161 @@ export default function ProposalPage() {
         </div>
 
         <div className="no-print mx-auto grid max-w-[1440px] gap-5 px-6 py-6 xl:grid-cols-[360px_1fr]">
-            <aside className="space-y-5">
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-cyan-600" />
-                  <h2 className="text-base font-black text-slate-950">생성 방식</h2>
-                </div>
-                <ModeSelector mode={mode} onMode={(next) => setMode(next)} />
-              </section>
-
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-cyan-600" />
-                  <h2 className="text-base font-black text-slate-950">비교 기준</h2>
-                </div>
-                <FocusSelector focus={focus} onFocus={setFocus} disabled={mode === "single" && template.id !== "shortlife"} />
-              </section>
-
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-2">
-                  <Bone className="h-5 w-5 text-cyan-600" />
-                  <h2 className="text-base font-black text-slate-950">고객·설계사 정보</h2>
-                </div>
-                <div className="space-y-3">
-                  <Input label="고객명" value={customerName} onChange={setCustomerName} placeholder="예: 배진우" />
-                  <Input label="설계사명" value={consultant.name} onChange={(value) => setConsultant((prev) => ({ ...prev, name: value }))} />
-                  <Input label="연락처" value={consultant.phone} onChange={(value) => setConsultant((prev) => ({ ...prev, phone: value }))} />
-                </div>
-              </section>
-            </aside>
-
-            <div className="space-y-5">
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-950">상품 카테고리</h2>
-                    <p className="mt-1 text-sm font-bold text-slate-500">카테고리를 선택하면 입력 항목과 출력 인포그래픽이 자동으로 바뀝니다.</p>
-                  </div>
-                  <div className={`hidden rounded-2xl bg-gradient-to-br ${template.tone} p-3 text-white md:block`}>
-                    <CategoryIcon template={template} />
-                  </div>
-                </div>
-                <CategorySelector selected={template} onSelect={selectCategory} />
-              </section>
-
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-950">상품 정보 입력</h2>
-                    <p className="text-sm font-bold text-slate-500">
-                      PDF를 드래그앤드롭하면 주요 항목이 자동으로 채워집니다.
-                    </p>
-                  </div>
-                  {mode === "compare" && (
-                    <button type="button" onClick={addPlan} className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-3 text-sm font-black text-white">
-                      <Plus className="h-4 w-4" />
-                      보험사 추가
-                    </button>
-                  )}
-                </div>
-                <div className={`grid gap-4 ${mode === "compare" ? "xl:grid-cols-2" : "max-w-3xl"}`}>
-                  {visiblePlans.map((plan, index) => (
-                    <PlanEditor
-                      key={plan.id}
-                      plan={plan}
-                      index={index}
-                      template={template}
-                      mode={mode}
-                      onChange={(next) => updatePlan(plan.id, next)}
-                      onRemove={() => removePlan(plan.id)}
-                      canRemove={mode === "compare" && visiblePlans.length > 2}
-                      onCustomerName={(name) => setCustomerName((prev) => prev || name)}
-                    />
-                  ))}
-                </div>
-              </section>
-
-              <div className="flex justify-end">
-                <button type="button" onClick={() => setShowPreview(true)} className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-6 py-4 text-sm font-black text-white shadow-sm">
-                  제안서 미리보기
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+          <aside className="space-y-5">
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-cyan-600" />
+                <h2 className="text-base font-black text-slate-950">생성 방식</h2>
               </div>
+              <ModeSelector mode={mode} onMode={(next) => setMode(next)} />
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Activity className="h-5 w-5 text-cyan-600" />
+                <h2 className="text-base font-black text-slate-950">비교 기준</h2>
+              </div>
+              <FocusSelector focus={focus} onFocus={setFocus} disabled={mode === "single" && template.id !== "shortlife"} />
+            </section>
+
+            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Bone className="h-5 w-5 text-cyan-600" />
+                <h2 className="text-base font-black text-slate-950">고객·설계사 정보</h2>
+              </div>
+              <div className="space-y-3">
+                <Input label="고객명" value={customerName} onChange={setCustomerName} placeholder="예: 배진우" />
+                <Input label="설계사명" value={consultant.name} onChange={(value) => setConsultant((prev) => ({ ...prev, name: value }))} />
+                <Input label="연락처" value={consultant.phone} onChange={(value) => setConsultant((prev) => ({ ...prev, phone: value }))} />
+              </div>
+            </section>
+          </aside>
+
+          <div className="space-y-5">
+            {mode === "bundle" ? (
+              <>
+                <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <h2 className="mb-1 text-lg font-black text-slate-950">보장 카테고리 선택</h2>
+                  <p className="mb-4 text-sm font-bold text-slate-500">포함할 카테고리를 2개 이상 선택하세요. 카테고리별 제안서가 합산 출력됩니다.</p>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {categories.map((cat) => {
+                      const active = bundleIds.includes(cat.id)
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setBundleIds((prev) =>
+                              active
+                                ? prev.filter((id) => id !== cat.id)
+                                : [...prev, cat.id]
+                            )
+                          }}
+                          className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-cyan-400 bg-cyan-50 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                        >
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${cat.tone} text-white`}>
+                            <CategoryIcon template={cat} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-black text-slate-950">{cat.label}</p>
+                            <p className="text-[10px] font-bold text-slate-400">{cat.desc}</p>
+                          </div>
+                          {active && <CheckCircle2 className="h-5 w-5 text-cyan-500" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </section>
+
+                {bundleIds.length > 0 && (
+                  <section className="space-y-4">
+                    <h2 className="text-lg font-black text-slate-950">카테고리별 상품 입력</h2>
+                    <div className="grid gap-4 xl:grid-cols-2">
+                      {bundleIds.map((catId) => {
+                        const tpl = categories.find((c) => c.id === catId)
+                        if (!tpl) return null
+                        const plan = bundlePlans[catId]
+                        return (
+                          <PlanEditor
+                            key={catId}
+                            plan={plan}
+                            index={0}
+                            template={tpl}
+                            mode="single"
+                            onChange={(next) => setBundlePlans((prev) => ({ ...prev, [catId]: next }))}
+                            onCustomerName={(name) => setCustomerName((prev) => prev || name)}
+                          />
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+              </>
+            ) : (
+              <>
+                <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-black text-slate-950">상품 카테고리</h2>
+                      <p className="mt-1 text-sm font-bold text-slate-500">카테고리를 선택하면 입력 항목과 출력 인포그래픽이 자동으로 바뀝니다.</p>
+                    </div>
+                    <div className={`hidden rounded-2xl bg-gradient-to-br ${template.tone} p-3 text-white md:block`}>
+                      <CategoryIcon template={template} />
+                    </div>
+                  </div>
+                  <CategorySelector selected={template} onSelect={selectCategory} />
+                </section>
+
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-black text-slate-950">상품 정보 입력</h2>
+                      <p className="text-sm font-bold text-slate-500">
+                        PDF를 드래그앤드롭하면 주요 항목이 자동으로 채워집니다.
+                      </p>
+                    </div>
+                    {mode === "compare" && (
+                      <button type="button" onClick={addPlan} className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-3 text-sm font-black text-white">
+                        <Plus className="h-4 w-4" />
+                        보험사 추가
+                      </button>
+                    )}
+                  </div>
+                  <div className={`grid gap-4 ${mode === "compare" ? "xl:grid-cols-2" : "max-w-3xl"}`}>
+                    {visiblePlans.map((plan, index) => (
+                      <PlanEditor
+                        key={plan.id}
+                        plan={plan}
+                        index={index}
+                        template={template}
+                        mode={mode}
+                        onChange={(next) => updatePlan(plan.id, next)}
+                        onRemove={() => removePlan(plan.id)}
+                        canRemove={mode === "compare" && visiblePlans.length > 2}
+                        onCustomerName={(name) => setCustomerName((prev) => prev || name)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                disabled={mode === "bundle" && bundleIds.length < 2}
+                className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-6 py-4 text-sm font-black text-white shadow-sm disabled:opacity-40"
+              >
+                제안서 미리보기
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
+        </div>
 
-        {/* ── 미리보기 모달 ── */}
         {showPreview && (
           <div className="no-print fixed inset-0 z-50 flex flex-col bg-black/70 backdrop-blur-sm">
-            {/* 모달 헤더 */}
             <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#111827] px-6 py-3">
               <p className="text-sm font-black text-white">제안서 미리보기</p>
               <div className="flex items-center gap-2">
@@ -1207,8 +1608,38 @@ export default function ProposalPage() {
                 </button>
               </div>
             </div>
-            {/* 미리보기 스크롤 영역 */}
             <div className="flex-1 overflow-y-auto bg-[#1f2937] px-6 py-8">
+              {mode === "bundle" ? (
+                <ProposalBundle
+                  sections={bundleIds.map((id) => ({ templateId: id, plan: bundlePlans[id] }))}
+                  focus={focus}
+                  customerName={customerName}
+                  consultant={consultant}
+                />
+              ) : (
+                <ProposalReport
+                  template={template}
+                  mode={mode}
+                  plans={visiblePlans}
+                  focus={focus}
+                  customerName={customerName}
+                  consultant={consultant}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="print-only">
+          {mode === "bundle" ? (
+            <ProposalBundle
+              sections={bundleIds.map((id) => ({ templateId: id, plan: bundlePlans[id] }))}
+              focus={focus}
+              customerName={customerName}
+              consultant={consultant}
+            />
+          ) : (
+            <div className="proposal-print-area">
               <ProposalReport
                 template={template}
                 mode={mode}
@@ -1218,18 +1649,7 @@ export default function ProposalPage() {
                 consultant={consultant}
               />
             </div>
-          </div>
-        )}
-
-        <div className="print-only proposal-print-area">
-          <ProposalReport
-            template={template}
-            mode={mode}
-            plans={visiblePlans}
-            focus={focus}
-            customerName={customerName}
-            consultant={consultant}
-          />
+          )}
         </div>
       </main>
     </>
