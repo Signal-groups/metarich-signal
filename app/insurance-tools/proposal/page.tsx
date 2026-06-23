@@ -293,13 +293,21 @@ function shortLifeDerived(plan: PlanData) {
   const explicitRefund = plan.isDollar
     ? explicitRefundRaw * fx
     : explicitRefundRaw * 10000
-  const refund = explicitRefund || (totalPaid * rate / 100)
+  const refund = rate ? (totalPaid * rate / 100) : explicitRefund
   const monthlyRate = 0.03 / 12
   const payMonths = years * 12
   let savingFuture = 0
   for (let i = 0; i < payMonths; i += 1) {
     savingFuture += monthly * Math.pow(1 + monthlyRate, payMonths - i)
   }
+  const savingInterest = Math.max(0, savingFuture - totalPaid)
+  const savingTax = savingInterest * 0.154
+  const savingFutureAfterTax = savingFuture - savingTax
+  const savingInterestAfterTax = savingInterest - savingTax
+  const savingEffectiveRate = totalPaid ? (savingInterest / totalPaid) * 100 : 0
+  const savingEffectiveAnnualRate = years ? savingEffectiveRate / years : 0
+  const savingAfterTaxRate = totalPaid ? (savingInterestAfterTax / totalPaid) * 100 : 0
+  const savingAfterTaxAnnualRate = years ? savingAfterTaxRate / years : 0
   return {
     monthly,
     monthlyUsd,
@@ -309,6 +317,14 @@ function shortLifeDerived(plan: PlanData) {
     totalPaid,
     refund,
     savingFuture,
+    savingFutureAfterTax,
+    savingInterest,
+    savingTax,
+    savingInterestAfterTax,
+    savingEffectiveRate,
+    savingEffectiveAnnualRate,
+    savingAfterTaxRate,
+    savingAfterTaxAnnualRate,
     gap: refund - savingFuture,
     refundRate: rate || (totalPaid ? (refund / totalPaid) * 100 : 0),
   }
@@ -814,6 +830,9 @@ function ProposalReport({
                 <PremiumCard key={plan.id} plan={plan} index={index} />
               ))}
             </div>
+            {template.id === "shortlife" && visiblePlans[0] && (
+              <ShortLifeCostInsights plan={visiblePlans[0]} />
+            )}
           </section>
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             {template.id === "shortlife" ? (
@@ -938,6 +957,52 @@ function PremiumCard({ plan, index }: { plan: PlanData; index: number }) {
   )
 }
 
+function ShortLifeCostInsights({ plan }: { plan: PlanData }) {
+  const d = shortLifeDerived(plan)
+  const savingMonthWeights = Array.from({ length: 12 }, (_, index) => 12 - index).join(" + ")
+  return (
+    <div className="mt-4 space-y-3">
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-black text-emerald-700">보험으로 가져갈 때</p>
+            <p className="mt-1 text-base font-black text-emerald-950">비과세 구조 + 환급률 {d.refundRate.toFixed(1)}%</p>
+          </div>
+          <ShieldCheck className="h-5 w-5 text-emerald-600" />
+        </div>
+        <p className="mt-2 text-[11px] font-bold leading-5 text-emerald-800">
+          납입 완료 후 장기 유지 시 환급률이 총납입보험료를 초과하는 구간을 활용합니다. 이자소득세를 떼는 은행상품과 달리 요건 충족 시 보험차익 비과세 설명이 가능합니다.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-black text-rose-700">은행 적금으로 가져갈 때</p>
+            <p className="mt-1 text-base font-black text-rose-950">연 3%라도 체감 수익은 낮아집니다</p>
+          </div>
+          <CircleDollarSign className="h-5 w-5 text-rose-500" />
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-white p-3">
+            <p className="text-[10px] font-black text-slate-400">세전 체감 수익률</p>
+            <p className="mt-1 text-sm font-black text-slate-900">{d.savingEffectiveRate.toFixed(1)}%</p>
+            <p className="text-[10px] font-bold text-slate-400">연평균 {d.savingEffectiveAnnualRate.toFixed(2)}%</p>
+          </div>
+          <div className="rounded-xl bg-white p-3">
+            <p className="text-[10px] font-black text-slate-400">이자소득세 15.4%</p>
+            <p className="mt-1 text-sm font-black text-rose-700">-{wonMan(d.savingTax)}</p>
+            <p className="text-[10px] font-bold text-slate-400">세후 이자 {wonMan(d.savingInterestAfterTax)}</p>
+          </div>
+        </div>
+        <p className="mt-2 text-[10px] font-bold leading-5 text-rose-800">
+          월적립식은 첫 달 납입분만 12개월 전체 이자가 붙고, 두 번째 달은 11/12, 세 번째 달은 10/12처럼 이자 적용 기간이 줄어듭니다. 1년 기준 계산식은 ({savingMonthWeights}) / 12개월입니다.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plans: PlanData[] }) {
   return (
     <div>
@@ -975,14 +1040,14 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
   const first = plans[0]
   const derived = first ? shortLifeDerived(first) : null
   if (!first || !derived) return null
-  const { totalPaid, refund, savingFuture, refundRate, horizonYears } = derived
+  const { totalPaid, refund, savingFuture, savingFutureAfterTax, refundRate, horizonYears } = derived
   const insuranceGain = refund - totalPaid          // 음수 가능
-  const savingGain    = savingFuture - totalPaid    // 항상 양수
-  const maxVal = Math.max(totalPaid, refund, savingFuture, 1)
+  const savingGainAfterTax = savingFutureAfterTax - totalPaid
+  const maxVal = Math.max(totalPaid, refund, savingFutureAfterTax, 1)
   const refundPct = Math.max(4, (refund / maxVal) * 100)
-  const savingPct = Math.max(4, (savingFuture / maxVal) * 100)
+  const savingPct = Math.max(4, (savingFutureAfterTax / maxVal) * 100)
   const principalPct = Math.max(4, (totalPaid / maxVal) * 100)
-  const gap = refund - savingFuture
+  const gap = refund - savingFutureAfterTax
   const gapLabel = gap >= 0 ? "단기납 환급금 우위" : "월 적금 예상액 우위"
   const gapColor = gap >= 0 ? "text-emerald-700" : "text-rose-600"
   const horizonLabel = `${horizonYears}년 후`
@@ -1011,9 +1076,9 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
           </p>
         </div>
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3">
-          <p className="text-[10px] font-black text-rose-700">적금 3% 예상</p>
-          <p className="mt-1 text-base font-black text-rose-700">{wonMan(savingFuture)}</p>
-          <p className="text-[10px] font-black text-rose-500">{derived.years}년 납입 · 이자 +{wonMan(savingGain)}</p>
+          <p className="text-[10px] font-black text-rose-700">적금 3% 세후 예상</p>
+          <p className="mt-1 text-base font-black text-rose-700">{wonMan(savingFutureAfterTax)}</p>
+          <p className="text-[10px] font-black text-rose-500">세전 {wonMan(savingFuture)} · 세후이자 +{wonMan(savingGainAfterTax)}</p>
         </div>
       </div>
 
@@ -1056,14 +1121,14 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
           <div className="grid grid-cols-[88px_1fr_92px] items-center gap-3">
             <div>
               <p className="text-xs font-black text-rose-700">월 적금</p>
-              <p className="text-[10px] font-bold text-slate-400">연 3%</p>
+              <p className="text-[10px] font-bold text-slate-400">연 3% 세후</p>
             </div>
             <div className="h-10 overflow-hidden rounded-full bg-white">
               <div className="flex h-10 items-center justify-end rounded-full bg-rose-400 px-3 text-[11px] font-black text-white" style={{ width: `${savingPct}%` }}>
-                {wonMan(savingFuture)}
+                {wonMan(savingFutureAfterTax)}
               </div>
             </div>
-            <p className="text-right text-xs font-black text-rose-600">+{wonMan(savingGain)}</p>
+            <p className="text-right text-xs font-black text-rose-600">+{wonMan(savingGainAfterTax)}</p>
           </div>
         </div>
       </div>
@@ -1438,7 +1503,7 @@ function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, pla
     const d = shortLifeDerived(plans[0])
     return {
       title: `총납입 ${wonMan(d.totalPaid)}, 예상 환급률 ${d.refundRate.toFixed(1)}%`,
-      body: `월 ${formatKrw(d.monthly)}씩 ${d.years}년 납입하는 구조입니다. ${d.horizonYears}년 후 환급금은 약 ${wonMan(d.refund)}으로 계산되며, 월 적금 3%는 같은 월 납입금을 납입기간 동안 적립했을 때의 예상액과 비교합니다.`,
+      body: `월 ${formatKrw(d.monthly)}씩 ${d.years}년 납입하는 구조입니다. ${d.horizonYears}년 후 환급금은 약 ${wonMan(d.refund)}으로 계산되며, 월 적금 3%는 월적립식 체감금리와 이자소득세 15.4%를 반영해 비교합니다.`,
     }
   }
   if (mode === "single") {
