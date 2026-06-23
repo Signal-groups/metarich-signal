@@ -323,6 +323,7 @@ export default function FinancialCalc() {
 }
 
 function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: (next: Partial<typeof DEFAULT_STATE>) => void }) {
+  const [step, setStep] = useState(1)
   const [levelId, setLevelId] = useState<RetirementLevelId>("standard")
   const [imageLevelId, setImageLevelId] = useState<RetirementLevelId | null>(null)
   const [copied, setCopied] = useState(false)
@@ -362,6 +363,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
   const totalGap = Math.max(monthlyGap * retirementMonths, 0)
   const yearsToRetire = Math.max(state.retireAge - state.age, 1)
   const monthlySavingNeeded = totalGap > 0 ? Math.round(totalGap / (yearsToRetire * 12)) : 0
+
   const summaryText = [
     `[노후 생활 예시] ${level.title}`,
     level.subtitle,
@@ -406,128 +408,223 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
     window.setTimeout(() => setCopied(false), 1600)
   }
 
+  const inflationLoss = Math.round((1 - 1 / Math.pow(1.03, state.lifeAge - state.retireAge)) * 100)
+
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <section>
-        <SectionTitle title="노후 생활 수준 미리보기" desc="고객이 필요한 월 생활비를 모를 때 4단계 예시로 먼저 감을 잡습니다." />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 10 }}>
-          {RETIREMENT_LEVELS.map((item) => (
-            <button key={item.id} onClick={() => applyLevel(item.id)} style={{ border: `2px solid ${levelId === item.id ? C.blue : C.border}`, borderRadius: 14, background: levelId === item.id ? C.blueLight : "#fff", padding: 14, textAlign: "left", cursor: "pointer", minHeight: 118 }}>
-              <strong style={{ display: "block", color: C.navy, fontSize: 14 }}>{item.title}</strong>
-              <span style={{ display: "block", marginTop: 5, color: C.muted, fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>{item.subtitle}</span>
-              <span style={{ display: "block", marginTop: 8, color: item.expense > item.income ? C.rose : C.teal, fontSize: 12, fontWeight: 900 }}>월 {fmt(item.expense)}원 기준</span>
+    <div style={{ display: "grid", gap: 20 }}>
+      {/* Step nav */}
+      <div style={{ display: "flex", gap: 4, background: "#F1F5FA", borderRadius: 16, padding: 4 }}>
+        {(["노후 비전", "연금 계산", "준비 방향"] as const).map((label, idx) => {
+          const n = idx + 1
+          return (
+            <button key={n} onClick={() => setStep(n)} style={{
+              flex: 1, border: "none", borderRadius: 13, padding: "11px 0",
+              background: step === n ? C.navy : "transparent",
+              color: step === n ? C.gold : C.slate,
+              fontSize: 13, fontWeight: 950, cursor: "pointer", transition: "all 0.15s",
+            }}>
+              {n}. {label}
             </button>
-          ))}
-        </div>
-        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(3, minmax(0,1fr))", gap: 12 }}>
-          <Metric label="선택 수준" value={level.title} tone={C.blue} sub={level.subtitle} />
-          <Metric label="기준 월 생활비" value={`${fmt(level.expense)}원`} tone={level.expense > level.income ? C.rose : C.teal} />
-          <Metric label="예시 월 수입" value={`${fmt(level.income)}원`} tone={C.gold} />
-        </div>
-        <button onClick={() => setImageLevelId(level.id)} style={{ marginTop: 12, width: "100%", border: `1px solid ${C.blue}33`, background: C.blueLight, color: C.blue, borderRadius: 14, padding: "13px 16px", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>
-          선택한 노후 생활 예시 이미지 보기
-        </button>
-      </section>
+          )
+        })}
+      </div>
 
-      <section style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 18 }}>
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
-          <SectionTitle title="은퇴 목표 설정" desc="먼저 언제 은퇴하고 월 얼마가 필요한지 정합니다." />
-          <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 12 }}>
-            <InputRow label="현재 나이" value={state.age} onChange={(v) => patch({ age: v })} unit="세" />
-            <InputRow label="은퇴 나이" value={state.retireAge} onChange={(v) => patch({ retireAge: v })} unit="세" />
-            <InputRow label="기대 수명" value={state.lifeAge} onChange={(v) => patch({ lifeAge: v })} unit="세" />
-            <MoneyInputRow label="희망 월 생활비" value={state.monthlyExpense} onChange={(v) => patch({ monthlyExpense: v })} />
+      {/* Step 1: 노후 비전 */}
+      {step === 1 && (
+        <div style={{ display: "grid", gap: 18 }}>
+          <SectionTitle title="어떤 노후를 원하시나요?" desc="4가지 노후 생활 수준 중 고객의 목표에 가장 가까운 것을 선택하세요." />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 10 }}>
+            {RETIREMENT_LEVELS.map((item) => (
+              <button key={item.id} onClick={() => applyLevel(item.id)} style={{
+                border: `2px solid ${levelId === item.id ? C.blue : C.border}`,
+                borderRadius: 14, background: levelId === item.id ? C.blueLight : "#fff",
+                padding: 14, textAlign: "left", cursor: "pointer", minHeight: 118,
+              }}>
+                <strong style={{ display: "block", color: C.navy, fontSize: 14 }}>{item.title}</strong>
+                <span style={{ display: "block", marginTop: 5, color: C.muted, fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>{item.subtitle}</span>
+                <span style={{ display: "block", marginTop: 8, color: item.expense > item.income ? C.rose : C.teal, fontSize: 12, fontWeight: 900 }}>월 {fmt(item.expense)}원 기준</span>
+              </button>
+            ))}
           </div>
-          <div style={{ background: C.goldLight, border: `1px solid ${C.gold}55`, borderRadius: 14, padding: 16, color: C.navy, fontSize: 13, fontWeight: 800, lineHeight: 1.7 }}>
-            {level.quote}<br />
-            <span style={{ color: C.slate, fontWeight: 700 }}>{level.point}</span>
-          </div>
-        </div>
 
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
-          <SectionTitle title="국민연금 계산기" desc="정확 조회가 아닌 상담용 간편 예상입니다." />
-          <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 14 }}>
-            <InputRow label="예상 가입기간" value={state.nationalJoinYears} onChange={(v) => patch({ nationalJoinYears: v })} unit="년" />
-            <MoneyInputRow label="평균 월소득" value={state.nationalAvgIncome} onChange={(v) => patch({ nationalAvgIncome: v })} />
-          </div>
-          <Metric label="예상 국민연금 월 수령액" value={`${fmt(nationalPension)}원`} tone={C.teal} sub="국민연금공단 예상연금 조회와 차이가 있을 수 있습니다." />
-        </div>
-      </section>
-
-      <section style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
-        <SectionTitle title="퇴직연금 계산기" desc="DB, DC, IRP 방식별로 고객 상황에 맞게 대략적인 월 환산액을 확인합니다." />
-        <MiniTabs value={state.pensionType} onChange={(id) => patch({ pensionType: id })} options={[{ id: "db", label: "DB형" }, { id: "dc", label: "DC형" }, { id: "irp", label: "IRP" }]} />
-        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "minmax(0,1.35fr) minmax(260px,0.65fr)", gap: 18, alignItems: "stretch" }}>
-          <div style={{ background: C.slateLight, borderRadius: 16, padding: 18, minHeight: 156 }}>
-            {state.pensionType === "db" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
+              <SectionTitle title="기본 정보" desc="은퇴 목표를 설정하세요." />
               <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12 }}>
-                <MoneyInputRow label="평균 월급여" value={state.salary} onChange={(v) => patch({ salary: v })} />
-                <InputRow label="총 근속 예상" value={state.workYears} onChange={(v) => patch({ workYears: v })} unit="년" />
+                <InputRow label="현재 나이" value={state.age} onChange={(v) => patch({ age: v })} unit="세" />
+                <InputRow label="은퇴 나이" value={state.retireAge} onChange={(v) => patch({ retireAge: v })} unit="세" />
+                <InputRow label="기대 수명" value={state.lifeAge} onChange={(v) => patch({ lifeAge: v })} unit="세" />
+                <MoneyInputRow label="희망 월 생활비" value={state.monthlyExpense} onChange={(v) => patch({ monthlyExpense: v })} />
               </div>
-            )}
-            {state.pensionType === "dc" && (
-              <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
-                <MoneyInputRow label="연봉" value={state.dcAnnualSalary} onChange={(v) => patch({ dcAnnualSalary: v })} />
-                <InputRow label="운용 기간" value={state.dcYears} onChange={(v) => patch({ dcYears: v })} unit="년" />
-                <InputRow label="예상 수익률" value={state.dcRate} onChange={(v) => patch({ dcRate: v })} unit="%" step={0.1} />
+            </div>
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
+              <div style={{ background: C.goldLight, border: `1px solid ${C.gold}55`, borderRadius: 14, padding: 16, marginBottom: 12 }}>
+                <p style={{ margin: "0 0 6px", color: C.navy, fontSize: 13, fontWeight: 950 }}>{level.title} · {level.subtitle}</p>
+                <p style={{ margin: 0, color: C.text, fontSize: 13, fontWeight: 800, lineHeight: 1.6 }}>{level.quote}</p>
+                <p style={{ margin: "8px 0 0", color: C.slate, fontSize: 12, fontWeight: 700 }}>{level.point}</p>
               </div>
-            )}
-            {state.pensionType === "irp" && (
-              <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
-                <MoneyInputRow label="월 납입액" value={state.irpMonthly} onChange={(v) => patch({ irpMonthly: v })} />
-                <InputRow label="납입 기간" value={state.irpYears} onChange={(v) => patch({ irpYears: v })} unit="년" />
-                <InputRow label="예상 수익률" value={state.irpRate} onChange={(v) => patch({ irpRate: v })} unit="%" step={0.1} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <Metric label="기준 월 생활비" value={`${fmt(level.expense)}원`} tone={level.expense > level.income ? C.rose : C.teal} />
+                <Metric label="예시 월 수입" value={`${fmt(level.income)}원`} tone={C.gold} />
               </div>
-            )}
+              <button onClick={() => setImageLevelId(level.id)} style={{ marginTop: 10, width: "100%", border: `1px solid ${C.blue}33`, background: C.blueLight, color: C.blue, borderRadius: 12, padding: "11px 16px", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                노후 생활 예시 이미지 보기
+              </button>
+            </div>
           </div>
-          <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: 10, minWidth: 0 }}>
-            <Metric label="퇴직연금 월 환산액" value={`${fmt(selectedRetirementMonthly)}원`} tone={C.blue} sub={`${state.lifeAge - state.retireAge}년 동안 나눠 받는 기준`} />
-            <Metric label="DC/IRP 예상 적립금" value={`${fmt(state.pensionType === "dc" ? dcLump : state.pensionType === "irp" ? irpLump : state.salary * state.workYears)}원`} tone={C.gold} />
-          </div>
-        </div>
-      </section>
 
-      <section style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <SectionTitle title="최종 노후자금 계산" desc="총 필요금액에서 국민연금과 퇴직연금을 빼고, 개인연금·자산소득으로 채워야 할 금액을 보여줍니다." />
-          <button onClick={copySummary} style={{ border: "none", background: C.navy, color: C.gold, borderRadius: 12, padding: "12px 16px", fontSize: 12, fontWeight: 900, cursor: "pointer", whiteSpace: "nowrap" }}>
-            {copied ? "복사 완료" : "상담자료 복사"}
+          <button onClick={() => setStep(2)} style={{ border: "none", background: C.navy, color: C.gold, borderRadius: 14, padding: "14px 0", fontSize: 14, fontWeight: 950, cursor: "pointer" }}>
+            다음 단계 → 연금 계산하기
           </button>
         </div>
-        <div style={{ borderRadius: 20, background: `linear-gradient(135deg, ${C.navy}, ${C.navyMid})`, color: "#fff", padding: 24, marginBottom: 14, overflow: "hidden" }}>
-          <p style={{ margin: 0, color: C.gold, fontSize: 12, fontWeight: 950 }}>{state.retireAge}세 은퇴부터 {state.lifeAge}세까지 총 필요 노후자금</p>
-          <p style={{ margin: "8px 0 0", fontSize: 38, lineHeight: 1.15, fontWeight: 950, letterSpacing: "-1px" }}>{fmt(totalNeeded)}원</p>
-          <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.72)", fontSize: 13, fontWeight: 800 }}>
-            월 {fmt(state.monthlyExpense)}원 × {state.lifeAge - state.retireAge}년 기준
-          </p>
+      )}
+
+      {/* Step 2: 연금 계산 */}
+      {step === 2 && (
+        <div style={{ display: "grid", gap: 18 }}>
+          <section style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 18 }}>
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
+              <SectionTitle title="국민연금 계산기" desc="정확 조회가 아닌 상담용 간편 예상입니다." />
+              <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 14 }}>
+                <InputRow label="예상 가입기간" value={state.nationalJoinYears} onChange={(v) => patch({ nationalJoinYears: v })} unit="년" />
+                <MoneyInputRow label="평균 월소득" value={state.nationalAvgIncome} onChange={(v) => patch({ nationalAvgIncome: v })} />
+              </div>
+              <Metric label="예상 국민연금 월 수령액" value={`${fmt(nationalPension)}원`} tone={C.teal} sub="국민연금공단 조회와 차이가 있을 수 있습니다." />
+            </div>
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
+              <SectionTitle title="개인연금·자산소득" desc="은퇴 후 추가 수입원을 입력합니다." />
+              <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12 }}>
+                <MoneyInputRow label="개인연금 월 수령" value={state.monthlyPrivatePension} onChange={(v) => patch({ monthlyPrivatePension: v })} />
+                <MoneyInputRow label="자산소득 월 수입" value={state.monthlyAssetIncome} onChange={(v) => patch({ monthlyAssetIncome: v })} />
+              </div>
+            </div>
+          </section>
+
+          <section style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 18, background: "#fff" }}>
+            <SectionTitle title="퇴직연금 계산기" desc="DB, DC, IRP 방식별로 고객 상황에 맞게 대략적인 월 환산액을 확인합니다." />
+            <MiniTabs value={state.pensionType} onChange={(id) => patch({ pensionType: id })} options={[{ id: "db", label: "DB형" }, { id: "dc", label: "DC형" }, { id: "irp", label: "IRP" }]} />
+            <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "minmax(0,1.35fr) minmax(260px,0.65fr)", gap: 18, alignItems: "stretch" }}>
+              <div style={{ background: C.slateLight, borderRadius: 16, padding: 18, minHeight: 156 }}>
+                {state.pensionType === "db" && (
+                  <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12 }}>
+                    <MoneyInputRow label="평균 월급여" value={state.salary} onChange={(v) => patch({ salary: v })} />
+                    <InputRow label="총 근속 예상" value={state.workYears} onChange={(v) => patch({ workYears: v })} unit="년" />
+                  </div>
+                )}
+                {state.pensionType === "dc" && (
+                  <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
+                    <MoneyInputRow label="연봉" value={state.dcAnnualSalary} onChange={(v) => patch({ dcAnnualSalary: v })} />
+                    <InputRow label="운용 기간" value={state.dcYears} onChange={(v) => patch({ dcYears: v })} unit="년" />
+                    <InputRow label="예상 수익률" value={state.dcRate} onChange={(v) => patch({ dcRate: v })} unit="%" step={0.1} />
+                  </div>
+                )}
+                {state.pensionType === "irp" && (
+                  <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
+                    <MoneyInputRow label="월 납입액" value={state.irpMonthly} onChange={(v) => patch({ irpMonthly: v })} />
+                    <InputRow label="납입 기간" value={state.irpYears} onChange={(v) => patch({ irpYears: v })} unit="년" />
+                    <InputRow label="예상 수익률" value={state.irpRate} onChange={(v) => patch({ irpRate: v })} unit="%" step={0.1} />
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateRows: "1fr 1fr", gap: 10, minWidth: 0 }}>
+                <Metric label="퇴직연금 월 환산액" value={`${fmt(selectedRetirementMonthly)}원`} tone={C.blue} sub={`${state.lifeAge - state.retireAge}년 나눠 받는 기준`} />
+                <Metric label="DC/IRP 예상 적립금" value={`${fmt(state.pensionType === "dc" ? dcLump : state.pensionType === "irp" ? irpLump : state.salary * state.workYears)}원`} tone={C.gold} />
+              </div>
+            </div>
+          </section>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
+            <button onClick={() => setStep(1)} style={{ border: `1px solid ${C.border}`, background: "#fff", color: C.slate, borderRadius: 14, padding: "13px 0", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>
+              ← 이전
+            </button>
+            <button onClick={() => setStep(3)} style={{ border: "none", background: C.navy, color: C.gold, borderRadius: 14, padding: "13px 0", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>
+              다음 → 준비 방향 확인
+            </button>
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12, marginBottom: 14 }}>
-          <Metric label="국민연금+퇴직연금 차감" value={`-${fmt(pensionCoveredTotal)}원`} tone={C.blue} sub={`월 ${fmt(publicAndRetirementMonthly)}원 반영`} />
-          <Metric label="개인연금·자산소득 필요액" value={`${fmt(privateAssetNeededTotal)}원`} tone={C.gold} sub={`월 ${fmt(privateAssetNeededMonthly)}원 필요`} />
-          <Metric label="현재 추가 준비 부족액" value={`${privateAssetGapMonthly > 0 ? "-" : "+"}${fmt(Math.abs(privateAssetGapTotal))}원`} tone={privateAssetGapMonthly > 0 ? C.rose : C.teal} sub={`월 ${privateAssetGapMonthly > 0 ? "-" : "+"}${fmt(Math.abs(privateAssetGapMonthly))}원`} />
+      )}
+
+      {/* Step 3: 준비 방향 */}
+      {step === 3 && (
+        <div style={{ display: "grid", gap: 18 }}>
+          <div style={{ borderRadius: 20, background: `linear-gradient(135deg, ${C.navy}, ${C.navyMid})`, color: "#fff", padding: 28, overflow: "hidden" }}>
+            <p style={{ margin: 0, color: C.gold, fontSize: 12, fontWeight: 950 }}>{state.retireAge}세 은퇴부터 {state.lifeAge}세까지 총 필요 노후자금</p>
+            <p style={{ margin: "8px 0 0", fontSize: 38, lineHeight: 1.15, fontWeight: 950, letterSpacing: "-1px" }}>{fmt(totalNeeded)}원</p>
+            <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.72)", fontSize: 13, fontWeight: 800 }}>월 {fmt(state.monthlyExpense)}원 × {state.lifeAge - state.retireAge}년 기준</p>
+            <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "12px 14px" }}>
+                <p style={{ margin: "0 0 4px", fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 800 }}>국민연금 + 퇴직연금</p>
+                <p style={{ margin: 0, fontSize: 17, fontWeight: 950 }}>월 {fmt(publicAndRetirementMonthly)}원</p>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "12px 14px" }}>
+                <p style={{ margin: "0 0 4px", fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 800 }}>개인연금 + 자산소득</p>
+                <p style={{ margin: 0, fontSize: 17, fontWeight: 950 }}>월 {fmt(privateAssetMonthly)}원</p>
+              </div>
+              <div style={{ background: monthlyGap > 0 ? "rgba(192,57,43,0.32)" : "rgba(14,126,107,0.32)", borderRadius: 14, padding: "12px 14px" }}>
+                <p style={{ margin: "0 0 4px", fontSize: 11, color: "rgba(255,255,255,0.6)", fontWeight: 800 }}>월 {monthlyGap > 0 ? "부족" : "여유"}</p>
+                <p style={{ margin: 0, fontSize: 17, fontWeight: 950, color: monthlyGap > 0 ? "#FF8A80" : "#80CBC4" }}>{monthlyGap > 0 ? "-" : "+"}{fmt(Math.abs(monthlyGap))}원</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: inputGrid(3), gap: 12 }}>
+            <Metric label="공적연금 차감 후 잔여" value={`${fmt(privateAssetNeededTotal)}원`} tone={C.gold} sub={`월 ${fmt(privateAssetNeededMonthly)}원 필요`} />
+            <Metric label="현재 준비 부족액" value={`${privateAssetGapMonthly > 0 ? "-" : "+"}${fmt(Math.abs(privateAssetGapTotal))}원`} tone={privateAssetGapMonthly > 0 ? C.rose : C.teal} sub={`월 ${privateAssetGapMonthly > 0 ? "-" : "+"}${fmt(Math.abs(privateAssetGapMonthly))}원`} />
+            <Metric label="지금부터 필요 월 저축" value={monthlySavingNeeded > 0 ? `${fmt(monthlySavingNeeded)}원` : "여유 있음"} tone={monthlySavingNeeded > 0 ? C.rose : C.teal} sub={`은퇴까지 ${yearsToRetire}년 기준`} />
+          </div>
+
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, padding: 20, background: "#fff" }}>
+            <p style={{ margin: "0 0 14px", color: C.navy, fontSize: 16, fontWeight: 950 }}>준비해야 할 방향</p>
+            <div style={{ display: "grid", gap: 10 }}>
+              {([
+                {
+                  n: "1",
+                  title: "국민연금 수령액 정확히 파악",
+                  body: `예상 월 ${fmt(nationalPension)}원 — 국민연금공단 앱(내 곁에 국민연금)으로 실제 예상액 조회 권장`,
+                  color: C.blue,
+                },
+                {
+                  n: "2",
+                  title: "퇴직연금 관리 전략 확인",
+                  body: `DB형은 근속 유지, DC형·IRP는 수익률 관리가 핵심. 현재 ${state.pensionType.toUpperCase()} 기준 월 ${fmt(selectedRetirementMonthly)}원 예상`,
+                  color: C.teal,
+                },
+                {
+                  n: "3",
+                  title: `개인연금 월 ${fmt(Math.max(privateAssetGapMonthly, 0))}원 추가 준비`,
+                  body: monthlySavingNeeded > 0
+                    ? `은퇴(${state.retireAge}세)까지 ${yearsToRetire}년 동안 월 ${fmt(monthlySavingNeeded)}원씩 개인연금·저축으로 준비하면 부족분을 채울 수 있습니다.`
+                    : `현재 준비 기준으로 월 ${fmt(Math.abs(monthlyGap))}원 여유. 의료비·간병비 변수만 추가로 점검하세요.`,
+                  color: monthlySavingNeeded > 0 ? C.rose : C.teal,
+                },
+                {
+                  n: "4",
+                  title: "물가상승·의료비 별도 대비",
+                  body: `화폐가치 하락(연 3% 기준 ${state.lifeAge - state.retireAge}년 후 구매력 약 ${inflationLoss}% 감소)과 장기요양 비용을 별도 보험으로 준비 필요`,
+                  color: C.gold,
+                },
+              ] as const).map((item) => (
+                <div key={item.n} style={{ display: "flex", gap: 14, padding: "14px 16px", background: C.slateLight, borderRadius: 14, borderLeft: `4px solid ${item.color}` }}>
+                  <span style={{ minWidth: 28, height: 28, borderRadius: "50%", background: item.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 950, flexShrink: 0 }}>{item.n}</span>
+                  <div>
+                    <p style={{ margin: "0 0 4px", color: C.navy, fontSize: 14, fontWeight: 950 }}>{item.title}</p>
+                    <p style={{ margin: 0, color: C.slate, fontSize: 12, fontWeight: 700, lineHeight: 1.6 }}>{item.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setStep(2)} style={{ flex: 1, border: `1px solid ${C.border}`, background: "#fff", color: C.slate, borderRadius: 14, padding: "13px 0", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>
+              ← 이전
+            </button>
+            <button onClick={copySummary} style={{ flex: 2, border: "none", background: C.navy, color: C.gold, borderRadius: 14, padding: "13px 0", fontSize: 13, fontWeight: 950, cursor: "pointer" }}>
+              {copied ? "복사 완료 ✓" : "상담자료 복사"}
+            </button>
+          </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12, marginBottom: 14 }}>
-          <Metric label="국민연금 반영액" value={`${fmt(nationalPension)}원`} tone={C.blue} sub="위 국민연금 계산기 결과" />
-          <Metric label="퇴직연금 반영액" value={`${fmt(selectedRetirementMonthly)}원`} tone={C.gold} sub={`${state.pensionType.toUpperCase()} 계산 결과`} />
-          <MoneyInputRow label="개인연금 월 수령" value={state.monthlyPrivatePension} onChange={(v) => patch({ monthlyPrivatePension: v })} />
-          <MoneyInputRow label="자산소득 월 수입" value={state.monthlyAssetIncome} onChange={(v) => patch({ monthlyAssetIncome: v })} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: inputGrid(2), gap: 12, marginBottom: 14 }}>
-          <Metric label="월 예상 수입" value={`${fmt(totalIncome)}원`} tone={C.teal} />
-          <Metric label="월 부족·여유" value={`${monthlyGap > 0 ? "-" : "+"}${fmt(Math.abs(monthlyGap))}원`} tone={monthlyGap > 0 ? C.rose : C.teal} />
-        </div>
-        <div style={{ background: monthlyGap > 0 ? C.roseLight : C.tealLight, border: `1px solid ${monthlyGap > 0 ? C.rose : C.teal}33`, borderRadius: 16, padding: 20 }}>
-          <p style={{ margin: "0 0 8px", color: monthlyGap > 0 ? C.rose : C.teal, fontSize: 12, fontWeight: 900 }}>상담 요약</p>
-          <p style={{ margin: 0, color: C.text, fontSize: 17, fontWeight: 900, lineHeight: 1.6 }}>
-            {monthlyGap > 0
-              ? `은퇴 후 ${state.lifeAge - state.retireAge}년 기준 총 ${fmtM(totalGap)}원이 부족합니다. 지금부터 매월 약 ${fmt(monthlySavingNeeded)}원씩 추가 준비가 필요합니다.`
-              : `현재 입력 기준으로 월 ${fmt(Math.abs(monthlyGap))}원 정도 여유가 있습니다. 의료비와 간병비 장기화 변수만 별도로 점검하면 좋습니다.`}
-          </p>
-          <p style={{ margin: "12px 0 0", color: C.muted, fontSize: 12, fontWeight: 700, lineHeight: 1.6 }}>
-            상담자료 복사는 현재 선택한 노후 생활 예시 이미지와 위 요약 문구를 함께 복사합니다. 일부 환경에서는 문구만 복사될 수 있습니다.
-          </p>
-        </div>
-      </section>
+      )}
 
       {imageLevel && (
         <div
@@ -552,6 +649,7 @@ function RetirementCalc({ state, patch }: { state: typeof DEFAULT_STATE; patch: 
     </div>
   )
 }
+
 
 function CompareCalc() {
   const [inp, setInp] = useState({ monthly: 500000, years: 5, bankRate: 3.5, insuranceReturn: 124 })
@@ -586,6 +684,75 @@ function CompareCalc() {
           body={insurance >= bank ? `현재 조건에서는 보험 저축 예상 환급이 은행 저축보다 ${fmt(insurance - bank)}원 높게 보입니다.` : `현재 조건에서는 은행 저축 세후 금액이 보험 예상 환급보다 ${fmt(bank - insurance)}원 높게 보입니다.`}
         />
       )}
+
+      {/* 인포그래픽: 연도별 누적 비교 */}
+      <div style={{ marginTop: 20, border: `1px solid ${C.border}`, borderRadius: 18, padding: 20, background: "#fff" }}>
+        <p style={{ margin: "0 0 4px", color: C.navy, fontSize: 15, fontWeight: 950 }}>연도별 누적 비교</p>
+        <p style={{ margin: "0 0 16px", color: C.muted, fontSize: 12, fontWeight: 700 }}>동일 납입 조건에서 은행(세후)과 보험 환급 예상액의 연도별 차이</p>
+        {Array.from({ length: Math.min(inp.years, 10) }, (_, i) => {
+          const yr = i + 1
+          const m = yr * 12
+          const rr = monthlyRate(inp.bankRate)
+          const bGross = rr === 0 ? inp.monthly * m : inp.monthly * ((Math.pow(1 + rr, m) - 1) / rr)
+          const bVal = Math.round(inp.monthly * m + (bGross - inp.monthly * m) * (1 - 0.154))
+          const insVal = Math.round(inp.monthly * m * (inp.insuranceReturn / 100))
+          const maxVal = Math.max(bVal, insVal, 1)
+          const isBetter = insVal >= bVal
+          return (
+            <div key={yr} style={{ display: "grid", gridTemplateColumns: "36px minmax(0,1fr) minmax(0,1fr)", gap: 8, alignItems: "center", marginBottom: 8 }}>
+              <span style={{ color: C.slate, fontSize: 11, fontWeight: 950, textAlign: "right" }}>{yr}년</span>
+              <div>
+                <div style={{ height: 10, borderRadius: 999, background: "#E8EDF4", overflow: "hidden", marginBottom: 2 }}>
+                  <div style={{ width: `${(bVal / maxVal) * 100}%`, height: "100%", background: C.blue, borderRadius: 999 }} />
+                </div>
+                <span style={{ color: C.blue, fontSize: 10, fontWeight: 800 }}>은행 {fmtM(bVal)}원</span>
+              </div>
+              <div>
+                <div style={{ height: 10, borderRadius: 999, background: "#E8EDF4", overflow: "hidden", marginBottom: 2 }}>
+                  <div style={{ width: `${(insVal / maxVal) * 100}%`, height: "100%", background: isBetter ? C.teal : C.rose, borderRadius: 999 }} />
+                </div>
+                <span style={{ color: isBetter ? C.teal : C.rose, fontSize: 10, fontWeight: 800 }}>보험 {fmtM(insVal)}원</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* 인포그래픽: 은행 금리의 함정 */}
+      <div style={{ marginTop: 14, background: C.goldLight, border: `1px solid ${C.gold}55`, borderRadius: 18, padding: 20 }}>
+        <p style={{ margin: "0 0 14px", color: C.navy, fontSize: 15, fontWeight: 950 }}>은행 금리의 함정</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr auto 1fr", gap: 8, alignItems: "center", marginBottom: 14 }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", textAlign: "center" }}>
+            <p style={{ margin: "0 0 4px", color: C.muted, fontSize: 11, fontWeight: 800 }}>명목 금리</p>
+            <p style={{ margin: 0, color: C.navy, fontSize: 20, fontWeight: 950 }}>{inp.bankRate}%</p>
+          </div>
+          <span style={{ color: C.rose, fontSize: 18, fontWeight: 950 }}>−</span>
+          <div style={{ background: "#fff", borderRadius: 12, padding: "12px 14px", textAlign: "center" }}>
+            <p style={{ margin: "0 0 4px", color: C.muted, fontSize: 11, fontWeight: 800 }}>이자소득세 15.4%</p>
+            <p style={{ margin: 0, color: C.rose, fontSize: 20, fontWeight: 950 }}>{(inp.bankRate * 0.154).toFixed(2)}%</p>
+          </div>
+          <span style={{ color: C.teal, fontSize: 18, fontWeight: 950 }}>=</span>
+          <div style={{ background: C.navy, borderRadius: 12, padding: "12px 14px", textAlign: "center" }}>
+            <p style={{ margin: "0 0 4px", color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 800 }}>실제 수익률</p>
+            <p style={{ margin: 0, color: C.gold, fontSize: 20, fontWeight: 950 }}>{(inp.bankRate * (1 - 0.154)).toFixed(2)}%</p>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ margin: "0 0 4px", color: C.muted, fontSize: 11, fontWeight: 800 }}>물가상승률(연 3%) 반영 시 실질 수익률</p>
+            <p style={{ margin: 0, color: (inp.bankRate * (1 - 0.154) - 3) >= 0 ? C.teal : C.rose, fontSize: 17, fontWeight: 950 }}>
+              {(inp.bankRate * (1 - 0.154) - 3).toFixed(2)}%
+            </p>
+          </div>
+          <div style={{ background: "#fff", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ margin: "0 0 4px", color: C.muted, fontSize: 11, fontWeight: 800 }}>보험 납입원금 대비 환급률</p>
+            <p style={{ margin: 0, color: C.navy, fontSize: 17, fontWeight: 950 }}>{inp.insuranceReturn}%</p>
+          </div>
+        </div>
+        <p style={{ margin: "12px 0 0", color: C.slate, fontSize: 12, fontWeight: 700, lineHeight: 1.65 }}>
+          은행 이자에는 이자소득세 15.4%가 공제되며, 물가상승률(연 3%)을 적용하면 실질 수익률은 <strong>{(inp.bankRate * (1 - 0.154) - 3).toFixed(2)}%</strong>에 불과합니다. 비과세·분리과세 혜택이 있는 보험 저축과 비교할 때 이 세금 차이를 반드시 안내하세요.
+        </p>
+      </div>
     </div>
   )
 }
@@ -680,21 +847,62 @@ function CompoundCalc({ age }: { age: number }) {
         <Metric label={mode === "single" ? "거치기간" : "저축 후 거치기간"} value={`${fmt(holdYears)}년`} tone={C.gold} />
         <Metric label="최종 예상 금액" value={`${fmt(final)}원`} tone={C.teal} />
       </div>
-      <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "250px minmax(0,1fr)", gap: 14, alignItems: "stretch" }}>
-        <div style={{ borderRadius: 16, background: C.goldLight, border: `1px solid ${C.gold}66`, padding: 18 }}>
-          <p style={{ margin: 0, color: C.navy, fontSize: 13, fontWeight: 950 }}>72의 법칙</p>
-          <p style={{ margin: "8px 0 0", color: C.text, fontSize: 26, fontWeight: 950 }}>{rule72 ? `약 ${rule72}년` : "-"}</p>
-          <p style={{ margin: "6px 0 0", color: C.slate, fontSize: 12, fontWeight: 800, lineHeight: 1.5 }}>72를 연 수익률로 나누면 원금이 2배가 되는 대략적인 기간을 빠르게 설명할 수 있습니다.</p>
-        </div>
-        <div style={{ borderRadius: 16, background: C.slateLight, padding: 18, minWidth: 0 }}>
-          <p style={{ margin: "0 0 12px", color: C.slate, fontSize: 12, fontWeight: 950 }}>단리 vs 복리 가로 비교</p>
-          <BarCompare label="원금" value={principalTotal} max={barMax} color={C.slate} />
-          <BarCompare label="단리" value={simpleFinal} max={barMax} color={C.blue} />
-          <BarCompare label="복리" value={final} max={barMax} color={C.teal} />
-          <p style={{ margin: "10px 0 0", color: C.muted, fontSize: 11, fontWeight: 800 }}>차이: 복리가 단리보다 {fmt(Math.max(final - simpleFinal, 0))}원 높게 예상됩니다.</p>
-        </div>
+      <div style={{ marginTop: 16, borderRadius: 16, background: C.slateLight, padding: 18, minWidth: 0 }}>
+        <p style={{ margin: "0 0 12px", color: C.slate, fontSize: 12, fontWeight: 950 }}>단리 vs 복리 가로 비교</p>
+        <BarCompare label="원금" value={principalTotal} max={barMax} color={C.slate} />
+        <BarCompare label="단리" value={simpleFinal} max={barMax} color={C.blue} />
+        <BarCompare label="복리" value={final} max={barMax} color={C.teal} />
+        <p style={{ margin: "10px 0 0", color: C.muted, fontSize: 11, fontWeight: 800 }}>차이: 복리가 단리보다 {fmt(Math.max(final - simpleFinal, 0))}원 높게 예상됩니다.</p>
       </div>
       {confirmed && <ResultHero title="상담 포인트" tone={C.teal} body={mode === "single" ? `현재 ${inp.currentAge}세에 일시납 후 ${inp.startAge}세 개시까지 ${holdYears}년 거치하면 최종 예상 금액은 약 ${fmt(final)}원입니다.` : `현재 ${inp.currentAge}세부터 ${inp.saveYears}년 저축하고 ${inp.startAge}세 개시까지 ${holdYears}년 거치하면 최종 예상 금액은 약 ${fmt(final)}원입니다.`} />}
+
+      {/* 72의 법칙 전용 섹션 */}
+      <div style={{ marginTop: 20, border: `1px solid ${C.gold}55`, borderRadius: 18, padding: 20, background: C.goldLight }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 14, background: C.gold, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ color: "#fff", fontSize: 18, fontWeight: 950 }}>72</span>
+          </div>
+          <div>
+            <p style={{ margin: 0, color: C.navy, fontSize: 16, fontWeight: 950 }}>72의 법칙</p>
+            <p style={{ margin: "3px 0 0", color: C.slate, fontSize: 12, fontWeight: 700 }}>72 ÷ 연 수익률 = 원금이 2배가 되는 기간 (빠른 암산 도구)</p>
+          </div>
+          <div style={{ marginLeft: "auto", background: C.navy, borderRadius: 14, padding: "10px 18px", textAlign: "center" }}>
+            <p style={{ margin: 0, color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: 800 }}>현재 {inp.rate}% 기준</p>
+            <p style={{ margin: "3px 0 0", color: C.gold, fontSize: 22, fontWeight: 950 }}>{rule72 ? `약 ${rule72}년` : "-"}</p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0,1fr))", gap: 8, marginBottom: 14 }}>
+          {[2, 3, 4, 5, 6, 8, 10, 12, 15, 18, 20, 24].map((rate) => {
+            const yrs = Math.round((72 / rate) * 10) / 10
+            const isActive = rate === inp.rate
+            return (
+              <button key={rate} onClick={() => setInp({ ...inp, rate })} style={{
+                border: `2px solid ${isActive ? C.navy : C.gold + "44"}`,
+                borderRadius: 12, background: isActive ? C.navy : "#fff",
+                padding: "10px 6px", cursor: "pointer", textAlign: "center",
+              }}>
+                <p style={{ margin: 0, color: isActive ? C.gold : C.navy, fontSize: 13, fontWeight: 950 }}>{rate}%</p>
+                <p style={{ margin: "4px 0 0", color: isActive ? "rgba(255,255,255,0.8)" : C.slate, fontSize: 11, fontWeight: 800 }}>{yrs}년</p>
+              </button>
+            )
+          })}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div style={{ background: "#fff", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ margin: "0 0 4px", color: C.muted, fontSize: 11, fontWeight: 800 }}>은행 예금 3.5% 기준 2배</p>
+            <p style={{ margin: 0, color: C.blue, fontSize: 16, fontWeight: 950 }}>약 {Math.round((72 / 3.5) * 10) / 10}년</p>
+          </div>
+          <div style={{ background: "#fff", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ margin: "0 0 4px", color: C.muted, fontSize: 11, fontWeight: 800 }}>보험 5% 수익률 기준 2배</p>
+            <p style={{ margin: 0, color: C.teal, fontSize: 16, fontWeight: 950 }}>약 {Math.round((72 / 5) * 10) / 10}년</p>
+          </div>
+        </div>
+        <p style={{ margin: "12px 0 0", color: C.slate, fontSize: 12, fontWeight: 700, lineHeight: 1.6 }}>
+          위 표에서 금리를 클릭하면 계산기 수익률에 바로 적용됩니다. 고객에게 "지금 은행에 넣으면 2배가 되려면 {Math.round((72 / 3.5) * 10) / 10}년, 보험(5%)은 {Math.round((72 / 5) * 10) / 10}년"이라고 직관적으로 설명하세요.
+        </p>
+      </div>
     </div>
   )
 }
