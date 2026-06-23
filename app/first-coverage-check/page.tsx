@@ -932,6 +932,14 @@ export default function FirstCoverageCheckPage() {
   const cancerTreatmentGap = cancerTreatmentNeedTotal - cancerTreatmentReady
   const rateItems = resultList.filter(item => item.title !== "치료방법" || form.selectedTreatmentItems.length > 0)
   const averageRate = clampRate(rateItems.reduce((sum, item) => sum + item.rate, 0) / Math.max(1, rateItems.length))
+  const priorityItems = [...rateItems].sort((a, b) => a.rate - b.rate)
+  const topGapItems = priorityItems.slice(0, 3)
+  const mainGapItem = topGapItems[0] || result.cancer
+  const resultMessage = averageRate >= 75
+    ? "핵심 보장이 비교적 안정적으로 준비되어 있습니다. 세부 담보의 지급 조건과 갱신 여부를 확인하면 됩니다."
+    : averageRate >= 45
+      ? "기본 보장은 일부 준비되어 있지만, 실제 치료비와 간병비까지 감당하기에는 보완이 필요합니다."
+      : "현재 보장은 진단비 일부에 치우쳐 있어, 치료비·간병비·수술비 공백을 우선 확인해야 합니다."
   const currentIndex = steps.findIndex((step) => step.id === active)
   const next = () => setActive(steps[Math.min(currentIndex + 1, steps.length - 1)].id)
   const prev = () => setActive(steps[Math.max(currentIndex - 1, 0)].id)
@@ -993,7 +1001,32 @@ export default function FirstCoverageCheckPage() {
   if (!allowed) return <CenterMessage title="사용 권한이 없습니다" body={lockedReason} action={() => router.push("/dashboard")} />
 
   return (
-    <main className="min-h-screen bg-[#eef3f8] p-4 text-slate-900 sm:p-6 lg:p-8">
+    <>
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 0; }
+          body * { visibility: hidden !important; }
+          .coverage-print-report, .coverage-print-report * { visibility: visible !important; }
+          .coverage-print-report { display: block !important; position: fixed; inset: 0; background: #ffffff; }
+          .coverage-print-page {
+            width: 297mm !important;
+            height: 210mm !important;
+            overflow: hidden !important;
+            page-break-after: always;
+            break-after: page;
+            box-shadow: none !important;
+          }
+          .coverage-print-page:last-child {
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+          .no-print { display: none !important; }
+        }
+        @media screen {
+          .coverage-print-report { display: none !important; }
+        }
+      `}</style>
+      <main className="min-h-screen bg-[#eef3f8] p-4 text-slate-900 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1440px]">
         <header className="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
           <button onClick={() => { if (window.opener) { window.opener.focus(); window.close(); } else { router.push("/dashboard"); } }} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm">
@@ -1534,7 +1567,34 @@ export default function FirstCoverageCheckPage() {
               </Panel>
             )}
             {active === "result" && (
-              <Panel title="보장 공백 진단 결과" desc="첫 상담에서 오늘 확인된 공백을 설명하고, 상세 보장분석으로 이어가기 위한 화면입니다.">
+              <Panel title="상담 요약" desc="고객에게 먼저 설명할 결론과 우선순위만 정리했습니다. 상세 근거는 아래에서 펼쳐 확인할 수 있습니다.">
+                <ResultCounselSummary
+                  customerName={form.customerName || "고객"}
+                  averageRate={averageRate}
+                  message={resultMessage}
+                  mainGapItem={mainGapItem}
+                  topGapItems={topGapItems}
+                  resultList={rateItems}
+                />
+                <CoveragePrintReport
+                  customerName={form.customerName || "고객"}
+                  averageRate={averageRate}
+                  message={resultMessage}
+                  mainGapItem={mainGapItem}
+                  topGapItems={topGapItems}
+                  resultList={rateItems}
+                  currentCancerCase={currentCancerCase}
+                  cancerBenefitLabel={cancerBenefitLabel}
+                  cancerDiagnosisBenefit={cancerDiagnosisBenefit}
+                  cancerDiagnosisAfterLiving={cancerDiagnosisAfterLiving}
+                  cancerTreatmentReady={cancerTreatmentReady}
+                  cancerTreatmentGap={cancerTreatmentGap}
+                  cancerTreatmentNeedTotal={cancerTreatmentNeedTotal}
+                  checkedTreatmentCount={form.selectedTreatmentItems.length}
+                />
+                <details className="no-print mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                  <summary className="cursor-pointer text-sm font-black text-slate-800">상세 계산 근거 펼쳐보기</summary>
+                  <div className="mt-4">
                 <div className="result-summary-box mb-4 rounded-2xl border border-[#bcd6f0] bg-[#f2f8ff] p-5">
                   <p className="text-sm font-black text-[#1a3a6e]">{form.customerName || "고객"}님의 현재 준비율</p>
                   <div className="mt-3 flex flex-wrap items-end gap-4">
@@ -1721,7 +1781,8 @@ export default function FirstCoverageCheckPage() {
           </section>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   )
 }
 
