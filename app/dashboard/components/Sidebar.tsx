@@ -76,7 +76,7 @@ function ToolIcon({ icon }: { icon: string }) {
 export default function Sidebar({ 
   user, selectedDate, onDateChange, mode, onBack, 
   externalMenuStatus, onMenuStatusChange, onTabChange, activeTab,
-  isOpen, setIsOpen, onOpenOffice, onOpenConsulting, menuSettingsSignal
+  isOpen, setIsOpen, onOpenOffice, onOpenConsulting
 }: any) {
   const router = useRouter();
   
@@ -125,12 +125,6 @@ export default function Sidebar({
   useEffect(() => {
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
-
-  useEffect(() => {
-    if (isMaster && Number(menuSettingsSignal || 0) > 0) {
-      setIsConsultModalOpen(true);
-    }
-  }, [menuSettingsSignal, isMaster]);
 
   async function fetchMenuSettings() {
     const { data } = await supabase.from("team_settings").select("key, value");

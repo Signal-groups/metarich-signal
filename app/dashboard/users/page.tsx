@@ -14,11 +14,102 @@ import { enabled, getCompanyName, getCompanyType, getHeadquarter, getRank, type 
 type CompanyTypeFilter = "all" | "metarich" | "external"
 type ApprovedFilter = "all" | "true" | "false"
 type SortKey = "created_at" | "name" | "headquarter"
+type StaffTab = "users" | "roles" | "analytics"
+type RolePresetId = "guest" | "guest_approved" | "agent" | "full"
 
 function roleLevelFor(rank: string) {
   if (rank === "headquarters") return "headquarters"
   if (rank === "leader") return "director"
   return rank
+}
+
+const rolePresets: Array<{
+  id: RolePresetId
+  title: string
+  desc: string
+  enabledMenus: string[]
+  blockedMenus: string[]
+}> = [
+  {
+    id: "guest",
+    title: "게스트",
+    desc: "승인 전 상태입니다. 기본 공개 도구만 확인할 수 있습니다.",
+    enabledMenus: ["기본 공개 메뉴"],
+    blockedMenus: ["사무실 업무", "보장분석PRO", "재무설계PRO", "제안서 생성"],
+  },
+  {
+    id: "guest_approved",
+    title: "게스트 승인",
+    desc: "기본 상담 도구까지 열어주고, 설계사 전용 업무는 막아둡니다.",
+    enabledMenus: ["보장별 통계", "보험료 비교", "수술비 검색", "금융계산기", "재무설계 포트폴리오"],
+    blockedMenus: ["사무실 업무", "보장분석PRO", "재무설계PRO", "제안서 생성"],
+  },
+  {
+    id: "agent",
+    title: "설계사 승인",
+    desc: "상담과 제안 업무를 진행하는 기본 설계사 권한입니다.",
+    enabledMenus: ["사무실 업무", "보장분석PRO", "재무설계PRO", "첫 상담 보장체크", "제안서 생성"],
+    blockedMenus: ["CRM", "청구 자동화", "브랜딩 AI"],
+  },
+  {
+    id: "full",
+    title: "전체 권한",
+    desc: "관리자가 별도 업무까지 맡기는 직원에게 부여합니다.",
+    enabledMenus: ["사무실 업무", "CRM", "청구 자동화", "브랜딩 AI", "전체 상담 도구"],
+    blockedMenus: [],
+  },
+]
+
+function rolePresetPayload(presetId: RolePresetId) {
+  if (presetId === "guest") {
+    return {
+      is_approved: false,
+      role: "guest",
+      role_level: "guest",
+      rank: "guest",
+      crm_access: false,
+      office_access: false,
+      claim_access: false,
+      branding_access: false,
+    }
+  }
+
+  if (presetId === "guest_approved") {
+    return {
+      is_approved: true,
+      role: "guest",
+      role_level: "guest",
+      rank: "guest",
+      crm_access: false,
+      office_access: false,
+      claim_access: false,
+      branding_access: false,
+    }
+  }
+
+  if (presetId === "agent") {
+    return {
+      is_approved: true,
+      role: "agent",
+      role_level: "agent",
+      rank: "agent",
+      crm_access: false,
+      office_access: true,
+      claim_access: false,
+      branding_access: false,
+    }
+  }
+
+  return {
+    is_approved: true,
+    role: "agent",
+    role_level: "agent",
+    rank: "agent",
+    crm_access: true,
+    office_access: true,
+    claim_access: true,
+    branding_access: true,
+  }
 }
 
 export default function StaffManagementPage() {
@@ -35,7 +126,7 @@ export default function StaffManagementPage() {
   const [approved, setApproved] = useState<ApprovedFilter>("all")
   const [sortBy, setSortBy] = useState<SortKey>("created_at")
   const [savingAll, setSavingAll] = useState(false)
-  const [activeTab, setActiveTab] = useState<"users" | "analytics">("users")
+  const [activeTab, setActiveTab] = useState<StaffTab>("users")
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const loadUsers = useCallback(async () => {
@@ -260,6 +351,38 @@ export default function StaffManagementPage() {
     setSelectedIds(new Set())
   }
 
+  const applyRolePreset = async (presetId: RolePresetId, target: "selected" | "filtered") => {
+    const targetUsers = target === "selected"
+      ? users.filter((user) => selectedIds.has(user.id))
+      : filteredUsers
+
+    if (targetUsers.length === 0) {
+      alert(target === "selected" ? "먼저 직원을 선택해 주세요." : "현재 조건에 해당하는 직원이 없습니다.")
+      return
+    }
+
+    const preset = rolePresets.find((item) => item.id === presetId)
+    if (!preset) return
+
+    const message = target === "selected"
+      ? `선택한 직원 ${targetUsers.length.toLocaleString()}명에게 '${preset.title}' 기준을 적용할까요?`
+      : `현재 필터에 보이는 직원 ${targetUsers.length.toLocaleString()}명에게 '${preset.title}' 기준을 적용할까요?`
+    if (!confirm(message)) return
+
+    const payload = rolePresetPayload(presetId)
+    const ids = targetUsers.map((user) => user.id)
+    const { error } = await supabase.from("users").update(payload).in("id", ids)
+    if (error) {
+      alert("등급별 권한 적용 실패: " + error.message)
+      return
+    }
+
+    const idSet = new Set(ids)
+    setUsers((prev) => prev.map((user) => idSet.has(user.id) ? { ...user, ...payload } : user))
+    setSelectedIds(new Set())
+    alert(`${targetUsers.length.toLocaleString()}명에게 '${preset.title}' 기준을 적용했습니다.`)
+  }
+
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-[#eef3fb]">
       <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#1a3a6e]/20 border-t-[#1a3a6e]" />
@@ -281,6 +404,9 @@ export default function StaffManagementPage() {
               <button onClick={() => setActiveTab("users")} className={"rounded-xl px-4 py-2 text-[13px] font-black transition " + (activeTab === "users" ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
                 직원 목록
               </button>
+              <button onClick={() => setActiveTab("roles")} className={"rounded-xl px-4 py-2 text-[13px] font-black transition " + (activeTab === "roles" ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
+                등급별 권한
+              </button>
               <button onClick={() => setActiveTab("analytics")} className={"rounded-xl px-4 py-2 text-[13px] font-black transition " + (activeTab === "analytics" ? "bg-[#1a3a6e] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
                 사용 분석
               </button>
@@ -295,6 +421,94 @@ export default function StaffManagementPage() {
       <main className="mx-auto max-w-[1400px] space-y-4 px-4 py-6">
         {activeTab === "analytics" ? (
           <UsageAnalytics />
+        ) : activeTab === "roles" ? (
+          <section className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#1a3a6e]">Role Preset</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">등급별 권한 설정</h2>
+              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
+                메뉴를 하나씩 켜고 끄는 방식이 아니라, 직원 등급과 승인 상태를 기준으로 접근 권한이 자동 적용됩니다.
+                게스트 승인과 설계사 승인의 차이는 여기에서 직원 단위로 정리해 주세요.
+              </p>
+            </div>
+
+            <UserFilters
+              search={search} onSearchChange={setSearch}
+              companyType={companyType} onCompanyTypeChange={(v) => { setCompanyType(v); if (v === "external") setHeadquarter("") }}
+              headquarter={headquarter} onHeadquarterChange={setHeadquarter}
+              rank={rank} onRankChange={setRank}
+              approved={approved} onApprovedChange={setApproved}
+              sortBy={sortBy} onSortByChange={setSortBy}
+              totalCount={users.length} filteredCount={filteredUsers.length}
+            />
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              {rolePresets.map((preset) => (
+                <article key={preset.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <h3 className="text-xl font-black text-slate-950">{preset.title}</h3>
+                      <p className="mt-1 text-sm font-bold leading-6 text-slate-500">{preset.desc}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => applyRolePreset(preset.id, "selected")}
+                        disabled={selectedIds.size === 0}
+                        className="rounded-xl border border-[#1a3a6e] bg-white px-4 py-2 text-xs font-black text-[#1a3a6e] transition hover:bg-[#eff6ff] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        선택 직원 적용
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyRolePreset(preset.id, "filtered")}
+                        disabled={filteredUsers.length === 0}
+                        className="rounded-xl bg-[#1a3a6e] px-4 py-2 text-xs font-black text-white transition hover:bg-[#2563eb] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        현재 목록 적용
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl bg-emerald-50 p-4">
+                      <p className="text-xs font-black text-emerald-700">열리는 메뉴</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {preset.enabledMenus.map((menu) => (
+                          <span key={menu} className="rounded-full bg-white px-3 py-1 text-xs font-black text-emerald-700 shadow-sm">{menu}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs font-black text-slate-500">닫히는 메뉴</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {(preset.blockedMenus.length > 0 ? preset.blockedMenus : ["별도 제한 없음"]).map((menu) => (
+                          <span key={menu} className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 shadow-sm">{menu}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <BulkActions selectedIds={selectedIds} onBulkApprove={bulkApprove} onBulkRankChange={bulkRankChange} />
+            <UserTable
+              users={filteredUsers} selectedIds={selectedIds}
+              onSelectChange={onSelectChange} onSelectAll={onSelectAll}
+              onDraftChange={(u) => setUsers((prev) => prev.map((item) => item.id === u.id ? { ...item, ...u } : item))}
+              onSave={saveUser} onResetPassword={setResetUser}
+              onDelete={deleteUser}
+              duplicateIds={duplicateIds}
+              viewerId={viewer?.id ?? ""}
+            />
+            {resetUser && (
+              <ResetPasswordModal
+                user={resetUser} requesterId={viewer?.id ?? ""}
+                onSuccess={() => setResetUser(null)} onClose={() => setResetUser(null)}
+              />
+            )}
+          </section>
         ) : (
           <>
             <UserFilters

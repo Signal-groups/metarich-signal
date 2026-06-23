@@ -27,7 +27,6 @@ import {
   Pill,
   Scale,
   Search,
-  Settings,
   ShieldCheck,
   Star,
   Stethoscope,
@@ -190,7 +189,6 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
-  const [menuSettingsSignal, setMenuSettingsSignal] = useState(0);
   const [isConsultEditMode, setIsConsultEditMode] = useState(false);
   const [openConsultCategories, setOpenConsultCategories] = useState<Record<string, boolean>>({
     customer: true,
@@ -391,7 +389,9 @@ export default function DashboardPage() {
     // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출. fixed=true 항목은 항상 노출
     if (m.access === "office") return canUseOffice && (m.fixed || isConsultEditMode || menuStatus[m.id] !== false);
     // fixed=true 항목은 menuStatus 무시 — 항상 노출 (대면상담 6개 도구 클릭 후 사라지는 문제 방지)
-    return m.access === "public" || (m.access === "approved" && (m.fixed || isConsultEditMode || menuStatus[m.id] !== false));
+    if (m.access === "guest_approved") return m.fixed || isConsultEditMode || menuStatus[m.id] !== false;
+    if (m.access === "approved") return !isGuest && (m.fixed || isConsultEditMode || menuStatus[m.id] !== false);
+    return m.access === "public";
   });
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
   const faceTools = isApproved ? visibleConsultingTools.filter(t => t.category === "face") : [];
@@ -438,14 +438,6 @@ export default function DashboardPage() {
                 <CalendarDays className="h-4 w-4" />
                 {selectedDate.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" })}
               </button>
-              {isMaster && (
-                <button
-                  onClick={() => setMenuSettingsSignal((prev) => prev + 1)}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#21324d] shadow-sm hover:border-[#0ea5e9] hover:text-[#0f4f86]"
-                >
-                  <Settings className="h-4 w-4" /> 메뉴 노출 설정
-                </button>
-              )}
               <button
                 onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
                 className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#1b54ad] shadow-sm"
@@ -662,7 +654,6 @@ export default function DashboardPage() {
         setIsOpen={setIsSidebarOpen}
         onOpenOffice={() => { setViewMode('office'); setActiveTab(null); }}
         onOpenConsulting={() => { setViewMode('consulting'); setActiveTab(null); }}
-        menuSettingsSignal={menuSettingsSignal}
         onTabChange={(val: string) => setActiveTab(val.startsWith('tab:') ? val.split(':')[1] : val)} 
         activeTab={activeTab} 
       />
