@@ -80,6 +80,8 @@ export const CONSULTING_TOOL_GROUPS: {
     desc: "고객 안내와 반복 업무에 연결되는 도구",
     toolIds: [
       "show_insurance_survey",
+      "show_exam",
+      "show_dm",
     ],
   },
 ];
@@ -106,9 +108,40 @@ export const DEFAULT_MENU_STATUS: Record<string, boolean> = {
   show_finance: true,
   show_gongsi: true,                // fixed
   show_proposal: true,              // fixed
+  show_exam: true,
+  show_dm: true,
 }
 
 export const CONSULTING_TOOLS: ConsultingTool[] = [
+  {
+    id: "show_exam",
+    title: "자격시험",
+    label: "자격시험",
+    desc: "모의고사와 합격 전략, 최신 시험정보 확인",
+    icon: "exam",
+    url: "/exam-hub/index.html",
+    color: "border-blue-500",
+    cardColor: "border-blue-500 text-blue-700",
+    fixed: true,
+    access: "public",
+    guestVisible: true,
+    editable: false,
+    category: "planning",
+  },
+  {
+    id: "show_dm",
+    title: "DM 발송",
+    label: "DM 발송",
+    desc: "고객 대상 메시지 쉽고 빠르게 발송",
+    icon: "dm",
+    url: "/dm",
+    color: "border-violet-500",
+    cardColor: "border-violet-500 text-violet-700",
+    fixed: true,
+    access: "guest_approved",
+    editable: false,
+    category: "customer",
+  },
   {
     id: "show_first_coverage_check",
     title: "첫 상담 보장체크",

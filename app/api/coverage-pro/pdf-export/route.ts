@@ -404,6 +404,30 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       </div>`
     }).join('')}
   </div>`
+  // 뇌/심장 진단비 세부 항목 (색상 구분)
+  const brainHeartDetailHtml = (() => {
+    const DETAIL = [
+      { label: '뇌혈관',        key: 'brain_vascular',   color: '#3b82f6' },
+      { label: '뇌졸중',        key: 'brain_stroke',     color: '#f59e0b' },
+      { label: '뇌출혈',        key: 'brain_hemorrhage', color: '#ef4444' },
+      { label: '허혈성심장',    key: 'heart_ischemic',   color: '#3b82f6' },
+      { label: '급성심근경색',  key: 'heart_acute_mi',   color: '#ef4444' },
+      { label: '기타심장',      key: 'heart_vascular',   color: '#60a5fa' },
+    ]
+    const rows = DETAIL.map(d => {
+      const amt = sumAmount(contracts, d.key)
+      return `<div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid #f1f5f9">
+        <span style="width:8px;height:8px;border-radius:50%;background:${d.color};flex-shrink:0;display:inline-block"></span>
+        <span style="flex:1;font-size:10px;color:#374151;font-weight:600">${escHtml(d.label)}</span>
+        <span style="font-size:10px;font-weight:900;color:${amt ? d.color : '#94a3b8'}">${amt ? formatWon(amt) : '-'}</span>
+      </div>`
+    }).join('')
+    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:8px;margin-top:6px">
+      <div style="font-size:10px;font-weight:900;color:#1a2744;margin-bottom:5px">뇌 · 심장 진단비 세부</div>
+      ${rows}
+    </div>`
+  })()
+
   const silsonInfo = inferSilsonInfo(contracts)
   const silsonInfoHtml = `
   <div class="silson-info">
@@ -601,15 +625,16 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     .rec-desc{font-size:11px;color:#4b5563;line-height:1.5}
 
     /* 비교표 */
-    .compare-table{width:100%;border-collapse:collapse;font-size:11px}
-    .compare-table th,.compare-table td{border:1px solid #e2e8f0;padding:5px 6px;vertical-align:middle}
-    .compare-table th{background:#1a2744;color:#fff;text-align:center;font-size:10px;font-weight:700}
-    .row-group{background:#1a2744;color:#c9a96e;font-weight:900;font-size:10px;
-      text-align:center;writing-mode:vertical-lr;white-space:nowrap;padding:6px 4px;width:26px}
-    .row-label{background:#fafaf8;font-weight:700;color:#1a2744;white-space:nowrap;width:130px}
-    .row-total{background:#eff6ff;font-weight:700;color:#1a2744;text-align:right}
+    .compare-wrap{overflow-x:auto}
+    .compare-table{width:100%;border-collapse:collapse;font-size:10px;table-layout:auto}
+    .compare-table th,.compare-table td{border:1px solid #e2e8f0;padding:4px 5px;vertical-align:middle}
+    .compare-table th{background:#1a2744;color:#fff;text-align:center;font-size:9px;font-weight:700}
+    .row-group{background:#1a2744;color:#c9a96e;font-weight:900;font-size:9px;
+      text-align:center;writing-mode:vertical-lr;white-space:nowrap;padding:5px 3px;width:22px}
+    .row-label{background:#fafaf8;font-weight:700;color:#1a2744;white-space:nowrap;width:110px;font-size:9px}
+    .row-total{background:#eff6ff;font-weight:700;color:#1a2744;text-align:right;white-space:nowrap}
     .empty-cell{color:#94a3b8}
-    .compare-table td{text-align:right}
+    .compare-table td{text-align:right;white-space:nowrap}
 
     .img-fullpage{background:#fff;display:flex;align-items:center;justify-content:center;
       min-height:180mm;break-after:page;page-break-after:always}
@@ -655,6 +680,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       <div class="section-title"><span class="section-num">2</span>보험료 구성 비율</div>
       ${premiumInfoHtml}
       ${shortageHtml}
+      ${brainHeartDetailHtml}
       ${silsonInfoHtml}
     </div>
   </div>
@@ -705,6 +731,7 @@ ${!isKey ? `
 <div class="pdf-page">
 <div class="page-inner">
   <div class="page-label">보험사별 · 담보별 비교표</div>
+  
   <div class="section-title"><span class="section-num">★</span>전체 보험사 담보 비교</div>
   ${compareHtml}
   <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;
@@ -737,9 +764,7 @@ ${selectedImageSources.map((item, idx) => `
     }));
   }
   waitForImages().then(function() {
-    if (window.opener && window.opener.__pdfReady) {
-      window.opener.__pdfReady();
-    }
+    if (window.opener && window.opener.__pdfReady) window.opener.__pdfReady();
   });
 </script>
 </body>

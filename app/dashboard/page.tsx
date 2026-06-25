@@ -77,6 +77,10 @@ function ToolIcon({ icon, className = "h-7 w-7" }: { icon: string; className?: s
       return <Calculator className={className} />
     case "finance":
       return <PieChart className={className} />
+    case "exam":
+      return <BookOpen className={className} />
+    case "dm":
+      return <ScrollText className={className} />
     default:
       return <Search className={className} />
   }
@@ -245,8 +249,20 @@ export default function DashboardPage() {
 
       // 즐겨찾기 로드 (사용자별 localStorage)
       try {
+        const defaultFavorites = canAccessCrm(hydratedUser)
+          ? ["show_first_coverage_check", "show_insu", "show_proposal", "show_financial_portfolio"]
+          : ["show_exam", "show_dm", "show_premium_compare", "show_surgery", "show_disease", "show_cont"];
         const savedFavs = localStorage.getItem(`mr-favorites-${userId}`);
-        if (savedFavs) setFavorites(JSON.parse(savedFavs));
+        if (savedFavs) {
+          const parsedFavs = JSON.parse(savedFavs);
+          const shouldResetForCurrentHome = !defaultFavorites.every((id) => parsedFavs.includes(id));
+          const nextFavs = shouldResetForCurrentHome ? defaultFavorites : parsedFavs;
+          setFavorites(nextFavs);
+          if (shouldResetForCurrentHome) localStorage.setItem(`mr-favorites-${userId}`, JSON.stringify(nextFavs));
+        } else {
+          setFavorites(defaultFavorites);
+          localStorage.setItem(`mr-favorites-${userId}`, JSON.stringify(defaultFavorites));
+        }
         const savedVisibility = localStorage.getItem(`mr-favorites-visible-${userId}`);
         if (savedVisibility !== null) setIsFavoritesVisible(savedVisibility !== "false");
       } catch { /* ignore */ }
@@ -445,21 +461,23 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <header className="mb-4 grid gap-3 px-1">
+        <header className="mb-4 flex flex-col gap-3 px-1 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <h1 className="text-[25px] font-black leading-tight tracking-[-0.01em] text-[#10203a]">
-              {(user.name || user.email?.split("@")[0] || "")}님, 오늘도 좋은 하루 되세요!
+              {(user.name || user.email?.split("@")[0] || "")}님, {canUseCrm ? "오늘 상담을 시작해볼까요?" : "오늘 필요한 도구만 빠르게 열어보세요"}
             </h1>
-            <p className="mt-2 text-[15px] font-bold text-[#50627a]">고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
+            <p className="mt-2 text-[15px] font-bold text-[#50627a]">
+              {canUseCrm ? "고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다." : "자주 쓰는 기능을 홈에서 바로 열 수 있습니다."}
+            </p>
           </div>
-          <div className="flex min-h-[38px] flex-wrap items-center gap-2">
+          <div className="flex min-h-[38px] flex-wrap items-center gap-2 xl:justify-end">
             {/* 공지사항 */}
             <button
               onClick={() => setShowNoticeModal(true)}
               className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#1b54ad] hover:text-[#1b54ad]"
             >
               <Bell className="h-3.5 w-3.5" />
-              공지사항
+              공지
               {announcements.filter(a => a.category === 'notice').length > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#e63946] text-[9px] font-black text-white">
                   {announcements.filter(a => a.category === 'notice').length}
@@ -479,45 +497,27 @@ export default function DashboardPage() {
                 </span>
               )}
             </button>
-            {/* 가이드 드롭다운 */}
-            <div className="relative">
-              <button
-                onClick={() => setShowGuideDropdown(v => !v)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#1b54ad] shadow-sm hover:border-[#1b54ad]"
-              >
-                <BookOpen className="h-3.5 w-3.5" />
-                가이드
-                <ChevronDown className={`h-3 w-3 transition-transform ${showGuideDropdown ? "rotate-180" : ""}`} />
-              </button>
-              {showGuideDropdown && (
-                <div className="absolute right-0 top-11 z-50 w-44 overflow-hidden rounded-xl border border-[#dce6f1] bg-white shadow-xl"
-                  onMouseLeave={() => setShowGuideDropdown(false)}>
-                  <button
-                    onClick={() => { window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no"); setShowGuideDropdown(false); }}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-[13px] font-black text-[#21324d] hover:bg-[#f0f6ff]"
-                  >
-                    <BookOpen className="h-4 w-4 text-[#1b54ad]" />
-                    일반 가이드
-                  </button>
-                  <div className="h-px bg-[#eef3f8]" />
-                  <button
-                    onClick={() => { window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no"); setShowGuideDropdown(false); }}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-[13px] font-black text-white hover:bg-[#082b5f]"
-                    style={{ background: "#0a3268" }}
-                  >
-                    <Star className="h-4 w-4 fill-[#f6c342] text-[#f6c342]" />
-                    프로 가이드
-                  </button>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#1b54ad] shadow-sm hover:border-[#1b54ad]"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              일반가이드
+            </button>
+            <button
+              onClick={() => window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#0a3268]"
+            >
+              <Star className="h-3.5 w-3.5 fill-[#f6c342] text-[#f6c342]" />
+              프로가이드
+            </button>
             {/* 시그널그룹 홈페이지 */}
             <button
               onClick={() => window.open("https://signalgroup-sigma.vercel.app/index.html", "_blank")}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#0a3268] bg-[#0a3268] px-3 text-[12px] font-black text-white shadow-sm hover:bg-[#082455]"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              시그널그룹
+              시그널그룹 홈페이지
             </button>
             {/* 카페 */}
             <button
@@ -525,7 +525,14 @@ export default function DashboardPage() {
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#03c75a] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:bg-[#f0fff8]"
             >
               <span className="grid h-4 w-4 place-items-center rounded bg-[#03c75a] text-[10px] font-black text-white">N</span>
-              카페
+              보험의 기준 카페
+            </button>
+            <button
+              onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2d45c] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:bg-[#fffbea]"
+            >
+              <span className="grid h-4 w-4 place-items-center rounded bg-[#ffe812] text-[10px] font-black text-[#3a2d00]">K</span>
+              오픈채팅
             </button>
           </div>
         </header>

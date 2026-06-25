@@ -64,7 +64,9 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['허혈성심장'], rowKey: 'heart_ischemic' },            // 심장질환보다 먼저!
   { patterns: ['급성심근경색', '심근경색'], rowKey: 'heart_acute_mi' },
   { patterns: ['심장질환진단', '심혈관질환'], rowKey: 'heart_vascular' },
-  { patterns: ['수술/시술비', '뇌심수술', '심뇌수술', '심장수술비', '뇌혈관수술', '심혈관수술'], rowKey: 'two_major_surgery' },
+  { patterns: ['뇌수술비', '뇌혈관수술비', '뇌관련수술'], rowKey: 'brain_surgery' },     // 뇌 수술비 (two_major_surgery보다 먼저)
+  { patterns: ['심장수술비', '심혈관수술비', '심관련수술'], rowKey: 'heart_surgery' },   // 심장 수술비
+  { patterns: ['수술/시술비', '뇌심수술', '심뇌수술', '뇌혈관수술', '심혈관수술'], rowKey: 'two_major_surgery' },
   { patterns: ['혈전용해'], rowKey: 'two_major_thrombolysis' },
   { patterns: ['중환자실'], rowKey: 'two_major_icu' },
 
@@ -194,6 +196,8 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   heart_vascular:            '2대질병 — 심장질환진단',
   heart_ischemic:            '2대질병 — 허혈성심장진단',
   heart_acute_mi:            '2대질병 — 급성심근경색진단',
+  brain_surgery:             '2대질병 — 뇌 수술비',
+  heart_surgery:             '2대질병 — 심장 수술비',
   two_major_surgery:         '2대질병 — 수술/시술비',
   two_major_thrombolysis:    '2대질병 — 혈전용해치료',
   two_major_icu:             '2대질병 — 중환자실치료',
@@ -221,11 +225,14 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   driver_accident:           '운전자 — 교통사고처리지원',
   other_liability:           '기타 — 일상생활배상책임',
   // 주요치료비
-  cancer_major_benefit:      '주요치료비 — 암주요치료비(급여)',
-  cancer_major_nonbenefit:   '주요치료비 — 암주요치료비(비급여)',
-  vascular_major:            '주요치료비 — 뇌심(순환계)주요치료비',
-  // 신규
-  ci_diagnosis:              'CI — 중대질병진단',
-  dementia_diagnosis:        '치매 — 치매진단',
-  ltc_grade:                 '요양 — 장기요양등급',
+  cancer_major_benefit:      '주요치료비 — 급여암주요치료비',
+  cancer_major_nonbenefit:   '주요치료비 — 비급여암주요치료비',
+  vascular_major:            '주요치료비 — 2대질병주요치료비',
+  ci_diagnosis:              '기타 — CI(중대질병)진단',
+  dementia_diagnosis:        '기타 — 치매진단',
+  ltc_grade:                 '기타 — 장기요양등급',
+  fracture_diagnosis:        '상해 — 골절진단',
+  burn_diagnosis:            '상해 — 화상진단',
+  brain_surgery:             '2대질병 — 뇌 수술비',
+  heart_surgery:             '2대질병 — 심장 수술비',
 }

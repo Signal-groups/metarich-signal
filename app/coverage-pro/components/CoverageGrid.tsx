@@ -39,6 +39,9 @@ const CATEGORY_GROUPS = [
       { rowKey: 'brain_hemorrhage', label: '뇌출혈 진단비' },
       { rowKey: 'heart_ischemic',   label: '허혈성심장 진단비' },
       { rowKey: 'heart_acute_mi',   label: '급성심근경색 진단비' },
+      { rowKey: 'heart_vascular',   label: '기타심장질환 진단비' },
+      { rowKey: 'brain_surgery',    label: '뇌 수술비' },
+      { rowKey: 'heart_surgery',    label: '심장 수술비' },
       { rowKey: 'vascular_major',   label: '2대 주요치료비' },
     ],
   },
@@ -93,12 +96,24 @@ const CATEGORY_GROUPS = [
 ]
 
 // 최대값/합산 집계
+// 수동 계약(MANUAL_CONTRACT_ID)에 값이 있는 rowKey는 수동 값으로 override (합산 아님)
 function aggregateByRowKey(contracts: ProContract[]): Record<string, number> {
+  // 수동 override rowKey 목록 미리 수집
+  const manualOverrides = new Set<string>()
+  for (const c of contracts) {
+    if (c.id !== MANUAL_CONTRACT_ID) continue
+    for (const cov of c.coverages) {
+      if (cov.rowKey && cov.rowKey !== 'unknown') manualOverrides.add(cov.rowKey)
+    }
+  }
+
   const sum: Record<string, number> = {}
   const max: Record<string, number> = {}
   for (const c of contracts) {
     for (const cov of c.coverages) {
       if (!cov.rowKey || cov.rowKey === 'unknown') continue
+      // override된 rowKey는 수동 계약만 반영
+      if (manualOverrides.has(cov.rowKey) && c.id !== MANUAL_CONTRACT_ID) continue
       const v = Number(cov.amount || 0)
       if (MAX_ROW_KEYS.has(cov.rowKey)) {
         max[cov.rowKey] = Math.max(max[cov.rowKey] || 0, v)
@@ -468,15 +483,6 @@ export default function CoverageGrid({
           onClose={() => setEditTarget(null)}
         />
       )}
-    </div>
-  )
-}
-
-function MiniStat({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 900, color: valueColor ?? '#fff' }}>{value}</div>
     </div>
   )
 }

@@ -64,6 +64,10 @@ function ToolIcon({ icon }: { icon: string }) {
       return <Calculator className={className} />
     case "finance":
       return <PieChart className={className} />
+    case "exam":
+      return <GraduationCap className={className} />
+    case "dm":
+      return <ScrollText className={className} />
     case "직원관리":
       return <Users className={className} />
     case "시험":
@@ -286,6 +290,11 @@ export default function Sidebar({
     setIsOpen(false);
   };
 
+  const openToolById = (toolId: string) => {
+    const tool = CONSULTING_TOOLS.find((item) => item.id === toolId);
+    if (tool) handleLinkClick(tool);
+  };
+
   return (
     <>
       {isOpen && (
@@ -324,7 +333,7 @@ export default function Sidebar({
 
             {/* Navigation List */}
             <nav className="space-y-1">
-              <p className="px-2 mb-2 text-[10px] font-bold tracking-widest text-white/30">상담</p>
+              <p className="px-2 mb-2 text-[10px] font-bold tracking-widest text-white/30">메인</p>
 
               <NavItem
                 icon="홈"
@@ -333,32 +342,15 @@ export default function Sidebar({
                 onClick={openConsulting}
               />
 
-              <NavItem
-                icon="상담"
-                label="상담도구"
-                active={isConsultModalOpen}
-                onClick={() => setIsConsultModalOpen(true)}
-              />
-
               {canUseCrm && (
                 <NavItem
                   icon="CRM"
-                  label="고객 CRM"
+                  label="고객관리"
                   active={false}
                   onClick={openCrm}
                   badge="PRO"
                 />
               )}
-
-              <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">조회·자료</p>
-
-              <NavItem
-                icon="자료"
-                iconNode={<Search className="h-5 w-5 opacity-80" />}
-                label="자료 검색"
-                active={false}
-                onClick={openInsuranceLibrary}
-              />
 
               <NavItem
                 icon="시험"
@@ -368,31 +360,65 @@ export default function Sidebar({
                 badge="NEW"
               />
 
-              <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">업무</p>
+              <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">카테고리</p>
+
+              <NavItem
+                icon="보장"
+                iconNode={<ShieldCheck className="h-5 w-5 opacity-80" />}
+                label="보장분석"
+                active={false}
+                onClick={() => openToolById("show_insu")}
+              />
+
+              <NavItem
+                icon="재무"
+                iconNode={<PieChart className="h-5 w-5 opacity-80" />}
+                label="재무설계"
+                active={false}
+                onClick={() => openToolById("show_financial_portfolio")}
+              />
+
+              <NavItem
+                icon="자료"
+                iconNode={<Search className="h-5 w-5 opacity-80" />}
+                label="자료조회"
+                active={false}
+                onClick={openInsuranceLibrary}
+              />
+
+              <NavItem
+                icon="수술"
+                iconNode={<Stethoscope className="h-5 w-5 opacity-80" />}
+                label="수술·후유장해"
+                active={false}
+                onClick={() => openToolById("show_surgery")}
+              />
+
+              {!canUseCrm && (
+                <NavItem
+                  icon="가이드"
+                  iconNode={<BookOpen className="h-5 w-5 opacity-80" />}
+                  label="일반가이드"
+                  active={false}
+                  onClick={() => {
+                    window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no");
+                    setIsOpen(false);
+                  }}
+                />
+              )}
+
+              {(canUseOffice || canUseClaim || canUseBranding || isMaster) && (
+                <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">업무</p>
+              )}
 
               {canUseOffice && (
                 <NavItem
                   icon="업무"
-                  label="사무실 업무"
+                  label="업무관리"
                   active={mode === 'office'}
                   onClick={openOffice}
                 />
               )}
-
-              <NavItem
-                icon="DM"
-                label="고객 DM 발송"
-                active={false}
-                onClick={openContentStudio}
-              />
-
-              <NavItem
-                icon="APP"
-                label="고객관리 서포트앱"
-                active={false}
-                onClick={openCustomerSupportApp}
-                variant="support"
-              />
 
               {canUseClaim && (
                 <NavItem
@@ -421,6 +447,15 @@ export default function Sidebar({
                   active={false}
                   onClick={() => window.open(`${window.location.origin}/branding-builder`, "_blank", "noopener,noreferrer")}
                   badge="PRO"
+                />
+              )}
+
+              {isMaster && (
+                <NavItem
+                  icon="설정"
+                  label="노출설정"
+                  active={isConsultModalOpen}
+                  onClick={() => setIsConsultModalOpen(true)}
                 />
               )}
 
