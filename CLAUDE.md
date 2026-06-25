@@ -42,6 +42,33 @@
 - 출력 포맷: **v5** `{ version: "insurance_analysis_v5", policies: [...] }`
 - `amount`: **만원** 단위 / `monthly_premium`: **만원** 단위 (저장 시 ×10000)
 
+#### GPTs 구조 (Instructions vs Knowledge 분리)
+- **지침(Instructions)**: 짧은 메타 지침만 — MD 파일 참조 + 절대 금지 규칙 + 기본 동작
+  - "파일 종류 판단/거부" 로직 절대 넣지 말 것 → 어떤 PDF든 즉시 분석
+  - "JSON 1개만" 강제 금지 → 자동 분할 허용
+- **지식(Knowledge)**: `gpts-instructions-v7.md` (또는 최신 버전) 업로드
+  - 상세 스키마, coverage_name 매핑표, 분할 출력 형식, 금액 규칙 포함
+  - 버전 올릴 때: 구 버전 삭제 후 신 버전 업로드
+- **Instructions 최신본** (변경 시 여기 업데이트):
+  ```
+  당신은 보험 설계사를 돕는 보장분석 전문 AI입니다.
+  업로드된 MD 파일 중 파일명에 가장 높은 버전 번호가 붙은 파일을 반드시 최우선으로 참고하여 PDF를 분석하세요.
+  ## 절대 금지
+  - 에러 JSON 반환 금지: {"error":"..."}, {"status":"error",...}, {"version":"insurance_analysis_v5","error":"..."}
+  - coverages 빈 배열 금지
+  - 분석 거절 또는 중단 금지 — 불확실한 값은 null로 채우고 항상 JSON 출력
+  - 파일 종류 판단/거부 금지 — 어떤 PDF든 즉시 분석
+  ## 기본 동작
+  - PDF 업로드 즉시 분석 시작 — 사전 질문, 선택 메뉴 없이 바로 JSON 출력
+  - 모든 계약을 하나의 JSON으로 출력 (기본값)
+  - 출력 한도를 실제로 초과할 때만 MD 파일의 긴급 분할 규칙 적용
+  - version은 항상 "insurance_analysis_v5"
+  - 금액은 만원 단위 숫자, 확인 불가 시 null
+  - 갱신형/비갱신형/확인필요 반드시 구분
+  - 실손의료비, 암, 뇌, 심장, 수술, 입원, 간병 영역은 있으면 반드시 추출
+  - MD 파일의 JSON 형식 외 키 추가 금지
+  ```
+
 ---
 
 ## 3. Supabase 테이블

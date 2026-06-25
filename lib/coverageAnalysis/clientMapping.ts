@@ -22,8 +22,8 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['중대질병진단', '중대질병', '특정중대질병', 'ci진단', 'ci보험금'], rowKey: 'ci_diagnosis' },
 
   // ── 간병인·재가 (입원일당/실비 패턴보다 반드시 앞에) ─────────────────
-  { patterns: ['간병인사용', '간병인질병', '질병간병인', '병원사용간병', '병원간병', '간병인서비스'], rowKey: 'nursing_hospital' },
-  { patterns: ['간병인상해', '상해간병인', '간병인간호'], rowKey: 'nursing_injury' },
+  { patterns: ['간병인사용', '간병인질병', '질병간병인', '질병간병지원금', '질병간병', '병원사용간병', '병원간병', '간병인서비스'], rowKey: 'nursing_hospital' },
+  { patterns: ['간병인상해', '상해간병인', '상해간병지원금', '상해간병', '간병인간호'], rowKey: 'nursing_injury' },
   { patterns: ['요양병원간병', '요양병원입원', '요양병원재가', '요양간병', '요양병원'], rowKey: 'nursing_care_hospital' },
   { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
   { patterns: ['간병인'], rowKey: 'nursing_hospital' },
@@ -46,7 +46,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['항암중입자', '중입자치료', '중입자방사선', '중입자'], rowKey: 'cancer_hadron' },
   { patterns: ['양성자방사선', '양성자치료', '양성자'], rowKey: 'cancer_proton' },
   { patterns: ['세기조절방사선', 'imrt'], rowKey: 'cancer_imrt' },
-  { patterns: ['항암방사선약물', '항암방사선', '방사선약물치료', '방사선치료'], rowKey: 'cancer_radiation' },
+  { patterns: ['항암방사선약물', '항암방사선', '방사선항암치료', '방사선약물치료', '방사선치료'], rowKey: 'cancer_radiation' },
   { patterns: ['항암약물', '항암 약물', '항암치료비', '항암화학요법', '항암화학치료', '화학요법항암', '항암치료'], rowKey: 'cancer_chemo' },
   { patterns: ['카티', 'cart'], rowKey: 'cancer_cart' },
   { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
