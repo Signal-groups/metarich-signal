@@ -41,7 +41,7 @@ import MasterView from "./components/MasterView"
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
-import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
+import { CONSULTING_TOOLS, CONSULTING_TOOL_GROUPS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice, canAccessCrm } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
@@ -413,16 +413,17 @@ export default function DashboardPage() {
     return m.access === "public";
   });
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
-  const faceTools = isApproved ? visibleConsultingTools.filter(t => t.category === "face") : [];
+  const faceTools: ConsultingTool[] = [];
 
   const renderConsultingView = () => {
-    const toolSections = CONSULTING_TOOL_CATEGORIES
-      .filter((category) => ["coverage", "financial", "planning", "claims"].includes(category.id))
-      .map((category) => ({
-        ...category,
-        tools: visibleConsultingTools.filter((tool) => tool.category === category.id),
+    const toolSections = CONSULTING_TOOL_GROUPS
+      .map((group) => ({
+        ...group,
+        tools: group.toolIds
+          .map((id) => visibleConsultingTools.find((tool) => tool.id === id))
+          .filter(Boolean) as ConsultingTool[],
       }))
-      .filter((category) => category.tools.length > 0)
+      .filter((group) => group.tools.length > 0)
 
     const cardBase: React.CSSProperties = {
       background: "#fff",
@@ -444,14 +445,14 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <header className="mb-4 flex flex-col gap-3 px-1 lg:flex-row lg:items-start lg:justify-between">
+        <header className="mb-4 grid gap-3 px-1">
           <div>
             <h1 className="text-[25px] font-black leading-tight tracking-[-0.01em] text-[#10203a]">
               {(user.name || user.email?.split("@")[0] || "")}님, 오늘도 좋은 하루 되세요!
             </h1>
             <p className="mt-2 text-[15px] font-bold text-[#50627a]">고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="flex min-h-[38px] flex-wrap items-center gap-2">
             {/* 공지사항 */}
             <button
               onClick={() => setShowNoticeModal(true)}
@@ -670,49 +671,6 @@ export default function DashboardPage() {
               </div>
             </div>
           ))}
-        </section>
-
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {/* 공지사항 카드 */}
-          <div style={cardBase} className="min-h-[138px] p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Bell className="h-5 w-5 text-[#1b54ad]" />
-                <h2 className="text-[17px] font-black text-[#10203a]">공지사항</h2>
-              </div>
-              {isMaster && <button onClick={() => addAnnouncement("notice")} className="text-[12px] font-black text-[#1b54ad]">+ 추가 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
-            </div>
-            {announcements.filter((a) => a.category === "notice").slice(0, 2).map((ann) => (
-              <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="block w-full py-1 text-left">
-                <span className="mr-2 rounded-full bg-[#eef4fb] px-2 py-0.5 text-[9px] font-black text-[#1b54ad]">공지</span>
-                <p className="inline text-[13px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
-                <p className="mt-1 text-[12px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
-              </button>
-            ))}
-            {announcements.filter((a) => a.category === "notice").length === 0 && (
-              <p className="text-[12px] font-bold text-[#b8ccd8]">공지사항이 없습니다.</p>
-            )}
-          </div>
-          {/* 업데이트 소식 카드 */}
-          <div style={cardBase} className="min-h-[138px] p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Megaphone className="h-5 w-5 text-[#0f6e56]" />
-                <h2 className="text-[17px] font-black text-[#10203a]">업데이트 소식</h2>
-              </div>
-              {isMaster && <button onClick={() => addAnnouncement("update")} className="text-[12px] font-black text-[#0f6e56]">+ 추가 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
-            </div>
-            {announcements.filter((a) => a.category === "update").slice(0, 2).map((ann) => (
-              <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="block w-full py-1 text-left">
-                <span className="mr-2 rounded-full bg-[#dcfce7] px-2 py-0.5 text-[9px] font-black text-[#15803d]">NEW</span>
-                <p className="inline text-[13px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
-                <p className="mt-1 text-[12px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
-              </button>
-            ))}
-            {announcements.filter((a) => a.category === "update").length === 0 && (
-              <p className="text-[12px] font-bold text-[#b8ccd8]">업데이트 소식이 없습니다.</p>
-            )}
-          </div>
         </section>
 
         {/* 공지사항 목록 모달 */}

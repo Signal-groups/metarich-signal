@@ -35,6 +35,55 @@ export const CONSULTING_TOOL_CATEGORIES: {
   { id: "claims", title: "수술 및 후유장해", desc: "질병, 수술, 장해 기준 확인에 필요한 도구", tone: "border-rose-500 text-rose-600", countTone: "bg-rose-50 text-rose-700" },
 ];
 
+export const CONSULTING_TOOL_GROUPS: {
+  id: "consulting" | "lookup" | "work";
+  title: string;
+  desc: string;
+  toolIds: string[];
+}[] = [
+  {
+    id: "consulting",
+    title: "상담",
+    desc: "고객 상담, 보장분석, 제안서 작성에 쓰는 핵심 도구",
+    toolIds: [
+      "show_first_coverage_check",
+      "show_proposal",
+      "show_insu",
+      "show_finance",
+      "show_financial_portfolio",
+      "show_card_consult",
+    ],
+  },
+  {
+    id: "lookup",
+    title: "조회·자료",
+    desc: "상담 중 바로 확인하는 통계, 코드, 약관, 계산 자료",
+    toolIds: [
+      "show_coverage_stats",
+      "show_premium_compare",
+      "show_underwriting",
+      "show_health_kr",
+      "show_cont",
+      "show_hira",
+      "show_knia",
+      "show_car_accident",
+      "show_disease",
+      "show_surgery",
+      "show_disability",
+      "show_calc",
+      "show_gongsi",
+    ],
+  },
+  {
+    id: "work",
+    title: "업무",
+    desc: "고객 안내와 반복 업무에 연결되는 도구",
+    toolIds: [
+      "show_insurance_survey",
+    ],
+  },
+];
+
 // fixed=true 항목은 항상 true, defaultEnabled=false면 false, 나머지는 true
 export const DEFAULT_MENU_STATUS: Record<string, boolean> = {
   show_first_coverage_check: true,  // fixed

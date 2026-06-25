@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
-import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
+import { CONSULTING_TOOLS, CONSULTING_TOOL_GROUPS, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
 import { canAccessCrm, canAccessOffice, canAccessClaim, canAccessBranding, normalizeRole, roleLabel, isApprovedUser } from "../../../lib/roles"
 import LibrarySearchPopup from "./LibrarySearchPopup"
 
@@ -183,7 +183,7 @@ export default function Sidebar({
     if (tool.access === "guest_approved") return isApproved && (tool.fixed || menuStatus[tool.id] || isEditMode);
     return tool.access === "public";
   });
-  const highlightTools = visibleConsultTools.filter((tool) => tool.highlight);
+  const highlightTools: typeof visibleConsultTools = [];
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
@@ -331,6 +331,13 @@ export default function Sidebar({
                 label="홈"
                 active={mode === 'consulting' && !activeTab}
                 onClick={openConsulting}
+              />
+
+              <NavItem
+                icon="상담"
+                label="상담도구"
+                active={isConsultModalOpen}
+                onClick={() => setIsConsultModalOpen(true)}
               />
 
               {canUseCrm && (
@@ -576,8 +583,10 @@ export default function Sidebar({
                 </section>
               )}
 
-              {CONSULTING_TOOL_CATEGORIES.map((category) => {
-                const visibleTools = visibleConsultTools.filter((tool) => !tool.highlight && tool.category === category.id);
+              {CONSULTING_TOOL_GROUPS.map((category) => {
+                const visibleTools = category.toolIds
+                  .map((id) => visibleConsultTools.find((tool) => tool.id === id))
+                  .filter(Boolean) as typeof visibleConsultTools;
                 if (visibleTools.length === 0) return null;
                 return (
                   <section key={category.id} className="space-y-3">
