@@ -303,7 +303,7 @@ function buildCompareTable(contracts: ProContract[]): string {
     <td class="row-total">${formatMonthly(totalPremium)}</td>
   </tr>`
 
-  return `<div style="overflow-x:auto">
+  return `<div class="compare-wrap">
     <table class="compare-table">
       <thead>
         <tr>
@@ -645,6 +645,13 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       .print-bar{display:none}
       .pdf-page{background:#fff}
       tr{page-break-inside:avoid}
+      /* 비교표 인쇄 시 페이지 폭에 맞게 자동 축소 */
+      .compare-wrap{overflow:visible}
+      .compare-table{font-size:8px;width:100%}
+      .compare-table th,.compare-table td{padding:2px 3px}
+      .row-label{width:90px;font-size:8px}
+      .row-group{width:18px;font-size:8px}
+      .compare-table th{font-size:8px}
     }
   </style>
 </head><body>

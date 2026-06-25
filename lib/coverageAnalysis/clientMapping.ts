@@ -231,8 +231,4 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   ci_diagnosis:              '기타 — CI(중대질병)진단',
   dementia_diagnosis:        '기타 — 치매진단',
   ltc_grade:                 '기타 — 장기요양등급',
-  fracture_diagnosis:        '상해 — 골절진단',
-  burn_diagnosis:            '상해 — 화상진단',
-  brain_surgery:             '2대질병 — 뇌 수술비',
-  heart_surgery:             '2대질병 — 심장 수술비',
 }

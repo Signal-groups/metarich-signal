@@ -13,6 +13,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   Download,
+  ExternalLink,
   FileText,
   FolderOpen,
   HeartPulse,
@@ -114,9 +115,51 @@ type StoredProposalDraft = ProposalDraft & {
   userId: string
 }
 
+type GptsPlanPayload = {
+  company?: unknown
+  insurer?: unknown
+  productName?: unknown
+  product_name?: unknown
+  monthlyPremium?: unknown
+  premium?: unknown
+  paymentYears?: unknown
+  payment_years?: unknown
+  paymentPeriod?: unknown
+  coverageYears?: unknown
+  coverage_years?: unknown
+  coveragePeriod?: unknown
+  fileName?: unknown
+  file_name?: unknown
+  memo?: unknown
+  strengths?: unknown
+  cautions?: unknown
+  metrics?: Record<string, unknown>
+  customCoverages?: Array<Record<string, unknown>>
+  custom_coverages?: Array<Record<string, unknown>>
+}
+
+type GptsProposalPayload = {
+  version?: unknown
+  mode?: unknown
+  categoryId?: unknown
+  category_id?: unknown
+  customerName?: unknown
+  customer_name?: unknown
+  focus?: unknown
+  plans?: GptsPlanPayload[]
+  summary?: {
+    headline?: unknown
+    mainMessage?: unknown
+    recommendation?: unknown
+    cautions?: unknown
+  }
+}
+
 const PROPOSAL_DRAFT_KEY = "metarich_proposal_latest"
 const PROPOSAL_DRAFTS_KEY_PREFIX = "metarich_proposal_drafts"
 const MAX_PROPOSAL_DRAFTS = 10
+const PROPOSAL_GPTS_URL = "https://chatgpt.com/g/g-6a3daa9ebb188191b79a2bb10f5a326f-jeanseo"
+const PROPOSAL_IMPORT_KEY = "metarich_proposal_import_payload"
 
 const categories: CategoryTemplate[] = [
   {
@@ -363,6 +406,94 @@ function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
 
 function normalizePlans(template: CategoryTemplate, count = 2) {
   return Array.from({ length: count }, (_, index) => emptyPlan(template, index))
+}
+
+const asText = (value: unknown): string => {
+  if (value === null || value === undefined) return ""
+  if (Array.isArray(value)) return value.map(asText).filter(Boolean).join(", ")
+  return String(value).trim()
+}
+
+const normalizeStoredNumber = (value: unknown) => {
+  const text = asText(value)
+  if (!text) return ""
+  const normalized = text.replace(/,/g, "")
+  const match = normalized.match(/-?\d+(?:\.\d+)?/)
+  return match ? match[0] : text
+}
+
+const normalizeCategoryId = (value: unknown): CategoryId | null => {
+  const id = asText(value)
+  return categories.some((category) => category.id === id) ? id as CategoryId : null
+}
+
+const normalizeProposalMode = (value: unknown, planCount: number): ProposalMode => {
+  const modeText = asText(value)
+  if (modeText === "single" || modeText === "compare" || modeText === "cross" || modeText === "bundle") return modeText
+  return planCount > 1 ? "compare" : "single"
+}
+
+const normalizeFocus = (value: unknown): CompareFocus[] => {
+  const raw = Array.isArray(value) ? value : [value]
+  const allowed = new Set(focusOptions.map((item) => item.id))
+  const next = raw.map((item) => asText(item)).filter((item): item is CompareFocus => allowed.has(item as CompareFocus))
+  return next.length ? next : ["balance"]
+}
+
+const extractJsonText = (input: string) => {
+  const cleaned = input
+    .replace(/```(?:json)?/gi, "")
+    .replace(/```/g, "")
+    .trim()
+  const start = cleaned.indexOf("{")
+  const end = cleaned.lastIndexOf("}")
+  if (start < 0 || end < start) throw new Error("JSON 중괄호를 찾지 못했습니다.")
+  return cleaned.slice(start, end + 1)
+}
+
+function parseProposalGptsJson(input: string): GptsProposalPayload {
+  const parsed = JSON.parse(extractJsonText(input)) as GptsProposalPayload
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("JSON 객체 형식이 아닙니다.")
+  if (!Array.isArray(parsed.plans)) throw new Error("plans 배열이 필요합니다.")
+  return parsed
+}
+
+function gptsPlanToPlanData(payload: GptsPlanPayload, template: CategoryTemplate, index: number, summary?: GptsProposalPayload["summary"]): PlanData {
+  const base = emptyPlan(template, index)
+  const allowedMetricKeys = new Set(template.metrics.map((metric) => metric.key))
+  const parsedMetrics = Object.entries(payload.metrics || {}).reduce<Record<string, string>>((acc, [key, value]) => {
+    if (allowedMetricKeys.has(key)) acc[key] = normalizeStoredNumber(value)
+    return acc
+  }, {})
+  const customPayload = payload.customCoverages || payload.custom_coverages || []
+  const customCoverages = Array.isArray(customPayload)
+    ? customPayload
+      .map((item) => ({
+        id: createId(),
+        name: asText(item.name || item.coverageName || item.coverage_name),
+        amount: normalizeStoredNumber(item.amount),
+        note: asText(item.note || item.description || item.memo),
+      }))
+      .filter((item) => item.name || item.amount || item.note)
+    : []
+
+  const summaryCautions = Array.isArray(summary?.cautions) ? summary.cautions.map(asText).filter(Boolean).join(", ") : asText(summary?.cautions)
+  const summaryMemo = [asText(summary?.headline), asText(summary?.mainMessage), asText(summary?.recommendation)].filter(Boolean).join(" ")
+
+  return {
+    ...base,
+    company: asText(payload.company || payload.insurer),
+    productName: asText(payload.productName || payload.product_name),
+    monthlyPremium: normalizeStoredNumber(payload.monthlyPremium || payload.premium),
+    paymentYears: normalizeStoredNumber(payload.paymentYears || payload.payment_years || payload.paymentPeriod),
+    coverageYears: asText(payload.coverageYears || payload.coverage_years || payload.coveragePeriod),
+    fileName: asText(payload.fileName || payload.file_name),
+    memo: asText(payload.memo) || (index === 0 ? summaryMemo : ""),
+    strengths: asText(payload.strengths) || base.strengths,
+    cautions: asText(payload.cautions) || (index === 0 ? summaryCautions : ""),
+    metrics: { ...base.metrics, ...parsedMetrics },
+    customCoverages,
+  }
 }
 
 function bestPremium(plans: PlanData[]) {
@@ -2348,6 +2479,91 @@ function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, pla
   }
 }
 
+function GptsImportPanel({
+  onApply,
+}: {
+  onApply: (payload: GptsProposalPayload) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [jsonText, setJsonText] = useState("")
+  const [error, setError] = useState("")
+  const [done, setDone] = useState(false)
+
+  const apply = () => {
+    setError("")
+    setDone(false)
+    try {
+      const parsed = parseProposalGptsJson(jsonText)
+      onApply(parsed)
+      setDone(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "JSON을 읽지 못했습니다.")
+    }
+  }
+
+  return (
+    <section className="rounded-3xl border border-cyan-200 bg-gradient-to-br from-white to-cyan-50 p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-700">GPTs 제안서 자동 입력</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">PDF 분석 결과를 제안서 입력폼에 바로 반영</h2>
+          <p className="mt-1 text-sm font-bold text-slate-500">
+            GPTs에서 PDF를 분석한 뒤 생성된 JSON을 붙여넣으면 상품명, 보험료, 담보금액이 자동으로 채워집니다.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <a
+            href={PROPOSAL_GPTS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A]"
+          >
+            <ExternalLink className="h-4 w-4" />
+            GPTs 열기
+          </a>
+          <button
+            type="button"
+            onClick={() => setOpen((prev) => !prev)}
+            className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-2 text-sm font-black text-cyan-700 hover:border-cyan-400"
+          >
+            <FileText className="h-4 w-4" />
+            JSON 붙여넣기
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="mt-4 space-y-3">
+          <textarea
+            value={jsonText}
+            onChange={(event) => {
+              setJsonText(event.target.value)
+              setError("")
+              setDone(false)
+            }}
+            placeholder={'GPTs가 출력한 JSON을 여기에 붙여넣으세요.\n\n{\n  "version": "proposal_gpts_v1",\n  "mode": "compare",\n  "categoryId": "driver",\n  "plans": []\n}'}
+            className="min-h-[220px] w-full resize-y rounded-2xl border border-cyan-100 bg-white p-4 font-mono text-xs font-bold text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs font-bold text-slate-400">
+              코드블록까지 함께 복사되어도 JSON 부분만 읽습니다. 적용 후 필요한 항목만 화면에서 수정하면 됩니다.
+            </p>
+            <button
+              type="button"
+              onClick={apply}
+              className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-black text-white hover:bg-cyan-700"
+            >
+              JSON 적용
+            </button>
+          </div>
+          {error && <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-600">{error}</div>}
+          {done && <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700">JSON이 입력폼에 반영되었습니다.</div>}
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function ProposalPage() {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
@@ -2548,6 +2764,39 @@ export default function ProposalPage() {
     setPlans((prev) => prev.filter((plan) => plan.id !== id))
   }
 
+  const applyGptsPayload = (payload: GptsProposalPayload) => {
+    const nextCategoryId = normalizeCategoryId(payload.categoryId || payload.category_id) || template.id
+    const nextTemplate = categories.find((category) => category.id === nextCategoryId) || template
+    const rawPlans = Array.isArray(payload.plans) ? payload.plans : []
+    const nextMode = normalizeProposalMode(payload.mode, rawPlans.length)
+    const importedPlans = rawPlans.map((plan, index) => gptsPlanToPlanData(plan, nextTemplate, index, payload.summary))
+    const minCount = nextMode === "single" ? 1 : 2
+    const nextPlans = importedPlans.length >= minCount
+      ? importedPlans
+      : [...importedPlans, ...normalizePlans(nextTemplate, minCount - importedPlans.length)]
+
+    setTemplate(nextTemplate)
+    setMode(nextMode)
+    setFocus(normalizeFocus(payload.focus))
+    setPlans(nextPlans)
+    const nextCustomerName = asText(payload.customerName || payload.customer_name)
+    if (nextCustomerName) setCustomerName(nextCustomerName)
+    setSaveStatus("loaded")
+  }
+
+  useEffect(() => {
+    if (checking || !allowed || typeof window === "undefined") return
+    const raw = window.localStorage.getItem(PROPOSAL_IMPORT_KEY)
+    if (!raw) return
+    try {
+      const payload = JSON.parse(raw) as GptsProposalPayload
+      applyGptsPayload(payload)
+      window.localStorage.removeItem(PROPOSAL_IMPORT_KEY)
+    } catch {
+      window.localStorage.removeItem(PROPOSAL_IMPORT_KEY)
+    }
+  }, [checking, allowed])
+
   if (checking) return <LoadingScreen />
 
   if (!allowed) {
@@ -2694,6 +2943,8 @@ export default function ProposalPage() {
           </aside>
 
           <div className="space-y-5">
+            <GptsImportPanel onApply={applyGptsPayload} />
+
             {mode === "bundle" ? (
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">

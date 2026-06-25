@@ -135,6 +135,15 @@ function fmtAmt(v: number): string {
 // 수동 추가 계약 ID
 const MANUAL_CONTRACT_ID = '__manual__'
 
+function MiniStat({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 900, color: valueColor || '#fff' }}>{value}</div>
+    </div>
+  )
+}
+
 function ensureManualContract(contracts: ProContract[]): ProContract[] {
   if (contracts.find((c) => c.id === MANUAL_CONTRACT_ID)) return contracts
   return [
@@ -467,21 +476,7 @@ export default function CoverageGrid({
       {contracts.length === 0 && (
         <div className="coverage-pro-card coverage-pro-card-pad" style={{ textAlign: 'center', color: '#94a3b8' }}>
           불러온 보험계약이 없습니다.
-        </div>
-      )}
-
-      {/* 편집 모달 */}
-      {editTarget && (
-        <EditModal
-          rowKey={editTarget.rowKey}
-          label={editTarget.label}
-          currentAmount={editTarget.currentAmount}
-          onSave={(amount) => {
-            handleSave(editTarget.rowKey, amount)
-            setEditTarget(null)
-          }}
-          onClose={() => setEditTarget(null)}
-        />
+              </div>
       )}
     </div>
   )

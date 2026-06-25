@@ -37,10 +37,12 @@ import { supabase } from "../../lib/supabase"
 
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
-import MasterView from "./components/MasterView" 
+import MasterView from "./components/MasterView"
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
+import GeneralHome from "./components/GeneralHome"
+import ProHome from "./components/ProHome"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_GROUPS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice, canAccessCrm } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
@@ -209,6 +211,8 @@ export default function DashboardPage() {
   const [showGuideDropdown, setShowGuideDropdown] = useState(false);
   const [showNoticeModal, setShowNoticeModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  // 마스터 전용: 일반/프로 미리보기 토글
+  const [masterPreviewMode, setMasterPreviewMode] = useState<'pro' | 'general'>('pro');
 
   const init = useCallback(async () => {
     try {
@@ -765,29 +769,124 @@ export default function DashboardPage() {
       />
 
       <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-10">
+        {/* 마스터 전용 — 일반/프로 미리보기 토글 */}
+        {isMaster && viewMode === 'consulting' && !activeTab && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <div style={{ display: 'inline-flex', background: '#e8eef5', borderRadius: 10, padding: 3, gap: 2 }}>
+              {(['pro', 'general'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setMasterPreviewMode(mode)}
+                  style={{
+                    padding: '6px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 800,
+                    background: masterPreviewMode === mode ? '#1a2744' : 'transparent',
+                    color: masterPreviewMode === mode ? '#fff' : '#4b5d76',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {mode === 'pro' ? '프로 보기' : 'ì¼ë° ë³´ê¸°'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mx-auto max-w-[1680px] min-w-0">
-          {(
-            activeTab === 'branding' ? <BrandingAIPage user={user} /> :
-            viewMode === 'office' ? (
-              isGuest || !isApproved ? (
-                <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
-                  <div className="text-5xl">{isGuest ? '🪪' : '⏳'}</div>
-                  <p className="text-xl font-black text-slate-700">
-                    {isGuest ? '타사 게스트 계정은 사무실 업무를 이용할 수 없습니다' : '관리자 승인 후 이용 가능합니다'}
-                  </p>
-                </div>
-              ) : (
-                (() => {
-                  const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
-                  if (isMaster || isHeadquarters) return <MasterView {...props} />;
-                  if (isLeader) return <LeaderView {...props} />;
-                  if (isManager) return <ManagerView {...props} />;
-                  return <AgentView {...props} />;
-                })()
-              )
-            ) : renderConsultingView()
-          )}
+          {activeTab === 'branding' ? (
+            <BrandingAIPage user={user} />
+          ) : viewMode === 'office' ? (
+            isGuest || !isApproved ? (
+              <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
+                <div className="text-5xl">{isGuest ? 'íì¬ ê²ì¤í¸ ê³ì ' : 'â³'}</div>
+                <p className="text-xl font-black text-slate-700">
+                  {isGuest ? 'íì¬ ê²ì¤í¸ ê³ì ì ì¬ë¬´ì¤ ìë¬´ë¥¼ ì´ì©í  ì ììµëë¤' : 'ê´ë¦¬ì ì¹ì¸ í ì´ì© ê°ë¥í©ëë¤'}
+                </p>
+              </div>
+            ) : (
+              (() => {
+                const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
+                if (isMaster || isHeadquarters) return <MasterView {...props} />;
+                if (isLeader) return <LeaderView {...props} />;
+                if (isManager) return <ManagerView {...props} />;
+                return <AgentView {...props} />;
+              })()
+            )
+          ) : (() => {
+            const showPro = isMaster ? masterPreviewMode === 'pro' : (isApproved && canUseCrm)
+            const commonProps = {
+              user, announcements, favorites, isFavEditMode,
+              visibleTools: visibleConsultingTools,
+              onFavEditToggle: () => setIsFavEditMode((v) => !v),
+              onFavToggle: toggleFavorite,
+              onNavigate: handleNavigation,
+              onNoticeClick: () => setShowNoticeModal(true),
+              onUpdateClick: () => setShowUpdateModal(true),
+            }
+            return showPro
+              ? <ProHome {...commonProps} recentCustomers={recentCustomers} />
+              : <GeneralHome {...commonProps} />
+          })()}
         </div>
+
+        {showNoticeModal && (
+          <div style={{ position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(10,20,40,0.45)' }}
+            onClick={() => setShowNoticeModal(false)}>
+            <div style={{ background:'white',borderRadius:14,maxWidth:520,width:'calc(100% - 32px)',padding:'24px 24px 20px',boxShadow:'0 8px 40px rgba(0,0,0,0.18)',position:'relative',maxHeight:'70vh',overflowY:'auto' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16 }}>
+                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>ê³µì§ì¬í­</h2>
+                <div style={{ display:'flex',gap:8,alignItems:'center' }}>
+                  {isMaster && <button onClick={() => { addAnnouncement('notice'); setShowNoticeModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#1b54ad',background:'#eef4fb',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ ì¶ê°</button>}
+                  <button onClick={() => setShowNoticeModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>Ã</button>
+                </div>
+              </div>
+              {announcements.filter(a => a.category === 'notice').length === 0
+                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>ê³µì§ì¬í­ì´ ììµëë¤.</p>
+                : announcements.filter(a => a.category === 'notice').map(ann => (
+                  <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowNoticeModal(false); }}
+                    style={{ display:'block',width:'100%',textAlign:'left',padding:'12px 0',borderBottom:'1px solid #eef3f8',background:'none',border:'none',cursor:'pointer' }}>
+                    <p style={{ fontSize:14,fontWeight:900,color:'#10203a' }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
+                    <p style={{ fontSize:11,color:'#8aa0ba',marginTop:4 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+        {showUpdateModal && (
+          <div style={{ position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(10,20,40,0.45)' }}
+            onClick={() => setShowUpdateModal(false)}>
+            <div style={{ background:'white',borderRadius:14,maxWidth:520,width:'calc(100% - 32px)',padding:'24px 24px 20px',boxShadow:'0 8px 40px rgba(0,0,0,0.18)',position:'relative',maxHeight:'70vh',overflowY:'auto' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16 }}>
+                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>ìë°ì´í¸ ìì</h2>
+                <div style={{ display:'flex',gap:8,alignItems:'center' }}>
+                  {isMaster && <button onClick={() => { addAnnouncement('update'); setShowUpdateModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#0f6e56',background:'#e1f5ee',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ ì¶ê°</button>}
+                  <button onClick={() => setShowUpdateModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>Ã</button>
+                </div>
+              </div>
+              {announcements.filter(a => a.category === 'update').length === 0
+                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>ìë°ì´í¸ ììì´ ììµëë¤.</p>
+                : announcements.filter(a => a.category === 'update').map(ann => (
+                  <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowUpdateModal(false); }}
+                    style={{ display:'block',width:'100%',textAlign:'left',padding:'12px 0',borderBottom:'1px solid #eef3f8',background:'none',border:'none',cursor:'pointer' }}>
+                    <span style={{ background:'#dcfce7',color:'#15803d',fontSize:9,fontWeight:900,borderRadius:12,padding:'2px 8px',marginRight:8 }}>NEW</span>
+                    <span style={{ fontSize:14,fontWeight:900,color:'#10203a' }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</span>
+                    <p style={{ fontSize:11,color:'#8aa0ba',marginTop:4 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+        {selectedAnnouncement && (
+          <AnnouncementModal
+            item={selectedAnnouncement}
+            onClose={() => setSelectedAnnouncement(null)}
+            onSave={saveAnnouncement}
+            onDelete={deleteAnnouncement}
+            isMaster={isMaster}
+          />
+        )}
       </main>
     </div>
   )

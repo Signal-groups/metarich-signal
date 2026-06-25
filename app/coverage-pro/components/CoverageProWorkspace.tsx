@@ -26,9 +26,117 @@ import UnmappedPanel from './UnmappedPanel'
 const STORAGE_KEY   = 'coverage-pro-draft-session'
 const SESSION_ID_KEY = 'coverage-pro-session-id'
 const DEBOUNCE_MS   = 1500
+const PROPOSAL_IMPORT_KEY = 'metarich_proposal_import_payload'
 
 const defaultProposal: RemodelProposal      = { addContracts: [], removeContractIds: [], memo: '' }
 const defaultOutputConfig: OutputConfig     = { outputType: 'excel', includeGraph: true, includeRemodel: true }
+
+const ROW_TO_PROPOSAL_METRIC: Record<string, string> = {
+  cancer_general: 'cancer',
+  cancer_similar: 'minorCancer',
+  brain_vascular: 'brain',
+  brain_stroke: 'brain',
+  brain_hemorrhage: 'brain',
+  heart_vascular: 'heart',
+  heart_ischemic: 'heart',
+  heart_acute_mi: 'heart',
+  surgery_injury: 'injurySurgery',
+  surgery_disease: 'diseaseSurgery',
+  surgery_1_5: 'diseaseTypeSurgery',
+  surgery_n_major: 'diseaseNSurgery',
+  cancer_chemo: 'chemoDrug',
+  cancer_radiation: 'chemoRadiation',
+  cancer_targeted: 'targetDrug',
+  cancer_hadron: 'heavyIon',
+  cancer_davinci: 'robotCancerSurgery',
+  cancer_major_benefit: 'cancerMajorTreatmentGeneral',
+  cancer_major_nonbenefit: 'cancerMajorTreatmentNonCovered',
+  vascular_major: 'twoMajorTreatmentComprehensive',
+  nursing_hospital: 'care',
+  nursing_care_hospital: 'care',
+  nursing_integrated: 'care',
+  other_liability: 'liability',
+  driver_accident: 'trafficSupport',
+  driver_lawyer: 'lawyer',
+  driver_fine: 'finePerson',
+}
+
+function inferProposalCategory(contracts: ProContract[]): 'driver' | 'health' {
+  const coverages = contracts.flatMap((contract) => contract.coverages)
+  const driverCount = coverages.filter((coverage) => coverage.rowKey.startsWith('driver_')).length
+  return driverCount > 0 && driverCount >= coverages.length / 2 ? 'driver' : 'health'
+}
+
+function applyMetricValue(metrics: Record<string, string>, key: string, amount: number) {
+  if (!Number.isFinite(amount) || amount <= 0) return
+  const prev = Number(metrics[key] || 0)
+  metrics[key] = String(Math.max(prev, amount))
+}
+
+function contractToProposalPlan(contract: ProContract) {
+  const metrics: Record<string, string> = {}
+  const customCoverages = contract.coverages
+    .map((coverage) => {
+      const metricKey = ROW_TO_PROPOSAL_METRIC[coverage.rowKey]
+      if (metricKey) {
+        applyMetricValue(metrics, metricKey, Number(coverage.amount || 0))
+        return null
+      }
+      if (!coverage.name || !coverage.amount || coverage.rowKey === 'unknown') return null
+      return {
+        name: coverage.name,
+        amount: String(coverage.amount),
+        note: '보장분석 PRO에서 가져온 추가 담보입니다.',
+      }
+    })
+    .filter(Boolean)
+
+  return {
+    company: contract.company,
+    productName: contract.productName,
+    monthlyPremium: String(contract.monthlyPremium || ''),
+    paymentYears: contract.paymentPeriod || '',
+    coverageYears: contract.paymentPeriod || '',
+    memo: '보장분석 PRO 리모델링 제안에서 가져온 상품입니다.',
+    strengths: '부족 담보 보완 목적의 제안 상품입니다.',
+    cautions: '최종 가입 전 갱신 여부와 세부 지급 조건은 약관으로 확인해야 합니다.',
+    metrics,
+    customCoverages,
+  }
+}
+
+function aggregateContractsToProposalPlan(contracts: ProContract[]) {
+  const metrics: Record<string, string> = {}
+  const customCoverages: Array<{ name: string; amount: string; note: string }> = []
+
+  contracts.forEach((contract) => {
+    contract.coverages.forEach((coverage) => {
+      const metricKey = ROW_TO_PROPOSAL_METRIC[coverage.rowKey]
+      if (metricKey) {
+        applyMetricValue(metrics, metricKey, Number(coverage.amount || 0))
+      } else if (coverage.name && coverage.amount && coverage.rowKey !== 'unknown') {
+        customCoverages.push({
+          name: coverage.name,
+          amount: String(coverage.amount),
+          note: `${contract.company || '보험사 미확인'} 보유 담보`,
+        })
+      }
+    })
+  })
+
+  return {
+    company: '현재 보유계약',
+    productName: '보장분석 PRO 결과 요약',
+    monthlyPremium: String(contracts.reduce((sum, contract) => sum + Number(contract.monthlyPremium || 0), 0)),
+    paymentYears: '',
+    coverageYears: '',
+    memo: '보장분석 PRO의 현재 보장 현황을 제안서 초안으로 가져왔습니다.',
+    strengths: '현재 보유 담보를 기준으로 상담 설명을 시작할 수 있습니다.',
+    cautions: '실제 제안 상품을 추가해 보험료와 담보 차이를 비교하세요.',
+    metrics,
+    customCoverages: customCoverages.slice(0, 12),
+  }
+}
 
 function readDraft() {
   if (typeof window === 'undefined') return null
@@ -532,6 +640,44 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
     }
   }
 
+  const openProposalGenerator = () => {
+    if (typeof window === 'undefined') return
+    const proposalContracts = proposal.addContracts.length > 0
+      ? proposal.addContracts
+      : contracts.filter((contract) => !proposal.removeContractIds.includes(contract.id))
+    if (proposalContracts.length === 0) {
+      alert('제안서로 보낼 계약 또는 제안 상품이 없습니다.')
+      return
+    }
+
+    const categoryId = inferProposalCategory(proposalContracts)
+    const plans = proposal.addContracts.length > 0
+      ? proposalContracts.map(contractToProposalPlan)
+      : [aggregateContractsToProposalPlan(proposalContracts)]
+
+    const payload = {
+      version: 'proposal_gpts_v1',
+      mode: plans.length > 1 ? 'compare' : 'single',
+      categoryId,
+      customerName: customer?.name || '',
+      focus: ['balance'],
+      plans,
+      summary: {
+        headline: proposal.addContracts.length > 0
+          ? '보장분석 결과를 바탕으로 리모델링 제안서를 작성합니다.'
+          : '현재 보장분석 결과를 제안서 초안으로 확인합니다.',
+        mainMessage: proposal.memo || '현재 보장 현황과 부족 담보를 기준으로 상담용 제안서를 구성합니다.',
+        recommendation: proposal.addContracts.length > 0
+          ? '추가 제안 상품의 보험료와 핵심 담보를 기존 보장과 함께 설명하세요.'
+          : '제안서 생성 화면에서 추천 상품을 추가해 비교 제안서로 완성하세요.',
+        cautions: ['최종 가입 전 약관상 지급 조건, 갱신 여부, 보장기간을 확인해야 합니다.'],
+      },
+    }
+
+    window.localStorage.setItem(PROPOSAL_IMPORT_KEY, JSON.stringify(payload))
+    window.open('/insurance-tools/proposal?from=coverage-pro', '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div className="coverage-pro-layout">
       {showBenchmark && <BenchmarkSettings onClose={() => setShowBenchmark(false)} />}
@@ -566,6 +712,14 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                 </span>
               )}
               <div className="coverage-pro-actions">
+                {currentStep >= 5 && (
+                  <button
+                    type="button"
+                    className="coverage-pro-btn"
+                    onClick={openProposalGenerator}
+                    disabled={contracts.length === 0 && proposal.addContracts.length === 0}
+                  >제안서 생성</button>
+                )}
                 <button
                   type="button" className="coverage-pro-btn"
                   onClick={() => moveStep(Math.max(1, currentStep - 1) as StepNumber)}
@@ -870,7 +1024,6 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
               )}
             </div>
           )}
-
           {/* ══════════════ STEP 4 — 보장 확인 ═══════════════════════ */}
           {currentStep === 4 && <CoverageGrid contracts={contracts} onUpdate={setContracts} />}
 
