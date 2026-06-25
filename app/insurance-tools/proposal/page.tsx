@@ -2787,48 +2787,42 @@ export default function ProposalPage() {
                   onClick={saveDraft}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"
                 >
-                  <Save className="h-4 w-4" />
-                  제안서 저장
-                </button>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A]"
-                >
-                  <Download className="h-4 w-4" />
-                  PDF 저장
+
+                  임시저장
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowPreview(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#1a3f6f]"
                 >
-                  <X className="h-4 w-4" />
+                  ✕ 닫기
                 </button>
               </div>
             </div>
 
-            {mode === "bundle" ? (
-              <ProposalBundle
-                sections={bundleIds.map((id) => ({ templateId: id, plan: bundlePlans[id] }))}
-                focus={primaryFocus}
-                customerName={customerName}
-                consultant={consultant}
-              />
-            ) : (
-              <ProposalReport
-                template={template}
-                mode={mode}
-                plans={visiblePlans}
-                focus={primaryFocus}
-                customerName={customerName}
-                consultant={consultant}
-              />
-            )}
+            <div className="proposal-print-area mx-auto max-w-[1240px] px-6">
+              {mode === "bundle" ? (
+                <ProposalBundle
+                  sections={bundleIds.map(id => ({ templateId: id, plan: bundlePlans[id] }))}
+                  customerName={customerName}
+                  consultant={consultant}
+                  focus={focus[0] ?? "balance"}
+                />
+              ) : (
+                <ProposalReport
+                  template={template}
+                  mode={mode}
+                  plans={plans}
+                  focus={focus[0] ?? "balance"}
+                  customerName={customerName}
+                  consultant={consultant}
+                  pageOffset={1}
+                />
+              )}
+            </div>
           </div>
         )}
       </main>
     </>
   )
 }
-

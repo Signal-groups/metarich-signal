@@ -6,6 +6,7 @@ import {
   BENCHMARK_ITEMS,
   ROW_KEY_TO_BENCHMARK,
   type BenchmarkAmounts,
+  type BenchmarkKey,
 } from './BenchmarkSettings'
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
 
@@ -26,6 +27,20 @@ function fmt(v: number) {
   return v >= 10000
     ? `${(v / 10000).toFixed(v % 10000 === 0 ? 0 : 1)}억원`
     : `${v.toLocaleString()}만원`
+}
+
+// 좁은 범위 담보 — 금액이 있어도 "범위 좁음" 경고
+const NARROW_KEYS = new Set<BenchmarkKey>(['brain_stroke', 'brain_hemorrhage', 'heart_mi'])
+
+type RowStatus = 'ok' | 'warn' | 'miss' | 'skip' | 'narrow'
+
+function getRowStatus(key: BenchmarkKey, actual: number, target: number): RowStatus {
+  if (NARROW_KEYS.has(key)) return actual > 0 ? 'narrow' : 'miss'
+  if (target === 0) return 'skip'
+  if (actual === 0) return 'miss'
+  const ratio = actual / target
+  if (ratio >= 1) return 'ok'
+  return 'warn'
 }
 
 // 달성률 링 차트
@@ -58,14 +73,16 @@ function ScoreRing({ achieved, total }: { achieved: number; total: number }) {
 // 항목 행
 function ItemRow({ label, actual, target, status, ratio, isChild }: {
   label: string; actual: number; target: number
-  status: 'ok' | 'warn' | 'miss' | 'skip'; ratio: number | null; isChild?: boolean
+  status: RowStatus; ratio: number | null; isChild?: boolean
 }) {
-  const cfg = {
-    ok:   { badgeText: '달성',   badgeBg: '#dcfce7', badgeColor: '#15803d', barColor: '#10b981' },
-    warn: { badgeText: '부족',   badgeBg: '#fef3c7', badgeColor: '#b45309', barColor: '#f59e0b' },
-    miss: { badgeText: '미가입', badgeBg: '#fee2e2', badgeColor: '#b91c1c', barColor: '#fca5a5' },
-    skip: { badgeText: '해당없음', badgeBg: '#f1f5f9', badgeColor: '#94a3b8', barColor: '#e2e8f0' },
-  }[status]
+  const cfgMap: Record<RowStatus, { badgeText: string; badgeBg: string; badgeColor: string; barColor: string }> = {
+    ok:     { badgeText: '달성',     badgeBg: '#dcfce7', badgeColor: '#15803d', barColor: '#10b981' },
+    warn:   { badgeText: '부족',     badgeBg: '#fef3c7', badgeColor: '#b45309', barColor: '#f59e0b' },
+    miss:   { badgeText: '미가입',   badgeBg: '#fee2e2', badgeColor: '#b91c1c', barColor: '#fca5a5' },
+    skip:   { badgeText: '해당없음', badgeBg: '#f1f5f9', badgeColor: '#94a3b8', barColor: '#e2e8f0' },
+    narrow: { badgeText: '범위 좁음', badgeBg: '#fee2e2', badgeColor: '#b91c1c', barColor: '#ef4444' },
+  }
+  const cfg = cfgMap[status]
   const pct = ratio !== null ? Math.min(100, Math.round(ratio * 100)) : null
 
   return (
@@ -134,12 +151,16 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
   const grouped = groups.map((g) => ({ group: g, items: BENCHMARK_ITEMS.filter((i) => i.group === g) }))
 
   const scored = BENCHMARK_ITEMS.filter((item) => item.unit !== '여부' && benchmark[item.key] > 0)
-  const achievedCount = scored.filter((item) => (actuals[item.key] || 0) >= (benchmark[item.key] || 0)).length
-  const warnCount = scored.filter((item) => {
-    const a = actuals[item.key] || 0; const t = benchmark[item.key] || 0
-    return a > 0 && a < t
-  }).length
-  const missCount = scored.filter((item) => (actuals[item.key] || 0) === 0 && benchmark[item.key] > 0).length
+  let achievedCount = 0, warnCount = 0, missCount = 0, narrowCount = 0
+  for (const item of scored) {
+    const actual = actuals[item.key] || 0
+    const target = benchmark[item.key] || 0
+    const st = getRowStatus(item.key, actual, target)
+    if (st === 'ok') achievedCount++
+    else if (st === 'warn') warnCount++
+    else if (st === 'miss') missCount++
+    else if (st === 'narrow') narrowCount++
+  }
 
   return (
     <div className="coverage-pro-card" style={{ overflow: 'hidden' }}>
@@ -161,6 +182,7 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
             <StatPill label="달성" value={achievedCount} color="#10b981" />
             <StatPill label="부족" value={warnCount} color="#f59e0b" />
             <StatPill label="미가입" value={missCount} color="#ef4444" />
+            {narrowCount > 0 && <StatPill label="범위좁음" value={narrowCount} color="#b91c1c" />}
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -208,15 +230,14 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
               const target = benchmark[item.key] || 0
               const isChild = item.label.startsWith('└')
               if (item.unit === '여부') {
-                const has = actual > 0
-                const needed = target > 0
-                const status: 'ok' | 'miss' | 'skip' = !needed ? 'skip' : has ? 'ok' : 'miss'
-                return <ItemRow key={item.key} label={item.label} actual={has ? 1 : 0} target={needed ? 1 : 0} status={status} ratio={null} isChild={isChild} />
+                const has = actual !== 0
+                const needed = target !== 0
+                const boolStatus: RowStatus = !needed ? 'skip' : has ? 'ok' : 'miss'
+                return <ItemRow key={item.key} label={item.label} actual={has ? 1 : 0} target={needed ? 1 : 0} status={boolStatus} ratio={null} isChild={isChild} />
               }
-              const ratio = target > 0 ? actual / target : null
-              const status: 'ok' | 'warn' | 'miss' | 'skip' =
-                target === 0 ? 'skip' : ratio === null ? 'skip' : ratio >= 1 ? 'ok' : actual > 0 ? 'warn' : 'miss'
-              return <ItemRow key={item.key} label={item.label} actual={actual} target={target} status={status} ratio={ratio} isChild={isChild} />
+              const ratio = target !== 0 ? actual / target : null
+              const rowStatus = getRowStatus(item.key, actual, target)
+              return <ItemRow key={item.key} label={item.label} actual={actual} target={target} status={rowStatus} ratio={ratio} isChild={isChild} />
             })}
           </div>
         )

@@ -175,7 +175,7 @@ export default function Sidebar({
   const consultTools = CONSULTING_TOOLS.filter((tool) => tool.placement !== "office");
   const visibleConsultTools = consultTools.filter((tool) => {
     if (!isApproved && tool.category === "face") return false;
-    if (tool.staffOnly && !isStaff) return false;
+    if (tool.staffOnly && !isApproved) return false;
     if (!isApproved) return tool.guestVisible === true;
     // "office" 접근 레벨: 설계사 이상 + 사무실업무(office_access) 체크된 경우만 노출. fixed=true 항목은 항상 노출
     if (tool.access === "office") return canUseOffice && (tool.fixed || menuStatus[tool.id] || isEditMode);
@@ -324,7 +324,7 @@ export default function Sidebar({
 
             {/* Navigation List */}
             <nav className="space-y-1">
-              <p className="px-2 mb-2 text-[10px] font-bold tracking-widest text-white/30">주요 메뉴</p>
+              <p className="px-2 mb-2 text-[10px] font-bold tracking-widest text-white/30">상담</p>
 
               <NavItem
                 icon="홈"
@@ -333,53 +333,17 @@ export default function Sidebar({
                 onClick={openConsulting}
               />
 
-              {canUseOffice && (
-                <NavItem
-                  icon="업무"
-                  label="사무실 업무"
-                  active={mode === 'office'}
-                  onClick={openOffice}
-                />
-              )}
-
               {canUseCrm && (
                 <NavItem
                   icon="CRM"
                   label="고객 CRM"
                   active={false}
                   onClick={openCrm}
+                  badge="PRO"
                 />
               )}
 
-              {canUseClaim && (
-                <NavItem
-                  icon="청구"
-                  label="보험금 청구 자동화"
-                  active={false}
-                  onClick={showClaimAutomationStatus}
-                  badge="준비중"
-                />
-              )}
-
-              {canUseClaim && (
-                <NavItem
-                  icon="AI"
-                  label="AI 자동화 도구"
-                  active={false}
-                  onClick={showAiAutomationStatus}
-                  badge="준비중"
-                />
-              )}
-
-              {canUseBranding && (
-                <NavItem
-                  icon="🎨"
-                  label="설계사 브랜딩 AI"
-                  active={false}
-                  onClick={() => window.open(`${window.location.origin}/branding-builder`, "_blank", "noopener,noreferrer")}
-                  badge="베타"
-                />
-              )}
+              <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">조회·자료</p>
 
               <NavItem
                 icon="자료"
@@ -391,11 +355,22 @@ export default function Sidebar({
 
               <NavItem
                 icon="시험"
-                label="자격시험 모의고사"
+                label="자격시험"
                 active={false}
                 onClick={openExamHub}
                 badge="NEW"
               />
+
+              <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">업무</p>
+
+              {canUseOffice && (
+                <NavItem
+                  icon="업무"
+                  label="사무실 업무"
+                  active={mode === 'office'}
+                  onClick={openOffice}
+                />
+              )}
 
               <NavItem
                 icon="DM"
@@ -412,10 +387,40 @@ export default function Sidebar({
                 variant="support"
               />
 
+              {canUseClaim && (
+                <NavItem
+                  icon="청구"
+                  label="보험금 청구 자동화"
+                  active={false}
+                  onClick={showClaimAutomationStatus}
+                  badge="PRO"
+                />
+              )}
+
+              {canUseClaim && (
+                <NavItem
+                  icon="AI"
+                  label="AI 자동화 도구"
+                  active={false}
+                  onClick={showAiAutomationStatus}
+                  badge="PRO"
+                />
+              )}
+
+              {canUseBranding && (
+                <NavItem
+                  icon="🎨"
+                  label="설계사 브랜딩 AI"
+                  active={false}
+                  onClick={() => window.open(`${window.location.origin}/branding-builder`, "_blank", "noopener,noreferrer")}
+                  badge="PRO"
+                />
+              )}
+
               {isMaster && (
                 <NavItem
                   icon="직원관리"
-                  label="직원 관리"
+                  label="회원관리"
                   active={false}
                   onClick={() => window.open(`${window.location.origin}/dashboard/users`, "_blank", "noopener,noreferrer")}
                 />
@@ -657,9 +662,8 @@ function NavItem({ icon, label, active, onClick, variant, badge, iconNode }: { i
       <span className={iconClass}>{iconNode ?? icon}</span>
       <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
       <span className="ml-auto flex items-center gap-2">
-        {badge && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-white/70">{badge}</span>}
-        {active && <span className="h-4 w-1 rounded-full bg-[#0ea5e9]" />}
+        {badge && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white/80">{badge}</span>}
       </span>
     </button>
-  )
+  );
 }

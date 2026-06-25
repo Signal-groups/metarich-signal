@@ -65,7 +65,7 @@ export default function UserFilters({
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-black text-slate-900">직원 검색 및 필터</p>
+          <p className="text-sm font-black text-slate-900">회원 검색 및 필터</p>
           <p className="mt-1 text-xs font-bold text-slate-400">
             전체 {totalCount.toLocaleString()}명 중 {filteredCount.toLocaleString()}명 표시
           </p>
@@ -89,7 +89,7 @@ export default function UserFilters({
           {headquarters.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <select value={rank} onChange={(event) => onRankChange(event.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black text-slate-700">
-          <option value="">등급 전체</option>
+          <option value="">조직 직급 전체</option>
           {ranks.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
         <select value={approved} onChange={(event) => onApprovedChange(event.target.value as ApprovedFilter)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-black text-slate-700">

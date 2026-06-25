@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 
 export type CompanyType = "metarich" | "external"
 export type AppRank = "guest" | "agent" | "manager" | "leader" | "headquarters" | "master"
+export type ServiceLevel = "guest" | "general" | "pro" | "premium" | "event"
 
 export type StaffUser = {
   id: string
@@ -28,6 +29,8 @@ export type StaffUser = {
   office_access?: boolean | string | number | null
   claim_access?: boolean | string | number | null
   branding_access?: boolean | string | number | null
+  service_level?: ServiceLevel | string | null
+  premium_expires_at?: string | null
   must_change_password?: boolean | string | number | null
 }
 
@@ -40,6 +43,8 @@ type EditableStaffUser = StaffUser & {
   office_access: boolean
   claim_access: boolean
   branding_access: boolean
+  service_level: ServiceLevel
+  premium_expires_at: string
 }
 
 interface UserRowProps {
@@ -64,15 +69,63 @@ const rankOptions: Array<{ value: AppRank; label: string }> = [
   { value: "master", label: "마스터" },
 ]
 
-const permissionColumns = [
+const serviceLevels: Array<{ id: ServiceLevel; label: string; desc: string; tone: string }> = [
+  { id: "guest", label: "게스트", desc: "가입 신청 후 미승인", tone: "bg-slate-100 text-slate-600" },
+  { id: "general", label: "일반", desc: "승인 + 메인/상담도구", tone: "bg-sky-100 text-sky-700" },
+  { id: "pro", label: "프로", desc: "일반 + 사무실 업무", tone: "bg-indigo-100 text-indigo-700" },
+  { id: "premium", label: "프리미엄", desc: "CRM 고객관리 포함", tone: "bg-emerald-100 text-emerald-700" },
+  { id: "event", label: "이벤트", desc: "프리미엄 15일권", tone: "bg-amber-100 text-amber-700" },
+]
+
+const permissionColumns: Array<{ key: keyof EditableStaffUser; label: string }> = [
   { key: "crm_access", label: "CRM" },
   { key: "office_access", label: "사무실" },
   { key: "claim_access", label: "청구" },
   { key: "branding_access", label: "브랜딩" },
-] as const
+]
 
 export function enabled(value: unknown) {
   return value === true || value === "true" || value === 1 || value === "1"
+}
+
+function isFutureDate(value?: string | null) {
+  if (!value) return false
+  const time = new Date(value).getTime()
+  return Number.isFinite(time) && time > Date.now()
+}
+
+export function getServiceLevel(user: StaffUser): ServiceLevel {
+  if (!enabled(user.is_approved)) return "guest"
+  if (String(user.service_level || "") === "event" && isFutureDate(user.premium_expires_at)) return "event"
+  if (enabled(user.crm_access)) return "premium"
+  if (enabled(user.office_access)) return "pro"
+  return "general"
+}
+
+function eventExpiryDate(days = 15) {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  return date.toISOString()
+}
+
+export function servicePatch(level: ServiceLevel): Partial<EditableStaffUser> {
+  if (level === "guest") {
+    return { service_level: "guest", premium_expires_at: "", is_approved: false, crm_access: false, office_access: false, claim_access: false, branding_access: false }
+  }
+  if (level === "general") {
+    return { service_level: "general", premium_expires_at: "", is_approved: true, crm_access: false, office_access: false, claim_access: false, branding_access: false }
+  }
+  if (level === "pro") {
+    return { service_level: "pro", premium_expires_at: "", is_approved: true, crm_access: false, office_access: true, claim_access: false, branding_access: false }
+  }
+  if (level === "event") {
+    return { service_level: "event", premium_expires_at: eventExpiryDate(15), is_approved: true, crm_access: true, office_access: true, claim_access: false, branding_access: false }
+  }
+  return { service_level: "premium", premium_expires_at: "", is_approved: true, crm_access: true, office_access: true, claim_access: false, branding_access: false }
+}
+
+function serviceLabel(level: ServiceLevel) {
+  return serviceLevels.find((item) => item.id === level)?.label || "일반"
 }
 
 function toRank(user: StaffUser): AppRank {
@@ -132,6 +185,8 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
     office_access: enabled(user.office_access),
     claim_access: enabled(user.claim_access),
     branding_access: enabled(user.branding_access),
+    service_level: getServiceLevel(user),
+    premium_expires_at: user.premium_expires_at || "",
   }))
   const [saving, setSaving] = useState(false)
 
@@ -146,6 +201,8 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
       office_access: enabled(user.office_access),
       claim_access: enabled(user.claim_access),
       branding_access: enabled(user.branding_access),
+      service_level: getServiceLevel(user),
+      premium_expires_at: user.premium_expires_at || "",
     })
   }, [user])
 
@@ -166,31 +223,32 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
     })
   }
 
+  const currentService = getServiceLevel(draft)
   const permissionButtons = (
-    <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
-      {permissionColumns.map((permission) => {
-        const active = draft[permission.key]
-        const isGuestRank = draft.rank === "guest"
-  const disabled = !draft.is_approved || isGuestRank
+    <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-5">
+      {serviceLevels.map((level) => {
+        const active = currentService === level.id
         return (
           <button
-            key={permission.key}
+            key={level.id}
             type="button"
-            disabled={disabled}
-            onClick={() => !disabled && patchDraft({ [permission.key]: !active } as Partial<EditableStaffUser>)}
-            title={disabled ? (isGuestRank ? "게스트(타사)는 권한을 부여할 수 없습니다." : "승인 후 설정할 수 있습니다.") : permission.label}
+            onClick={() => patchDraft(servicePatch(level.id))}
+            title={level.desc}
             className={`rounded-lg px-2 py-2 text-[12px] font-black transition ${
-              disabled
-                ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-40"
-                : active
-                  ? "bg-[#1a3a6e] text-white"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+              active
+                ? "bg-[#1a3a6e] text-white shadow-sm"
+                : `${level.tone} hover:ring-2 hover:ring-[#1a3a6e]/20`
             }`}
           >
-            {permission.label}
+            {level.label}
           </button>
         )
       })}
+      {currentService === "event" && draft.premium_expires_at && (
+        <p className="col-span-2 text-[10px] font-black text-amber-700 xl:col-span-5">
+          만료 {formatDate(draft.premium_expires_at)}
+        </p>
+      )}
     </div>
   )
 
@@ -295,36 +353,38 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
             value={draft.company_name}
             readOnly={draft.company_type === "metarich"}
             onChange={(event) => patchDraft({ company_name: event.target.value, department: event.target.value })}
-            placeholder="회사명"
-            className="rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900 outline-none read-only:bg-slate-100 read-only:text-slate-500"
-          />
+              placeholder="회사명"
+              className="rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900 outline-none read-only:bg-slate-50 read-only:text-slate-400"
+            />
         </div>
       </td>
-      <td className="max-w-[260px] p-4 text-sm font-bold text-slate-600">{getAffiliation(draft)}</td>
       <td className="p-4">
-        <select value={draft.rank} onChange={(event) => patchDraft({ rank: event.target.value as AppRank })} className="rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900">
+        <select value={draft.rank} onChange={(event) => patchDraft({ rank: event.target.value as AppRank })} className="w-full rounded-xl border border-slate-200 bg-white p-2 text-[13px] font-black text-slate-900">
           {rankOptions.map((rank) => <option key={rank.value} value={rank.value}>{rank.label}</option>)}
         </select>
       </td>
-      <td className="p-4">{permissionButtons}</td>
       <td className="p-4">
-        <button type="button" onClick={() => patchDraft({ is_approved: !draft.is_approved })} className={`rounded-xl px-3 py-2 text-[12px] font-black ${draft.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-          {draft.is_approved ? "승인" : "미승인"}
+        {permissionButtons}
+      </td>
+      <td className="p-4">
+        <button
+          type="button"
+          onClick={() => patchDraft({ is_approved: !draft.is_approved })}
+          className={`w-full rounded-xl px-3 py-2 text-[12px] font-black ${draft.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+        >
+          {draft.is_approved ? "승인 완료" : "승인 대기"}
         </button>
       </td>
-      <td className="p-4 text-sm font-bold text-slate-500">{formatDate(user.created_at)}</td>
-      <td className="p-4">
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={save} disabled={saving} className="rounded-xl bg-[#1a3a6e] px-4 py-2 text-[12px] font-black text-white disabled:opacity-50">{saving ? "저장 중" : "저장"}</button>
-          <button type="button" onClick={() => onResetPassword(user)} disabled={user.id === viewerId} className="rounded-xl bg-rose-500 px-4 py-2 text-[12px] font-black text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40">초기화</button>
-          <button
-            type="button"
-            onClick={() => onDelete(user)}
-            disabled={user.id === viewerId}
-            title={isDuplicate ? "중복 계정 — 삭제 권장" : "계정 삭제"}
-            className={`rounded-xl px-4 py-2 text-[12px] font-black text-white transition disabled:cursor-not-allowed disabled:opacity-40 ${isDuplicate ? "animate-pulse bg-orange-500 hover:bg-orange-600" : "bg-slate-400 hover:bg-red-600"}`}
-          >
-            {isDuplicate ? "⚠️ 삭제" : "삭제"}
+      <td className="whitespace-nowrap p-4 text-right">
+        <div className="flex items-center justify-end gap-2">
+          <button type="button" onClick={save} disabled={saving} className="rounded-xl bg-[#1a3a6e] px-3 py-2 text-[12px] font-black text-white disabled:opacity-50">
+            {saving ? "저장 중" : "저장"}
+          </button>
+          <button type="button" onClick={() => onResetPassword(user)} disabled={user.id === viewerId} className="rounded-xl bg-rose-500 px-3 py-2 text-[12px] font-black text-white disabled:cursor-not-allowed disabled:opacity-40">
+            초기화
+          </button>
+          <button type="button" onClick={() => onDelete(user)} disabled={user.id === viewerId} className="rounded-xl bg-slate-700 px-3 py-2 text-[12px] font-black text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40">
+            삭제
           </button>
         </div>
       </td>

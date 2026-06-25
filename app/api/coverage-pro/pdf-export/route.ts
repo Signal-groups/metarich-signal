@@ -385,15 +385,22 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       }).join('')}
     </div>
   </div>`
+  // 레이더 차트 아래 2열 배치용 진단비 카드
   const diagnosisAverageHtml = `
-  <div class="diag-wrap">
-    <div class="mini-title">진단비 평균 대비 현재 준비</div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px">
     ${diagnosisItems.map((item) => {
       const pct = Math.min(100, Math.round(item.current / item.target * 100))
-      return `<div class="diag-row">
-        <div class="diag-name">${escHtml(item.label)}</div>
-        <div class="diag-bar"><span style="width:${Math.max(4, pct)}%"></span></div>
-        <div class="diag-val">${formatWon(item.current)} / ${formatWon(item.target)}</div>
+      const sc = pct >= 100 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444'
+      const sl = pct >= 100 ? '충족' : pct >= 50 ? '보완' : '부족'
+      return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:9px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:11px;font-weight:900;color:#1a2744">${escHtml(item.label)}</span>
+          <span style="font-size:10px;font-weight:900;color:${sc}">${sl} ${pct}%</span>
+        </div>
+        <div style="height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-bottom:4px">
+          <div style="height:6px;border-radius:999px;background:${sc};width:${Math.max(4, pct)}%"></div>
+        </div>
+        <div style="font-size:9px;color:#64748b;text-align:right;font-weight:700">${formatWon(item.current)} / ${formatWon(item.target)}</div>
       </div>`
     }).join('')}
   </div>`
@@ -561,18 +568,13 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     .ratio-total b{color:#1a2744;font-size:13px}
 
     .mini-title{font-size:12px;font-weight:900;color:#1a2744;margin-bottom:7px}
-    .shortage-wrap,.diag-wrap,.silson-info{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px}
+    .shortage-wrap,.silson-info{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px}
     .shortage-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
     .shortage-chip{border-radius:9px;padding:7px 8px;background:#f8fafc;border:1px solid #e2e8f0}
     .shortage-chip span{display:block;font-size:10px;font-weight:800;color:#64748b}
     .shortage-chip b{display:block;font-size:12px;font-weight:900;margin-top:2px}
     .shortage-chip small{display:block;font-size:9px;font-weight:700;color:#64748b;margin-top:1px}
     .shortage-chip.ok b{color:#10b981}.shortage-chip.warn b{color:#f59e0b}.shortage-chip.bad b{color:#ef4444}
-    .diag-row{display:grid;grid-template-columns:34px 1fr 112px;align-items:center;gap:7px;margin-top:6px}
-    .diag-name{font-size:11px;font-weight:900;color:#1a2744}
-    .diag-bar{height:7px;border-radius:999px;background:#e2e8f0;overflow:hidden}
-    .diag-bar span{display:block;height:7px;border-radius:999px;background:#1a2744}
-    .diag-val{font-size:10px;font-weight:800;color:#4b5563;text-align:right}
     .silson-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
     .silson-info-grid div{background:#fafaf8;border-radius:8px;padding:7px}
     .silson-info-grid .wide{grid-column:1/-1}
@@ -620,8 +622,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       tr{page-break-inside:avoid}
     }
   </style>
-</head>
-<body>
+</head><body>
 <div class="print-bar">
   <button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
 </div>
@@ -638,19 +639,22 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       계약 수: ${contracts.length}건 &nbsp;|&nbsp; 월 보험료: ${formatMonthly(totalPremium)} &nbsp;|&nbsp; 분석일: ${new Date().toLocaleDateString('ko-KR')}
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:62% 38%;gap:16px;align-items:start">
+  <div style="display:grid;grid-template-columns:60% 40%;gap:16px;align-items:start">
     <div>
       <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
       <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:12px">
         <div class="gauge-grid">${gaugesHtml}</div>
         <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts)}</div>
+        <div style="margin-top:4px">
+          <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:4px;padding-top:4px;border-top:1px solid #e2e8f0">진단비 대비 현재 준비</div>
+          ${diagnosisAverageHtml}
+        </div>
       </div>
     </div>
     <div>
       <div class="section-title"><span class="section-num">2</span>보험료 구성 비율</div>
       ${premiumInfoHtml}
       ${shortageHtml}
-      ${diagnosisAverageHtml}
       ${silsonInfoHtml}
     </div>
   </div>
@@ -662,30 +666,25 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
 <div class="page-inner">
   <div class="page-label">치료비 · 수술비 · 간병 · 실손 상세</div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start">
-
     <div>
       <div class="section-title" style="font-size:12px"><span class="section-num">3</span>암 치료비</div>
       ${cancerCard}
     </div>
-
     <div>
       <div class="section-title" style="font-size:12px"><span class="section-num">4</span>뇌·심장 치료비</div>
       ${brainCard}
     </div>
-
     <div>
       <div class="section-title" style="font-size:12px"><span class="section-num">5</span>수술비</div>
       ${surgeryCard}
       <div class="section-title" style="font-size:12px;margin-top:10px"><span class="section-num">6</span>간병인</div>
       ${nursingCard}
     </div>
-
     <div>
       <div class="section-title" style="font-size:12px"><span class="section-num">7</span>실손의료비</div>
       ${silsonCard}
       ${!isKey ? `<div class="section-title" style="font-size:12px;margin-top:10px"><span class="section-num">8</span>운전자보험</div>${driverCard}` : ''}
     </div>
-
   </div>
 </div>
 </div>
@@ -700,9 +699,9 @@ ${!isKey ? `
     ${recsHtml}
   </div>
 </div>
-</div>` : ''}
+</div>
 
-<!-- ════ PAGE LAST: 보험사별 담보 비교표 (항상 출력) ════ -->
+<!-- ════ PAGE LAST (전체 전용): 보험사별 담보 비교표 ════ -->
 <div class="pdf-page">
 <div class="page-inner">
   <div class="page-label">보험사별 · 담보별 비교표</div>
@@ -714,7 +713,11 @@ ${!isKey ? `
     메타리치 시그널그룹 | ${new Date().toLocaleDateString('ko-KR')} 작성
   </div>
 </div>
-</div>
+</div>` : `
+<div style="padding:12px 20px;text-align:center;color:#94a3b8;font-size:10px">
+  본 분석 리포트는 고객 상담용 참고 자료이며, 보험 계약의 법적 효력을 대체하지 않습니다.
+  메타리치 시그널그룹 | ${new Date().toLocaleDateString('ko-KR')} 작성
+</div>`}
 
 ${selectedImageSources.map((item, idx) => `
 <div class="img-fullpage">
@@ -733,12 +736,13 @@ ${selectedImageSources.map((item, idx) => `
       });
     }));
   }
-  window.addEventListener('load', function() {
-    waitForImages().then(function() {
-      window.setTimeout(function(){ window.print(); }, 300);
-    });
+  waitForImages().then(function() {
+    if (window.opener && window.opener.__pdfReady) {
+      window.opener.__pdfReady();
+    }
   });
 </script>
 </body>
-</html>`
+</html>
+`
 }

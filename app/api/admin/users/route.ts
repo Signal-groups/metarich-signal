@@ -44,8 +44,10 @@ function profileFromAuthUser(user: any) {
     company_type: isExternal ? "external" : "metarich",
     company_name: isExternal ? metadata.companyName || "" : "메타리치 시그널그룹",
     is_approved: false,
+    service_level: "guest",
+    premium_expires_at: null,
     crm_access: false,
-    office_access: !isExternal,
+    office_access: false,
     claim_access: false,
     branding_access: false,
   }

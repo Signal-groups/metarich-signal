@@ -26,6 +26,14 @@ import type { ExcelExportInput } from './types'
 const TEMPLATE_PATH = path.join(process.cwd(), 'public', 'templates', 'coverage', '보장분석시트.xlsx')
 const TEMPLATE_SHEET = '빈양식'
 
+export function templateExists(): boolean {
+  try {
+    return fs.existsSync(TEMPLATE_PATH)
+  } catch {
+    return false
+  }
+}
+
 // ── 슬롯 → 열 번호 (C=3, E=5, G=7, I=9, K=11, M=13, O=15)  최대 slot 6
 const SLOT_TO_COL = (slot: number): number => slot * 2 + 3
 
@@ -297,8 +305,12 @@ export async function fillCoverageTemplate(input: ExcelExportInput): Promise<Buf
     ws.getRow(ROW.CONTRACTEE).getCell(col).value      = contract.policyHolder ?? ''
     ws.getRow(ROW.CONTRACT_DATE).getCell(col).value   = contract.contractDate ?? ''
     ws.getRow(ROW.PAYMENT).getCell(col).value         = contract.paymentPeriod ?? ''
-    ws.getRow(ROW.NOTE).getCell(col).value            = contract.policyType === 'savings' ? 'ì ì¶ì±' : 'ë³´ì¥ì±'
+    ws.getRow(ROW.NOTE).getCell(col).value            = contract.policyType === 'savings' ? '저축성' : '보장성'
     ws.getRow(ROW.PREMIUM).getCell(col).value         = contract.monthlyPremium ?? 0
+    // 수식 셀 초기화 — 값 미입력 시 #VALUE! 방지
+    ws.getRow(ROW.TOTAL).getCell(col).value     = null
+    ws.getRow(ROW.PAID).getCell(col).value      = null
+    ws.getRow(ROW.REMAINING).getCell(col).value = null
 
     // 담보별 금액 입력 (T열 수식 절대 건드리지 않음)
     // amount는 이미 원 단위 (clientMapping에서 만원 × 10000 변환 완료)
@@ -314,13 +326,4 @@ export async function fillCoverageTemplate(input: ExcelExportInput): Promise<Buf
 
   const buffer = await wb.xlsx.writeBuffer()
   return Buffer.from(buffer)
-}
-
-// ── 템플릿 파일 존재 여부 확인 ────────────────────────────────────────────
-export function templateExists(): boolean {
-  try {
-    return fs.existsSync(TEMPLATE_PATH)
-  } catch {
-    return false
-  }
 }

@@ -31,6 +31,7 @@ import {
   Star,
   Stethoscope,
   ScrollText,
+  Users,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 
@@ -41,7 +42,7 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
-import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice } from "../../lib/roles"
+import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice, canAccessCrm } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
 function ToolIcon({ icon, className = "h-7 w-7" }: { icon: string; className?: string }) {
@@ -198,7 +199,12 @@ export default function DashboardPage() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any | null>(null);
   // 즐겨찾기
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [isFavoritesVisible, setIsFavoritesVisible] = useState(true);
   const [isFavEditMode, setIsFavEditMode] = useState(false);
+  const [recentCustomers, setRecentCustomers] = useState<any[]>([]);
+  const [showGuideDropdown, setShowGuideDropdown] = useState(false);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const init = useCallback(async () => {
     try {
@@ -241,7 +247,23 @@ export default function DashboardPage() {
       try {
         const savedFavs = localStorage.getItem(`mr-favorites-${userId}`);
         if (savedFavs) setFavorites(JSON.parse(savedFavs));
+        const savedVisibility = localStorage.getItem(`mr-favorites-visible-${userId}`);
+        if (savedVisibility !== null) setIsFavoritesVisible(savedVisibility !== "false");
       } catch { /* ignore */ }
+
+      if (canAccessCrm(hydratedUser)) {
+        const { data: recentCustomerData } = await supabase
+          .from("customers")
+          .select("*")
+          .eq("advisor_id", userId)
+          .is("deleted_at", null)
+          .order("join_date", { ascending: false })
+          .limit(5);
+
+        setRecentCustomers(recentCustomerData || []);
+      } else {
+        setRecentCustomers([]);
+      }
 
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
       if (urlParams.get("tab") === "branding" && canAccessBranding(hydratedUser)) {
@@ -289,6 +311,14 @@ export default function DashboardPage() {
     setFavorites(prev => {
       const next = prev.includes(toolId) ? prev.filter(id => id !== toolId) : [...prev, toolId];
       if (user?.id) localStorage.setItem(`mr-favorites-${user.id}`, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleFavoritesVisible = () => {
+    setIsFavoritesVisible(prev => {
+      const next = !prev;
+      if (user?.id) localStorage.setItem(`mr-favorites-visible-${user.id}`, String(next));
       return next;
     });
   };
@@ -366,10 +396,11 @@ export default function DashboardPage() {
   const isHeadquarters = userRole === 'headquarters';
   const isLeader = userRole === 'leader';
   const isManager = userRole === 'manager';
-  const isGuest = userRole === 'guest';
   
   const isApproved = isApprovedUser(user);
+  const isGuest = !isApproved;
   const canUseOffice = canAccessOffice(user);
+  const canUseCrm = canAccessCrm(user);
   const visibleConsultingTools = CONSULTING_TOOLS.filter((m) => {
     if (m.placement === "office") return false;
     if (!isApproved && m.category === "face") return false;
@@ -420,44 +451,81 @@ export default function DashboardPage() {
             </h1>
             <p className="mt-2 text-[15px] font-bold text-[#50627a]">고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다.</p>
           </div>
-          <div className="flex flex-col items-stretch gap-3 sm:items-end">
-            <div className="flex flex-wrap gap-3">
-              <button className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#21324d] shadow-sm">
-                <CalendarDays className="h-4 w-4" />
-                {selectedDate.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", weekday: "short" })}
-              </button>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            {/* 공지사항 */}
+            <button
+              onClick={() => setShowNoticeModal(true)}
+              className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#1b54ad] hover:text-[#1b54ad]"
+            >
+              <Bell className="h-3.5 w-3.5" />
+              공지사항
+              {announcements.filter(a => a.category === 'notice').length > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#e63946] text-[9px] font-black text-white">
+                  {announcements.filter(a => a.category === 'notice').length}
+                </span>
+              )}
+            </button>
+            {/* 업데이트 */}
+            <button
+              onClick={() => setShowUpdateModal(true)}
+              className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#0f6e56] hover:text-[#0f6e56]"
+            >
+              <Megaphone className="h-3.5 w-3.5" />
+              업데이트
+              {announcements.filter(a => a.category === 'update').length > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-[#0f6e56] text-[9px] font-black text-white">
+                  {announcements.filter(a => a.category === 'update').length}
+                </span>
+              )}
+            </button>
+            {/* 가이드 드롭다운 */}
+            <div className="relative">
               <button
-                onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#1b54ad] shadow-sm"
+                onClick={() => setShowGuideDropdown(v => !v)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#1b54ad] shadow-sm hover:border-[#1b54ad]"
               >
-                <BookOpen className="h-4 w-4" /> 일반 가이드
+                <BookOpen className="h-3.5 w-3.5" />
+                가이드
+                <ChevronDown className={`h-3 w-3 transition-transform ${showGuideDropdown ? "rotate-180" : ""}`} />
               </button>
-              <button
-                onClick={() => window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#0f3f86] bg-[#082b5f] px-4 text-[13px] font-black text-white shadow-sm"
-              >
-                <Star className="h-4 w-4 fill-[#f6c342] text-[#f6c342]" /> 프로 가이드
-              </button>
+              {showGuideDropdown && (
+                <div className="absolute right-0 top-11 z-50 w-44 overflow-hidden rounded-xl border border-[#dce6f1] bg-white shadow-xl"
+                  onMouseLeave={() => setShowGuideDropdown(false)}>
+                  <button
+                    onClick={() => { window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no"); setShowGuideDropdown(false); }}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-[13px] font-black text-[#21324d] hover:bg-[#f0f6ff]"
+                  >
+                    <BookOpen className="h-4 w-4 text-[#1b54ad]" />
+                    일반 가이드
+                  </button>
+                  <div className="h-px bg-[#eef3f8]" />
+                  <button
+                    onClick={() => { window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no"); setShowGuideDropdown(false); }}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-[13px] font-black text-white hover:bg-[#082b5f]"
+                    style={{ background: "#0a3268" }}
+                  >
+                    <Star className="h-4 w-4 fill-[#f6c342] text-[#f6c342]" />
+                    프로 가이드
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex flex-wrap gap-3 sm:justify-end">
-              <button
-                onClick={() => {
-                  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent)
-                  window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank")
-                }}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#10203a] shadow-sm"
-              >
-                <span className="grid h-5 w-5 place-items-center rounded bg-[#03c75a] text-[12px] font-black text-white">N</span>
-                보험의 기준 카페
-              </button>
-              <button
-                onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dce6f1] bg-white px-4 text-[13px] font-black text-[#10203a] shadow-sm"
-              >
-                <span className="grid h-5 w-5 place-items-center rounded bg-[#FEE500] text-[11px] font-black text-[#191919]">톡</span>
-                보험의 기준 오픈채팅
-              </button>
-            </div>
+            {/* 시그널그룹 홈페이지 */}
+            <button
+              onClick={() => window.open("https://signalgroup-sigma.vercel.app/index.html", "_blank")}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#0a3268] bg-[#0a3268] px-3 text-[12px] font-black text-white shadow-sm hover:bg-[#082455]"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              시그널그룹
+            </button>
+            {/* 카페 */}
+            <button
+              onClick={() => { const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent); window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank"); }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#03c75a] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:bg-[#f0fff8]"
+            >
+              <span className="grid h-4 w-4 place-items-center rounded bg-[#03c75a] text-[10px] font-black text-white">N</span>
+              카페
+            </button>
           </div>
         </header>
 
@@ -468,14 +536,27 @@ export default function DashboardPage() {
               <p className="text-[17px] font-black text-[#10203a]">즐겨찾기</p>
               <span className="rounded-full bg-[#f2f5f9] px-3 py-1 text-[12px] font-black text-[#4b5d76]">나만의 바로가기</span>
             </div>
-            <button
-              onClick={() => setIsFavEditMode(!isFavEditMode)}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#dce6f1] bg-[#f8fafc] px-4 py-2 text-[12px] font-black text-[#21324d]"
-            >
-              <Star className="h-3.5 w-3.5" /> {isFavEditMode ? "완료" : "편집"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleFavoritesVisible}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#dce6f1] bg-white px-4 py-2 text-[12px] font-black text-[#4b5d76]"
+              >
+                {isFavoritesVisible ? "숨기기" : "보이기"}
+              </button>
+              <button
+                onClick={() => setIsFavEditMode(!isFavEditMode)}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#dce6f1] bg-[#f8fafc] px-4 py-2 text-[12px] font-black text-[#21324d]"
+              >
+                <Star className="h-3.5 w-3.5" /> {isFavEditMode ? "완료" : "편집"}
+              </button>
+            </div>
           </div>
-          {favoriteTools.length === 0 && !isFavEditMode ? (
+          {!isFavoritesVisible && !isFavEditMode ? (
+            <div className="mt-3 flex items-center gap-3 text-[13px] font-bold text-[#64748b]">
+              <Lightbulb className="h-5 w-5" />
+              <span>즐겨찾기 영역을 숨겼습니다. 보이기를 누르면 다시 표시됩니다.</span>
+            </div>
+          ) : favoriteTools.length === 0 && !isFavEditMode ? (
             <div className="mt-3 flex items-center gap-3 text-[13px] font-bold text-[#10203a]">
               <Lightbulb className="h-5 w-5" />
               <span>편집을 눌러 자주 쓰는 도구에 ★를 클릭하면 여기에 모입니다.</span>
@@ -500,6 +581,43 @@ export default function DashboardPage() {
             </div>
           )}
         </section>
+
+        {canUseCrm && recentCustomers.length > 0 && (
+          <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-6 py-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Users className="h-6 w-6 text-[#10203a]" />
+                <p className="text-[17px] font-black text-[#10203a]">최근 상담 고객</p>
+                <span className="rounded-full bg-[#eef4fb] px-3 py-1 text-[12px] font-black text-[#1b54ad]">CRM 바로가기</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.open(`${window.location.origin}/crm/customers`, "_blank", "noopener,noreferrer")}
+                className="rounded-lg border border-[#dce6f1] bg-[#f8fafc] px-4 py-2 text-[12px] font-black text-[#21324d]"
+              >
+                전체보기
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+              {recentCustomers.map((customer) => (
+                <button
+                  key={customer.id}
+                  type="button"
+                  onClick={() => window.open(`${window.location.origin}/crm/customers/${customer.id}`, "_blank", "noopener,noreferrer")}
+                  className="min-h-[94px] rounded-xl border border-[#dce6f1] bg-[#f8fafc] p-4 text-left transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-[14px] font-black text-[#10203a]">{customer.name || "이름 없음"}</p>
+                    {customer.status && <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-[#64748b]">{customer.status}</span>}
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-[12px] font-bold leading-5 text-[#64748b]">
+                    {customer.consulting_summary || customer.memo || customer.phone || "상담 내용을 확인하세요."}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {faceTools.length > 0 && (
           <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-5 py-4 shadow-sm">
@@ -555,43 +673,100 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {/* 공지사항 카드 */}
           <div style={cardBase} className="min-h-[138px] p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Megaphone className="h-5 w-5 text-[#10203a]" />
+                <Bell className="h-5 w-5 text-[#1b54ad]" />
                 <h2 className="text-[17px] font-black text-[#10203a]">공지사항</h2>
               </div>
-              {isMaster && <button onClick={() => addAnnouncement("notice")} className="text-[12px] font-black text-[#1b54ad]">더보기 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
+              {isMaster && <button onClick={() => addAnnouncement("notice")} className="text-[12px] font-black text-[#1b54ad]">+ 추가 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
             </div>
             {announcements.filter((a) => a.category === "notice").slice(0, 2).map((ann) => (
               <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="block w-full py-1 text-left">
-                <p className="text-[13px] font-black text-[#10203a]">{ann.title}</p>
+                <span className="mr-2 rounded-full bg-[#eef4fb] px-2 py-0.5 text-[9px] font-black text-[#1b54ad]">공지</span>
+                <p className="inline text-[13px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
                 <p className="mt-1 text-[12px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
               </button>
             ))}
+            {announcements.filter((a) => a.category === "notice").length === 0 && (
+              <p className="text-[12px] font-bold text-[#b8ccd8]">공지사항이 없습니다.</p>
+            )}
           </div>
-
+          {/* 업데이트 소식 카드 */}
           <div style={cardBase} className="min-h-[138px] p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Bell className="h-5 w-5 text-[#10203a]" />
+                <Megaphone className="h-5 w-5 text-[#0f6e56]" />
                 <h2 className="text-[17px] font-black text-[#10203a]">업데이트 소식</h2>
               </div>
-              {isMaster && <button onClick={() => addAnnouncement("update")} className="text-[12px] font-black text-[#1b54ad]">더보기 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
+              {isMaster && <button onClick={() => addAnnouncement("update")} className="text-[12px] font-black text-[#0f6e56]">+ 추가 <ChevronRight className="inline h-3.5 w-3.5" /></button>}
             </div>
-            <div className="space-y-3">
-              {announcements.filter((a) => a.category === "update").slice(0, 2).map((ann) => (
-                <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="flex w-full items-start gap-3 border-b border-[#edf2f7] pb-2 text-left last:border-b-0">
-                  <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-600">NEW</span>
-                  <span>
-                    <span className="block text-[13px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, "")}</span>
-                    <span className="mt-1 block text-[12px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</span>
-                  </span>
+            {announcements.filter((a) => a.category === "update").slice(0, 2).map((ann) => (
+              <button key={ann.id} onClick={() => setSelectedAnnouncement(ann)} className="block w-full py-1 text-left">
+                <span className="mr-2 rounded-full bg-[#dcfce7] px-2 py-0.5 text-[9px] font-black text-[#15803d]">NEW</span>
+                <p className="inline text-[13px] font-black text-[#10203a]">{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
+                <p className="mt-1 text-[12px] font-bold text-[#8aa0ba]">{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
+              </button>
+            ))}
+            {announcements.filter((a) => a.category === "update").length === 0 && (
+              <p className="text-[12px] font-bold text-[#b8ccd8]">업데이트 소식이 없습니다.</p>
+            )}
+          </div>
+        </section>
+
+        {/* 공지사항 목록 모달 */}
+        {showNoticeModal && (
+          <div style={{ position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,20,40,0.45)" }}
+            onClick={() => setShowNoticeModal(false)}>
+            <div style={{ background:"white",borderRadius:14,maxWidth:520,width:"calc(100% - 32px)",padding:"24px 24px 20px",boxShadow:"0 8px 40px rgba(0,0,0,0.18)",position:"relative",maxHeight:"70vh",overflowY:"auto" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
+                <h2 style={{ fontSize:18,fontWeight:900,color:"#10203a" }}>공지사항</h2>
+                <div style={{ display:"flex",gap:8,alignItems:"center" }}>
+                  {isMaster && <button onClick={() => { addAnnouncement("notice"); setShowNoticeModal(false); }} style={{ fontSize:12,fontWeight:700,color:"#1b54ad",background:"#eef4fb",border:"none",borderRadius:8,padding:"4px 10px",cursor:"pointer" }}>+ 추가</button>}
+                  <button onClick={() => setShowNoticeModal(false)} style={{ background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#9ab4c8" }}>×</button>
+                </div>
+              </div>
+              {announcements.filter(a => a.category === "notice").length === 0 ? (
+                <p style={{ fontSize:13,color:"#b8ccd8",fontWeight:700 }}>공지사항이 없습니다.</p>
+              ) : announcements.filter(a => a.category === "notice").map(ann => (
+                <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowNoticeModal(false); }}
+                  style={{ display:"block",width:"100%",textAlign:"left",padding:"12px 0",borderBottom:"1px solid #eef3f8",background:"none",border:"none",cursor:"pointer" }}>
+                  <p style={{ fontSize:14,fontWeight:900,color:"#10203a" }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
+                  <p style={{ fontSize:11,color:"#8aa0ba",marginTop:4 }}>{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
                 </button>
               ))}
             </div>
           </div>
-        </section>
+        )}
+
+        {/* 업데이트 목록 모달 */}
+        {showUpdateModal && (
+          <div style={{ position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,20,40,0.45)" }}
+            onClick={() => setShowUpdateModal(false)}>
+            <div style={{ background:"white",borderRadius:14,maxWidth:520,width:"calc(100% - 32px)",padding:"24px 24px 20px",boxShadow:"0 8px 40px rgba(0,0,0,0.18)",position:"relative",maxHeight:"70vh",overflowY:"auto" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
+                <h2 style={{ fontSize:18,fontWeight:900,color:"#10203a" }}>업데이트 소식</h2>
+                <div style={{ display:"flex",gap:8,alignItems:"center" }}>
+                  {isMaster && <button onClick={() => { addAnnouncement("update"); setShowUpdateModal(false); }} style={{ fontSize:12,fontWeight:700,color:"#0f6e56",background:"#e1f5ee",border:"none",borderRadius:8,padding:"4px 10px",cursor:"pointer" }}>+ 추가</button>}
+                  <button onClick={() => setShowUpdateModal(false)} style={{ background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#9ab4c8" }}>×</button>
+                </div>
+              </div>
+              {announcements.filter(a => a.category === "update").length === 0 ? (
+                <p style={{ fontSize:13,color:"#b8ccd8",fontWeight:700 }}>업데이트 소식이 없습니다.</p>
+              ) : announcements.filter(a => a.category === "update").map(ann => (
+                <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowUpdateModal(false); }}
+                  style={{ display:"block",width:"100%",textAlign:"left",padding:"12px 0",borderBottom:"1px solid #eef3f8",background:"none",border:"none",cursor:"pointer" }}>
+                  <span style={{ background:"#dcfce7",color:"#15803d",fontSize:9,fontWeight:900,borderRadius:12,padding:"2px 8px",marginRight:8 }}>NEW</span>
+                  <span style={{ fontSize:14,fontWeight:900,color:"#10203a" }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</span>
+                  <p style={{ fontSize:11,color:"#8aa0ba",marginTop:4 }}>{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {selectedAnnouncement && (
           <AnnouncementModal
@@ -603,33 +778,11 @@ export default function DashboardPage() {
           />
         )}
       </div>
-    )
-  }
-
-  const renderOfficeView = () => {
-    if (isGuest || !isApproved) return (
-      <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
-        <div className="text-5xl">{isGuest ? '🪪' : '⏳'}</div>
-        <p className="text-xl font-black text-slate-700">
-          {isGuest ? '타사 게스트 계정은 사무실 업무를 이용할 수 없습니다' : '관리자 승인 후 이용 가능합니다'}
-        </p>
-        <p className="text-sm font-bold text-slate-400 max-w-xs leading-relaxed">
-          {isGuest
-            ? '사무실 업무는 메타리치 시그널그룹 소속 직원 전용입니다.'
-            : '담당 관리자에게 계정 승인을 요청해 주세요.'}
-        </p>
-      </div>
     );
-    const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
-    
-    if (isMaster || isHeadquarters) return <MasterView {...props} />;
-    if (isLeader) return <LeaderView {...props} />;
-    if (isManager) return <ManagerView {...props} />;
-    return <AgentView {...props} />;
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f8fc] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
+    <div className="min-h-screen bg-[#eef3f8] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       <Sidebar 
         user={user} 
         selectedDate={selectedDate} 
@@ -646,11 +799,29 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-6 xl:p-7">
+      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-10">
         <div className="mx-auto max-w-[1680px] min-w-0">
           {(
             activeTab === 'branding' ? <BrandingAIPage user={user} /> :
-      viewMode === 'office' ? renderOfficeView() : renderConsultingView()          )}
+            viewMode === 'office' ? (
+              isGuest || !isApproved ? (
+                <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
+                  <div className="text-5xl">{isGuest ? '🪪' : '⏳'}</div>
+                  <p className="text-xl font-black text-slate-700">
+                    {isGuest ? '타사 게스트 계정은 사무실 업무를 이용할 수 없습니다' : '관리자 승인 후 이용 가능합니다'}
+                  </p>
+                </div>
+              ) : (
+                (() => {
+                  const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
+                  if (isMaster || isHeadquarters) return <MasterView {...props} />;
+                  if (isLeader) return <LeaderView {...props} />;
+                  if (isManager) return <ManagerView {...props} />;
+                  return <AgentView {...props} />;
+                })()
+              )
+            ) : renderConsultingView()
+          )}
         </div>
       </main>
     </div>

@@ -32,7 +32,7 @@ export default function UserTable({
   if (users.length === 0) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-        <p className="text-lg font-black text-slate-900">표시할 직원이 없습니다.</p>
+        <p className="text-lg font-black text-slate-900">표시할 회원이 없습니다.</p>
         <p className="mt-2 text-sm font-bold text-slate-400">검색어나 필터 조건을 조정해주세요.</p>
       </section>
     )
@@ -68,8 +68,8 @@ export default function UserTable({
               <th className="p-4">이름</th>
               <th className="p-4">구분</th>
               <th className="p-4">소속</th>
-              <th className="p-4">직급</th>
-              <th className="p-4">권한</th>
+              <th className="p-4">조직 직급</th>
+              <th className="p-4">서비스 등급</th>
               <th className="p-4">승인</th>
               <th className="p-4">가입일</th>
               <th className="rounded-tr-2xl p-4">액션</th>

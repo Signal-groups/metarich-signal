@@ -51,12 +51,14 @@ export async function ensureUserProfile(supabase: SupabaseClientLike, user: User
     team: isExternal ? input.position || metadata.position || byEmail?.team || '' : input.branch || metadata.branch || byEmail?.team || '',
     branch_name: isExternal ? input.position || metadata.position || byEmail?.branch_name || '' : input.branch || metadata.branch || byEmail?.branch_name || '',
     is_approved: byEmail?.is_approved ?? false,
+    service_level: byEmail?.service_level ?? 'guest',
+    premium_expires_at: byEmail?.premium_expires_at ?? null,
     // ─── 권한 기본값 ────────────────────────────────────────────────────
     // 메타리치(signal): 승인 후 사무실 업무 자동 허용 (office_access 기본 true)
     // 타사(external/guest): 모든 기능 false — 메인홈만 이용 가능
     // CRM·브랜딩·청구: 소속 관계없이 마스터가 개별 부여
     crm_access: byEmail?.crm_access ?? false,
-    office_access: byEmail?.office_access ?? !isExternal,
+    office_access: byEmail?.office_access ?? false,
     claim_access: byEmail?.claim_access ?? false,
     branding_access: byEmail?.branding_access ?? false,
   }

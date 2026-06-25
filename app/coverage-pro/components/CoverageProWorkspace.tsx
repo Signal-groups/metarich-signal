@@ -231,6 +231,18 @@ function extractJson(raw: string): string {
   return last !== -1 ? raw.slice(start, last + 1) : raw
 }
 
+// ── 배치 출력 파트 감지 (output_part: "1/2" | "2/2") ──────────────────────
+function detectBatchPart(raw: string): '1/2' | '2/2' | null {
+  try {
+    const cleaned = extractJson(raw.trim())
+    const parsed = JSON.parse(cleaned)
+    const part = String(parsed.output_part ?? '')
+    if (part === '1/2') return '1/2'
+    if (part === '2/2') return '2/2'
+    return null
+  } catch { return null }
+}
+
 function parseGptsJson(raw: string): ProContract[] | null {
   try {
     const cleaned = extractJson(raw.trim())
@@ -340,6 +352,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
   const [showJsonPaste, setShowJsonPaste] = useState(false)
   const [jsonText, setJsonText] = useState('')
   const [jsonError, setJsonError] = useState('')
+  const [batchPhase, setBatchPhase] = useState<'idle' | 'waiting_2nd'>('idle')
 
   const sessionRef   = useRef<ProSession | null>(null)
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -484,18 +497,39 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
 
   const handleJsonApply = (append = false) => {
     setJsonError('')
+    const batchPart = detectBatchPart(jsonText)
     const parsed = parseGptsJson(jsonText)
     if (!parsed) { setJsonError('JSON 형식이 올바르지 않습니다. GPTs 출력 형식을 확인해주세요.'); return }
     if (parsed.length === 0) { setJsonError('계약 데이터가 없습니다.'); return }
-    if (append) {
-      setContracts(prev => [...prev, ...parsed])
-    } else {
+
+    if (batchPart === '1/2') {
+      // 1차 배치: 계약 세팅 후 패널 유지 → 2차 대기
       setContracts(parsed)
+      setBatchPhase('waiting_2nd')
+      setJsonText('')
+      setStepStatus((prev) => ({ ...prev, 3: 'done', 4: 'pending' }))
+      // showJsonPaste는 열어둠
+    } else if (batchPart === '2/2') {
+      // 2차 배치: 기존 계약에 누적
+      setContracts(prev => [...prev, ...parsed])
+      setBatchPhase('idle')
+      setJsonText('')
+      setShowJsonPaste(false)
+      setStepStatus((prev) => ({ ...prev, 3: 'done', 4: 'pending' }))
+      if (currentStep === 1) moveStep(3)
+    } else {
+      // 일반 단일 분석
+      if (append) {
+        setContracts(prev => [...prev, ...parsed])
+      } else {
+        setContracts(parsed)
+      }
+      setBatchPhase('idle')
+      setStepStatus((prev) => ({ ...prev, 3: 'done', 4: 'pending' }))
+      setJsonText('')
+      setShowJsonPaste(false)
+      if (currentStep === 1) moveStep(3)
     }
-    setStepStatus((prev) => ({ ...prev, 3: 'done', 4: 'pending' }))
-    setJsonText('')
-    setShowJsonPaste(false)
-    if (currentStep === 1) moveStep(3)
   }
 
   return (
@@ -658,6 +692,22 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                   </>
                 ) : (
                   <div style={{ display: 'grid', gap: 10 }}>
+                    {batchPhase === 'waiting_2nd' && (
+                      <div style={{
+                        background: '#ecfdf5', border: '1px solid #10b981', borderRadius: 8,
+                        padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10,
+                      }}>
+                        <span style={{ fontSize: 18 }}>✅</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 900, color: '#065f46' }}>
+                            1차 JSON 입력 완료 — {contracts.length}건 로드됨
+                          </div>
+                          <div style={{ fontSize: 12, color: '#047857', marginTop: 2 }}>
+                            GPTs에서 2차 JSON(나머지 계약)을 복사하여 아래에 붙여넣고 &quot;2차 추가&quot;를 클릭하세요.
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <textarea
                       className="coverage-pro-textarea"
                       style={{ minHeight: 160, fontFamily: 'monospace', fontSize: 12 }}
@@ -669,18 +719,34 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                       <div style={{ color: '#ef4444', fontSize: 13 }}>{jsonError}</div>
                     )}
                     <div className="coverage-pro-actions">
-                      <button type="button" className="coverage-pro-btn primary" onClick={() => handleJsonApply(false)}>
-                        적용 — 계약 전체 교체
-                      </button>
-                      <button type="button" className="coverage-pro-btn"
-                        style={{ background: '#0ea5e9', color: '#fff', border: 'none' }}
-                        onClick={() => handleJsonApply(true)}>
-                        + 추가 — 기존 계약에 더하기
-                      </button>
-                      <button type="button" className="coverage-pro-btn"
-                        onClick={() => { setShowJsonPaste(false); setJsonText(''); setJsonError('') }}>
-                        취소
-                      </button>
+                      {batchPhase === 'waiting_2nd' ? (
+                        <>
+                          <button type="button" className="coverage-pro-btn primary"
+                            style={{ background: '#10b981', border: 'none' }}
+                            onClick={() => handleJsonApply(true)}>
+                            ✅ 2차 추가 — 계약 누적
+                          </button>
+                          <button type="button" className="coverage-pro-btn"
+                            onClick={() => { setBatchPhase('idle'); setShowJsonPaste(false); setJsonText(''); setJsonError('') }}>
+                            완료 (1차만 사용)
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" className="coverage-pro-btn primary" onClick={() => handleJsonApply(false)}>
+                            적용 — 계약 전체 교체
+                          </button>
+                          <button type="button" className="coverage-pro-btn"
+                            style={{ background: '#0ea5e9', color: '#fff', border: 'none' }}
+                            onClick={() => handleJsonApply(true)}>
+                            + 추가 — 기존 계약에 더하기
+                          </button>
+                          <button type="button" className="coverage-pro-btn"
+                            onClick={() => { setShowJsonPaste(false); setJsonText(''); setJsonError('') }}>
+                            취소
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -752,6 +818,19 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
               ) : (
                 <div className="coverage-pro-card coverage-pro-card-pad">
                   <div className="coverage-pro-section-title">GPTs JSON 재입력</div>
+                  {batchPhase === 'waiting_2nd' && (
+                    <div style={{
+                      background: '#ecfdf5', border: '1px solid #10b981', borderRadius: 8,
+                      padding: '10px 14px', marginBottom: 10,
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 900, color: '#065f46' }}>
+                        ✅ 1차 JSON 입력 완료 ({contracts.length}건)
+                      </div>
+                      <div style={{ fontSize: 12, color: '#047857', marginTop: 2 }}>
+                        GPTs 2차 JSON을 붙여넣고 &quot;2차 추가&quot;를 클릭하세요.
+                      </div>
+                    </div>
+                  )}
                   <textarea
                     className="coverage-pro-textarea"
                     style={{ minHeight: 140, fontFamily: 'monospace', fontSize: 12 }}
@@ -760,16 +839,32 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                   />
                   {jsonError && <div style={{ color: '#ef4444', fontSize: 13 }}>{jsonError}</div>}
                   <div className="coverage-pro-actions" style={{ marginTop: 10 }}>
-                    <button type="button" className="coverage-pro-btn primary" onClick={() => handleJsonApply(false)}>
-                      적용 — 전체 교체
-                    </button>
-                    <button type="button" className="coverage-pro-btn"
-                      style={{ background: '#0ea5e9', color: '#fff', border: 'none' }}
-                      onClick={() => handleJsonApply(true)}>
-                      + 추가 — 기존에 더하기
-                    </button>
-                    <button type="button" className="coverage-pro-btn"
-                      onClick={() => { setShowJsonPaste(false); setJsonText('') }}>취소</button>
+                    {batchPhase === 'waiting_2nd' ? (
+                      <>
+                        <button type="button" className="coverage-pro-btn primary"
+                          style={{ background: '#10b981', border: 'none' }}
+                          onClick={() => handleJsonApply(true)}>
+                          ✅ 2차 추가
+                        </button>
+                        <button type="button" className="coverage-pro-btn"
+                          onClick={() => { setBatchPhase('idle'); setShowJsonPaste(false); setJsonText('') }}>
+                          완료 (1차만 사용)
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" className="coverage-pro-btn primary" onClick={() => handleJsonApply(false)}>
+                          적용 — 전체 교체
+                        </button>
+                        <button type="button" className="coverage-pro-btn"
+                          style={{ background: '#0ea5e9', color: '#fff', border: 'none' }}
+                          onClick={() => handleJsonApply(true)}>
+                          + 추가
+                        </button>
+                        <button type="button" className="coverage-pro-btn"
+                          onClick={() => { setShowJsonPaste(false); setJsonText('') }}>취소</button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

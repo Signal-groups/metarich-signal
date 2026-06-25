@@ -98,6 +98,13 @@ function enabled(value: any): boolean {
   return value === true || value === "true" || value === 1 || value === "1"
 }
 
+function hasExpiredPremiumEvent(user: any): boolean {
+  if (String(user?.service_level || "") !== "event") return false;
+  if (!user?.premium_expires_at) return false;
+  const time = new Date(user.premium_expires_at).getTime();
+  return Number.isFinite(time) && time <= Date.now();
+}
+
 /**
  * 실제 승인 여부 확인
  * ─────────────────────────────────────────────────────────────────
@@ -124,6 +131,7 @@ export function isApprovedUser(user: any): boolean {
 export function canAccessCrm(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
   if (normalizeRole(user) === "guest") return false;
+  if (hasExpiredPremiumEvent(user)) return false;
   return isApprovedUser(user) && enabled(user?.crm_access);
 }
 
@@ -131,7 +139,8 @@ export function canAccessCrm(user: any): boolean {
 export function canAccessOffice(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
   if (normalizeRole(user) === "guest") return false;
-  return isApprovedUser(user);
+  if (hasExpiredPremiumEvent(user)) return false;
+  return isApprovedUser(user) && enabled(user?.office_access);
 }
 
 /** AI 자동화 청구 — is_approved + claim_access 동시 필요 (guest 영구 차단) */
@@ -156,10 +165,6 @@ export function canAccessBranding(user: any): boolean {
  * • 설계사 이상 + 승인 : 허용 (office_access 불필요)
  */
 export function canAccessFirstCoverageCheck(user: any): boolean {
-  if (normalizeRole(user) === "guest") return false;
-  const role = normalizeRole(user);
-  const isAgentOrAbove = ROLE_PRIORITY[role] >= ROLE_PRIORITY["agent"];
-  if (!isAgentOrAbove) return false;
   return isApprovedUser(user);
 }
 

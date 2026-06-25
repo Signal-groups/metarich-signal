@@ -960,9 +960,14 @@ function DataSection({
                 )}
                 {(section==="assets"||section==="liabilities") && (
                   <td><input type="number" value={item.rate||0} step={0.01} onChange={e=>onUpdate(section,item.id,{ rate:Number(e.target.value) })} /></td>
+
                 )}
                 <td><input value={item.memo||""} onChange={e=>onUpdate(section,item.id,{ memo:e.target.value })} /></td>
-                <td><button className="fp-delete" onClick={()=>onRemove(section,item.id)}><Trash2 className="h-4 w-4" /></button></td>
+                <td style={{ textAlign:"center" }}>
+                  <button onClick={()=>onRemove(section,item.id)} style={{ color:"#ef4444",background:"none",border:"none",cursor:"pointer",padding:"2px 4px" }}>
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
