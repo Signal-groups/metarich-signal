@@ -1,8 +1,9 @@
 // POST /api/coverage-pro/pdf-export
 // 보장분석 리포트 HTML 생성 — 인쇄/PDF 프리뷰용
-// 스타일: 상단 게이지 차트 + 중단 치료비 카드 + 저축/보장 비율 + 추천 + 비교표
 
 import { NextRequest, NextResponse } from 'next/server'
+import { readFile } from 'fs/promises'
+import path from 'path'
 import type { ProContract } from '../../../../lib/coverageAnalysis/types'
 
 type PdfExportInput = {
@@ -16,281 +17,460 @@ export async function POST(req: NextRequest) {
   let input: PdfExportInput
   try { input = await req.json() }
   catch { return NextResponse.json({ error: '요청 데이터를 읽지 못했습니다.' }, { status: 400 }) }
-
   if (!input.customerName) return NextResponse.json({ error: 'customerName은 필수입니다.' }, { status: 400 })
   if (!Array.isArray(input.contracts)) return NextResponse.json({ error: 'contracts 배열이 필요합니다.' }, { status: 400 })
-
-  const html = buildPrintHtml(input)
+  const html = await buildPrintHtml(input)
   return new NextResponse(html, {
     status: 200,
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
   })
 }
 
-// ── 분석 헬퍼 ─────────────────────────────────────────────────────────────
+// ── 집계 헬퍼 ──────────────────────────────────────────────────────────────
+// surgery_1_5 / surgery_n_major 은 보험사별 최대값 사용 (중복 합산 방지)
+const MAX_ROW_KEYS = new Set(['surgery_1_5', 'surgery_n_major'])
+
 function sumAmount(contracts: ProContract[], ...rowKeys: string[]): number {
-  return contracts
-    .flatMap((c) => c.coverages)
-    .filter((cov) => rowKeys.includes(cov.rowKey))
-    .reduce((sum, cov) => sum + Number(cov.amount || 0) * 10000, 0)
+  let total = 0
+  for (const key of rowKeys) {
+    if (MAX_ROW_KEYS.has(key)) {
+      let max = 0
+      for (const c of contracts)
+        for (const cov of c.coverages)
+          if (cov.rowKey === key) max = Math.max(max, Number(cov.amount || 0) * 10000)
+      total += max
+    } else {
+      for (const c of contracts)
+        for (const cov of c.coverages)
+          if (cov.rowKey === key) total += Number(cov.amount || 0) * 10000
+    }
+  }
+  return total
+}
+
+// vascular_major(2대주요치료비) → 하위 항목 파생
+// 가입금액 = 혈전용해+제거치료+수술비, 50% = 중환자실
+function deriveVascularMajor(contracts: ProContract[]) {
+  const base = sumAmount(contracts, 'vascular_major')
+  if (base > 0) {
+    return { thrombolysis: base, surgery: base, icu: Math.round(base * 0.5) }
+  }
+  return {
+    thrombolysis: sumAmount(contracts, 'two_major_thrombolysis'),
+    surgery:      sumAmount(contracts, 'two_major_surgery'),
+    icu:          sumAmount(contracts, 'two_major_icu'),
+  }
 }
 
 function formatWon(v: number): string {
   if (!v) return '-'
   if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(0)}억`
-  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
+  if (v >= 10_000)      return `${Math.round(v / 10_000).toLocaleString()}만원`
   return `${v.toLocaleString()}원`
 }
-
 function formatMonthly(v: number): string {
   if (!v) return '-'
   return `${Math.round(v).toLocaleString()}원`
 }
-
+function formatPercent(current: number, target: number): string {
+  if (!target) return '0%'
+  return `${Math.min(999, Math.round(current / target * 100))}%`
+}
 function escHtml(s: string | number | undefined): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
-// 방사형 차트 SVG
-function radarChartSvg(contracts: ProContract[]): string {
-  const AXES = [
-    { label: '암진단비', keys: ['cancer_general'],                                                   rec: 50_000_000 },
-    { label: '뇌진단비', keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],                 rec: 40_000_000 },
-    { label: '심장진단비', keys: ['heart_acute_mi', 'heart_ischemic'],                      rec: 40_000_000 },
-    { label: '수술비', keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],                    rec:  5_000_000 },
-    { label: '실손', keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],                       rec: 50_000_000 },
-    { label: '사망', keys: ['death_general', 'death_disease', 'death_injury'],                           rec: 100_000_000 },
-  ]
-  const N = AXES.length
-  const cx = 140, cy = 140, R = 100
-  const ratios = AXES.map(a => Math.min(1, sumAmount(contracts, ...a.keys) / a.rec))
-
-  function pt(ratio: number, i: number): [number, number] {
-    const angle = (i * 2 * Math.PI / N) - Math.PI / 2
-    return [cx + ratio * R * Math.cos(angle), cy + ratio * R * Math.sin(angle)]
-  }
-
-  const gridLines = [0.25, 0.5, 0.75, 1.0].map(r => {
-    const pts = Array.from({length: N}, (_, i) => pt(r, i))
-    return `<polygon points="${pts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`
-  }).join('')
-
-  const axisLines = Array.from({length: N}, (_, i) => {
-    const [x, y] = pt(1, i)
-    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`
-  }).join('')
-
-  const actualPts = Array.from({length: N}, (_, i) => pt(ratios[i], i))
-  const actualPolygon = `<polygon points="${actualPts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')}" fill="rgba(26,39,68,0.15)" stroke="#1a2744" stroke-width="2"/>`
-  const dots = actualPts.map(([x,y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#1a2744"/>`).join('')
-
-  const labels = AXES.map((a, i) => {
-    const angle = (i * 2 * Math.PI / N) - Math.PI / 2
-    const lr = R + 24
-    const lx = cx + lr * Math.cos(angle)
-    const ly = cy + lr * Math.sin(angle)
-    const anchor = Math.cos(angle) > 0.15 ? 'start' : Math.cos(angle) < -0.15 ? 'end' : 'middle'
-    const pct = Math.round(ratios[i] * 100)
-    return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" font-size="10" fill="#1a2744" font-weight="700">${escHtml(a.label)}</text><text x="${lx.toFixed(1)}" y="${(ly+12).toFixed(1)}" text-anchor="${anchor}" font-size="9" fill="#64748b">${pct}%</text>`
-  }).join('')
-
-  return `<svg viewBox="0 0 280 280" width="220" height="220">${gridLines}${axisLines}${actualPolygon}${dots}${labels}</svg>`
+function imageMime(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase()
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg'
+  if (ext === '.webp') return 'image/webp'
+  if (ext === '.gif') return 'image/gif'
+  return 'image/png'
 }
 
+async function publicImageToDataUrl(src: string): Promise<string | null> {
+  if (!src.startsWith('/coverage-stats/')) return null
+  const fileName = path.basename(src)
+  const filePath = path.join(process.cwd(), 'public', 'coverage-stats', fileName)
+  try {
+    const buffer = await readFile(filePath)
+    return `data:${imageMime(filePath)};base64,${buffer.toString('base64')}`
+  } catch {
+    return null
+  }
+}
 
-
-// 보험 유형 분류 (보장성 / 저축성 / 실손)
-function classifyType(contract: ProContract): '보장성' | '저축성' | '실손' {
-  const name = (contract.productName + contract.company).toLowerCase()
-  if (name.includes('실손') || name.includes('의료비보험') || name.includes('실비')) return '실손'
-  if (name.includes('저축') || name.includes('연금') || name.includes('적립') || name.includes('변액')) return '저축성'
+// ── 보험 유형 분류 ─────────────────────────────────────────────────────────
+function classifyType(c: ProContract): '보장성' | '저축성' | '실손' {
+  const n = (c.productName + c.company).toLowerCase()
+  if (n.includes('실손') || n.includes('실비') || n.includes('의료비보험')) return '실손'
+  if (n.includes('저축') || n.includes('연금') || n.includes('적립') || n.includes('변액')) return '저축성'
   return '보장성'
 }
 
-// 게이지 SVG (0~100%)
+function parseContractYearMonth(value?: string): { year: number; month: number; label: string } | null {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+  const nums = raw.match(/\d+/g)
+  if (!nums?.length) return null
+  let year = Number(nums[0])
+  const month = Number(nums[1] || 1)
+  if (year < 100) year += year >= 70 ? 1900 : 2000
+  if (!year || !month) return null
+  return { year, month, label: `${year}.${String(month).padStart(2, '0')}` }
+}
+
+function inferSilsonInfo(contracts: ProContract[]) {
+  const silson = contracts.find((contract) =>
+    classifyType(contract) === '실손' ||
+    contract.coverages.some((coverage) => coverage.rowKey.startsWith('silson_'))
+  )
+  if (!silson) {
+    return { generation: '미가입 또는 확인 필요', joinedAt: '-', renewalRule: '실손 담보 확인 필요' }
+  }
+  const parsed = parseContractYearMonth(silson.contractDate)
+  if (!parsed) {
+    return { generation: '확인 필요', joinedAt: silson.contractDate || '-', renewalRule: silson.isRenewal ? '갱신형' : '계약일 기준 확인' }
+  }
+  const ym = parsed.year * 100 + parsed.month
+  if (ym <= 200909) return { generation: '1세대 실손', joinedAt: parsed.label, renewalRule: '3년 또는 5년 갱신형 중심' }
+  if (ym <= 201703) return { generation: '2세대 실손', joinedAt: parsed.label, renewalRule: '대체로 15년 재가입 구조' }
+  if (ym <= 202106) return { generation: '3세대 실손', joinedAt: parsed.label, renewalRule: '15년 재가입 · 비급여 특약 분리' }
+  return { generation: '4세대 실손', joinedAt: parsed.label, renewalRule: '5년 재가입 · 비급여 차등 구조' }
+}
+
+// ── 게이지 SVG ────────────────────────────────────────────────────────────
 function gauge(pct: number, color: string, label: string, value: string): string {
-  const r = 36
-  const circ = 2 * Math.PI * r
-  const dash = (pct / 100) * circ
-  const gap = circ - dash
-  const statusColor = pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444'
-  const statusLabel = pct >= 70 ? '충족' : pct >= 40 ? '보완필요' : '부족'
-  return `
-  <div class="gauge-wrap">
+  const r = 36, circ = 2 * Math.PI * r
+  const dash = (pct / 100) * circ, gap = circ - dash
+  const sc = pct >= 70 ? '#10b981' : pct >= 40 ? '#f59e0b' : '#ef4444'
+  const sl = pct >= 70 ? '충족' : pct >= 40 ? '보완필요' : '부족'
+  return `<div class="gauge-wrap">
     <svg viewBox="0 0 84 84" width="84" height="84">
       <circle cx="42" cy="42" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="8"/>
       <circle cx="42" cy="42" r="${r}" fill="none" stroke="${color}" stroke-width="8"
-        stroke-dasharray="${dash} ${gap}" stroke-linecap="round"
+        stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-linecap="round"
         transform="rotate(-90 42 42)"/>
       <text x="42" y="38" text-anchor="middle" font-size="13" font-weight="900" fill="#1a2744">${Math.round(pct)}%</text>
       <text x="42" y="52" text-anchor="middle" font-size="9" fill="#64748b">${escHtml(label)}</text>
     </svg>
     <div class="gauge-value">${escHtml(value)}</div>
-    <div class="gauge-status" style="color:${statusColor}">${statusLabel}</div>
+    <div class="gauge-status" style="color:${sc}">${sl}</div>
   </div>`
 }
 
-// 추천 항목 — 간단한 rule-based
-function buildRecommendations(contracts: ProContract[]) {
-  const cancer  = sumAmount(contracts, 'cancer_general')
-  const brain   = sumAmount(contracts, 'brain_stroke')
-  const heart   = sumAmount(contracts, 'heart_acute_mi')
-  const death   = sumAmount(contracts, 'death_general')
-  const recs: Array<{ type: '보장성' | '저축성'; title: string; desc: string; icon: string }> = []
-
-  // 보장성 추천 (최대 2개)
-  if (cancer < 30_000_000)
-    recs.push({ type: '보장성', title: '암진단비 보완', desc: `현재 ${formatWon(cancer)}로 3천만원 기준 미달. 진단비 보강 우선 권장.`, icon: '🩺' })
-  if (brain + heart < 40_000_000)
-    recs.push({ type: '보장성', title: '뇌·심장 진단비 보완', desc: `뇌심 합산 ${formatWon(brain + heart)} — 4천만원 이상 확보 권장.`, icon: '🫀' })
-  if (death < 100_000_000)
-    recs.push({ type: '보장성', title: '사망보장 강화', desc: `사망보험금 ${formatWon(death)} — 가족 생활비 기반 최소 1억 확보 검토.`, icon: '🛡️' })
-
-  // 저축성 추천 (최대 2개)
-  recs.push({ type: '저축성', title: '노후연금 설계', desc: '은퇴 후 월 200만원 수령 기준 연금보험 가입 시뮬레이션을 권장합니다.', icon: '💰' })
-  recs.push({ type: '저축성', title: '변액유니버셜 활용', desc: '중장기 자산 성장과 보장의 병행이 필요한 경우 변액보험 검토를 추천합니다.', icon: '📈' })
-
-  const 보장 = recs.filter((r) => r.type === '보장성').slice(0, 2)
-  const 저축 = recs.filter((r) => r.type === '저축성').slice(0, 2)
-  return [...보장, ...저축]
+// ── 레이더 차트 SVG ───────────────────────────────────────────────────────
+function radarChartSvg(contracts: ProContract[]): string {
+  const AXES = [
+    { label: '암진단비',  keys: ['cancer_general'],                                          rec: 50_000_000 },
+    { label: '뇌진단비',  keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],      rec: 40_000_000 },
+    { label: '심장진단비', keys: ['heart_acute_mi', 'heart_ischemic', 'heart_vascular'],     rec: 40_000_000 },
+    { label: '수술비',    keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],         rec:  5_000_000 },
+    { label: '실손',      keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],      rec: 50_000_000 },
+    { label: '사망',      keys: ['death_general', 'death_disease', 'death_injury'],           rec: 100_000_000 },
+  ]
+  const N = AXES.length, cx = 140, cy = 140, R = 100
+  const ratios = AXES.map(a => Math.min(1, sumAmount(contracts, ...a.keys) / a.rec))
+  const pt = (ratio: number, i: number): [number, number] => {
+    const angle = (i * 2 * Math.PI / N) - Math.PI / 2
+    return [cx + ratio * R * Math.cos(angle), cy + ratio * R * Math.sin(angle)]
+  }
+  const gridLines = [0.25, 0.5, 0.75, 1.0].map(r => {
+    const pts = Array.from({length: N}, (_, i) => pt(r, i))
+    return `<polygon points="${pts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`
+  }).join('')
+  const axisLines = Array.from({length: N}, (_, i) => {
+    const [x, y] = pt(1, i)
+    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`
+  }).join('')
+  const actualPts = Array.from({length: N}, (_, i) => pt(ratios[i], i))
+  const polygon = `<polygon points="${actualPts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')}" fill="rgba(26,39,68,0.15)" stroke="#1a2744" stroke-width="2"/>`
+  const dots = actualPts.map(([x,y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#1a2744"/>`).join('')
+  const labels = AXES.map((a, i) => {
+    const angle = (i * 2 * Math.PI / N) - Math.PI / 2
+    const lr = R + 24, lx = cx + lr * Math.cos(angle), ly = cy + lr * Math.sin(angle)
+    const anchor = Math.cos(angle) > 0.15 ? 'start' : Math.cos(angle) < -0.15 ? 'end' : 'middle'
+    const pct = Math.round(ratios[i] * 100)
+    return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" font-size="10" fill="#1a2744" font-weight="700">${escHtml(a.label)}</text>` +
+           `<text x="${lx.toFixed(1)}" y="${(ly+12).toFixed(1)}" text-anchor="${anchor}" font-size="9" fill="#64748b">${pct}%</text>`
+  }).join('')
+  return `<svg viewBox="0 0 280 280" width="220" height="220">${gridLines}${axisLines}${polygon}${dots}${labels}</svg>`
 }
 
-// ── 메인 HTML 생성 ────────────────────────────────────────────────────────
-function buildPrintHtml(input: PdfExportInput): string {
+// ── 추천 제안 ─────────────────────────────────────────────────────────────
+function buildRecommendations(contracts: ProContract[]) {
+  const cancer = sumAmount(contracts, 'cancer_general')
+  const brain  = sumAmount(contracts, 'brain_stroke', 'brain_hemorrhage', 'brain_vascular')
+  const heart  = sumAmount(contracts, 'heart_acute_mi', 'heart_ischemic', 'heart_vascular')
+  const death  = sumAmount(contracts, 'death_general', 'death_disease', 'death_injury')
+  const recs: Array<{ type: '보장성' | '저축성'; title: string; desc: string; icon: string }> = []
+  if (cancer < 30_000_000) recs.push({ type: '보장성', title: '암진단비 보완', desc: `현재 ${formatWon(cancer)}로 3천만원 기준 미달. 진단비 보강 우선 권장.`, icon: '🩺' })
+  if (brain < 40_000_000)  recs.push({ type: '보장성', title: '뇌진단비 보완', desc: `뇌혈관 합산 ${formatWon(brain)} — 4천만원 이상 확보 권장.`, icon: '🧠' })
+  if (heart < 40_000_000)  recs.push({ type: '보장성', title: '심장진단비 보완', desc: `심장 합산 ${formatWon(heart)} — 4천만원 이상 확보 권장.`, icon: '🫀' })
+  if (death < 100_000_000) recs.push({ type: '보장성', title: '사망보장 강화', desc: `사망보험금 ${formatWon(death)} — 가족 생활비 기반 최소 1억 확보 검토.`, icon: '🛡️' })
+  recs.push({ type: '저축성', title: '노후연금 설계', desc: '은퇴 후 월 200만원 수령 기준 연금보험 가입 시뮬레이션을 권장합니다.', icon: '💰' })
+  recs.push({ type: '저축성', title: '변액유니버셜 활용', desc: '중장기 자산 성장과 보장의 병행이 필요한 경우 변액보험 검토를 추천합니다.', icon: '📈' })
+  return [...recs.filter(r => r.type === '보장성').slice(0, 3), ...recs.filter(r => r.type === '저축성').slice(0, 2)]
+}
+
+// ── 담보비교표 (항상 마지막 페이지) ─────────────────────────────────────
+function buildCompareTable(contracts: ProContract[]): string {
+  const ALL_ROWS: Array<{ group: string; label: string; rowKey: string }> = [
+    { group: '진단비',    label: '암 진단비',           rowKey: 'cancer_general' },
+    { group: '진단비',    label: '유사암 진단비',        rowKey: 'cancer_similar' },
+    { group: '진단비',    label: '뇌혈관질환 진단비',   rowKey: 'brain_vascular' },
+    { group: '진단비',    label: '뇌졸중 진단비',       rowKey: 'brain_stroke' },
+    { group: '진단비',    label: '뇌출혈 진단비',       rowKey: 'brain_hemorrhage' },
+    { group: '진단비',    label: '허혈성심장질환 진단비', rowKey: 'heart_ischemic' },
+    { group: '진단비',    label: '급성심근경색 진단비',  rowKey: 'heart_acute_mi' },
+    { group: '진단비',    label: '심장질환 진단비',      rowKey: 'heart_vascular' },
+    { group: '암치료비',  label: '항암방사선치료비',     rowKey: 'cancer_radiation' },
+    { group: '암치료비',  label: '중입자방사선치료비',   rowKey: 'cancer_hadron' },
+    { group: '암치료비',  label: '양성자방사선치료비',   rowKey: 'cancer_proton' },
+    { group: '암치료비',  label: '항암약물치료비',       rowKey: 'cancer_chemo' },
+    { group: '암치료비',  label: '표적항암약물치료비',   rowKey: 'cancer_targeted' },
+    { group: '암치료비',  label: '카티항암치료비',       rowKey: 'cancer_cart' },
+    { group: '뇌심장치료', label: '혈전용해치료비',     rowKey: 'two_major_thrombolysis' },
+    { group: '뇌심장치료', label: '중환자실치료비',     rowKey: 'two_major_icu' },
+    { group: '뇌심장치료', label: '뇌심장 수술·시술비', rowKey: 'two_major_surgery' },
+    { group: '뇌심장치료', label: '2대주요치료비(통합)', rowKey: 'vascular_major' },
+    { group: '수술비',    label: '수술비(질병)',         rowKey: 'surgery_disease' },
+    { group: '수술비',    label: '수술비(상해)',         rowKey: 'surgery_injury' },
+    { group: '수술비',    label: '1~5종 수술비',        rowKey: 'surgery_1_5' },
+    { group: '수술비',    label: 'N대 수술비',          rowKey: 'surgery_n_major' },
+    { group: '간병',      label: '간병인(질병/일반)',    rowKey: 'nursing_hospital' },
+    { group: '간병',      label: '간병인(상해)',         rowKey: 'nursing_injury' },
+    { group: '간병',      label: '요양병원 간병인',      rowKey: 'nursing_care_hospital' },
+    { group: '간병',      label: '간호간병통합',         rowKey: 'nursing_integrated' },
+    { group: '입원일당',  label: '입원일당(질병)',       rowKey: 'hospital_disease_daily' },
+    { group: '입원일당',  label: '입원일당(상해)',       rowKey: 'hospital_injury_daily' },
+    { group: '실손',      label: '실손입원(질병)',       rowKey: 'silson_disease_inpatient' },
+    { group: '실손',      label: '실손입원(상해)',       rowKey: 'silson_injury_inpatient' },
+    { group: '실손',      label: '실손통원(질병)',       rowKey: 'silson_disease_outpatient' },
+    { group: '실손',      label: '실손통원(상해)',       rowKey: 'silson_injury_outpatient' },
+    { group: '실손',      label: '비급여3대(도수/주사/MRI)', rowKey: 'silson_3major' },
+    { group: '사망',      label: '일반사망',             rowKey: 'death_general' },
+    { group: '사망',      label: '재해사망',             rowKey: 'death_injury' },
+    { group: '사망',      label: '질병사망',             rowKey: 'death_disease' },
+    { group: '운전자',    label: '교통사고처리지원금',   rowKey: 'driver_accident' },
+    { group: '운전자',    label: '자동차사고 변호사비용', rowKey: 'driver_lawyer' },
+    { group: '운전자',    label: '벌금',                 rowKey: 'driver_fine' },
+    { group: '기타',      label: '일상배상책임',         rowKey: 'other_liability' },
+    { group: '기타',      label: '치매진단비',           rowKey: 'dementia_diagnosis' },
+    { group: '기타',      label: '중대질병(CI)',          rowKey: 'ci_diagnosis' },
+    { group: '기타',      label: '장기요양등급',         rowKey: 'ltc_grade' },
+  ]
+
+  // 데이터 있는 행만
+  const activeRows = ALL_ROWS.filter(({ rowKey }) =>
+    contracts.some(c => c.coverages.some(cov => cov.rowKey === rowKey && Number(cov.amount) > 0))
+  )
+
+  if (!contracts.length) return '<p style="color:#94a3b8;padding:20px;text-align:center">계약 데이터가 없습니다.</p>'
+
+  const colHeaders = contracts.map(c =>
+    `<th title="${escHtml(c.productName)}">${escHtml(c.company)}<br/><small>${escHtml(c.productName.slice(0, 9))}${c.productName.length > 9 ? '…' : ''}</small></th>`
+  ).join('')
+
+  // 그룹별 rowspan 계산
+  const groupCounts: Record<string, number> = {}
+  activeRows.forEach(r => { groupCounts[r.group] = (groupCounts[r.group] || 0) + 1 })
+  const seenGroups = new Set<string>()
+
+  const dataRows = activeRows.map(({ group, label, rowKey }) => {
+    const isFirst = !seenGroups.has(group)
+    if (isFirst) seenGroups.add(group)
+    const groupCell = isFirst
+      ? `<td class="row-group" rowspan="${groupCounts[group]}">${escHtml(group)}</td>`
+      : ''
+    const cells = contracts.map(c => {
+      const cov = c.coverages.find(cv => cv.rowKey === rowKey)
+      const amt = cov ? Number(cov.amount) * 10000 : 0
+      return `<td>${amt ? formatWon(amt) : '<span class="empty-cell">-</span>'}</td>`
+    }).join('')
+    const total = contracts.reduce((s, c) => {
+      const cov = c.coverages.find(cv => cv.rowKey === rowKey)
+      return s + (cov ? Number(cov.amount) * 10000 : 0)
+    }, 0)
+    return `<tr>${groupCell}<td class="row-label">${escHtml(label)}</td>${cells}<td class="row-total">${total ? formatWon(total) : '-'}</td></tr>`
+  }).join('')
+
+  const totalPremium = contracts.reduce((s, c) => s + Number(c.monthlyPremium || 0), 0)
+  const premiumRow = `<tr>
+    <td class="row-group">보험료</td>
+    <td class="row-label">월 보험료</td>
+    ${contracts.map(c => `<td style="color:#1a2744;font-weight:700">${formatMonthly(c.monthlyPremium)}</td>`).join('')}
+    <td class="row-total">${formatMonthly(totalPremium)}</td>
+  </tr>`
+
+  return `<div style="overflow-x:auto">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th style="width:55px">구분</th>
+          <th style="width:130px">담보명</th>
+          ${colHeaders}
+          <th style="background:#2d4a8a">합산</th>
+        </tr>
+      </thead>
+      <tbody>${premiumRow}${dataRows}</tbody>
+    </table>
+  </div>`
+}
+
+// ── 메인 HTML ─────────────────────────────────────────────────────────────
+async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   const { customerName, contracts, selectedImages = [] } = input
   const isKey = input.type === 'key'
+  const selectedImageSources = (await Promise.all(selectedImages.map(async (src) => ({
+    original: src,
+    dataUrl: await publicImageToDataUrl(src),
+  })))).filter((item): item is { original: string; dataUrl: string } => Boolean(item.dataUrl))
 
-  const totalPremium   = contracts.reduce((sum, c) => sum + Number(c.monthlyPremium || 0), 0)
-  const 보장성Premium  = contracts.filter((c) => classifyType(c) === '보장성').reduce((sum, c) => sum + Number(c.monthlyPremium || 0), 0)
-  const 저축성Premium  = contracts.filter((c) => classifyType(c) === '저축성').reduce((sum, c) => sum + Number(c.monthlyPremium || 0), 0)
-  const 실손Premium    = contracts.filter((c) => classifyType(c) === '실손').reduce((sum, c) => sum + Number(c.monthlyPremium || 0), 0)
+  // 보험료 합계
+  const totalPremium   = contracts.reduce((s, c) => s + Number(c.monthlyPremium || 0), 0)
+  const 보장성Premium  = contracts.filter(c => classifyType(c) === '보장성').reduce((s, c) => s + Number(c.monthlyPremium || 0), 0)
+  const 저축성Premium  = contracts.filter(c => classifyType(c) === '저축성').reduce((s, c) => s + Number(c.monthlyPremium || 0), 0)
+  const 실손Premium    = contracts.filter(c => classifyType(c) === '실손').reduce((s, c) => s + Number(c.monthlyPremium || 0), 0)
 
-  const 보장비율 = totalPremium ? Math.round(보장성Premium / totalPremium * 100) : 0
-  const 저축비율 = totalPremium ? Math.round(저축성Premium / totalPremium * 100) : 0
-  const 실손비율 = totalPremium ? Math.round(실손Premium / totalPremium * 100) : 0
+  // 보장성+저축성 기준 비율 (실손 제외)
+  const nonSilsonTotal = 보장성Premium + 저축성Premium || 1
+  const 보장비율 = Math.round(보장성Premium / nonSilsonTotal * 100)
+  const 저축비율 = 100 - 보장비율
 
-  // 게이지 데이터 (권장 기준 대비 %)
-  const RECOMMEND = {
-    cancer:  { keys: ['cancer_general'], rec: 50_000_000, label: '암진단비', color: '#c9a96e' },
-    brain:   { keys: ['brain_stroke', 'brain_hemorrhage'], rec: 40_000_000, label: '뇌진단비', color: '#3b82f6' },
-    heart:   { keys: ['heart_acute_mi', 'heart_ischemic'], rec: 40_000_000, label: '심장진단비', color: '#ef4444' },
-    surgery: { keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'], rec: 5_000_000, label: '수술비', color: '#8b5cf6' },
-    silson:  { keys: ['silson_disease_inpatient', 'silson_injury_inpatient'], rec: 50_000_000, label: '실손의료비', color: '#10b981' },
-    driver:  { keys: ['driver_accident', 'driver_fine', 'driver_lawyer'], rec: 300_000_000, label: '운전자보험', color: '#f59e0b' },
-  }
-
-  const gaugesHtml = Object.entries(RECOMMEND).map(([, cfg]) => {
+  // 게이지
+  const RECOMMEND = [
+    { keys: ['cancer_general'],                                        rec: 50_000_000, label: '암진단비',   color: '#c9a96e' },
+    { keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],    rec: 40_000_000, label: '뇌진단비',   color: '#3b82f6' },
+    { keys: ['heart_acute_mi', 'heart_ischemic', 'heart_vascular'],   rec: 40_000_000, label: '심장진단비', color: '#ef4444' },
+    { keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],      rec:  5_000_000, label: '수술비',     color: '#8b5cf6' },
+    { keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],   rec: 50_000_000, label: '실손의료비', color: '#10b981' },
+    { keys: ['death_general', 'death_disease', 'death_injury'],        rec: 100_000_000,label: '사망보장',   color: '#1a2744' },
+  ]
+  const gaugesHtml = RECOMMEND.map(cfg => {
     const amt = sumAmount(contracts, ...cfg.keys)
     const pct = Math.min(100, Math.round(amt / cfg.rec * 100))
     return gauge(pct, cfg.color, cfg.label, formatWon(amt))
   }).join('')
 
-  // 치료비 카드 데이터
-  const TREATMENT_CARDS = [
-    {
-      title: '암치료비',
-      icon: '🎗️',
-      items: [
-        { label: '항암방사선',   rowKeys: ['cancer_radiation'] },
-        { label: '중입자방사선', rowKeys: ['cancer_hadron'] },
-        { label: '양성자방사선', rowKeys: ['cancer_proton'] },
-        { label: '항암약물',     rowKeys: ['cancer_chemo'] },
-        { label: '표적항암약물', rowKeys: ['cancer_targeted'] },
-        { label: '카티항암약물', rowKeys: ['cancer_cart'] },
-      ],
-    },
-    {
-      title: '뇌·심장 치료비',
-      icon: '🫀',
-      items: [
-        { label: '혈전용해치료',  rowKeys: ['two_major_thrombolysis'] },
-        { label: '중환자실치료',  rowKeys: ['two_major_icu'] },
-        { label: '수술/시술비',   rowKeys: ['two_major_surgery'] },
-        { label: '뇌혈관진단',   rowKeys: ['brain_vascular'] },
-        { label: '심장질환진단', rowKeys: ['heart_vascular'] },
-      ],
-    },
-    {
-      title: '간병 · 재가',
-      icon: '🏥',
-      showTotal: false,
-      items: [
-        { label: '병원간병인',     rowKeys: ['nursing_hospital'] },
-        { label: '요양병원간병인', rowKeys: ['nursing_care_hospital'] },
-        { label: '간호간병통합',   rowKeys: ['nursing_integrated'] },
-        { label: '입원일당(질병)', rowKeys: ['hospital_disease_daily'] },
-        { label: '입원일당(상해)', rowKeys: ['hospital_injury_daily'] },
-      ],
-    },
+  // 2대주요치료비 파생
+  const derived = deriveVascularMajor(contracts)
+  const diagnosisItems = [
+    { label: '암', current: sumAmount(contracts, 'cancer_general'), target: 50_000_000 },
+    { label: '뇌', current: sumAmount(contracts, 'brain_stroke', 'brain_hemorrhage', 'brain_vascular'), target: 40_000_000 },
+    { label: '심장', current: sumAmount(contracts, 'heart_acute_mi', 'heart_ischemic', 'heart_vascular'), target: 40_000_000 },
   ]
-
-  const treatmentHtml = TREATMENT_CARDS.map((card) => {
-    const rows = card.items.map(({ label, rowKeys }) => {
-      const amt = sumAmount(contracts, ...rowKeys)
-      return `<div class="tc-row">
-        <span>${escHtml(label)}</span>
-        <span class="tc-val">${amt ? formatWon(amt) : '<span class="tc-empty">-</span>'}</span>
+  const treatmentAmount =
+    sumAmount(contracts, 'cancer_radiation', 'cancer_hadron', 'cancer_proton', 'cancer_chemo', 'cancer_targeted', 'cancer_cart') +
+    derived.thrombolysis + derived.icu + derived.surgery
+  const shortageItems = [
+    { label: '주요 진단비', current: diagnosisItems.reduce((sum, item) => sum + item.current, 0), target: 130_000_000 },
+    { label: '수술비', current: sumAmount(contracts, 'surgery_disease', 'surgery_injury', 'surgery_1_5', 'surgery_n_major'), target: 5_000_000 },
+    { label: '치료비', current: treatmentAmount, target: 20_000_000 },
+    { label: '간병', current: sumAmount(contracts, 'nursing_hospital', 'nursing_injury', 'nursing_care_hospital', 'nursing_integrated'), target: 150_000 },
+  ]
+  const shortageHtml = `
+  <div class="shortage-wrap">
+    <div class="mini-title">부족 보장 요약</div>
+    <div class="shortage-grid">
+      ${shortageItems.map((item) => {
+        const pct = item.target > 0 ? item.current / item.target : 0
+        const status = pct >= 1 ? '충족' : pct >= 0.7 ? '보완필요' : '부족'
+        const cls = pct >= 1 ? 'ok' : pct >= 0.7 ? 'warn' : 'bad'
+        return `<div class="shortage-chip ${cls}">
+          <span>${escHtml(item.label)}</span>
+          <b>${status}</b>
+          <small>${formatWon(item.current)} / ${formatPercent(item.current, item.target)}</small>
+        </div>`
+      }).join('')}
+    </div>
+  </div>`
+  const diagnosisAverageHtml = `
+  <div class="diag-wrap">
+    <div class="mini-title">진단비 평균 대비 현재 준비</div>
+    ${diagnosisItems.map((item) => {
+      const pct = Math.min(100, Math.round(item.current / item.target * 100))
+      return `<div class="diag-row">
+        <div class="diag-name">${escHtml(item.label)}</div>
+        <div class="diag-bar"><span style="width:${Math.max(4, pct)}%"></span></div>
+        <div class="diag-val">${formatWon(item.current)} / ${formatWon(item.target)}</div>
       </div>`
-    }).join('')
-    const total = card.items.reduce((s, { rowKeys }) => s + sumAmount(contracts, ...rowKeys), 0)
-    const totalHtml = (card as {showTotal?: boolean}).showTotal === false
-      ? ''
-      : `<div class="tc-total">합계 <b>${formatWon(total)}</b></div>`
-    return `<div class="tc-card">
-      <div class="tc-head">${card.icon} ${escHtml(card.title)}</div>
-      ${rows}
-      ${totalHtml}
-    </div>`
-  }).join('')
+    }).join('')}
+  </div>`
+  const silsonInfo = inferSilsonInfo(contracts)
+  const silsonInfoHtml = `
+  <div class="silson-info">
+    <div class="mini-title">실손의료비 기준</div>
+    <div class="silson-info-grid">
+      <div><span>세대</span><b>${escHtml(silsonInfo.generation)}</b></div>
+      <div><span>가입연월</span><b>${escHtml(silsonInfo.joinedAt)}</b></div>
+      <div class="wide"><span>재가입 기준</span><b>${escHtml(silsonInfo.renewalRule)}</b></div>
+    </div>
+  </div>`
 
-  // 회사별 비교표 (담보 × 보험사)
-  const KEY_ROWS: Array<{ label: string; rowKey: string }> = [
-    { label: '암진단', rowKey: 'cancer_general' },
-    { label: '뇌혈관질환진단', rowKey: 'brain_vascular' },
-    { label: '뇌졸중진단', rowKey: 'brain_stroke' },
-    { label: '뇌출혈진단', rowKey: 'brain_hemorrhage' },
-    { label: '허혈성심장진단', rowKey: 'heart_ischemic' },
-    { label: '급성심근경색', rowKey: 'heart_acute_mi' },
-    { label: '수술비(질병)', rowKey: 'surgery_disease' },
-    { label: '실손입원(질병)', rowKey: 'silson_disease_inpatient' },
-    { label: '사망(일반)', rowKey: 'death_general' },
-    { label: '교통사고처리지원', rowKey: 'driver_accident' },
-    { label: '일상배상책임', rowKey: 'other_liability' },
-  ]
-  const displayContracts = isKey
-    ? contracts.filter((c) =>
-        c.coverages.some((cov) => KEY_ROWS.some((r) => r.rowKey === cov.rowKey) && cov.amount > 0)
-      )
-    : contracts
+  // 각 카드 HTML 빌더
+  function tcRow(label: string, amt: number) {
+    return `<div class="tc-row"><span>${escHtml(label)}</span><span class="tc-val">${amt ? formatWon(amt) : '<span class="tc-empty">-</span>'}</span></div>`
+  }
+  function tcCard(icon: string, title: string, rows: string) {
+    return `<div class="tc-card"><div class="tc-head">${icon} ${escHtml(title)}</div>${rows}</div>`
+  }
 
-  const colHeaders = displayContracts.map((c) =>
-    `<th title="${escHtml(c.productName)}">${escHtml(c.company)}<br/><small>${escHtml(c.productName.slice(0, 8))}…</small></th>`
-  ).join('')
+  // 암 치료비
+  const cancerCard = tcCard('🎗️', '암 치료비', [
+    tcRow('항암방사선치료비',   sumAmount(contracts, 'cancer_radiation')),
+    tcRow('중입자방사선치료비', sumAmount(contracts, 'cancer_hadron')),
+    tcRow('양성자방사선치료비', sumAmount(contracts, 'cancer_proton')),
+    tcRow('항암약물치료비',     sumAmount(contracts, 'cancer_chemo')),
+    tcRow('표적항암약물치료비', sumAmount(contracts, 'cancer_targeted')),
+    tcRow('카티항암치료비',     sumAmount(contracts, 'cancer_cart')),
+  ].join(''))
 
-  const tableRows = KEY_ROWS.map(({ label, rowKey }) => {
-    const cells = displayContracts.map((c) => {
-      const cov = c.coverages.find((cv) => cv.rowKey === rowKey)
-      const amt = cov ? Number(cov.amount) * 10000 : 0
-      return `<td>${amt ? formatWon(amt) : '<span class="empty-cell">-</span>'}</td>`
-    }).join('')
-    const total = displayContracts.reduce((sum, c) => {
-      const cov = c.coverages.find((cv) => cv.rowKey === rowKey)
-      return sum + (cov ? Number(cov.amount) * 10000 : 0)
-    }, 0)
-    return `<tr>
-      <td class="row-label">${escHtml(label)}</td>
-      ${cells}
-      <td class="row-total">${total ? formatWon(total) : '-'}</td>
-    </tr>`
-  }).join('')
+  // 뇌심장 치료비 (vascular_major 파생 포함)
+  const brainCard = tcCard('🫀', '뇌·심장 치료비', [
+    tcRow('혈전용해치료비',     derived.thrombolysis),
+    tcRow('중환자실치료비',     derived.icu),
+    tcRow('뇌심장 수술·시술비', derived.surgery),
+    tcRow('뇌혈관질환 진단비',  sumAmount(contracts, 'brain_vascular')),
+    tcRow('심장질환 진단비',    sumAmount(contracts, 'heart_vascular')),
+  ].join(''))
 
-  const premiumRow = displayContracts.map((c) =>
-    `<td style="color:#1a2744;font-weight:700;">${formatMonthly(c.monthlyPremium)}</td>`
-  ).join('')
+  // 수술비
+  const surgeryCard = tcCard('🏥', '수술비', [
+    tcRow('수술비(질병)',   sumAmount(contracts, 'surgery_disease')),
+    tcRow('수술비(상해)',   sumAmount(contracts, 'surgery_injury')),
+    tcRow('1~5종 수술비', sumAmount(contracts, 'surgery_1_5')),
+    tcRow('N대 수술비',   sumAmount(contracts, 'surgery_n_major')),
+  ].join(''))
+
+  // 간병 4분류
+  const nursingCard = tcCard('🤝', '간병인', [
+    tcRow('간병인(질병/일반)',  sumAmount(contracts, 'nursing_hospital')),
+    tcRow('간병인(상해)',       sumAmount(contracts, 'nursing_injury')),
+    tcRow('요양병원 간병인',    sumAmount(contracts, 'nursing_care_hospital')),
+    tcRow('간호간병통합',       sumAmount(contracts, 'nursing_integrated')),
+    tcRow('입원일당(질병)',     sumAmount(contracts, 'hospital_disease_daily')),
+    tcRow('입원일당(상해)',     sumAmount(contracts, 'hospital_injury_daily')),
+  ].join(''))
+
+  // 실손
+  const silsonCard = tcCard('💊', '실손의료비', [
+    tcRow('실손입원(질병)',           sumAmount(contracts, 'silson_disease_inpatient')),
+    tcRow('실손입원(상해)',           sumAmount(contracts, 'silson_injury_inpatient')),
+    tcRow('실손통원(질병)',           sumAmount(contracts, 'silson_disease_outpatient')),
+    tcRow('실손통원(상해)',           sumAmount(contracts, 'silson_injury_outpatient')),
+    tcRow('비급여3대(도수/주사/MRI)', sumAmount(contracts, 'silson_3major')),
+  ].join(''))
+
+  // 운전자 (full only)
+  const driverCard = tcCard('🚗', '운전자보험', [
+    tcRow('교통사고처리지원금',     sumAmount(contracts, 'driver_accident')),
+    tcRow('자동차사고 변호사비용',  sumAmount(contracts, 'driver_lawyer')),
+    tcRow('벌금',                   sumAmount(contracts, 'driver_fine')),
+  ].join(''))
 
   // 추천 제안
-  const recs = buildRecommendations(contracts)
-  const recsHtml = recs.map((r) => `
+  const recsHtml = buildRecommendations(contracts).map(r => `
     <div class="rec-card rec-${r.type === '보장성' ? 'protect' : 'save'}">
       <div class="rec-icon">${r.icon}</div>
       <div>
@@ -298,26 +478,28 @@ function buildPrintHtml(input: PdfExportInput): string {
         <div class="rec-title">${escHtml(r.title)}</div>
         <div class="rec-desc">${escHtml(r.desc)}</div>
       </div>
-    </div>
-  `).join('')
+    </div>`).join('')
 
-  // 파이차트 SVG (보장/저축/실손)
-  function pieSlice(pct: number, offset: number, color: string): string {
-    if (pct <= 0) return ''
-    const r = 42, cx = 50, cy = 50
-    const a1 = (offset / 100) * 2 * Math.PI - Math.PI / 2
-    const a2 = ((offset + pct) / 100) * 2 * Math.PI - Math.PI / 2
-    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1)
-    const x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2)
-    const large = pct > 50 ? 1 : 0
-    return `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${large} 1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${color}"/>`
-  }
-  const pieHtml = `<svg viewBox="0 0 100 100" width="120" height="120" style="border-radius:50%">
-    ${pieSlice(보장비율, 0, '#1a2744')}
-    ${pieSlice(저축비율, 보장비율, '#c9a96e')}
-    ${pieSlice(실손비율, 보장비율 + 저축비율, '#10b981')}
-    ${pieSlice(Math.max(0, 100 - 보장비율 - 저축비율 - 실손비율), 보장비율 + 저축비율 + 실손비율, '#e2e8f0')}
-  </svg>`
+  // 보험료 구성 인포그래픽 (실손 제외, 가로 바)
+  const premiumInfoHtml = `
+  <div class="ratio-wrap">
+    <div class="ratio-header">
+      <div class="ratio-title">보험료 구성 비율</div>
+      <div class="ratio-sub">보장성 · 저축성 기준 (실손 별도)</div>
+    </div>
+    <div class="ratio-bar">
+      ${보장성Premium > 0 ? `<div style="width:${보장비율}%;background:#1a2744;border-radius:${저축비율===0?'6px':'6px 0 0 6px'}" title="보장성 ${보장비율}%"></div>` : ''}
+      ${저축성Premium > 0 ? `<div style="width:${저축비율}%;background:#c9a96e;border-radius:${보장비율===0?'6px':'0 6px 6px 0'}" title="저축성 ${저축비율}%"></div>` : ''}
+    </div>
+    <div class="ratio-items">
+      <div class="ratio-row"><span class="rdot" style="background:#1a2744"></span><span class="rl">보장성</span><span class="rv">${formatMonthly(보장성Premium)}</span><span class="rp">${보장비율}%</span></div>
+      <div class="ratio-row"><span class="rdot" style="background:#c9a96e"></span><span class="rl">저축성</span><span class="rv">${formatMonthly(저축성Premium)}</span><span class="rp">${저축비율}%</span></div>
+      ${실손Premium > 0 ? `<div class="ratio-row ratio-silson"><span class="rdot" style="background:#10b981"></span><span class="rl">실손의료비</span><span class="rv">${formatMonthly(실손Premium)}</span><span class="rp">별도</span></div>` : ''}
+      <div class="ratio-total">월 합계 <b>${formatMonthly(totalPremium)}</b></div>
+    </div>
+  </div>`
+
+  const compareHtml = buildCompareTable(contracts)
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -328,89 +510,87 @@ function buildPrintHtml(input: PdfExportInput): string {
   <style>
     @page { size: A4 landscape; margin: 12mm; }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;
-      color:#111;background:#f5f7fb;word-break:keep-all;font-size:13px;
-    }
+    body{font-family:"Pretendard Variable","Pretendard",-apple-system,sans-serif;
+      color:#111;background:#f5f7fb;word-break:keep-all;font-size:13px}
 
-    /* ─ 페이지 컨테이너 */
-    .pdf-page{
-      background:#fff;
-      padding:0;
-      break-after:page;
-      page-break-after:always;
-    }
-    .pdf-page:last-child{
-      break-after:avoid;
-      page-break-after:avoid;
-    }
-    .page-inner{
-      max-width:1160px;
-      margin:0 auto;
-      padding:16px 20px;
-    }
+    .pdf-page{background:#fff;padding:0;break-after:page;page-break-after:always}
+    .pdf-page:last-child{break-after:avoid;page-break-after:avoid}
+    .page-inner{max-width:1160px;margin:0 auto;padding:16px 20px}
 
-    /* ─ 인쇄바 */
     .print-bar{position:sticky;top:0;display:flex;justify-content:flex-end;
-      gap:8px;padding:8px 12px;background:#fff;z-index:10;
-      border-bottom:1px solid #e2e8f0}
+      gap:8px;padding:8px 12px;background:#fff;z-index:10;border-bottom:1px solid #e2e8f0}
     .print-bar button{background:#1a2744;color:#fff;border:none;border-radius:8px;
       padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
 
-    /* ─ 헤더 */
     .report-header{display:flex;justify-content:space-between;align-items:flex-end;
-      margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #1a2744}
+      margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #1a2744}
     .report-kicker{color:#c9a96e;font-size:11px;font-weight:900;letter-spacing:.08em}
     .report-title{font-size:20px;font-weight:900;color:#1a2744;margin-top:4px}
     .report-meta{font-size:11px;color:#64748b;text-align:right}
 
-    /* ─ 페이지 소제목 */
     .page-label{font-size:11px;font-weight:900;color:#c9a96e;letter-spacing:.08em;
-      margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
-
-    /* ─ 섹션 타이틀 */
-    .section-title{font-size:14px;font-weight:900;color:#1a2744;margin-bottom:10px;
-      display:flex;align-items:center}
+      margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e2e8f0}
+    .section-title{font-size:13px;font-weight:900;color:#1a2744;margin-bottom:8px;display:flex;align-items:center}
     .section-num{display:inline-flex;align-items:center;justify-content:center;
       width:20px;height:20px;border-radius:50%;background:#1a2744;color:#fff;
       font-size:10px;font-weight:900;margin-right:7px;flex-shrink:0}
 
-    /* ─ 게이지 그리드 */
+    /* 게이지 */
     .gauge-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
-      background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:14px}
+      background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:12px}
     .gauge-wrap{text-align:center}
     .gauge-value{font-size:11px;font-weight:700;color:#1a2744;margin-top:2px}
     .gauge-status{font-size:10px;font-weight:700;margin-top:1px}
 
-    /* ─ 보험료 비율 */
-    .ratio-wrap{display:flex;align-items:center;gap:24px;background:#fafaf8;
-      border:1px solid #e2e8f0;border-radius:12px;padding:14px}
-    .ratio-legend{display:grid;gap:8px;flex:1}
-    .ratio-row{display:flex;align-items:center;gap:10px;font-size:12px}
-    .ratio-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-    .ratio-label{flex:1;color:#4b5563}
-    .ratio-val{font-weight:700;color:#1a2744}
-    .ratio-pct{font-size:11px;color:#94a3b8;margin-left:4px}
-    .ratio-total{font-size:13px;font-weight:900;color:#1a2744;
-      padding-top:8px;border-top:1px solid #e2e8f0}
+    /* 보험료 비율 인포그래픽 */
+    .ratio-wrap{background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:14px}
+    .ratio-header{margin-bottom:10px}
+    .ratio-title{font-size:13px;font-weight:900;color:#1a2744}
+    .ratio-sub{font-size:10px;color:#94a3b8;margin-top:2px}
+    .ratio-bar{display:flex;height:18px;border-radius:6px;overflow:hidden;
+      background:#e2e8f0;margin-bottom:12px}
+    .ratio-items{display:flex;flex-direction:column;gap:7px}
+    .ratio-row{display:flex;align-items:center;gap:8px;font-size:12px}
+    .ratio-silson{padding-top:7px;margin-top:2px;border-top:1px dashed #e2e8f0}
+    .rdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .rl{flex:1;color:#4b5563}
+    .rv{font-weight:700;color:#1a2744;min-width:72px;text-align:right}
+    .rp{font-size:10px;color:#94a3b8;min-width:32px;text-align:right}
+    .ratio-total{margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;
+      display:flex;justify-content:flex-end;gap:6px;font-size:12px;color:#64748b}
+    .ratio-total b{color:#1a2744;font-size:13px}
 
-    /* ─ 치료비 카드 */
-    .tc-grid{display:flex;flex-direction:column;gap:10px}
-    .tc-card{background:#fafaf8;border:1px solid #e2e8f0;border-radius:10px;padding:12px}
-    .tc-head{font-weight:900;color:#1a2744;font-size:12px;margin-bottom:8px;
+    .mini-title{font-size:12px;font-weight:900;color:#1a2744;margin-bottom:7px}
+    .shortage-wrap,.diag-wrap,.silson-info{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px}
+    .shortage-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+    .shortage-chip{border-radius:9px;padding:7px 8px;background:#f8fafc;border:1px solid #e2e8f0}
+    .shortage-chip span{display:block;font-size:10px;font-weight:800;color:#64748b}
+    .shortage-chip b{display:block;font-size:12px;font-weight:900;margin-top:2px}
+    .shortage-chip small{display:block;font-size:9px;font-weight:700;color:#64748b;margin-top:1px}
+    .shortage-chip.ok b{color:#10b981}.shortage-chip.warn b{color:#f59e0b}.shortage-chip.bad b{color:#ef4444}
+    .diag-row{display:grid;grid-template-columns:34px 1fr 112px;align-items:center;gap:7px;margin-top:6px}
+    .diag-name{font-size:11px;font-weight:900;color:#1a2744}
+    .diag-bar{height:7px;border-radius:999px;background:#e2e8f0;overflow:hidden}
+    .diag-bar span{display:block;height:7px;border-radius:999px;background:#1a2744}
+    .diag-val{font-size:10px;font-weight:800;color:#4b5563;text-align:right}
+    .silson-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .silson-info-grid div{background:#fafaf8;border-radius:8px;padding:7px}
+    .silson-info-grid .wide{grid-column:1/-1}
+    .silson-info-grid span{display:block;font-size:9px;font-weight:800;color:#94a3b8}
+    .silson-info-grid b{display:block;font-size:11px;font-weight:900;color:#1a2744;margin-top:2px}
+
+    /* 치료비 카드 */
+    .tc-card{background:#fafaf8;border:1px solid #e2e8f0;border-radius:10px;padding:11px;margin-bottom:8px}
+    .tc-head{font-weight:900;color:#1a2744;font-size:12px;margin-bottom:7px;
       border-bottom:1px solid #e2e8f0;padding-bottom:5px}
     .tc-row{display:flex;justify-content:space-between;align-items:center;
-      padding:3px 0;font-size:11px;color:#374151}
+      padding:2px 0;font-size:11px;color:#374151}
     .tc-val{font-weight:700;color:#1a2744}
     .tc-empty{color:#94a3b8;font-weight:400}
-    .tc-total{margin-top:6px;padding-top:6px;border-top:1px solid #e2e8f0;
-      display:flex;justify-content:space-between;font-size:11px;color:#64748b}
-    .tc-total b{color:#c9a96e;font-size:12px}
 
-    /* ─ 추천 제안 */
-    .rec-grid{display:grid;grid-template-columns:1fr;gap:10px}
+    /* 추천 */
     .rec-card{display:flex;gap:12px;align-items:flex-start;border-radius:10px;
-      padding:12px;border-left:4px solid}
+      padding:12px;border-left:4px solid;margin-bottom:10px}
     .rec-protect{background:#eff6ff;border-color:#1a2744}
     .rec-save{background:#fffbeb;border-color:#c9a96e}
     .rec-icon{font-size:20px;flex-shrink:0;margin-top:2px}
@@ -418,42 +598,25 @@ function buildPrintHtml(input: PdfExportInput): string {
     .rec-title{font-size:12px;font-weight:900;color:#1a2744;margin-bottom:3px}
     .rec-desc{font-size:11px;color:#4b5563;line-height:1.5}
 
-    /* ─ 비교표 */
+    /* 비교표 */
     .compare-table{width:100%;border-collapse:collapse;font-size:11px}
-    .compare-table th,.compare-table td{border:1px solid #e2e8f0;padding:6px 7px;vertical-align:middle}
-    .compare-table th{background:#1a2744;color:#fff;text-align:center;
-      font-size:10px;font-weight:700}
-    .row-label{background:#fafaf8;font-weight:700;color:#1a2744;white-space:nowrap}
+    .compare-table th,.compare-table td{border:1px solid #e2e8f0;padding:5px 6px;vertical-align:middle}
+    .compare-table th{background:#1a2744;color:#fff;text-align:center;font-size:10px;font-weight:700}
+    .row-group{background:#1a2744;color:#c9a96e;font-weight:900;font-size:10px;
+      text-align:center;writing-mode:vertical-lr;white-space:nowrap;padding:6px 4px;width:26px}
+    .row-label{background:#fafaf8;font-weight:700;color:#1a2744;white-space:nowrap;width:130px}
     .row-total{background:#eff6ff;font-weight:700;color:#1a2744;text-align:right}
     .empty-cell{color:#94a3b8}
     .compare-table td{text-align:right}
 
-    /* ─ 이미지 전체 페이지 */
-    .img-fullpage{
-      background:#fff;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:180mm;
-      break-after:page;
-      page-break-after:always;
-    }
-    .img-fullpage:last-child{
-      break-after:avoid;
-      page-break-after:avoid;
-    }
-    .img-fullpage img{
-      max-width:100%;
-      max-height:180mm;
-      object-fit:contain;
-    }
+    .img-fullpage{background:#fff;display:flex;align-items:center;justify-content:center;
+      min-height:180mm;break-after:page;page-break-after:always}
+    .img-fullpage img{max-width:100%;max-height:180mm;object-fit:contain}
 
-    /* ─ 인쇄 */
     @media print{
       body{background:#fff}
       .print-bar{display:none}
       .pdf-page{background:#fff}
-      table{page-break-inside:auto}
       tr{page-break-inside:avoid}
     }
   </style>
@@ -463,9 +626,7 @@ function buildPrintHtml(input: PdfExportInput): string {
   <button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     PAGE 1: 주요보장현황 + 보험료 구성비율
-     ═══════════════════════════════════════════════════════════ -->
+<!-- ════ PAGE 1: 주요보장현황 + 보험료비율 ════ -->
 <div class="pdf-page">
 <div class="page-inner">
   <div class="report-header">
@@ -474,131 +635,110 @@ function buildPrintHtml(input: PdfExportInput): string {
       <div class="report-title">${escHtml(customerName)} 고객 보장분석 ${isKey ? '(주요보장)' : '(전체)'}</div>
     </div>
     <div class="report-meta">
-      계약 수: ${contracts.length}건 &nbsp;|&nbsp;
-      월 보험료: ${formatMonthly(totalPremium)}&nbsp;|&nbsp;
-      분석일: ${new Date().toLocaleDateString('ko-KR')}
+      계약 수: ${contracts.length}건 &nbsp;|&nbsp; 월 보험료: ${formatMonthly(totalPremium)} &nbsp;|&nbsp; 분석일: ${new Date().toLocaleDateString('ko-KR')}
     </div>
   </div>
-
-  <!-- 섹션 1 + 섹션 3 나란히 -->
   <div style="display:grid;grid-template-columns:62% 38%;gap:16px;align-items:start">
-
-    <!-- 1. 주요 보장 현황 -->
     <div>
       <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
-      <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:14px">
+      <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:12px">
         <div class="gauge-grid">${gaugesHtml}</div>
-        <div style="display:flex;justify-content:center;margin-top:12px">
-          ${radarChartSvg(contracts)}
-        </div>
+        <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts)}</div>
       </div>
     </div>
-
-    <!-- 3. 보험료 구성 비율 -->
     <div>
       <div class="section-title"><span class="section-num">2</span>보험료 구성 비율</div>
-      <div class="ratio-wrap" style="flex-direction:column;align-items:center">
-        ${pieHtml}
-        <div class="ratio-legend" style="width:100%;margin-top:12px">
-          <div class="ratio-row">
-            <div class="ratio-dot" style="background:#1a2744"></div>
-            <span class="ratio-label">보장성</span>
-            <span class="ratio-val">${formatMonthly(보장성Premium)}</span>
-            <span class="ratio-pct">(${보장비율}%)</span>
-          </div>
-          <div class="ratio-row">
-            <div class="ratio-dot" style="background:#c9a96e"></div>
-            <span class="ratio-label">저축성</span>
-            <span class="ratio-val">${formatMonthly(저축성Premium)}</span>
-            <span class="ratio-pct">(${저축비율}%)</span>
-          </div>
-          <div class="ratio-row">
-            <div class="ratio-dot" style="background:#10b981"></div>
-            <span class="ratio-label">실손의료비</span>
-            <span class="ratio-val">${formatMonthly(실손Premium)}</span>
-            <span class="ratio-pct">(${실손비율}%)</span>
-          </div>
-          <div class="ratio-total">월 합계 ${formatMonthly(totalPremium)}</div>
-        </div>
-      </div>
+      ${premiumInfoHtml}
+      ${shortageHtml}
+      ${diagnosisAverageHtml}
+      ${silsonInfoHtml}
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════ PAGE 2: 치료비·수술비·간병·실손 상세 ════ -->
+<div class="pdf-page">
+<div class="page-inner">
+  <div class="page-label">치료비 · 수술비 · 간병 · 실손 상세</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start">
+
+    <div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">3</span>암 치료비</div>
+      ${cancerCard}
+    </div>
+
+    <div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">4</span>뇌·심장 치료비</div>
+      ${brainCard}
+    </div>
+
+    <div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">5</span>수술비</div>
+      ${surgeryCard}
+      <div class="section-title" style="font-size:12px;margin-top:10px"><span class="section-num">6</span>간병인</div>
+      ${nursingCard}
+    </div>
+
+    <div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">7</span>실손의료비</div>
+      ${silsonCard}
+      ${!isKey ? `<div class="section-title" style="font-size:12px;margin-top:10px"><span class="section-num">8</span>운전자보험</div>${driverCard}` : ''}
     </div>
 
   </div>
 </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     PAGE 2: 치료비·간병 상세 + 추천 제안
-     ═══════════════════════════════════════════════════════════ -->
+${!isKey ? `
+<!-- ════ PAGE 3 (전체 전용): 추천 제안 ════ -->
 <div class="pdf-page">
 <div class="page-inner">
-  <div class="page-label">치료비 · 간병 상세 &amp; 추천 제안</div>
-  <div style="display:grid;grid-template-columns:55% 45%;gap:20px;align-items:start">
-
-    <!-- 2. 치료비 카드 -->
-    <div>
-      <div class="section-title"><span class="section-num">3</span>치료비 · 간병 상세</div>
-      <div class="tc-grid">${treatmentHtml}</div>
-    </div>
-
-    <!-- 4. 추천 제안 -->
-    <div>
-      <div class="section-title"><span class="section-num">4</span>추천 제안</div>
-      <div class="rec-grid">${recsHtml}</div>
-    </div>
-
+  <div class="page-label">보장 분석 · 추천 제안</div>
+  <div style="max-width:680px">
+    <div class="section-title"><span class="section-num">9</span>추천 제안</div>
+    ${recsHtml}
   </div>
 </div>
-</div>
+</div>` : ''}
 
-<!-- ═══════════════════════════════════════════════════════════
-     PAGE 3: 회사별·담보별 비교
-     ═══════════════════════════════════════════════════════════ -->
+<!-- ════ PAGE LAST: 보험사별 담보 비교표 (항상 출력) ════ -->
 <div class="pdf-page">
 <div class="page-inner">
-  <div class="page-label">회사별 · 담보별 비교</div>
-  <div class="section-title"><span class="section-num">5</span>회사별 · 담보별 비교</div>
-  ${displayContracts.length > 0 ? `
-  <div style="overflow-x:auto">
-    <table class="compare-table">
-      <thead>
-        <tr>
-          <th style="width:110px">담보</th>
-          ${colHeaders}
-          <th style="background:#2d4a8a">합산</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="row-label">월 보험료</td>
-          ${premiumRow}
-          <td class="row-total">${formatMonthly(totalPremium)}</td>
-        </tr>
-        ${tableRows}
-      </tbody>
-    </table>
-  </div>` : '<div style="color:#94a3b8;padding:20px;text-align:center">계약 데이터가 없습니다.</div>'}
-  <div style="margin-top:20px;padding-top:12px;border-top:1px solid #e2e8f0;
-    text-align:center;color:#94a3b8;font-size:11px">
+  <div class="page-label">보험사별 · 담보별 비교표</div>
+  <div class="section-title"><span class="section-num">★</span>전체 보험사 담보 비교</div>
+  ${compareHtml}
+  <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;
+    text-align:center;color:#94a3b8;font-size:10px">
     본 분석 리포트는 고객 상담용 참고 자료이며, 보험 계약의 법적 효력을 대체하지 않습니다.<br/>
     메타리치 시그널그룹 | ${new Date().toLocaleDateString('ko-KR')} 작성
   </div>
 </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     PAGE 4+: 참고 자료 이미지 (1페이지당 1개)
-     ═══════════════════════════════════════════════════════════ -->
-${selectedImages.map((src, idx) => `
+${selectedImageSources.map((item, idx) => `
 <div class="img-fullpage">
-  <img src="${escHtml(src)}" alt="참고자료 ${idx + 1}" loading="lazy"/>
+  <img src="${escHtml(item.dataUrl)}" alt="참고자료 ${idx + 1}" loading="eager"/>
 </div>`).join('')}
 
 <script>
+  function waitForImages() {
+    var images = Array.prototype.slice.call(document.images || []);
+    if (!images.length) return Promise.resolve();
+    return Promise.all(images.map(function(img) {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(function(resolve) {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    }));
+  }
   window.addEventListener('load', function() {
-      window.setTimeout(function(){ window.print(); }, 500);
+    waitForImages().then(function() {
+      window.setTimeout(function(){ window.print(); }, 300);
     });
-  </script>
+  });
+</script>
 </body>
 </html>`
 }

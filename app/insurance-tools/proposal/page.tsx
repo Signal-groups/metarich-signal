@@ -1174,6 +1174,7 @@ function ProposalReport({
           customerName={customerName}
           consultant={consultant}
           pageNum={scenarioPageNum}
+          last={template.id !== "health"}
         />
       ) : (
         <ReportPage last={template.id !== "health"}>
@@ -1185,10 +1186,26 @@ function ProposalReport({
         </ReportPage>
       )}
 
-      {/* 5페이지: 건강보험 치료단계 (health + 비교/단일 모드만) */}
-      {template.id === "health" && mode !== "cross" && (
+      {/* 교차설계 + 건강보험: 질병별 준비금 페이지 추가 */}
+      {template.id === "health" && mode === "cross" && (
+        <ReportPage>
+          <HealthReadinessPage
+            plans={visiblePlans}
+            customerName={customerName}
+            consultant={consultant}
+            pageNum={scenarioPageNum + 1}
+          />
+        </ReportPage>
+      )}
+
+      {/* 건강보험 치료단계 — 모든 모드(단일·비교·교차·통합) 공통 마지막 페이지 */}
+      {template.id === "health" && (
         <ReportPage last>
-          <HealthTreatmentPage customerName={customerName} consultant={consultant} pageNum={scenarioPageNum + 1} />
+          <HealthTreatmentPage
+            customerName={customerName}
+            consultant={consultant}
+            pageNum={mode === "cross" ? scenarioPageNum + 2 : scenarioPageNum + 1}
+          />
         </ReportPage>
       )}
     </div>
@@ -1638,12 +1655,14 @@ function CrossCoveragePage({
   customerName,
   consultant,
   pageNum,
+  last = true,
 }: {
   template: CategoryTemplate
   plans: PlanData[]
   customerName: string
   consultant: ConsultantInfo
   pageNum: number
+  last?: boolean
 }) {
   const moneyMetrics = template.metrics.filter((m) => m.kind === "money")
   const metricSums = Object.fromEntries(
@@ -1657,7 +1676,7 @@ function CrossCoveragePage({
   const maxCoverage = Math.max(...Object.values(metricSums), 1)
 
   return (
-    <ReportPage last>
+    <ReportPage last={last}>
       <ReportHeader template={template} customerName={customerName} consultant={consultant} />
       <div className="grid flex-1 grid-cols-[1fr_1fr] gap-5 p-8">
         {/* 좌: 합산 보장 구조 */}

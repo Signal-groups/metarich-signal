@@ -22,9 +22,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['중대질병진단', '중대질병', '특정중대질병', 'ci진단', 'ci보험금'], rowKey: 'ci_diagnosis' },
 
   // ── 간병인·재가 (입원일당/실비 패턴보다 반드시 앞에) ─────────────────
-  { patterns: ['간병인사용', '간병인질병', '간병인상해', '간병인간호', '병원사용간병', '병원간병', '간병인서비스', '간병인'], rowKey: 'nursing_hospital' },
+  { patterns: ['간병인사용', '간병인질병', '질병간병인', '병원사용간병', '병원간병', '간병인서비스'], rowKey: 'nursing_hospital' },
+  { patterns: ['간병인상해', '상해간병인', '간병인간호'], rowKey: 'nursing_injury' },
   { patterns: ['요양병원간병', '요양병원입원', '요양병원재가', '요양간병', '요양병원'], rowKey: 'nursing_care_hospital' },
   { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
+  { patterns: ['간병인'], rowKey: 'nursing_hospital' },
 
   // ── 입원일당 (실비 "입원" 패턴보다 앞에 위치해야 함) ─────────────────
   { patterns: ['질병입원일당', '질병 입원일당', '상급종합병원질병입원일당', '종합병원이하질병입원일당'], rowKey: 'hospital_disease_daily' },
@@ -210,7 +212,8 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   burn_diagnosis:            '상해진단 — 화상',
   hospital_disease_daily:    '입원일당 — 질병',
   hospital_injury_daily:     '입원일당 — 상해',
-  nursing_hospital:          '간병인 — 병원사용',
+  nursing_hospital:          '간병인 — 질병/일반',
+  nursing_injury:            '간병인 — 상해',
   nursing_care_hospital:     '간병인 — 요양병원',
   nursing_integrated:        '간병인 — 간호간병통합',
   driver_fine:               '운전자 — 벌금',
