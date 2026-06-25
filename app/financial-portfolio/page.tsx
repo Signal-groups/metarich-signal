@@ -406,13 +406,16 @@ export default function FinancialPortfolioPage() {
     const protectionExpense = client.expenses.filter(i=>i.consumptionType==="비소비지출"&&(i.category.includes("보험")||i.category.includes("보장")||i.category.includes("실손")||i.category.includes("종신"))).reduce((a,i)=>a+Number(i.amount||0),0)
     const consumptionTotal = client.expenses.filter(i=>i.consumptionType==="소비지출"||!i.consumptionType).reduce((a,i)=>a+Number(i.amount||0),0)
     const nonConsumptionTotal = client.expenses.filter(i=>i.consumptionType==="비소비지출").reduce((a,i)=>a+Number(i.amount||0),0)
+    const foodExpense = client.expenses
+      .filter(i => i.consumptionType !== "비소비지출" && (i.category.includes("식비") || i.name.includes("식비")))
+      .reduce((a,i)=>a+Number(i.amount||0),0)
     return {
       totalAssets, totalLiabilities, netWorth: totalAssets - totalLiabilities,
       totalIncome, totalExpense, cashFlow: totalIncome - totalExpense,
       loanPayments, savingExpense, protectionExpense, consumptionTotal, nonConsumptionTotal,
       savingsRate: pct(totalIncome - totalExpense, totalIncome),
       debtRatio: pct(totalLiabilities, totalAssets),
-      engelIndex: pct(client.foodExpense, totalIncome),
+      engelIndex: pct(foodExpense, totalIncome),
       fixedExpenseRatio: pct(loanPayments + protectionExpense, totalIncome),
     }
   }, [client])
@@ -566,14 +569,13 @@ export default function FinancialPortfolioPage() {
         <div ref={reportRef} className="fp-report">
           {/* 고객 기본정보 */}
           <section className="fp-profile">
-            <Input label="고객명" value={client.name} onChange={v=>updateClient({name:v})} />
-            <Input label="나이" value={String(client.age)} type="number" onChange={v=>updateClient({age:Number(v)})} />
+            <Input label="고객명" value={client.name} onChange={v=>updateClient({name:v})} span="span-2" />
+            <Input label="나이" value={String(client.age)} type="number" onChange={v=>updateClient({age:Number(v)})} span="span-1" />
             <Input label="성별" value={client.gender} onChange={v=>updateClient({gender:v})} />
-            <Input label="직업" value={client.job||""} onChange={v=>updateClient({job:v})} />
+            <Input label="직업" value={client.job||""} onChange={v=>updateClient({job:v})} span="span-2" />
             <Input label="신용등급" value={String(client.creditGrade)} type="number" onChange={v=>updateClient({creditGrade:Math.min(7,Math.max(1,Number(v)||1))})} />
-            <Input label="담당 설계사" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} />
-            <Input label="월 식비(원)" value={String(client.foodExpense)} type="number" onChange={v=>updateClient({foodExpense:Number(v)})} />
-            <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} wide />
+            <Input label="담당 설계사" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} span="span-2" />
+            <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} span="span-3" />
           </section>
 
           {/* 핵심 지표 */}
@@ -758,10 +760,13 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-clientbar select{width:100%;border:0;background:transparent;outline:0;font-weight:900;color:#172033}
         .fp-clientbar button{background:#10233e;color:#fff;border-color:#10233e}
         .fp-clientbar button:disabled{opacity:.35;cursor:not-allowed}
-        .fp-profile{display:grid;grid-template-columns:1fr .45fr .45fr .7fr .7fr .8fr .8fr 2fr;gap:10px;background:#fff;border:1px solid #dce4ef;border-radius:8px;padding:14px}
+        .fp-profile{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;background:#fff;border:1px solid #dce4ef;border-radius:8px;padding:14px}
+        .fp-profile .span-1{grid-column:span 1}
+        .fp-profile .span-2{grid-column:span 2}
+        .fp-profile .span-3{grid-column:span 3}
         .fp-input{display:grid;gap:6px;min-width:0}
         .fp-input label{font-size:12px;font-weight:900;color:#64748b}
-        .fp-input input{height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:800;color:#172033;outline:0}
+        .fp-input input{width:100%;height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:800;color:#172033;outline:0;min-width:0}
         .fp-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
         .fp-metric{background:#fff;border:1px solid #dce4ef;border-radius:8px;padding:17px;border-top:4px solid var(--tone)}
         .fp-metric span{display:block;color:#64748b;font-size:12px;font-weight:900}
@@ -810,9 +815,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-consumption-badge-소비지출{background:#fff7ed;color:#b45309;border:1px solid #fed7aa}
         .fp-consumption-badge-비소비지출{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
         @keyframes fp-spin{to{transform:rotate(360deg)}}
-        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(4,1fr)}.fp-profile .wide{grid-column:1/-1}.fp-strategy-grid{grid-template-columns:1fr}}
+        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}}
         @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics{grid-template-columns:1fr 1fr}}
-        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid{grid-template-columns:1fr}.fp-clientbar label{min-width:100%}}
+        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}}
         @media print{.fp-actions,.fp-clientbar button,.fp-delete{display:none!important}.fp-page{padding:0}.fp-shell,.fp-report{background:white}.fp-panel,.fp-metric,.fp-profile,.fp-clientbar,.fp-hero{break-inside:avoid}}
       `}</style>
     </div>
@@ -820,9 +825,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 // ── 소형 컴포넌트들 ──────────────────────────────────────────────────────────
-function Input({ label, value, onChange, type="text", wide }: { label:string; value:string; onChange:(v:string)=>void; type?:string; wide?:boolean }) {
+function Input({ label, value, onChange, type="text", span }: { label:string; value:string; onChange:(v:string)=>void; type?:string; span?:string }) {
   return (
-    <div className={`fp-input${wide?" wide":""}`}>
+    <div className={`fp-input ${span ?? "span-1"}`}>
       <label>{label}</label>
       <input type={type} value={value} onChange={e=>onChange(e.target.value)} />
     </div>
