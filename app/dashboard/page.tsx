@@ -253,11 +253,11 @@ export default function DashboardPage() {
       try {
         const defaultFavorites = canAccessCrm(hydratedUser)
           ? ["show_first_coverage_check", "show_insu", "show_proposal", "show_financial_portfolio"]
-          : ["show_exam", "show_dm", "show_premium_compare", "show_surgery", "show_disease", "show_cont"];
+          : ["show_dm", "show_premium_compare", "show_surgery", "show_disease", "show_cont", "show_coverage_stats"];
         const savedFavs = localStorage.getItem(`mr-favorites-${userId}`);
         if (savedFavs) {
-          const parsedFavs = JSON.parse(savedFavs);
-          const shouldResetForCurrentHome = !defaultFavorites.every((id) => parsedFavs.includes(id));
+          const parsedFavs = JSON.parse(savedFavs).filter((id: string) => id !== "show_exam");
+          const shouldResetForCurrentHome = parsedFavs.length === 0 || !defaultFavorites.every((id) => parsedFavs.includes(id));
           const nextFavs = shouldResetForCurrentHome ? defaultFavorites : parsedFavs;
           setFavorites(nextFavs);
           if (shouldResetForCurrentHome) localStorage.setItem(`mr-favorites-${userId}`, JSON.stringify(nextFavs));

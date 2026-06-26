@@ -353,45 +353,11 @@ export default function Sidebar({
               )}
 
               <NavItem
-                icon="시험"
-                label="자격시험"
-                active={false}
-                onClick={openExamHub}
-                badge="NEW"
-              />
-
-              <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">카테고리</p>
-
-              <NavItem
-                icon="보장"
-                iconNode={<ShieldCheck className="h-5 w-5 opacity-80" />}
-                label="보장분석"
-                active={false}
-                onClick={() => openToolById("show_insu")}
-              />
-
-              <NavItem
-                icon="재무"
-                iconNode={<PieChart className="h-5 w-5 opacity-80" />}
-                label="재무설계"
-                active={false}
-                onClick={() => openToolById("show_financial_portfolio")}
-              />
-
-              <NavItem
                 icon="자료"
                 iconNode={<Search className="h-5 w-5 opacity-80" />}
                 label="자료조회"
                 active={false}
                 onClick={openInsuranceLibrary}
-              />
-
-              <NavItem
-                icon="수술"
-                iconNode={<Stethoscope className="h-5 w-5 opacity-80" />}
-                label="수술·후유장해"
-                active={false}
-                onClick={() => openToolById("show_surgery")}
               />
 
               {!canUseCrm && (
@@ -407,8 +373,18 @@ export default function Sidebar({
                 />
               )}
 
-              {(canUseOffice || canUseClaim || canUseBranding || isMaster) && (
+              {(isApproved || canUseOffice || canUseClaim || canUseBranding || isMaster) && (
                 <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">업무</p>
+              )}
+
+              {isApproved && (
+                <NavItem
+                  icon="dm"
+                  iconNode={<ScrollText className="h-5 w-5 opacity-80" />}
+                  label="고객 DM 발송"
+                  active={false}
+                  onClick={openContentStudio}
+                />
               )}
 
               {canUseOffice && (
