@@ -476,12 +476,12 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
 
   // 간병 4분류
   const nursingCard = tcCard('🤝', '간병인', [
-    tcRow('간병인(질병/일반)',  sumAmount(contracts, 'nursing_hospital')),
-    tcRow('간병인(상해)',       sumAmount(contracts, 'nursing_injury')),
-    tcRow('요양병원 간병인',    sumAmount(contracts, 'nursing_care_hospital')),
-    tcRow('간호간병통합',       sumAmount(contracts, 'nursing_integrated')),
-    tcRow('입원일당(질병)',     sumAmount(contracts, 'hospital_disease_daily')),
-    tcRow('입원일당(상해)',     sumAmount(contracts, 'hospital_injury_daily')),
+    tcRow('간병인 사용(질병)',   sumAmount(contracts, 'nursing_hospital')),
+    tcRow('간병인 사용(상해)',   sumAmount(contracts, 'nursing_injury')),
+    tcRow('간병인 지원(요양병원)', sumAmount(contracts, 'nursing_care_hospital')),
+    tcRow('간병인 지원(통합)',   sumAmount(contracts, 'nursing_integrated')),
+    tcRow('입원일당(질병)',      sumAmount(contracts, 'hospital_disease_daily')),
+    tcRow('입원일당(상해)',      sumAmount(contracts, 'hospital_injury_daily')),
   ].join(''))
 
   // 실손
@@ -678,8 +678,9 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
         <div class="gauge-grid">${gaugesHtml}</div>
         <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts)}</div>
         <div style="margin-top:4px">
-          <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:4px;padding-top:4px;border-top:1px solid #e2e8f0">진단비 대비 현재 준비</div>
+          <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:4px;padding-top:4px;border-top:1px solid #e2e8f0">주요보장 체크</div>
           ${diagnosisAverageHtml}
+          ${silsonInfoHtml}
         </div>
       </div>
     </div>
@@ -688,7 +689,6 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       ${premiumInfoHtml}
       ${shortageHtml}
       ${brainHeartDetailHtml}
-      ${silsonInfoHtml}
     </div>
   </div>
 </div>
@@ -732,13 +732,13 @@ ${!isKey ? `
     ${recsHtml}
   </div>
 </div>
-</div>
+</div>` : ''}
 
-<!-- ════ PAGE LAST (전체 전용): 보험사별 담보 비교표 ════ -->
+<!-- ════ PAGE LAST: 보험사별 담보 비교표 (주요/전체 공통) ════ -->
 <div class="pdf-page">
 <div class="page-inner">
   <div class="page-label">보험사별 · 담보별 비교표</div>
-  
+
   <div class="section-title"><span class="section-num">★</span>전체 보험사 담보 비교</div>
   ${compareHtml}
   <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e2e8f0;
@@ -747,11 +747,8 @@ ${!isKey ? `
     메타리치 시그널그룹 | ${new Date().toLocaleDateString('ko-KR')} 작성
   </div>
 </div>
-</div>` : `
-<div style="padding:12px 20px;text-align:center;color:#94a3b8;font-size:10px">
-  본 분석 리포트는 고객 상담용 참고 자료이며, 보험 계약의 법적 효력을 대체하지 않습니다.
-  메타리치 시그널그룹 | ${new Date().toLocaleDateString('ko-KR')} 작성
-</div>`}
+</div>
+
 
 ${selectedImageSources.map((item, idx) => `
 <div class="img-fullpage">

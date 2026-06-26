@@ -13,6 +13,7 @@ export type ConsultingTool = {
   guestVisible?: boolean;  // true = 미승인·게스트도 볼 수 있는 도구
   highlight?: boolean;
   isNew?: boolean;
+  premium?: boolean;
   editable?: boolean;
   chromeRecommended?: boolean;
   defaultEnabled?: boolean;
@@ -158,6 +159,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     access: "approved",
     highlight: true,
     isNew: true,
+    premium: true,
     editable: true,
     defaultEnabled: false,
     category: "face",
@@ -176,6 +178,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     access: "approved",
     highlight: true,
     isNew: true,
+    premium: true,
     editable: false,
     category: "face" as const,
   },
@@ -377,6 +380,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-indigo-500 text-indigo-600",
     staffOnly: true,
     access: "approved",
+    premium: true,
     editable: true,
     category: "coverage",
   },
@@ -403,6 +407,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-teal-500",
     cardColor: "border-teal-500 text-teal-600",
     access: "guest_approved",
+    premium: true,
     editable: true,
     category: "financial",
   },
@@ -417,6 +422,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     cardColor: "border-indigo-500 text-indigo-600",
     staffOnly: true,
     access: "approved",
+    premium: true,
     editable: true,
     category: "financial",
   },

@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type React from "react"
 import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
@@ -30,6 +30,7 @@ import {
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_GROUPS, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
+import { MENU_LAYOUT_KEY, MENU_LAYOUT_LABELS, type MenuLayout, type MenuLayoutZone, defaultMenuLayout, isToolHidden, normalizeMenuLayout, orderToolsByLayout } from "../../../lib/menuLayout"
 import { canAccessCrm, canAccessOffice, canAccessClaim, canAccessBranding, normalizeRole, roleLabel, isApprovedUser } from "../../../lib/roles"
 import LibrarySearchPopup from "./LibrarySearchPopup"
 
@@ -80,7 +81,8 @@ function ToolIcon({ icon }: { icon: string }) {
 export default function Sidebar({ 
   user, selectedDate, onDateChange, mode, onBack, 
   externalMenuStatus, onMenuStatusChange, onTabChange, activeTab,
-  isOpen, setIsOpen, onOpenOffice, onOpenConsulting
+  isOpen, setIsOpen, onOpenOffice, onOpenConsulting,
+  menuLayout, onMenuLayoutChange
 }: any) {
   const router = useRouter();
   
@@ -111,6 +113,9 @@ export default function Sidebar({
 
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || DEFAULT_MENU_STATUS);
   const [isEditMode, setIsEditMode] = useState(false); 
+  const activeMenuLayout = useMemo(() => normalizeMenuLayout(menuLayout), [menuLayout]);
+  const [layoutDraft, setLayoutDraft] = useState<MenuLayout>(() => activeMenuLayout);
+  const [draggedTool, setDraggedTool] = useState<{ id: string; from: MenuLayoutZone } | null>(null);
   useEffect(() => {
     if (isApproved) {
       fetchDailyData();
@@ -130,11 +135,15 @@ export default function Sidebar({
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
 
+  useEffect(() => {
+    if (isConsultModalOpen) setLayoutDraft(activeMenuLayout);
+  }, [activeMenuLayout, isConsultModalOpen]);
+
   async function fetchMenuSettings() {
     const { data } = await supabase.from("team_settings").select("key, value");
     if (data) {
       const settings = data.reduce((acc: any, curr: any) => {
-        acc[curr.key] = curr.value === "true";
+        if (curr.value === "true" || curr.value === "false") acc[curr.key] = curr.value === "true";
         return acc;
       }, {});
       setMenuStatus((prev: any) => ({ ...prev, ...settings }));
@@ -178,6 +187,7 @@ export default function Sidebar({
 
   const consultTools = CONSULTING_TOOLS.filter((tool) => tool.placement !== "office");
   const visibleConsultTools = consultTools.filter((tool) => {
+    if (isToolHidden(activeMenuLayout, tool.id)) return false;
     if (!isApproved && tool.category === "face") return false;
     if (tool.staffOnly && !isApproved) return false;
     if (!isApproved) return tool.guestVisible === true;
@@ -187,7 +197,47 @@ export default function Sidebar({
     if (tool.access === "guest_approved") return isApproved && (tool.fixed || menuStatus[tool.id] || isEditMode);
     return tool.access === "public";
   });
+  const sidebarLayoutTools = orderToolsByLayout(
+    visibleConsultTools.filter((tool) => activeMenuLayout.desktopSidebar.includes(tool.id)),
+    activeMenuLayout.desktopSidebar
+  );
   const highlightTools: typeof visibleConsultTools = [];
+
+  const moveLayoutTool = (toolId: string, targetZone: MenuLayoutZone) => {
+    setLayoutDraft((prev) => {
+      const next = normalizeMenuLayout(prev);
+      const zonesToEdit: MenuLayoutZone[] =
+        targetZone === "hidden"
+          ? ["desktopHome", "desktopSidebar", "mobileQuick", "mobileMore", "hidden"]
+          : targetZone === "desktopHome" || targetZone === "desktopSidebar"
+            ? ["desktopHome", "desktopSidebar", "hidden"]
+            : ["mobileQuick", "mobileMore", "hidden"];
+      zonesToEdit.forEach((zone) => {
+        next[zone] = next[zone].filter((id) => id !== toolId);
+      });
+      next[targetZone] = [...next[targetZone], toolId];
+      return normalizeMenuLayout(next);
+    });
+  };
+
+  const saveMenuLayout = async () => {
+    if (!isMaster) return;
+    const normalized = normalizeMenuLayout(layoutDraft);
+    setLayoutDraft(normalized);
+    onMenuLayoutChange?.(normalized);
+    await supabase
+      .from("team_settings")
+      .upsert({ key: MENU_LAYOUT_KEY, value: JSON.stringify(normalized) }, { onConflict: "key" });
+    alert("메뉴 배치가 저장되었습니다.");
+  };
+
+  const resetMenuLayout = () => {
+    setLayoutDraft(defaultMenuLayout());
+  };
+
+  const layoutZones: MenuLayoutZone[] = ["desktopHome", "desktopSidebar", "mobileQuick", "mobileMore", "hidden"];
+
+  const getLayoutTool = (toolId: string) => CONSULTING_TOOLS.find((tool) => tool.id === toolId);
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
@@ -348,7 +398,7 @@ export default function Sidebar({
                   label="고객관리"
                   active={false}
                   onClick={openCrm}
-                  badge="PRO"
+                  badge="PREMIUM"
                 />
               )}
 
@@ -358,6 +408,16 @@ export default function Sidebar({
                 label="자료조회"
                 active={false}
                 onClick={openInsuranceLibrary}
+              />
+
+              <NavItem
+                icon="exam"
+                label="자격시험"
+                active={false}
+                onClick={() => {
+                  window.open(`${window.location.origin}/exam-hub/index.html`, "_blank", "noopener,noreferrer");
+                  setIsOpen(false);
+                }}
               />
 
               {!canUseCrm && (
@@ -371,6 +431,25 @@ export default function Sidebar({
                     setIsOpen(false);
                   }}
                 />
+              )}
+
+              {sidebarLayoutTools.filter((tool) => !["show_dm", "show_exam"].includes(tool.id)).length > 0 && (
+                <>
+                  <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">빠른 메뉴</p>
+                  {sidebarLayoutTools
+                    .filter((tool) => !["show_dm", "show_exam"].includes(tool.id))
+                    .map((tool) => (
+                      <NavItem
+                        key={tool.id}
+                        icon={tool.icon}
+                        iconNode={<ToolIcon icon={tool.icon} />}
+                        label={tool.title}
+                        active={false}
+                        onClick={() => handleLinkClick(tool)}
+                        badge={tool.premium ? "PREMIUM" : undefined}
+                      />
+                    ))}
+                </>
               )}
 
               {(isApproved || canUseOffice || canUseClaim || canUseBranding || isMaster) && (
@@ -430,9 +509,10 @@ export default function Sidebar({
               {isMaster && (
                 <NavItem
                   icon="설정"
-                  label="노출설정"
+                  label="메뉴 배치 관리"
                   active={isConsultModalOpen}
                   onClick={() => setIsConsultModalOpen(true)}
+                  badge="MASTER"
                 />
               )}
 
@@ -532,9 +612,9 @@ export default function Sidebar({
 
       {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-xl rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
+          <div className="bg-white w-full max-w-[1180px] rounded-[2rem] border-4 border-black overflow-hidden shadow-2xl">
             <div className="bg-black p-6 flex justify-between items-center">
-              <h3 className="text-[#d4af37] font-black text-xl tracking-tighter">메뉴 노출 설정</h3>
+              <h3 className="text-[#d4af37] font-black text-xl tracking-tighter">메뉴 배치 관리</h3>
               <div className="flex items-center gap-3">
                 {isMaster && (
                   <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[10px] px-3 py-1 rounded-full font-black ${isEditMode ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 border border-white/20'}`}>
@@ -544,68 +624,151 @@ export default function Sidebar({
                 <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black">×</button>
               </div>
             </div>
-            {isMaster && isEditMode && (
-              <div className="bg-[#111] px-6 py-3 flex items-center gap-2 flex-wrap border-b border-white/10">
-                <span className="text-[10px] font-black text-white/40 mr-1">프리셋</span>
-                {([
-                  { label: "게스트 승인", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio"], off: ["show_insu","show_finance"] },
-                  { label: "설계사 전체", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"], off: [] },
-                  { label: "모두 끄기", keys: [], off: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"] },
-                ] as const).map((preset) => (
-                  <button
-                    key={preset.label}
-                    onClick={async () => {
-                      const all = [...preset.keys, ...preset.off];
-                      const updates: Record<string, boolean> = {};
-                      preset.keys.forEach((k) => { updates[k] = true; });
-                      preset.off.forEach((k) => { updates[k] = false; });
-                      const newStatus = { ...menuStatus, ...updates };
-                      setMenuStatus(newStatus);
-                      if (onMenuStatusChange) onMenuStatusChange(newStatus);
-                      await Promise.all(all.map((k) =>
-                        supabase.from("team_settings").upsert({ key: k, value: String(updates[k]) }, { onConflict: "key" })
-                      ));
-                    }}
-                    className="text-[10px] px-3 py-1 rounded-full font-black bg-white/10 text-white/70 border border-white/20 hover:bg-[#d4af37] hover:text-black transition"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+            <div className="border-b border-slate-100 bg-slate-50 px-6 py-3">
+              <p className="text-[12px] font-black text-slate-800">현재 적용 상태</p>
+              <p className="mt-1 text-[11px] font-bold leading-5 text-slate-500">
+                PC 메인, 사이드바, 모바일 빠른실행, 모바일 전체메뉴, 숨김 영역을 한 번에 관리합니다.
+              </p>
+            </div>
+            {isMaster && (
+              <div className="border-b border-slate-200 bg-white px-5 py-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[15px] font-black text-slate-950">메뉴 드래그 배치</p>
+                    <p className="mt-1 text-[11px] font-bold text-slate-500">
+                      카드를 원하는 영역으로 옮긴 뒤 저장하세요. 저장된 배치는 전체 직원 화면에 적용됩니다.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={resetMenuLayout}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-50"
+                    >
+                      기본값
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveMenuLayout}
+                      className="rounded-xl bg-[#10203a] px-4 py-2 text-[11px] font-black text-white shadow-sm hover:bg-[#0a3268]"
+                    >
+                      배치 저장
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                  {layoutZones.map((zone) => (
+                    <div
+                      key={zone}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        if (draggedTool) moveLayoutTool(draggedTool.id, zone);
+                        setDraggedTool(null);
+                      }}
+                      className={`min-h-[180px] rounded-2xl border-2 border-dashed p-3 ${
+                        zone === "hidden"
+                          ? "border-rose-200 bg-rose-50"
+                          : zone === "desktopSidebar"
+                            ? "border-[#0a3268]/25 bg-[#eef4fb]"
+                            : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-[12px] font-black text-slate-900">{MENU_LAYOUT_LABELS[zone]}</p>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-slate-500 shadow-sm">
+                          {layoutDraft[zone].length}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {layoutDraft[zone].map((toolId) => {
+                          const tool = getLayoutTool(toolId);
+                          if (!tool) return null;
+                          return (
+                            <div
+                              key={`${zone}-${toolId}`}
+                              draggable
+                              onDragStart={() => setDraggedTool({ id: toolId, from: zone })}
+                              onDragEnd={() => setDraggedTool(null)}
+                              className="cursor-grab rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm active:cursor-grabbing"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#eef4fb] text-[#0a3268]">
+                                  <ToolIcon icon={tool.icon} />
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-[11px] font-black text-slate-900">{tool.title}</p>
+                                  <p className="truncate text-[9px] font-bold text-slate-400">{tool.label}</p>
+                                </div>
+                                {tool.premium && (
+                                  <span className="rounded-full bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] px-2 py-0.5 text-[8px] font-black text-white shadow-sm">
+                                    PREMIUM
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 gap-1">
+                                {layoutZones.filter((target) => target !== zone).slice(0, 4).map((target) => (
+                                  <button
+                                    key={target}
+                                    type="button"
+                                    onClick={() => moveLayoutTool(toolId, target)}
+                                    className="rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-500 hover:bg-[#10203a] hover:text-white"
+                                  >
+                                    {MENU_LAYOUT_LABELS[target]}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {layoutDraft[zone].length === 0 && (
+                          <div className="grid min-h-[76px] place-items-center rounded-xl border border-dashed border-slate-200 bg-white/60 text-[11px] font-black text-slate-300">
+                            이곳으로 끌어오기
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-            
-            <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto no-scrollbar">
-              {highlightTools.length > 0 && (
-                <section className="space-y-3">
-                  <div>
-                    <p className="text-[13px] font-black text-slate-900">기본 바로가기</p>
-                    <p className="text-[10px] font-bold text-slate-400">승인 전 게스트도 이용 가능한 기본 도구</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {highlightTools.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => handleLinkClick(item)}
-                        className={`relative min-h-[72px] w-full rounded-2xl border-2 bg-white px-4 py-3 text-left transition-all hover:bg-black hover:text-[#d4af37] ${item.color}`}
-                      >
-                        {item.isNew && (
-                          <span className="new-pulse-badge absolute right-3 top-2 rounded-full px-2 py-0.5 text-[9px] font-black text-white">NEW</span>
-                        )}
-                        <span className="flex items-center gap-3">
-                          <ToolIcon icon={item.icon} />
-                          <span className="text-[12px] font-black leading-tight">{item.label}</span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
+            {isMaster && isEditMode && (
+              <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-black text-slate-600 mr-1">프리셋</span>
+                  {([
+                    { label: "게스트 승인", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio"], off: ["show_insu","show_finance"] },
+                    { label: "설계사 전체", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"], off: [] },
+                    { label: "모두 끄기", keys: [], off: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"] },
+                  ] as const).map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={async () => {
+                        const updates: Record<string, boolean> = {};
+                        preset.keys.forEach((k) => { updates[k] = true; });
+                        preset.off.forEach((k) => { updates[k] = false; });
+                        const newStatus = { ...menuStatus, ...updates };
+                        setMenuStatus(newStatus);
+                        if (onMenuStatusChange) onMenuStatusChange(newStatus);
+                        await Promise.all([...preset.keys, ...preset.off].map((k) =>
+                          supabase.from("team_settings").upsert({ key: k, value: String(updates[k]) }, { onConflict: "key" })
+                        ));
+                      }}
+                      className="text-[10px] px-3 py-1 rounded-full font-black bg-white text-slate-700 border border-slate-200 hover:bg-[#d4af37] hover:text-black transition"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto no-scrollbar">
               {CONSULTING_TOOL_GROUPS.map((category) => {
-                const visibleTools = category.toolIds
+                const catTools = category.toolIds
                   .map((id) => visibleConsultTools.find((tool) => tool.id === id))
                   .filter(Boolean) as typeof visibleConsultTools;
-                if (visibleTools.length === 0) return null;
+                if (catTools.length === 0) return null;
                 return (
                   <section key={category.id} className="space-y-3">
                     <div>
@@ -613,14 +776,27 @@ export default function Sidebar({
                       <p className="text-[10px] font-bold text-slate-400">{category.desc}</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {visibleTools.map((item) => (
+                      {catTools.map((item) => (
                         <div key={item.id} className="relative">
-                          <button onClick={() => handleLinkClick(item)} className={`w-full min-h-[72px] flex items-center gap-3 px-4 py-3 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!item.fixed && !menuStatus[item.id] && 'opacity-30'}`}>
+                          <button
+                            onClick={() => handleLinkClick(item)}
+                            className={`w-full min-h-[72px] flex items-center gap-3 px-4 py-3 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!item.fixed && !menuStatus[item.id] && 'opacity-30'}`}
+                          >
                             <ToolIcon icon={item.icon} />
                             <span className="text-[12px] font-black text-left leading-tight">{item.label}</span>
+                            {item.premium && (
+                              <span className="ml-auto rounded-full bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] px-2 py-0.5 text-[9px] font-black text-white shadow-sm">
+                                PREMIUM
+                              </span>
+                            )}
                           </button>
                           {isMaster && isEditMode && item.editable && !item.fixed && (
-                            <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black" />
+                            <input
+                              type="checkbox"
+                              checked={menuStatus[item.id]}
+                              onChange={() => toggleMenu(item.id)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black"
+                            />
                           )}
                         </div>
                       ))}
@@ -682,15 +858,24 @@ function NavItem({ icon, label, active, onClick, variant, badge, iconNode, arrow
           : `text-lg transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`;
 
   return (
-    <button 
-      onClick={onClick} 
+    <button
+      onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${variantClass}`}
     >
       <span className={iconClass}>{iconNode ?? icon}</span>
       <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
       <span className="ml-auto flex items-center gap-2">
-        {badge && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">{badge}</span>}
-        {arrow && <span className="text-[10px] opacity-50">→</span>}      </span>
+        {badge && (
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+            badge === "PREMIUM"
+              ? "bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] text-white shadow-sm"
+              : "bg-white/20 text-white"
+          }`}>
+            {badge}
+          </span>
+        )}
+        {arrow && <span className="text-[10px] opacity-50">→</span>}
+      </span>
     </button>
   )
 }

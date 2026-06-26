@@ -1089,7 +1089,12 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                   <PdfExportBtn
                     customerName={customer?.name || ''}
                     contracts={contracts}
-                    outputType={outputConfig.outputType}
+                    outputType="key_pdf"
+                  />
+                  <PdfExportBtn
+                    customerName={customer?.name || ''}
+                    contracts={contracts}
+                    outputType="full_pdf"
                   />
                 </div>
               </div>

@@ -42,6 +42,7 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, CONSULTING_TOOL_GROUPS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
+import { MENU_LAYOUT_KEY, type MenuLayout, defaultMenuLayout, isToolHidden, orderToolsByLayout, parseMenuLayout } from "../../lib/menuLayout"
 import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice, canAccessCrm } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
@@ -86,6 +87,16 @@ function ToolIcon({ icon, className = "h-7 w-7" }: { icon: string; className?: s
   }
 }
 
+function PremiumMenuBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-flex w-fit rounded-full bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] px-2 py-0.5 text-[9px] font-black leading-none text-white shadow-sm ${className}`}
+    >
+      PREMIUM
+    </span>
+  )
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1. [Box Component] Consulting 도구 카드 컴포넌트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -108,7 +119,10 @@ function ConsultingBox({
           <ToolIcon icon={menu.icon} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="mb-1 min-w-0 text-[15px] font-bold text-[#1e293b] leading-snug [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">{menu.title}</h3>
+          <div className="mb-1 flex min-w-0 flex-wrap items-center gap-2">
+            <h3 className="min-w-0 text-[15px] font-bold text-[#1e293b] leading-snug [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">{menu.title}</h3>
+            {menu.premium && <PremiumMenuBadge />}
+          </div>
           <p className="min-w-0 text-[12px] text-[#94a3b8] leading-tight [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">{menu.desc}</p>
         </div>
         <div className="mt-4 text-[12px] font-bold text-[#2563eb] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -194,6 +208,7 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
+  const [menuLayout, setMenuLayout] = useState<MenuLayout>(() => defaultMenuLayout());
   const [isConsultEditMode, setIsConsultEditMode] = useState(false);
   const [openConsultCategories, setOpenConsultCategories] = useState<Record<string, boolean>>({
     customer: true,
@@ -242,7 +257,12 @@ export default function DashboardPage() {
         supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }),
       ]);
       if (annData) setAnnouncements(annData);
-      const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };
+      const layoutValue = settings?.find((item: any) => item.key === MENU_LAYOUT_KEY)?.value;
+      setMenuLayout(parseMenuLayout(layoutValue));
+      const statusMap = settings?.reduce((acc: any, curr: any) => {
+        if (curr.value === "true" || curr.value === "false") acc[curr.key] = curr.value === "true";
+        return acc;
+      }, { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };
 
       const effectiveRole = normalizeRole(userInfo);
       const hydratedUser = { ...userInfo, effectiveRole };
@@ -420,6 +440,7 @@ export default function DashboardPage() {
   const canUseOffice = canAccessOffice(user);
   const canUseCrm = canAccessCrm(user);
   const visibleConsultingTools = CONSULTING_TOOLS.filter((m) => {
+    if (isToolHidden(menuLayout, m.id)) return false;
     if (m.placement === "office") return false;
     if (!isApproved && m.category === "face") return false;
     if (!isApproved) return m.guestVisible === true;
@@ -434,16 +455,23 @@ export default function DashboardPage() {
 
   const renderConsultingView = () => {
     // 마스터 일반 보기: 일반 승인 직원(office 권한 없음) 기준으로 도구 재계산
-    const previewTools = (isMaster && masterPreviewMode === 'general')
+    const rawPreviewTools = (isMaster && masterPreviewMode === 'general')
       ? CONSULTING_TOOLS.filter(m => m.placement !== 'office' && m.access !== 'office' && (m.fixed || menuStatus[m.id] !== false))
       : visibleConsultingTools
+    const previewTools = orderToolsByLayout(
+      rawPreviewTools.filter((tool) => menuLayout.desktopHome.includes(tool.id)),
+      menuLayout.desktopHome
+    )
 
     const faceTools = previewTools.filter(t => t.category === 'face')
 
     // 카테고리별 섹션: 전체 도구를 보여주되 office 전용만 PRO 배지
     const categorySections = CONSULTING_TOOL_CATEGORIES
       .map(cat => {
-        const allCatTools = CONSULTING_TOOLS.filter(t => t.category === cat.id && t.placement !== 'office' && !t.hideFromMainGrid)
+        const allCatTools = orderToolsByLayout(
+          CONSULTING_TOOLS.filter(t => t.category === cat.id && t.placement !== 'office' && !t.hideFromMainGrid && menuLayout.desktopHome.includes(t.id) && !isToolHidden(menuLayout, t.id)),
+          menuLayout.desktopHome
+        )
         return {
           ...cat,
           tools: allCatTools.map(t => {
@@ -456,14 +484,23 @@ export default function DashboardPage() {
         }
       })
       .filter(cat => cat.tools.length > 0)
-    const mobileQuickIds = canUseCrm
-      ? ["show_first_coverage_check", "show_insu", "show_proposal", "show_financial_portfolio", "show_dm", "show_premium_compare"]
-      : ["show_premium_compare", "show_surgery", "show_disease", "show_cont", "show_dm", "show_coverage_stats"]
+    const mobileQuickIds = menuLayout.mobileQuick.length
+      ? menuLayout.mobileQuick
+      : (canUseCrm
+        ? ["show_first_coverage_check", "show_insu", "show_proposal", "show_financial_portfolio", "show_dm", "show_premium_compare"]
+        : ["show_premium_compare", "show_surgery", "show_disease", "show_cont", "show_dm", "show_coverage_stats"])
     const mobileQuickTools = mobileQuickIds
-      .map(id => previewTools.find(tool => tool.id === id))
+      .map(id => visibleConsultingTools.find(tool => tool.id === id))
       .filter(Boolean) as ConsultingTool[]
-    const mobileCategorySections = categorySections
-      .filter(cat => cat.id !== "face")
+    const mobileMoreTools = orderToolsByLayout(
+      visibleConsultingTools.filter((tool) => menuLayout.mobileMore.includes(tool.id)),
+      menuLayout.mobileMore
+    )
+    const mobileCategorySections = CONSULTING_TOOL_CATEGORIES
+      .map((cat) => ({
+        ...cat,
+        tools: mobileMoreTools.filter((tool) => tool.category === cat.id),
+      }))
       .map(cat => ({
         ...cat,
         tools: cat.tools.filter(tool => !(tool as any).locked),
@@ -578,7 +615,10 @@ export default function DashboardPage() {
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#eef4fb] text-[#0a3a86]">
                   <ToolIcon icon={menu.icon} className="h-4 w-4" />
                 </span>
-                <span className="text-[12px] font-black leading-tight text-[#10203a]">{menu.title}</span>
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span className="text-[12px] font-black leading-tight text-[#10203a]">{menu.title}</span>
+                  {menu.premium && <PremiumMenuBadge />}
+                </span>
               </button>
             ))}
           </div>
@@ -604,7 +644,10 @@ export default function DashboardPage() {
                       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#eef4fb] text-[#0a3a86]">
                         <ToolIcon icon={tool.icon} className="h-4 w-4" />
                       </span>
-                      <span className="flex-1 text-[12px] font-black text-[#10203a]">{tool.title}</span>
+                      <span className="flex flex-1 items-center gap-2 text-[12px] font-black text-[#10203a]">
+                        {tool.title}
+                        {tool.premium && <PremiumMenuBadge />}
+                      </span>
                       <ChevronRight className="h-4 w-4 text-[#c8d6e5]" />
                     </button>
                   ))}
@@ -660,6 +703,7 @@ export default function DashboardPage() {
                     {isFavEditMode && <Star className={`absolute right-2 top-2 h-3.5 w-3.5 ${isFav ? "fill-amber-400 text-amber-400" : "text-slate-300"}`} />}
                     <ToolIcon icon={menu.icon} className="h-5 w-5 text-[#0f3f86]" />
                     <span className="text-[12px] font-black leading-tight text-[#10203a]">{menu.title}</span>
+                    {menu.premium && <PremiumMenuBadge className="absolute left-2 top-2" />}
                   </button>
                 )
               })}
@@ -719,6 +763,7 @@ export default function DashboardPage() {
                   className="group relative flex min-h-[148px] flex-col items-center justify-center rounded-[10px] border border-[#dce6f1] bg-white px-4 py-4 text-center transition hover:-translate-y-1 hover:shadow-lg"
                 >
                   {menu.isNew && <span className="absolute left-5 top-4 rounded-full bg-[#ff3158] px-2 py-0.5 text-[10px] font-black text-white">NEW</span>}
+                  {menu.premium && <PremiumMenuBadge className="absolute right-4 top-4" />}
                   <ToolIcon icon={menu.icon} className="mb-3 h-8 w-8 text-[#0a3a86]" />
                   <p className="text-[15px] font-black text-[#10203a]">{menu.title}</p>
                   <p className="mt-2 text-[11px] font-bold leading-4 text-[#64748b]">{menu.desc}</p>
@@ -765,6 +810,7 @@ export default function DashboardPage() {
                         <ToolIcon icon={tool.icon} className="h-4 w-4" />
                       </span>
                       <span className={`flex-1 text-[13px] font-black ${locked ? 'text-[#9aadbe]' : 'text-[#10203a]'}`}>{tool.title}</span>
+                      {tool.premium && <PremiumMenuBadge />}
                       {locked ? (
                         <span className="rounded-full bg-[#1a2744] px-2 py-0.5 text-[9px] font-black text-white">PRO</span>
                       ) : isConsultEditMode && tool.editable ? (
@@ -856,6 +902,8 @@ export default function DashboardPage() {
         onBack={undefined} 
         externalMenuStatus={menuStatus} 
         onMenuStatusChange={setMenuStatus}
+        menuLayout={menuLayout}
+        onMenuLayoutChange={setMenuLayout}
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}
         onOpenOffice={() => { setViewMode('office'); setActiveTab(null); }}

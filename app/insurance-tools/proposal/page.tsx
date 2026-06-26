@@ -91,10 +91,10 @@ type ConsultantInfo = {
   phone: string
 }
 
-// 번들 모드: 카테고리별 단일 플랜 묶음
+// 번들 모드: 카테고리별 플랜 묶음 (여러 제안서 가능)
 type CategorySection = {
   templateId: CategoryId
-  plan: PlanData
+  plans: PlanData[]
 }
 
 type ProposalDraft = {
@@ -106,7 +106,7 @@ type ProposalDraft = {
   customerName: string
   consultant: ConsultantInfo
   bundleIds: CategoryId[]
-  bundlePlans: Record<CategoryId, PlanData>
+  bundlePlans: Record<CategoryId, PlanData[]>
 }
 
 type StoredProposalDraft = ProposalDraft & {
@@ -2340,7 +2340,7 @@ function BundleCoverPage({
   customerName: string
   consultant: ConsultantInfo
 }) {
-  const totalMonthly = sections.reduce((sum, s) => sum + (s.plan.isDollar ? num(s.plan.monthlyPremium) * (num(s.plan.exchangeRate ?? "") || 1400) : num(s.plan.monthlyPremium)), 0)
+  const totalMonthly = sections.reduce((sum, s) => sum + s.plans.reduce((ps, p) => ps + (p.isDollar ? num(p.monthlyPremium) * (num(p.exchangeRate ?? "") || 1400) : num(p.monthlyPremium)), 0), 0)
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
 
   return (
@@ -2361,17 +2361,19 @@ function BundleCoverPage({
               const tpl = categories.find((c) => c.id === s.templateId)
               if (!tpl) return null
               return (
-                <div key={idx} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tpl.tone} text-white`}>
-                    <CategoryIcon template={tpl} />
-                  </div>
-                  <div className="flex-1">
+                <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tpl.tone} text-white`}>
+                      <CategoryIcon template={tpl} />
+                    </div>
                     <p className="text-sm font-black text-slate-950">{tpl.label}</p>
-                    <p className="text-xs font-bold text-slate-400">{s.plan.company || "보험사 미입력"} · {s.plan.productName || "상품명 미입력"}</p>
                   </div>
-                  <p className="text-sm font-black text-cyan-700">
-                    {formatPremium(s.plan)}
-                  </p>
+                  {s.plans.map((p, pi) => (
+                    <div key={pi} className="flex items-center justify-between text-xs py-1 border-t border-slate-100">
+                      <span className="text-slate-500 font-bold">{p.company || "보험사 미입력"} · {p.productName || "상품명 미입력"}</span>
+                      <span className="font-black text-cyan-700">{formatPremium(p)}</span>
+                    </div>
+                  ))}
                 </div>
               )
             })}
@@ -2436,8 +2438,8 @@ function ProposalBundle({
         <ProposalReport
           key={section.templateId}
           template={template}
-          mode="single"
-          plans={[section.plan]}
+          mode={section.plans.length > 1 ? "compare" : "single"}
+          plans={section.plans}
           focus={focus}
           customerName={customerName}
           consultant={consultant}
@@ -2575,9 +2577,9 @@ export default function ProposalPage() {
   const [savedDrafts, setSavedDrafts] = useState<StoredProposalDraft[]>([])
   const [showDraftMenu, setShowDraftMenu] = useState(false)
   const [bundleIds, setBundleIds] = useState<CategoryId[]>(["health", "driver"])
-  const [bundlePlans, setBundlePlans] = useState<Record<CategoryId, PlanData>>(() => {
-    const init = {} as Record<CategoryId, PlanData>
-    categories.forEach((c) => { init[c.id] = emptyPlan(c, 0) })
+  const [bundlePlans, setBundlePlans] = useState<Record<CategoryId, PlanData[]>>(() => {
+    const init = {} as Record<CategoryId, PlanData[]>
+    categories.forEach((c) => { init[c.id] = [emptyPlan(c, 0)] })
     return init
   })
 
@@ -2665,7 +2667,7 @@ export default function ProposalPage() {
       phone: draft.consultant?.phone || prev.phone || "",
     }))
     setBundleIds(draft.bundleIds?.length ? draft.bundleIds : ["health", "driver"])
-    setBundlePlans({ ...Object.fromEntries(categories.map((c) => [c.id, emptyPlan(c, 0)])), ...(draft.bundlePlans || {}) } as Record<CategoryId, PlanData>)
+    setBundlePlans({ ...Object.fromEntries(categories.map((c) => [c.id, [emptyPlan(c, 0)]])), ...(draft.bundlePlans || {}) } as Record<CategoryId, PlanData[]>)
   }
 
   const saveDraft = () => {
@@ -2985,16 +2987,42 @@ export default function ProposalPage() {
               {bundleIds.map((id) => {
                 const cat = categories.find((c) => c.id === id)
                 if (!cat) return null
+                const catPlans = bundlePlans[id] || [emptyPlan(cat, 0)]
+                const catMode = catPlans.length > 1 ? "compare" : "single"
                 return (
-                  <PlanEditor
-                    key={id}
-                    plan={bundlePlans[id]}
-                    index={0}
-                    template={cat}
-                    mode="single"
-                    onChange={(next) => setBundlePlans((prev) => ({ ...prev, [id]: next }))}
-                    onCustomerName={setCustomerName}
-                  />
+                  <div key={id} className="space-y-3">
+                    {catPlans.map((plan, planIdx) => (
+                      <PlanEditor
+                        key={plan.id}
+                        plan={plan}
+                        index={planIdx}
+                        template={cat}
+                        mode={catMode}
+                        onChange={(next) => setBundlePlans((prev) => {
+                          const updated = [...(prev[id] || [])]
+                          updated[planIdx] = next
+                          return { ...prev, [id]: updated }
+                        })}
+                        onRemove={catPlans.length > 1 ? () => setBundlePlans((prev) => ({
+                          ...prev,
+                          [id]: prev[id].filter((_, i) => i !== planIdx),
+                        })) : undefined}
+                        canRemove={catPlans.length > 1}
+                        onCustomerName={planIdx === 0 ? setCustomerName : undefined}
+                      />
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setBundlePlans((prev) => ({
+                        ...prev,
+                        [id]: [...(prev[id] || []), emptyPlan(cat, prev[id]?.length || 1)],
+                      }))}
+                      className="inline-flex items-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-6 py-4 text-sm font-black text-slate-500 hover:border-[#102a4c] hover:text-[#102a4c]"
+                    >
+                      <Plus className="h-5 w-5" />
+                      {cat.label} 제안서 추가
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -3055,8 +3083,8 @@ export default function ProposalPage() {
               {mode === "bundle" ? (
                 <ProposalBundle
                   sections={bundleIds
-                    .map((id) => ({ templateId: id, plan: bundlePlans[id] }))
-                    .filter((s) => bundleIds.includes(s.templateId))}
+                    .map((id) => ({ templateId: id, plans: bundlePlans[id] || [] }))
+                    .filter((s) => s.plans.length > 0)}
                   focus={primaryFocus}
                   customerName={customerName}
                   consultant={consultant}
