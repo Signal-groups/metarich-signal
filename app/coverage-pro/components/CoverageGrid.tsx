@@ -69,9 +69,10 @@ const CATEGORY_GROUPS = [
   {
     key: 'care', label: '간병 / 요양', color: '#14b8a6',
     items: [
-      { rowKey: 'nursing_hospital',      label: '간병인 사용일당' },
-      { rowKey: 'nursing_care_hospital', label: '요양병원 간병' },
-      { rowKey: 'nursing_integrated',    label: '간호간병통합' },
+      { rowKey: 'nursing_hospital',      label: '간병인 사용 — 질병' },
+      { rowKey: 'nursing_injury',        label: '간병인 사용 — 상해' },
+      { rowKey: 'nursing_care_hospital', label: '간병인 지원 — 요양병원' },
+      { rowKey: 'nursing_integrated',    label: '간병인 지원 — 간호간병통합' },
     ],
   },
   {

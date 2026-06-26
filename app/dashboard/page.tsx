@@ -443,7 +443,7 @@ export default function DashboardPage() {
     // 카테고리별 섹션: 전체 도구를 보여주되 office 전용만 PRO 배지
     const categorySections = CONSULTING_TOOL_CATEGORIES
       .map(cat => {
-        const allCatTools = CONSULTING_TOOLS.filter(t => t.category === cat.id && t.placement !== 'office')
+        const allCatTools = CONSULTING_TOOLS.filter(t => t.category === cat.id && t.placement !== 'office' && !t.hideFromMainGrid)
         return {
           ...cat,
           tools: allCatTools.map(t => {
@@ -455,6 +455,19 @@ export default function DashboardPage() {
           }),
         }
       })
+      .filter(cat => cat.tools.length > 0)
+    const mobileQuickIds = canUseCrm
+      ? ["show_first_coverage_check", "show_insu", "show_proposal", "show_financial_portfolio", "show_dm", "show_premium_compare"]
+      : ["show_premium_compare", "show_surgery", "show_disease", "show_cont", "show_dm", "show_coverage_stats"]
+    const mobileQuickTools = mobileQuickIds
+      .map(id => previewTools.find(tool => tool.id === id))
+      .filter(Boolean) as ConsultingTool[]
+    const mobileCategorySections = categorySections
+      .filter(cat => cat.id !== "face")
+      .map(cat => ({
+        ...cat,
+        tools: cat.tools.filter(tool => !(tool as any).locked),
+      }))
       .filter(cat => cat.tools.length > 0)
 
     return (
@@ -479,11 +492,11 @@ export default function DashboardPage() {
               {canUseCrm ? "고객의 미래를 함께 설계하는 든든한 파트너가 되겠습니다." : "자주 쓰는 기능을 홈에서 바로 열 수 있습니다."}
             </p>
           </div>
-          <div className="flex min-h-[38px] flex-wrap items-center gap-2 xl:justify-end">
+          <div className="flex min-h-[38px] w-full flex-nowrap items-center gap-2 overflow-x-auto pb-1 xl:w-auto xl:flex-wrap xl:justify-end xl:overflow-visible xl:pb-0">
             {/* 공지사항 */}
             <button
               onClick={() => setShowNoticeModal(true)}
-              className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#1b54ad] hover:text-[#1b54ad]"
+              className="relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#1b54ad] hover:text-[#1b54ad]"
             >
               <Bell className="h-3.5 w-3.5" />
               공지
@@ -496,7 +509,7 @@ export default function DashboardPage() {
             {/* 업데이트 */}
             <button
               onClick={() => setShowUpdateModal(true)}
-              className="relative inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#0f6e56] hover:text-[#0f6e56]"
+              className="relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#0f6e56] hover:text-[#0f6e56]"
             >
               <Megaphone className="h-3.5 w-3.5" />
               업데이트
@@ -508,14 +521,14 @@ export default function DashboardPage() {
             </button>
             <button
               onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#1b54ad] shadow-sm hover:border-[#1b54ad]"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#1b54ad] shadow-sm hover:border-[#1b54ad]"
             >
               <BookOpen className="h-3.5 w-3.5" />
               일반가이드
             </button>
             <button
               onClick={() => window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#0a3268]"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#0a3268]"
             >
               <Star className="h-3.5 w-3.5 fill-[#f6c342] text-[#f6c342]" />
               프로가이드
@@ -523,7 +536,7 @@ export default function DashboardPage() {
             {/* 시그널그룹 홈페이지 */}
             <button
               onClick={() => window.open("https://signalgroup-sigma.vercel.app/index.html", "_blank")}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#0a3268] bg-[#0a3268] px-3 text-[12px] font-black text-white shadow-sm hover:bg-[#082455]"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#0a3268] bg-[#0a3268] px-3 text-[12px] font-black text-white shadow-sm hover:bg-[#082455]"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
               시그널그룹 홈페이지
@@ -531,14 +544,14 @@ export default function DashboardPage() {
             {/* 카페 */}
             <button
               onClick={() => { const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent); window.open(isMobile ? "https://m.cafe.naver.com/signal1035" : "https://cafe.naver.com/signal1035", "_blank"); }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#03c75a] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:bg-[#f0fff8]"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#03c75a] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:bg-[#f0fff8]"
             >
               <span className="grid h-4 w-4 place-items-center rounded bg-[#03c75a] text-[10px] font-black text-white">N</span>
               보험의 기준 카페
             </button>
             <button
               onClick={() => window.open("https://open.kakao.com/o/g8ND5toi", "_blank")}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#f2d45c] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:bg-[#fffbea]"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#f2d45c] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:bg-[#fffbea]"
             >
               <span className="grid h-4 w-4 place-items-center rounded bg-[#ffe812] text-[10px] font-black text-[#3a2d00]">K</span>
               오픈채팅
@@ -546,7 +559,62 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-6 py-4 shadow-sm">
+        <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-4 py-4 shadow-sm md:hidden">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[16px] font-black text-[#10203a]">모바일 빠른 실행</p>
+              <p className="mt-1 text-[11px] font-bold text-[#64748b]">현장에서 바로 쓰는 기능만 짧게 모았습니다.</p>
+            </div>
+            <span className="rounded-full bg-[#eef4fb] px-2.5 py-1 text-[10px] font-black text-[#1b54ad]">Mobile</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {mobileQuickTools.map((menu) => (
+              <button
+                key={menu.id}
+                type="button"
+                onClick={() => handleNavigation(menu)}
+                className="flex min-h-[64px] items-center gap-2 rounded-xl border border-[#dce6f1] bg-[#f8fafc] px-3 py-2 text-left active:scale-[0.98]"
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#eef4fb] text-[#0a3a86]">
+                  <ToolIcon icon={menu.icon} className="h-4 w-4" />
+                </span>
+                <span className="text-[12px] font-black leading-tight text-[#10203a]">{menu.title}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-4 py-4 shadow-sm md:hidden">
+          <p className="mb-3 text-[16px] font-black text-[#10203a]">전체 메뉴</p>
+          <div className="space-y-2">
+            {mobileCategorySections.map((cat) => (
+              <details key={cat.id} className="rounded-xl border border-[#dce6f1] bg-[#f8fafc]">
+                <summary className="cursor-pointer px-4 py-3 text-[13px] font-black text-[#10203a]">
+                  {cat.title}
+                  <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-[10px] text-[#64748b]">{cat.tools.length}개</span>
+                </summary>
+                <div className="border-t border-[#e8eef5] bg-white p-2">
+                  {cat.tools.map((tool) => (
+                    <button
+                      key={tool.id}
+                      type="button"
+                      onClick={() => handleNavigation(tool)}
+                      className="flex h-11 w-full items-center gap-2 rounded-lg px-2 text-left active:bg-[#eef4fb]"
+                    >
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#eef4fb] text-[#0a3a86]">
+                        <ToolIcon icon={tool.icon} className="h-4 w-4" />
+                      </span>
+                      <span className="flex-1 text-[12px] font-black text-[#10203a]">{tool.title}</span>
+                      <ChevronRight className="h-4 w-4 text-[#c8d6e5]" />
+                    </button>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-4 py-4 shadow-sm md:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Star className="h-7 w-7 fill-[#172947] text-[#172947]" />
@@ -579,7 +647,7 @@ export default function DashboardPage() {
               <span>편집을 눌러 자주 쓰는 도구에 ★를 클릭하면 여기에 모입니다.</span>
             </div>
           ) : (
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+            <div className="mt-4 grid grid-cols-2 gap-3 [&>*:nth-child(n+5)]:hidden sm:grid-cols-4 sm:[&>*:nth-child(n+5)]:flex lg:grid-cols-6 xl:grid-cols-8">
               {(isFavEditMode ? visibleConsultingTools : favoriteTools).map((menu) => {
                 const isFav = favorites.includes(menu.id)
                 return (
@@ -637,9 +705,9 @@ export default function DashboardPage() {
         )}
 
         {faceTools.length > 0 && (
-          <section className="mb-4 rounded-[14px] border border-[#dce6f1] bg-white px-5 py-4 shadow-sm">
+          <section className="mb-4 hidden rounded-[14px] border border-[#dce6f1] bg-white px-5 py-4 shadow-sm md:block">
             <div className="mb-3 flex items-center gap-3">
-              <p className="text-[18px] font-black text-[#10203a]">대면상담</p>
+              <p className="text-[18px] font-black text-[#10203a]">고객 상담</p>
               <span className="rounded-full bg-[#eaf3ff] px-3 py-1 text-[12px] font-black text-[#1b54ad]">고객 현장 활용 핵심 도구</span>
             </div>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
@@ -660,7 +728,7 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <section className="mb-4 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-4">
+        <section className="mb-4 hidden grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid md:grid-cols-2 xl:grid-cols-4">
           {categorySections.filter(c => c.id !== 'face' && c.id !== 'customer').map((cat, index) => (
             <div key={cat.id} className={`p-5 border-[#e8eef5]
               ${index > 0 ? 'border-t' : ''}
@@ -797,7 +865,6 @@ export default function DashboardPage() {
       />
 
       <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-10">
-        {/* 마스터 전용 — 일반/프로 미리보기 토글 */}
         {isMaster && viewMode === 'consulting' && !activeTab && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
             <div style={{ display: 'inline-flex', background: '#e8eef5', borderRadius: 10, padding: 3, gap: 2 }}>
@@ -826,7 +893,7 @@ export default function DashboardPage() {
           ) : viewMode === 'office' ? (
             isGuest || !isApproved ? (
               <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
-                <div className="text-5xl">{isGuest ? '타사 게스트 계정' : '⏳'}</div>
+                <div className="text-5xl">{isGuest ? '⛔' : '⏳'}</div>
                 <p className="text-xl font-black text-slate-700">
                   {isGuest ? '타사 게스트 계정은 사무실 업무를 이용할 수 없습니다' : '관리자 승인 후 이용 가능합니다'}
                 </p>

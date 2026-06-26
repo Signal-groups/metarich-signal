@@ -29,7 +29,7 @@ const DEBOUNCE_MS   = 1500
 const PROPOSAL_IMPORT_KEY = 'metarich_proposal_import_payload'
 
 const defaultProposal: RemodelProposal      = { addContracts: [], removeContractIds: [], memo: '' }
-const defaultOutputConfig: OutputConfig     = { outputType: 'excel', includeGraph: true, includeRemodel: true }
+const defaultOutputConfig: OutputConfig     = { outputType: 'full_pdf', includeGraph: true, includeRemodel: true }
 
 const ROW_TO_PROPOSAL_METRIC: Record<string, string> = {
   cancer_general: 'cancer',

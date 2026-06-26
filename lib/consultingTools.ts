@@ -18,6 +18,7 @@ export type ConsultingTool = {
   defaultEnabled?: boolean;
   category?: "customer" | "coverage" | "financial" | "planning" | "claims" | "face";
   placement?: "consulting" | "office";
+  hideFromMainGrid?: boolean;
 };
 
 export const CONSULTING_TOOL_CATEGORIES: {
@@ -126,6 +127,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     access: "public",
     guestVisible: true,
     editable: false,
+    hideFromMainGrid: true,
     category: "planning",
   },
   {
