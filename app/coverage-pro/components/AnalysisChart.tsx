@@ -68,9 +68,10 @@ function RadarChart({ items }: { items: { label: string; amount: number; recomme
   }
 
   const outerPts = items.map((_, idx) => coords(idx, 1))
-  const actualPts = items.map((item, idx) =>
-    coords(idx, item.recommend > 0 ? item.amount / item.recommend : 0)
-  )
+  const actualPts = items.map((item, idx) => {
+    const ratio = item.recommend > 0 ? item.amount / item.recommend : 0
+    return coords(idx, ratio > 0 ? Math.max(0.16, ratio) : 0)
+  })
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', maxWidth: 260 }}>

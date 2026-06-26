@@ -490,6 +490,12 @@ export default function Sidebar({
 
           {/* Sidebar Footer */}
           <div className="p-4 flex-shrink-0 space-y-2">
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-center shadow-sm">
+              <p className="text-[10px] font-black tracking-wide text-[#d4af37]">관리자 문의</p>
+              <a href="tel:01034302565" className="mt-1 block text-[14px] font-black text-white">
+                010-3430-2565
+              </a>
+            </div>
             <button
               onClick={() => router.push("/dashboard/settings")}
               style={{ width: "100%", padding: "7px 12px", borderRadius: 8, background: "rgba(55,138,221,0.1)", border: "0.5px solid rgba(55,138,221,0.2)", color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}

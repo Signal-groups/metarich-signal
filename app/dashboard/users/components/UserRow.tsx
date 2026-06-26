@@ -44,7 +44,7 @@ type EditableStaffUser = StaffUser & {
   claim_access: boolean
   branding_access: boolean
   service_level: ServiceLevel
-  premium_expires_at: string
+  premium_expires_at: string | null
 }
 
 interface UserRowProps {
@@ -110,18 +110,18 @@ function eventExpiryDate(days = 15) {
 
 export function servicePatch(level: ServiceLevel): Partial<EditableStaffUser> {
   if (level === "guest") {
-    return { service_level: "guest", premium_expires_at: "", is_approved: false, crm_access: false, office_access: false, claim_access: false, branding_access: false }
+    return { service_level: "guest", premium_expires_at: null, is_approved: false, crm_access: false, office_access: false, claim_access: false, branding_access: false }
   }
   if (level === "general") {
-    return { service_level: "general", premium_expires_at: "", is_approved: true, crm_access: false, office_access: false, claim_access: false, branding_access: false }
+    return { service_level: "general", premium_expires_at: null, is_approved: true, crm_access: false, office_access: false, claim_access: false, branding_access: false }
   }
   if (level === "pro") {
-    return { service_level: "pro", premium_expires_at: "", is_approved: true, crm_access: false, office_access: true, claim_access: false, branding_access: false }
+    return { service_level: "pro", premium_expires_at: null, is_approved: true, crm_access: false, office_access: true, claim_access: false, branding_access: false }
   }
   if (level === "event") {
     return { service_level: "event", premium_expires_at: eventExpiryDate(15), is_approved: true, crm_access: true, office_access: true, claim_access: false, branding_access: false }
   }
-  return { service_level: "premium", premium_expires_at: "", is_approved: true, crm_access: true, office_access: true, claim_access: false, branding_access: false }
+  return { service_level: "premium", premium_expires_at: null, is_approved: true, crm_access: true, office_access: true, claim_access: false, branding_access: false }
 }
 
 function serviceLabel(level: ServiceLevel) {

@@ -1192,12 +1192,9 @@ function ProposalReport({
   const hasCustomCoverage = visiblePlans.some((plan) => (plan.customCoverages ?? []).some((item) =>
     item.name.trim() || item.amount.trim() || item.note.trim()
   ))
-  const outputGroups = groups.filter((group) => group.metrics.some((metric) =>
-    visiblePlans.some((plan) => metric.kind === "text"
-      ? String(plan.metrics[metric.key] || "").trim()
-      : num(plan.metrics[metric.key] || "") > 0
-    )
-  ) || (template.id === "health" && group.title.includes("추가 담보") && hasCustomCoverage))
+  const outputGroups = groups.filter((group) =>
+    group.metrics.length > 0 || (template.id === "health" && group.title.includes("추가 담보") && hasCustomCoverage)
+  )
   const scenarioPageNum = pageOffset + 3 + outputGroups.length
 
   return (
@@ -1693,10 +1690,7 @@ function ComparisonTable({
       .filter((item) => item.name.trim() || item.amount.trim() || item.note.trim())
       .map((item) => item.name.trim() || "추가 담보"))
   )) : []
-  const visibleMetrics = metrics.filter((metric) => {
-    if (metric.kind === "text") return plans.some((plan) => String(plan.metrics[metric.key] || "").trim())
-    return plans.some((plan) => num(plan.metrics[metric.key] || "") > 0)
-  })
+  const visibleMetrics = metrics
 
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">

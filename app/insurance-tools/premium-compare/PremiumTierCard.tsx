@@ -29,9 +29,19 @@ const RATE = {
 const SILSON_FLAT = { min: 0, standard: 15_000, comfort: 25_000 }
 
 // ── 나이대 배수 ──────────────────────────────────────────────────────────────
-type AgeGroup = '40대' | '50대' | '60대'
-const AGE_MULT: Record<AgeGroup, number> = { '40대': 1.0, '50대': 1.6, '60대': 2.35 }
-const COMPANY_GAP: Record<AgeGroup, number> = { '40대': 50_000, '50대': 70_000, '60대': 100_000 }
+type AgeGroup = '30대' | '40대' | '50대' | '60대'
+const AGE_MULT: Record<AgeGroup, number> = {
+  '30대': 1.0,
+  '40대': 1.55,
+  '50대': 1.55 * 1.65,
+  '60대': 1.55 * 1.65 * 1.75,
+}
+const COMPANY_GAP: Record<AgeGroup, number> = {
+  '30대': 50_000,
+  '40대': Math.round(50_000 * 1.55),
+  '50대': Math.round(50_000 * 1.55 * 1.65),
+  '60대': Math.round(50_000 * 1.55 * 1.65 * 1.75),
+}
 
 function calcPremium(tier: 'min' | 'standard' | 'comfort'): number {
   const p = PRESETS[tier]
@@ -148,7 +158,7 @@ function GaugeSVG({ pct, minP, stdP, comP, mult }: {
     const o1 = pt(f1, Ro), o2 = pt(f2, Ro)
     const i1 = pt(f1, Ri), i2 = pt(f2, Ri)
     const lg = f2 - f1 > 0.5 ? 1 : 0
-    const d = `M${o1.x.toFixed(1)} ${o1.y.toFixed(1)} A${Ro} ${Ro} 0 ${lg} 0 ${o2.x.toFixed(1)} ${o2.y.toFixed(1)} L${i2.x.toFixed(1)} ${i2.y.toFixed(1)} A${Ri} ${Ri} 0 ${lg} 1 ${i1.x.toFixed(1)} ${i1.y.toFixed(1)}Z`
+    const d = `M${o1.x.toFixed(1)} ${o1.y.toFixed(1)} A${Ro} ${Ro} 0 ${lg} 1 ${o2.x.toFixed(1)} ${o2.y.toFixed(1)} L${i2.x.toFixed(1)} ${i2.y.toFixed(1)} A${Ri} ${Ri} 0 ${lg} 0 ${i1.x.toFixed(1)} ${i1.y.toFixed(1)}Z`
     return <path key={id} d={d} fill={fill} />
   }
 
@@ -282,7 +292,7 @@ export default function PremiumTierCard() {
             보험료 비교 기준 · 교차설계
           </div>
           <div style={{ display:'flex', gap:2 }}>
-            {(['40대','50대','60대'] as AgeGroup[]).map(ag => (
+            {(['30대','40대','50대','60대'] as AgeGroup[]).map(ag => (
               <button key={ag} type="button" onClick={() => setAgeGroup(ag)} style={{
                 padding:'5px 14px', borderRadius:'8px 8px 0 0', border:'none',
                 background: ageGroup===ag ? 'rgba(255,255,255,0.12)' : 'transparent',
@@ -347,7 +357,7 @@ export default function PremiumTierCard() {
                     <div style={{ fontSize:10, color:'#c9a96e', fontWeight:800 }}>차이 {fmtWon(gap)}</div>
                     <div style={{ width:'100%', height:5, borderRadius:3, background:'linear-gradient(to right,#3b82f6,#dc2626)' }} />
                     <div style={{ fontSize:9, color:'#475569', textAlign:'center' }}>
-                      50대 7만원 · 60대 10만원 차이
+                      30대 기준에서 연령별로 함께 증가
                     </div>
                   </div>
                   <div style={{ textAlign:'center' }}>

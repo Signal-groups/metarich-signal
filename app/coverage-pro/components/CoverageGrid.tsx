@@ -478,6 +478,18 @@ export default function CoverageGrid({
           불러온 보험계약이 없습니다.
               </div>
       )}
+      {editTarget && (
+        <EditModal
+          rowKey={editTarget.rowKey}
+          label={editTarget.label}
+          currentAmount={editTarget.currentAmount}
+          onClose={() => setEditTarget(null)}
+          onSave={(amount) => {
+            handleSave(editTarget.rowKey, amount)
+            setEditTarget(null)
+          }}
+        />
+      )}
     </div>
   )
 }
