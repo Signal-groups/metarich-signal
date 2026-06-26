@@ -852,6 +852,96 @@ function CasesView({ cases, maxVal, crossBest, bestSingle, rows, payPeriod }: {
 // ══════════════════════════════════════════════════════════
 // 저축성
 // ══════════════════════════════════════════════════════════
+type ShortPayWholeLifeProduct = {
+  rank: number
+  company: string
+  product: string
+  paidUpRate: number
+  year10Rate: number
+}
+
+const SHORT_PAY_WHOLE_LIFE_JUNE: Record<5 | 7, ShortPayWholeLifeProduct[]> = {
+  7: [
+    { rank: 1, company: "메트라이프", product: "백만인을위한달러종신", paidUpRate: 99.7, year10Rate: 124.8 },
+    { rank: 2, company: "ABL생명", product: "THE드림종신", paidUpRate: 100.0, year10Rate: 117.6 },
+    { rank: 2, company: "하나생명", product: "하나로THE연결된종신", paidUpRate: 100.0, year10Rate: 117.6 },
+    { rank: 2, company: "동양생명", product: "우리WON알뜰플러스종신", paidUpRate: 100.0, year10Rate: 117.6 },
+    { rank: 2, company: "라이나생명", product: "THE채우는종신", paidUpRate: 99.9, year10Rate: 117.6 },
+    { rank: 2, company: "신한라이프", product: "모아더드림Plus", paidUpRate: 90.0, year10Rate: 117.6 },
+    { rank: 7, company: "iMlife", product: "당당한 인생종신", paidUpRate: 99.7, year10Rate: 117.4 },
+    { rank: 8, company: "한화생명", product: "H종신", paidUpRate: 100.0, year10Rate: 117.2 },
+    { rank: 9, company: "교보생명", product: "K-실속종신", paidUpRate: 100.0, year10Rate: 117.0 },
+    { rank: 10, company: "DB생명", product: "뉴-알차고행복한PLUS", paidUpRate: 99.9, year10Rate: 116.5 },
+  ],
+  5: [
+    { rank: 1, company: "메트라이프", product: "백만인을위한달러종신", paidUpRate: 98.3, year10Rate: 124.9 },
+    { rank: 2, company: "KB라이프", product: "KB약속플러스종신", paidUpRate: 99.9, year10Rate: 121.0 },
+    { rank: 3, company: "ABL생명", product: "THE드림종신", paidUpRate: 98.2, year10Rate: 120.5 },
+    { rank: 3, company: "푸본현대", product: "MAX종신보험 원픽", paidUpRate: 96.9, year10Rate: 120.5 },
+    { rank: 3, company: "하나생명", product: "하나로THE연결된종신", paidUpRate: 96.0, year10Rate: 120.5 },
+    { rank: 3, company: "신한라이프", product: "모아더드림Plus", paidUpRate: 90.0, year10Rate: 120.5 },
+    { rank: 7, company: "iMlife", product: "당당한 인생종신", paidUpRate: 99.7, year10Rate: 120.4 },
+    { rank: 8, company: "교보생명", product: "K-실속종신", paidUpRate: 99.5, year10Rate: 120.2 },
+    { rank: 9, company: "한화생명", product: "H종신", paidUpRate: 99.3, year10Rate: 120.0 },
+    { rank: 10, company: "KDB생명", product: "더블찬스2", paidUpRate: 96.7, year10Rate: 117.8 },
+  ],
+}
+
+function ShortPayWholeLifeJuneTable() {
+  const groups = [
+    { payYears: 7 as const, title: "6월 추천 단기납 종신보험 (7년납)", bg: "bg-[#faf5dc]" },
+    { payYears: 5 as const, title: "6월 추천 단기납 종신보험 (5년납)", bg: "bg-[#fff1df]" },
+  ]
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#0b2a63] px-5 py-3 text-white">
+        <div>
+          <h2 className="text-[14px] font-black">6월 추천 단기납 종신보험</h2>
+          <p className="text-[10px] text-blue-100">업로드 자료 기준 · 완납시점/10년시점 환급률</p>
+        </div>
+        <span className="rounded-full bg-white/15 px-3 py-1 text-[10px] font-black">2026년 6월 기준</span>
+      </div>
+      <div className="grid gap-4 p-4 xl:grid-cols-2">
+        {groups.map(group => (
+          <div key={group.payYears} className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <h3 className="text-[15px] font-black text-slate-900">{group.title}</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-[620px] w-full border-collapse text-[11px]">
+                <thead className="bg-[#072b66] text-white">
+                  <tr>
+                    <th className="p-3 text-center">순위</th>
+                    <th className="p-3 text-center">보험사</th>
+                    <th className="p-3 text-left">상품명</th>
+                    <th className="p-3 text-center">완납시점</th>
+                    <th className="p-3 text-center">10년시점</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SHORT_PAY_WHOLE_LIFE_JUNE[group.payYears].map((item, index) => {
+                    const highlighted = index < 2
+                    return (
+                      <tr key={`${group.payYears}-${item.company}-${item.product}`} className={`border-b border-slate-200 ${highlighted ? group.bg : "bg-white"}`}>
+                        <td className="p-3 text-center text-[13px] font-black text-slate-900">{item.rank}</td>
+                        <td className="p-3 text-center font-black text-slate-900">{item.company}</td>
+                        <td className="p-3 font-black text-slate-900">{item.product}</td>
+                        <td className="p-3 text-center font-black text-slate-900">{item.paidUpRate.toFixed(1)}%</td>
+                        <td className={`p-3 text-center text-[13px] font-black ${highlighted ? "text-red-600" : "text-slate-900"}`}>{item.year10Rate.toFixed(1)}%</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function SavingView({ results, monthly, payYrs }: {results:{co:Company;fv:number;pension:number}[];monthly:number;payYrs:number}) {
   const months=payYrs*12
   const yrs=[1,2,3,5,7,10,15,20,25,30]
@@ -862,6 +952,7 @@ function SavingView({ results, monthly, payYrs }: {results:{co:Company;fv:number
   })
   return (
     <div className="space-y-4 mb-4">
+      <ShortPayWholeLifeJuneTable />
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="bg-[#163f76] px-5 py-3 text-white"><h2 className="text-[14px] font-black">단기납 종신·저축성 환급률 비교</h2></div>
         <div className="overflow-x-auto">

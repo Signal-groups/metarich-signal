@@ -31,6 +31,7 @@ export type StaffUser = {
   branding_access?: boolean | string | number | null
   service_level?: ServiceLevel | string | null
   premium_expires_at?: string | null
+  pre_event_level?: string | null
   must_change_password?: boolean | string | number | null
 }
 
@@ -45,6 +46,7 @@ type EditableStaffUser = StaffUser & {
   branding_access: boolean
   service_level: ServiceLevel
   premium_expires_at: string | null
+  pre_event_level: string | null
 }
 
 interface UserRowProps {
@@ -55,6 +57,7 @@ interface UserRowProps {
   onSave: (user: StaffUser) => Promise<boolean>
   onResetPassword: (user: StaffUser) => void
   onDelete: (user: StaffUser) => void
+  onEventRegister?: (user: StaffUser, preLevel: ServiceLevel) => Promise<void>
   viewerId: string
   isDuplicate?: boolean
   compact?: boolean
@@ -74,7 +77,6 @@ const serviceLevels: Array<{ id: ServiceLevel; label: string; desc: string; tone
   { id: "general", label: "일반", desc: "승인 + 메인/상담도구", tone: "bg-sky-100 text-sky-700" },
   { id: "pro", label: "프로", desc: "일반 + 사무실 업무", tone: "bg-indigo-100 text-indigo-700" },
   { id: "premium", label: "프리미엄", desc: "CRM 고객관리 포함", tone: "bg-emerald-100 text-emerald-700" },
-  { id: "event", label: "이벤트", desc: "프리미엄 15일권", tone: "bg-amber-100 text-amber-700" },
 ]
 
 const permissionColumns: Array<{ key: keyof EditableStaffUser; label: string }> = [
@@ -96,7 +98,11 @@ function isFutureDate(value?: string | null) {
 
 export function getServiceLevel(user: StaffUser): ServiceLevel {
   if (!enabled(user.is_approved)) return "guest"
-  if (String(user.service_level || "") === "event" && isFutureDate(user.premium_expires_at)) return "event"
+  if (String(user.service_level || "") === "event") {
+    if (isFutureDate(user.premium_expires_at)) return "event"
+    const prev = user.pre_event_level as ServiceLevel
+    if (prev && ["general","pro","premium"].includes(prev)) return prev
+  }
   if (enabled(user.crm_access)) return "premium"
   if (enabled(user.office_access)) return "pro"
   return "general"
@@ -106,6 +112,19 @@ function eventExpiryDate(days = 15) {
   const date = new Date()
   date.setDate(date.getDate() + days)
   return date.toISOString()
+}
+
+export function eventRegisterPatch(preLevel: ServiceLevel): Partial<EditableStaffUser> {
+  return {
+    service_level: "event",
+    pre_event_level: preLevel,
+    premium_expires_at: eventExpiryDate(15),
+    is_approved: true,
+  }
+}
+
+export function eventRevertPatch(preLevel: ServiceLevel): Partial<EditableStaffUser> {
+  return { ...servicePatch(preLevel), pre_event_level: null }
 }
 
 export function servicePatch(level: ServiceLevel): Partial<EditableStaffUser> {
@@ -174,7 +193,7 @@ export function formatDate(value?: string | null) {
   return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\.$/, "")
 }
 
-export default function UserRow({ user, selected, onSelectChange, onDraftChange, onSave, onResetPassword, onDelete, viewerId, isDuplicate = false, compact = false }: UserRowProps) {
+export default function UserRow({ user, selected, onSelectChange, onDraftChange, onSave, onResetPassword, onDelete, onEventRegister, viewerId, isDuplicate = false, compact = false }: UserRowProps) {
   const [draft, setDraft] = useState<EditableStaffUser>(() => ({
     ...user,
     rank: toRank(user),
@@ -187,6 +206,7 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
     branding_access: enabled(user.branding_access),
     service_level: getServiceLevel(user),
     premium_expires_at: user.premium_expires_at || "",
+    pre_event_level: user.pre_event_level ?? null,
   }))
   const [saving, setSaving] = useState(false)
 
@@ -203,6 +223,7 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
       branding_access: enabled(user.branding_access),
       service_level: getServiceLevel(user),
       premium_expires_at: user.premium_expires_at || "",
+      pre_event_level: user.pre_event_level ?? null,
     })
   }, [user])
 
@@ -224,7 +245,50 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
   }
 
   const currentService = getServiceLevel(draft)
+  const isActiveEvent = currentService === "event" && isFutureDate(draft.premium_expires_at)
+  const eventDaysLeft = isActiveEvent && draft.premium_expires_at
+    ? Math.max(0, Math.ceil((new Date(draft.premium_expires_at).getTime() - Date.now()) / 86400000))
+    : 0
+  const canRegisterEvent = ["general", "pro"].includes(currentService)
+  const canRegisterEventOrActive = canRegisterEvent || isActiveEvent
+
+  const eventSection = onEventRegister && canRegisterEventOrActive ? (
+    <div className="mt-2">
+      {isActiveEvent ? (
+        <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+          <span className="text-[11px] font-black text-amber-700">🎁 이벤트 진행 중 ({eventDaysLeft}일 남음)</span>
+          <span className="text-[10px] font-bold text-amber-500">만료 {formatDate(draft.premium_expires_at)}</span>
+          <button
+            type="button"
+            onClick={async () => {
+              const preLevel = (draft.pre_event_level as ServiceLevel) || "general"
+              const patch = eventRevertPatch(preLevel)
+              patchDraft(patch as Partial<EditableStaffUser>)
+              await onEventRegister(draft, preLevel)
+            }}
+            className="ml-auto rounded-lg bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-700 hover:bg-amber-200"
+          >
+            해제
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={async () => {
+            const patch = eventRegisterPatch(currentService)
+            patchDraft(patch as Partial<EditableStaffUser>)
+            await onEventRegister(draft, currentService)
+          }}
+          className="w-full rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-[12px] font-black text-amber-700 hover:bg-amber-100"
+        >
+          🎁 이벤트 15일권 등록 (프리미엄 체험)
+        </button>
+      )}
+    </div>
+  ) : null
+
   const permissionButtons = (
+    <>
     <div className="grid grid-cols-2 gap-1.5 xl:grid-cols-5">
       {serviceLevels.map((level) => {
         const active = currentService === level.id
@@ -244,12 +308,14 @@ export default function UserRow({ user, selected, onSelectChange, onDraftChange,
           </button>
         )
       })}
-      {currentService === "event" && draft.premium_expires_at && (
+      {isActiveEvent && (
         <p className="col-span-2 text-[10px] font-black text-amber-700 xl:col-span-5">
-          만료 {formatDate(draft.premium_expires_at)}
+          🎁 이벤트 {eventDaysLeft}일 남음 · 만료 {formatDate(draft.premium_expires_at)}
         </p>
       )}
     </div>
+    {eventSection}
+    </>
   )
 
   if (compact) {

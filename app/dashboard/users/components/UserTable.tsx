@@ -1,6 +1,6 @@
 "use client"
 
-import UserRow, { type StaffUser } from "./UserRow"
+import UserRow, { type StaffUser, type ServiceLevel } from "./UserRow"
 
 interface UserTableProps {
   users: StaffUser[]
@@ -8,6 +8,7 @@ interface UserTableProps {
   onSelectChange: (id: string, checked: boolean) => void
   onSelectAll: (checked: boolean) => void
   onDraftChange: (user: StaffUser) => void
+  onEventRegister?: (user: StaffUser, preLevel: ServiceLevel) => Promise<void>
   onSave: (user: StaffUser) => Promise<boolean>
   onResetPassword: (user: StaffUser) => void
   onDelete: (user: StaffUser) => void
@@ -21,6 +22,7 @@ export default function UserTable({
   onSelectChange,
   onSelectAll,
   onDraftChange,
+  onEventRegister,
   onSave,
   onResetPassword,
   onDelete,
@@ -48,6 +50,7 @@ export default function UserTable({
             selected={selectedIds.has(user.id)}
             onSelectChange={onSelectChange}
             onDraftChange={onDraftChange}
+            onEventRegister={onEventRegister}
             onSave={onSave}
             onResetPassword={onResetPassword}
             onDelete={onDelete}
@@ -83,7 +86,8 @@ export default function UserTable({
                 selected={selectedIds.has(user.id)}
                 onSelectChange={onSelectChange}
                 onDraftChange={onDraftChange}
-                onSave={onSave}
+                onEventRegister={onEventRegister}
+            onSave={onSave}
                 onResetPassword={onResetPassword}
                 onDelete={onDelete}
                 isDuplicate={duplicateIds.has(user.id)}

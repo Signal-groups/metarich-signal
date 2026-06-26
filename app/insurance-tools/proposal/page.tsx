@@ -34,7 +34,7 @@ import LoadingScreen from "../../components/LoadingScreen"
 import { CATEGORY_SCENARIOS } from "./scenarioData"
 
 type ProposalMode = "single" | "compare" | "cross" | "bundle"
-type CategoryId = "driver" | "health" | "care" | "homecare" | "pet" | "shortlife" | "dental"
+type CategoryId = "driver" | "health" | "care" | "homecare" | "pet" | "shortlife" | "annuity" | "dental"
 type CompareFocus = "balance" | "premium" | "coverage" | "scope" | "refund"
 type MetricKind = "money" | "text" | "percent"
 
@@ -291,6 +291,26 @@ const categories: CategoryTemplate[] = [
     ],
   },
   {
+    id: "annuity",
+    label: "연금보험",
+    desc: "일반연금·변액연금, 납입종료, 연금개시, 환급률과 목적자금 요약",
+    tone: "from-emerald-500 to-cyan-600",
+    icon: Activity,
+    summary: "긴 연금보험 제안서에서 고객이 이해해야 할 납입기간, 연금개시 시점, 환급률, 변액 여부와 유의사항을 상담용으로 요약합니다.",
+    infographic: "timeline",
+    reportTitle: "연금보험 라이프사이클 요약",
+    metrics: [
+      { key: "annuityType", label: "연금 유형", shortLabel: "유형", kind: "text", guide: "일반연금 또는 변액연금" },
+      { key: "currentAge", label: "현재 나이", shortLabel: "현재", unit: "세", kind: "money", guide: "가입 시점 고객 나이" },
+      { key: "annuityStartAge", label: "연금개시 나이", shortLabel: "개시", unit: "세", kind: "money", guide: "연금 수령을 시작하는 나이" },
+      { key: "refundRate", label: "환급률", shortLabel: "환급률", unit: "%", kind: "percent", guide: "총납입보험료 대비 환급률" },
+      { key: "refundAmount", label: "예상 환급금/연금재원", shortLabel: "재원", unit: "만원", kind: "money", guide: "연금개시 시점 예상 적립금 또는 환급금" },
+      { key: "monthlyAnnuity", label: "월 예상 연금", shortLabel: "월연금", unit: "만원", kind: "money", guide: "연금개시 후 월 예상 수령액" },
+      { key: "purpose", label: "가입 목적", shortLabel: "목적", kind: "text", guide: "노후 생활비, 은퇴자금, 비상자금 등" },
+      { key: "riskNotice", label: "변액/운용 유의사항", shortLabel: "유의", kind: "text", guide: "변액은 운용실적에 따라 원금손실 가능, 일반연금도 중도해지 손실 가능" },
+    ],
+  },
+  {
     id: "dental",
     label: "치아보험",
     desc: "충전·크라운·임플란트·브릿지·틀니·신경치료 담보 비교",
@@ -348,6 +368,8 @@ const metricText = (metric: MetricDef, value: string, plan?: PlanData) => {
 const createId = () => Math.random().toString(36).slice(2, 9)
 const shortLifePurposeOptions = ["자녀 학자금", "결혼자금", "노후자금", "의료비통장"]
 const shortLifeDefaultCaution = "중도해지시 납입한 보험료보다 적거나 없을 수 있습니다. 이 상품은 사망보장을 목적으로하는 보장성 상품입니다. 해지환급금을 활용한 단기 저축 목적으로 안내드렸습니다."
+const annuityPurposeOptions = ["노후 생활비", "은퇴자금", "비상자금", "배우자 생활비", "장기 간병 대비"]
+const annuityDefaultCaution = "본 자료는 30여 장 내외의 보험회사 제안서를 상담용으로 요약한 안내 자료입니다. 최종 보험료, 연금액, 환급률, 수수료, 해지환급금, 보증 여부는 실제 상품설명서와 약관을 기준으로 확인해야 합니다. 변액연금은 운용실적에 따라 원금손실이 발생할 수 있습니다."
 const chunkMetrics = (metrics: MetricDef[], size: number) => {
   const chunks: MetricDef[][] = []
   for (let i = 0; i < metrics.length; i += size) chunks.push(metrics.slice(i, i + size))
@@ -386,13 +408,20 @@ function emptyPlan(template: CategoryTemplate, index = 0): PlanData {
     metrics.injury = "30"
     metrics.liability = "10000"
   }
+  if (template.id === "annuity") {
+    metrics.annuityType = "일반연금"
+    metrics.currentAge = "40"
+    metrics.annuityStartAge = "65"
+    metrics.purpose = "노후 생활비"
+    metrics.riskNotice = "중도해지 시 납입보험료보다 적을 수 있으며, 변액연금은 운용실적에 따라 원금손실이 발생할 수 있습니다."
+  }
   return {
     id: createId(),
     company: "",
     productName: "",
     monthlyPremium: "",
-    paymentYears: template.id === "shortlife" ? "5" : "",
-    coverageYears: template.id === "shortlife" ? "종신" : "",
+    paymentYears: template.id === "shortlife" ? "5" : template.id === "annuity" ? "10" : "",
+    coverageYears: template.id === "shortlife" ? "종신" : template.id === "annuity" ? "65세 연금개시" : "",
     isDollar: false,
     exchangeRate: "",
     fileName: "",
@@ -555,6 +584,34 @@ function shortLifeDerived(plan: PlanData) {
     savingAfterTaxAnnualRate,
     gap: refund - savingFuture,
     refundRate: rate || (totalPaid ? (refund / totalPaid) * 100 : 0),
+  }
+}
+
+function annuityDerived(plan: PlanData) {
+  const monthly = num(plan.monthlyPremium)
+  const years = num(plan.paymentYears) || 10
+  const currentAge = num(plan.metrics.currentAge) || 40
+  const paymentEndAge = currentAge + years
+  const annuityStartAge = num(plan.metrics.annuityStartAge) || Math.max(60, paymentEndAge)
+  const totalPaid = monthly * 12 * years
+  const rate = num(plan.metrics.refundRate)
+  const explicitRefund = num(plan.metrics.refundAmount) * 10000
+  const refund = rate ? totalPaid * rate / 100 : explicitRefund
+  const monthlyAnnuity = num(plan.metrics.monthlyAnnuity) * 10000
+  const gapYears = Math.max(0, annuityStartAge - paymentEndAge)
+  return {
+    monthly,
+    years,
+    currentAge,
+    paymentEndAge,
+    annuityStartAge,
+    totalPaid,
+    rate: rate || (totalPaid ? refund / totalPaid * 100 : 0),
+    refund,
+    monthlyAnnuity,
+    gapYears,
+    annuityType: plan.metrics.annuityType || "일반연금",
+    purpose: plan.metrics.purpose || "노후 생활비",
   }
 }
 
@@ -738,6 +795,8 @@ function PlanEditor({
   })
   const visibleMetrics = template.id === "shortlife"
     ? template.metrics.filter((metric) => metric.key !== "purpose")
+    : template.id === "annuity"
+      ? template.metrics.filter((metric) => metric.key !== "purpose" && metric.key !== "annuityType")
     : template.metrics
   const metricGroups = visibleMetrics.reduce<Array<{ title: string; metrics: MetricDef[] }>>((acc, metric) => {
     const title = metric.group || "기본 담보"
@@ -797,6 +856,29 @@ function PlanEditor({
               <Input label="" value={plan.exchangeRate || ""} onChange={(value) => onChange({ ...plan, exchangeRate: value })} placeholder="예: 1400" suffix="원/$" numeric />
             </div>
           )}
+        </div>
+      )}
+
+      {template.id === "annuity" && (
+        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-sm font-black text-emerald-900">연금 유형</span>
+            <div className="flex overflow-hidden rounded-xl border border-emerald-300">
+              {["일반연금", "변액연금"].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setMetric("annuityType", type)}
+                  className={`px-4 py-1.5 text-sm font-black transition-colors ${(plan.metrics.annuityType || "일반연금") === type ? "bg-emerald-600 text-white" : "bg-white text-emerald-700 hover:bg-emerald-50"}`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs font-bold text-emerald-800">
+              현재 {num(plan.metrics.currentAge)}세 기준 · 납입종료 {num(plan.metrics.currentAge) + num(plan.paymentYears)}세 · 연금개시 {num(plan.metrics.annuityStartAge)}세
+            </span>
+          </div>
         </div>
       )}
 
@@ -870,6 +952,12 @@ function PlanEditor({
         )}
         {template.id === "shortlife" && (
           <ShortLifePurposeSelector
+            value={plan.metrics.purpose || ""}
+            onChange={(value) => setMetric("purpose", value)}
+          />
+        )}
+        {template.id === "annuity" && (
+          <AnnuityPurposeSelector
             value={plan.metrics.purpose || ""}
             onChange={(value) => setMetric("purpose", value)}
           />
@@ -1007,6 +1095,49 @@ function ShortLifePurposeSelector({ value, onChange }: { value: string; onChange
 }
 
 // 숫자 포맷: 입력값 → 쉼표 구분자 표시
+function AnnuityPurposeSelector({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const selected = value.split(",").map((item) => item.trim()).filter(Boolean)
+  const manual = selected.filter((item) => !annuityPurposeOptions.includes(item)).join(", ")
+  const toggle = (option: string) => {
+    const next = selected.includes(option)
+      ? selected.filter((item) => item !== option)
+      : [...selected, option]
+    onChange(next.join(", "))
+  }
+  const setManual = (manualValue: string) => {
+    const fixed = selected.filter((item) => annuityPurposeOptions.includes(item))
+    const custom = manualValue.split(",").map((item) => item.trim()).filter(Boolean)
+    onChange([...fixed, ...custom].join(", "))
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+      <p className="text-[11px] font-black text-emerald-700">연금 가입 목적</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {annuityPurposeOptions.map((option) => {
+          const active = selected.includes(option)
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => toggle(option)}
+              className={`rounded-full border px-3 py-2 text-xs font-black transition ${active ? "border-emerald-700 bg-emerald-700 text-white" : "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300"}`}
+            >
+              {option}
+            </button>
+          )
+        })}
+      </div>
+      <Input
+        label="수동 입력"
+        value={manual}
+        onChange={setManual}
+        placeholder="예: 개인연금 보완, 퇴직 후 현금흐름 확보"
+      />
+    </div>
+  )
+}
+
 function formatNumber(raw: string): string {
   const digits = raw.replace(/[^0-9]/g, "")
   if (!digits) return ""
@@ -1260,6 +1391,8 @@ function ProposalReport({
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             {template.id === "shortlife" ? (
               <ShortLifeGraphic plans={visiblePlans} />
+            ) : template.id === "annuity" ? (
+              <AnnuityGraphic plans={visiblePlans} />
             ) : (
               <CategoryGraphic template={template} plans={visiblePlans} />
             )}
@@ -1659,6 +1792,85 @@ function ShortLifeGraphic({ plans }: { plans: PlanData[] }) {
   )
 }
 
+function AnnuityGraphic({ plans }: { plans: PlanData[] }) {
+  const first = plans[0]
+  const derived = first ? annuityDerived(first) : null
+  if (!first || !derived) return null
+  const maxAge = Math.max(derived.annuityStartAge + 5, derived.paymentEndAge + 5, derived.currentAge + 20)
+  const span = Math.max(1, maxAge - derived.currentAge)
+  const paidEndPct = Math.min(96, Math.max(12, ((derived.paymentEndAge - derived.currentAge) / span) * 100))
+  const startPct = Math.min(98, Math.max(paidEndPct + 8, ((derived.annuityStartAge - derived.currentAge) / span) * 100))
+  const isVariable = derived.annuityType.includes("변액")
+  const gain = derived.refund - derived.totalPaid
+
+  return (
+    <div>
+      <h2 className="text-lg font-black text-slate-950">연금보험 라이프사이클</h2>
+      <p className="mt-1 text-xs font-bold text-slate-400">가입, 납입종료, 연금개시 시점을 한 장으로 설명합니다.</p>
+
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3">
+          <p className="text-[10px] font-black text-slate-500">연금 유형</p>
+          <p className="mt-1 text-base font-black text-slate-900">{derived.annuityType}</p>
+          <p className="text-[10px] font-black text-slate-400">{isVariable ? "운용실적 반영" : "공시/확정 구조 확인"}</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+          <p className="text-[10px] font-black text-emerald-700">총 납입예정</p>
+          <p className="mt-1 text-base font-black text-emerald-800">{wonMan(derived.totalPaid)}</p>
+          <p className="text-[10px] font-black text-emerald-600">{derived.years}년납</p>
+        </div>
+        <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-3">
+          <p className="text-[10px] font-black text-cyan-700">환급률</p>
+          <p className="mt-1 text-base font-black text-cyan-800">{derived.rate.toFixed(1)}%</p>
+          <p className="text-[10px] font-black text-cyan-600">{derived.refund ? wonMan(derived.refund) : "금액 입력 필요"}</p>
+        </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+          <p className="text-[10px] font-black text-amber-700">월 예상 연금</p>
+          <p className="mt-1 text-base font-black text-amber-800">{derived.monthlyAnnuity ? wonMan(derived.monthlyAnnuity) : "-"}</p>
+          <p className="text-[10px] font-black text-amber-600">연금개시 후</p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="relative h-24">
+          <div className="absolute left-0 right-0 top-10 h-2 rounded-full bg-slate-200" />
+          <div className="absolute left-0 top-10 h-2 rounded-full bg-emerald-500" style={{ width: `${paidEndPct}%` }} />
+          <div className="absolute top-7 h-8 w-8 -translate-x-1/2 rounded-full border-4 border-white bg-[#102a4c] shadow" style={{ left: "0%" }} />
+          <div className="absolute top-7 h-8 w-8 -translate-x-1/2 rounded-full border-4 border-white bg-emerald-500 shadow" style={{ left: `${paidEndPct}%` }} />
+          <div className="absolute top-7 h-8 w-8 -translate-x-1/2 rounded-full border-4 border-white bg-amber-500 shadow" style={{ left: `${startPct}%` }} />
+
+          <div className="absolute top-0 -translate-x-0 text-left" style={{ left: "0%" }}>
+            <p className="text-[10px] font-black text-slate-500">가입</p>
+            <p className="text-sm font-black text-slate-900">{derived.currentAge}세</p>
+          </div>
+          <div className="absolute top-0 -translate-x-1/2 text-center" style={{ left: `${paidEndPct}%` }}>
+            <p className="text-[10px] font-black text-emerald-700">납입종료</p>
+            <p className="text-sm font-black text-emerald-900">{derived.paymentEndAge}세</p>
+          </div>
+          <div className="absolute top-0 -translate-x-1/2 text-center" style={{ left: `${startPct}%` }}>
+            <p className="text-[10px] font-black text-amber-700">연금개시</p>
+            <p className="text-sm font-black text-amber-900">{derived.annuityStartAge}세</p>
+          </div>
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-2 text-xs font-bold">
+          <div className="rounded-xl bg-white p-3 text-slate-600">월 납입: {formatPremium(first)}</div>
+          <div className="rounded-xl bg-white p-3 text-slate-600">거치기간: {derived.gapYears}년</div>
+          <div className={`rounded-xl bg-white p-3 ${gain >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+            납입 대비: {gain >= 0 ? "+" : "-"}{wonMan(Math.abs(gain))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-rose-100 bg-rose-50 p-4">
+        <p className="text-sm font-black text-rose-900">유의사항</p>
+        <p className="mt-2 text-xs font-bold leading-6 text-rose-800">
+          {first.metrics.riskNotice || annuityDefaultCaution}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function ComparisonTable({
   template,
   plans,
@@ -1900,7 +2112,7 @@ function CrossCoveragePage({
 }
 
 function PlanMemo({ plan, index, template }: { plan: PlanData; index: number; template: CategoryTemplate }) {
-  const caution = plan.cautions || (template.id === "shortlife" ? shortLifeDefaultCaution : "갱신 여부, 지급 조건, 보장범위 차이를 확인하세요.")
+  const caution = plan.cautions || (template.id === "shortlife" ? shortLifeDefaultCaution : template.id === "annuity" ? annuityDefaultCaution : "갱신 여부, 지급 조건, 보장범위 차이를 확인하세요.")
   return (
     <div className="rounded-2xl bg-white p-3">
       <p className="text-sm font-black text-slate-950">{plan.company || `${String.fromCharCode(65 + index)}안`}</p>
@@ -2456,6 +2668,13 @@ function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, pla
     return {
       title: `총납입 ${wonMan(d.totalPaid)}, 예상 환급률 ${d.refundRate.toFixed(1)}%`,
       body: `월 ${formatKrw(d.monthly)}씩 ${d.years}년 납입하는 구조입니다. ${d.horizonYears}년 후 환급금은 약 ${wonMan(d.refund)}으로 계산되며, 월 적금 3%는 월적립식 체감금리와 이자소득세 15.4%를 반영해 비교합니다.`,
+    }
+  }
+  if (template.id === "annuity" && plans[0]) {
+    const d = annuityDerived(plans[0])
+    return {
+      title: `${d.currentAge}세 가입, ${d.paymentEndAge}세 납입종료, ${d.annuityStartAge}세 연금개시`,
+      body: `${d.annuityType} 기준으로 총 납입예정액은 약 ${wonMan(d.totalPaid)}입니다. 입력된 환급률은 ${d.rate.toFixed(1)}%, 연금개시 시점 예상 재원은 약 ${wonMan(d.refund)}이며, 목적은 ${d.purpose}로 요약됩니다. 변액 여부와 중도해지 손실 가능성은 반드시 별도 설명합니다.`,
     }
   }
   if (mode === "single") {

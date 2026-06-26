@@ -6,10 +6,11 @@ import { normalizeRole } from "@/lib/roles"
 import { supabase } from "@/lib/supabase"
 import BulkActions from "./components/BulkActions"
 import ResetPasswordModal from "./components/ResetPasswordModal"
+import TierFeatureMatrix, { type TierConfig } from "./components/TierFeatureMatrix"
 import UserFilters from "./components/UserFilters"
 import UserTable from "./components/UserTable"
 import UsageAnalytics from "./components/UsageAnalytics"
-import { enabled, getCompanyName, getCompanyType, getHeadquarter, getRank, getServiceLevel, servicePatch, type ServiceLevel, type StaffUser } from "./components/UserRow"
+import { enabled, eventRegisterPatch, eventRevertPatch, getCompanyName, getCompanyType, getHeadquarter, getRank, getServiceLevel, servicePatch, type ServiceLevel, type StaffUser } from "./components/UserRow"
 
 type CompanyTypeFilter = "all" | "metarich" | "external"
 type ApprovedFilter = "all" | "true" | "false"
@@ -126,16 +127,26 @@ export default function StaffManagementPage() {
 
     const data = json.users || []
 
-    const normalizedUsers = ((data || []) as StaffUser[]).map((user) => (
-      isExpiredPremiumEvent(user) ? { ...user, ...servicePatch("general") } : user
-    ))
+    const normalizedUsers = ((data || []) as StaffUser[]).map((user) => {
+      if (!isExpiredPremiumEvent(user)) return user
+      const preLevel = (user.pre_event_level as ServiceLevel) || "general"
+      return { ...user, ...eventRevertPatch(preLevel) }
+    })
 
     const expiredIds = normalizedUsers
       .filter((user, index) => isExpiredPremiumEvent(((data || []) as StaffUser[])[index]))
       .map((user) => user.id)
 
     if (expiredIds.length > 0) {
-      await supabase.from("users").update(servicePatch("general")).in("id", expiredIds)
+      // 각 유저별 pre_event_level로 개별 revert
+      await Promise.all(
+        (data as StaffUser[])
+          .filter((u) => isExpiredPremiumEvent(u))
+          .map((u) => {
+            const preLevel = (u.pre_event_level as ServiceLevel) || "general"
+            return supabase.from("users").update(eventRevertPatch(preLevel)).eq("id", u.id)
+          })
+      )
     }
 
     setUsers(normalizedUsers.map((user) => ({
@@ -273,6 +284,15 @@ export default function StaffManagementPage() {
     })
   }
 
+
+  const registerEvent = async (user: StaffUser, preLevel: ServiceLevel) => {
+    const patch = eventRegisterPatch(preLevel)
+    const { error } = await supabase.from("users").update(patch).eq("id", user.id)
+    if (error) { alert("이벤트 등록 실패: " + error.message); return }
+    setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, ...patch } : u))
+    alert((user.name || user.email || "직원") + " 이벤트 15일권이 등록되었습니다.")
+  }
+
   const saveUser = async (user: StaffUser, silent = false) => {
     const isApproved = enabled(user.is_approved)
     const nextRank = String(user.rank || "agent")
@@ -286,7 +306,8 @@ export default function StaffManagementPage() {
 
     const isGuest = nextRank === "guest"
     const serviceLevel = getServiceLevel(user)
-    const servicePayload = servicePatch(serviceLevel)
+    const isActiveEvent = serviceLevel === "event"
+    const servicePayload = isActiveEvent ? {} as ReturnType<typeof servicePatch> : servicePatch(serviceLevel)
     const payload = {
       is_approved: isApproved, role: nextRank, role_level: roleLevelFor(nextRank), rank: nextRank,
       company_type: company,
@@ -296,11 +317,13 @@ export default function StaffManagementPage() {
       department: company === "external" ? companyName : user.department || "",
       department_name: company === "external" ? companyName : user.department_name || user.department || "",
       team: user.team || "", branch_name: user.branch_name || user.team || "",
-      ...servicePayload,
-      crm_access: (!isApproved || isGuest) ? false : enabled(servicePayload.crm_access),
-      office_access: (!isApproved || isGuest) ? false : enabled(servicePayload.office_access),
-      claim_access: (!isApproved || isGuest) ? false : enabled(servicePayload.claim_access),
-      branding_access: (!isApproved || isGuest) ? false : enabled(servicePayload.branding_access),
+      ...(isActiveEvent ? { service_level: "event", premium_expires_at: user.premium_expires_at, pre_event_level: user.pre_event_level } : {
+        ...servicePayload,
+        crm_access: (!isApproved || isGuest) ? false : enabled(servicePayload.crm_access),
+        office_access: (!isApproved || isGuest) ? false : enabled(servicePayload.office_access),
+        claim_access: (!isApproved || isGuest) ? false : enabled(servicePayload.claim_access),
+        branding_access: (!isApproved || isGuest) ? false : enabled(servicePayload.branding_access),
+      }),
     }
 
     const { error } = await supabase.from("users").update(payload).eq("id", user.id)
@@ -375,11 +398,36 @@ export default function StaffManagementPage() {
     alert(`${targetUsers.length}명에게 '${preset.title}' 기준을 적용했습니다.`)
   }
 
+  const applyTierUsers = async (tier: "general" | "pro" | "premium", _config: TierConfig) => {
+    const targetUsers = users.filter((user) => getServiceLevel(user) === tier)
+    if (targetUsers.length === 0) {
+      alert("해당 등급의 회원이 없습니다.")
+      return
+    }
+
+    const labelMap = { general: "일반", pro: "프로", premium: "프리미엄" } as const
+    if (!confirm(`${labelMap[tier]} 등급 회원 ${targetUsers.length}명에게 현재 등급 기준을 다시 적용할까요?`)) return
+
+    const payload = servicePatch(tier)
+    const ids = targetUsers.map((user) => user.id)
+    const { error } = await supabase.from("users").update(payload).in("id", ids)
+    if (error) {
+      alert("등급 일괄 적용 실패: " + error.message)
+      return
+    }
+
+    const idSet = new Set(ids)
+    setUsers((prev) => prev.map((user) => idSet.has(user.id) ? { ...user, ...payload } : user))
+    alert(`${targetUsers.length}명에게 ${labelMap[tier]} 등급 기준을 적용했습니다.`)
+  }
+
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-[#eef3fb]">
       <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#1a3a6e]/20 border-t-[#1a3a6e]" />
     </div>
   )
+
+  const isMaster = normalizeRole(viewer) === "master"
 
   return (
     <div className="min-h-screen bg-[#eef3fb] text-slate-900">
@@ -424,7 +472,7 @@ export default function StaffManagementPage() {
         <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto no-scrollbar">
           {([
             { id: "users" as const, label: "회원 목록", icon: "👥" },
-            { id: "roles" as const, label: "서비스 등급 안내", icon: "🔐" },
+            { id: "roles" as const, label: "모든 기능 설정", icon: "☑️" },
             { id: "analytics" as const, label: "사용 현황", icon: "📊" },
           ]).map((tab) => (
             <button
@@ -475,6 +523,7 @@ export default function StaffManagementPage() {
               onSelectChange={onSelectChange}
               onSelectAll={onSelectAll}
               onDraftChange={(user) => setUsers((prev) => prev.map((u) => u.id === user.id ? user : u))}
+              onEventRegister={registerEvent}
               onSave={saveUser}
               onResetPassword={setResetUser}
               onDelete={deleteUser}
@@ -493,6 +542,13 @@ export default function StaffManagementPage() {
 
         {/* ── 탭 2: 등급별 메뉴 설정 ────────────────────────── */}
         {activeTab === "roles" && (
+          <TierFeatureMatrix
+            isMaster={isMaster}
+            users={users}
+            onApplyTier={applyTierUsers}
+          />
+        )}
+        {false && activeTab === "roles" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="mb-1 text-lg font-black text-slate-900">서비스 등급 안내</h2>
             <p className="mb-6 text-[13px] font-bold text-slate-500">조직 직급은 건드리지 않고, 서비스 이용 등급만 기준에 맞춰 일괄 적용합니다.</p>

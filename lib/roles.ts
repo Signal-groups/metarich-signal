@@ -98,6 +98,13 @@ function enabled(value: any): boolean {
   return value === true || value === "true" || value === 1 || value === "1"
 }
 
+function hasActivePremiumEvent(user: any): boolean {
+  if (String(user?.service_level || "") !== "event") return false;
+  if (!user?.premium_expires_at) return false;
+  const time = new Date(user.premium_expires_at).getTime();
+  return Number.isFinite(time) && time > Date.now();
+}
+
 function hasExpiredPremiumEvent(user: any): boolean {
   if (String(user?.service_level || "") !== "event") return false;
   if (!user?.premium_expires_at) return false;
@@ -132,6 +139,7 @@ export function canAccessCrm(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
   if (normalizeRole(user) === "guest") return false;
   if (hasExpiredPremiumEvent(user)) return false;
+  if (hasActivePremiumEvent(user)) return isApprovedUser(user);
   return isApprovedUser(user) && enabled(user?.crm_access);
 }
 
@@ -140,6 +148,7 @@ export function canAccessOffice(user: any): boolean {
   if (normalizeRole(user) === "master") return true;
   if (normalizeRole(user) === "guest") return false;
   if (hasExpiredPremiumEvent(user)) return false;
+  if (hasActivePremiumEvent(user)) return isApprovedUser(user);
   return isApprovedUser(user) && enabled(user?.office_access);
 }
 

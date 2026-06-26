@@ -870,9 +870,7 @@ function NavItem({ icon, label, active, onClick, variant, badge, iconNode, arrow
             badge === "PREMIUM"
               ? "bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] text-white shadow-sm"
               : "bg-white/20 text-white"
-          }`}>
-            {badge}
-          </span>
+          }`}>{badge}</span>
         )}
         {arrow && <span className="text-[10px] opacity-50">→</span>}
       </span>
