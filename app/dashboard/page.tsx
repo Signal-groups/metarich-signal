@@ -433,23 +433,26 @@ export default function DashboardPage() {
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
 
   const renderConsultingView = () => {
-    // 마스터 일반 보기: 미승인 사용자 기준으로 도구 재계산
+    // 마스터 일반 보기: 일반 승인 직원(office 권한 없음) 기준으로 도구 재계산
     const previewTools = (isMaster && masterPreviewMode === 'general')
-      ? CONSULTING_TOOLS.filter(m => m.placement !== 'office' && m.access === 'public' && m.guestVisible === true)
+      ? CONSULTING_TOOLS.filter(m => m.placement !== 'office' && m.access !== 'office' && (m.fixed || menuStatus[m.id] !== false))
       : visibleConsultingTools
 
     const faceTools = previewTools.filter(t => t.category === 'face')
 
-    // 카테고리별 섹션: 전체 도구를 보여주되 접근 불가면 PRO 배지
+    // 카테고리별 섹션: 전체 도구를 보여주되 office 전용만 PRO 배지
     const categorySections = CONSULTING_TOOL_CATEGORIES
       .map(cat => {
         const allCatTools = CONSULTING_TOOLS.filter(t => t.category === cat.id && t.placement !== 'office')
         return {
           ...cat,
-          tools: allCatTools.map(t => ({
-            ...t,
-            locked: !previewTools.some(v => v.id === t.id),
-          })),
+          tools: allCatTools.map(t => {
+            // office 접근 필요 도구만 PRO 잠금, 나머지(public/guest_approved/approved)는 권한에 따라 표시
+            const locked = (isMaster && masterPreviewMode === 'general')
+              ? t.access === 'office'
+              : !previewTools.some(v => v.id === t.id)
+            return { ...t, locked }
+          }),
         }
       })
       .filter(cat => cat.tools.length > 0)
@@ -657,9 +660,14 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <section className="mb-4 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-3">
-          {categorySections.filter(c => c.id !== 'face').map((cat, index) => (
-            <div key={cat.id} className={`p-5 ${index > 0 ? "border-t border-[#e8eef5] md:border-l md:border-t-0" : ""} ${index >= 2 ? "xl:border-t xl:border-[#e8eef5]" : ""}`}
+        <section className="mb-4 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-4">
+          {categorySections.filter(c => c.id !== 'face' && c.id !== 'customer').map((cat, index) => (
+            <div key={cat.id} className={`p-5 border-[#e8eef5]
+              ${index > 0 ? 'border-t' : ''}
+              ${index % 2 === 1 ? 'md:border-l' : ''}
+              ${index >= 2 ? 'md:border-t' : 'md:border-t-0'}
+              ${index > 0 ? 'xl:border-l xl:border-t-0' : ''}
+            `}
               style={{ background: index % 2 === 0 ? '#fff' : '#fafbfd' }}>
               <div className="mb-3 flex items-center gap-2">
                 <h2 className="text-[15px] font-black text-[#10203a]">{cat.title}</h2>
@@ -818,9 +826,9 @@ export default function DashboardPage() {
           ) : viewMode === 'office' ? (
             isGuest || !isApproved ? (
               <div className="flex flex-col items-center justify-center py-28 gap-4 text-center">
-                <div className="text-5xl">{isGuest ? 'íì¬ ê²ì¤í¸ ê³ì ' : 'â³'}</div>
+                <div className="text-5xl">{isGuest ? '타사 게스트 계정' : '⏳'}</div>
                 <p className="text-xl font-black text-slate-700">
-                  {isGuest ? 'íì¬ ê²ì¤í¸ ê³ì ì ì¬ë¬´ì¤ ìë¬´ë¥¼ ì´ì©í  ì ììµëë¤' : 'ê´ë¦¬ì ì¹ì¸ í ì´ì© ê°ë¥í©ëë¤'}
+                  {isGuest ? '타사 게스트 계정은 사무실 업무를 이용할 수 없습니다' : '관리자 승인 후 이용 가능합니다'}
                 </p>
               </div>
             ) : (
