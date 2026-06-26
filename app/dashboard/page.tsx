@@ -785,7 +785,7 @@ export default function DashboardPage() {
                     transition: 'all 0.15s',
                   }}
                 >
-                  {mode === 'pro' ? '프로 보기' : 'ì¼ë° ë³´ê¸°'}
+                  {mode === 'pro' ? '프로 보기' : '일반 보기'}
                 </button>
               ))}
             </div>
@@ -835,14 +835,14 @@ export default function DashboardPage() {
             <div style={{ background:'white',borderRadius:14,maxWidth:520,width:'calc(100% - 32px)',padding:'24px 24px 20px',boxShadow:'0 8px 40px rgba(0,0,0,0.18)',position:'relative',maxHeight:'70vh',overflowY:'auto' }}
               onClick={e => e.stopPropagation()}>
               <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16 }}>
-                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>ê³µì§ì¬í­</h2>
+                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>공지사항</h2>
                 <div style={{ display:'flex',gap:8,alignItems:'center' }}>
-                  {isMaster && <button onClick={() => { addAnnouncement('notice'); setShowNoticeModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#1b54ad',background:'#eef4fb',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ ì¶ê°</button>}
-                  <button onClick={() => setShowNoticeModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>Ã</button>
+                  {isMaster && <button onClick={() => { addAnnouncement('notice'); setShowNoticeModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#1b54ad',background:'#eef4fb',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ 추가</button>}
+                  <button onClick={() => setShowNoticeModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>×</button>
                 </div>
               </div>
               {announcements.filter(a => a.category === 'notice').length === 0
-                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>ê³µì§ì¬í­ì´ ììµëë¤.</p>
+                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>공지사항이 없습니다.</p>
                 : announcements.filter(a => a.category === 'notice').map(ann => (
                   <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowNoticeModal(false); }}
                     style={{ display:'block',width:'100%',textAlign:'left',padding:'12px 0',borderBottom:'1px solid #eef3f8',background:'none',border:'none',cursor:'pointer' }}>
@@ -859,14 +859,14 @@ export default function DashboardPage() {
             <div style={{ background:'white',borderRadius:14,maxWidth:520,width:'calc(100% - 32px)',padding:'24px 24px 20px',boxShadow:'0 8px 40px rgba(0,0,0,0.18)',position:'relative',maxHeight:'70vh',overflowY:'auto' }}
               onClick={e => e.stopPropagation()}>
               <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16 }}>
-                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>ìë°ì´í¸ ìì</h2>
+                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>업데이트 소식</h2>
                 <div style={{ display:'flex',gap:8,alignItems:'center' }}>
-                  {isMaster && <button onClick={() => { addAnnouncement('update'); setShowUpdateModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#0f6e56',background:'#e1f5ee',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ ì¶ê°</button>}
-                  <button onClick={() => setShowUpdateModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>Ã</button>
+                  {isMaster && <button onClick={() => { addAnnouncement('update'); setShowUpdateModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#0f6e56',background:'#e1f5ee',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ 추가</button>}
+                  <button onClick={() => setShowUpdateModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>×</button>
                 </div>
               </div>
               {announcements.filter(a => a.category === 'update').length === 0
-                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>ìë°ì´í¸ ììì´ ììµëë¤.</p>
+                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>업데이트 소식이 없습니다.</p>
                 : announcements.filter(a => a.category === 'update').map(ann => (
                   <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowUpdateModal(false); }}
                     style={{ display:'block',width:'100%',textAlign:'left',padding:'12px 0',borderBottom:'1px solid #eef3f8',background:'none',border:'none',cursor:'pointer' }}>

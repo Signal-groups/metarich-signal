@@ -152,6 +152,46 @@ function readDraft() {
 }
 
 // ── 금액 파싱 헬퍼 (만원 단위로 정규화) ─────────────────────────────────
+// ── 유틸 헬퍼 ─────────────────────────────────────────────────────────────
+function formatWon(won: number): string {
+  if (!won || won === 0) return '0원'
+  if (won >= 10000) return `${(won / 10000).toFixed(won % 10000 === 0 ? 0 : 1)}만원`
+  return `${won.toLocaleString('ko-KR')}원`
+}
+
+const STEP_TITLES: Record<number, string> = {
+  1: 'STEP 1 — 고객 선택',
+  2: 'STEP 2 — 기본 정보',
+  3: 'STEP 3 — 현재 보험',
+  4: 'STEP 4 — 보장 확인',
+  5: 'STEP 5 — 분석 결과',
+  6: 'STEP 6 — 리모델링',
+  7: 'STEP 7 — 출력',
+}
+function titleByStep(step: number): string {
+  return STEP_TITLES[step] ?? 'COVERAGE ANALYSIS PRO'
+}
+
+function getStepState(
+  step: number,
+  customer: ProCustomer | null,
+  contracts: ProContract[],
+): 'pending' | 'done' | 'warning' {
+  if (step === 1) return customer ? 'done' : 'pending'
+  if (step === 2) return customer ? 'done' : 'pending'
+  if (step === 3) return contracts.length > 0 ? 'done' : 'pending'
+  return 'pending'
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={{ fontSize: 11, fontWeight: 700, color: '#6b7280' }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 800, color: '#10203a' }}>{value || '—'}</span>
+    </div>
+  )
+}
+
 // GPTs 출력이 "1억", "3억5000만", 30000(만원 숫자), "30000만원" 등 혼재할 수 있음
 function parseAmountToMan(val: unknown): number {
   if (val === null || val === undefined) return 0
@@ -538,7 +578,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
     const next = Math.min(7, currentStep + 1) as StepNumber
     setStepStatus((prev) => ({
       ...prev,
-      [currentStep]: getStepState(currentStep, customer, contracts),
+      [currentStep]: getStepState(currentStep, customer ?? null, contracts),
       [next]: prev[next] || 'pending',
     }))
     moveStep(next)
@@ -1027,129 +1067,36 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
           {/* ══════════════ STEP 4 — 보장 확인 ═══════════════════════ */}
           {currentStep === 4 && <CoverageGrid contracts={contracts} onUpdate={setContracts} />}
 
-          {/* ══════════════ STEP 5 — 분석 결과 ═══════════════════════ */}
-          {currentStep === 5 && <AnalysisChart contracts={contracts} />}
+          {/* ══════════════ STEP 5 — 분석 결과 ═══════════════════════ */}          {currentStep === 5 && <AnalysisChart contracts={contracts} />}
 
           {/* ══════════════ STEP 6 — 리모델링 ════════════════════════ */}
           {currentStep === 6 && (
             <RemodelComparison contracts={contracts} proposal={proposal} onChange={setProposal} />
           )}
 
-          {/* ══════════════ STEP 7 — 출력 · 다운로드 ════════════════ */}
+          {/* ══════════════ STEP 7 — 출력 · 다운로드 ════════════════════ */}
           {currentStep === 7 && (
-            <div style={{ display: 'grid', gap: 14 }}>
-              {/* 기준금액 대비 현황 */}
-              <BenchmarkSummary
-                contracts={contracts}
-                onOpenSettings={() => setShowBenchmark(true)}
-              />
-
-              {/* 출력 형식 선택 */}
-              <div className="coverage-pro-card coverage-pro-card-pad">
-                <div className="coverage-pro-section-title">출력 형식 선택</div>
-                <div className="coverage-pro-grid-3">
-                  {([
-                    ['excel',    '엑셀 1장',      '보장분석시트.xlsx — 모든 담보 포함'],
-                    ['full_pdf', '전체 보장 리포트', '그래프·비율·회사별 비교 포함'],
-                    ['key_pdf',  '주요보장 리포트',  '핵심 진단비·실손·운전자 중심'],
-                  ] as const).map(([type, title, desc]) => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`coverage-pro-btn${outputConfig.outputType === type ? ' primary' : ''}`}
-                      onClick={() => setOutputConfig((prev) => ({ ...prev, outputType: type }))}
-                      style={{ minHeight: 90, textAlign: 'left' }}
-                    >
-                      <b>{title}</b>
-                      <span style={{ display: 'block', marginTop: 6, fontSize: 12, opacity: 0.72 }}>{desc}</span>
-                    </button>
-                  ))}
+            <div style={{ display: 'grid', gap: 24 }}>
+              <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e0e7ef', padding: '28px 32px', boxShadow: '0 2px 12px rgba(16,32,58,0.05)' }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#10203a', marginBottom: 20 }}>
+                  출력 · 다운로드
                 </div>
-              </div>
-
-              {/* 포함 옵션 */}
-              <div className="coverage-pro-card coverage-pro-card-pad">
-                <div className="coverage-pro-section-title">포함 옵션</div>
-                <div style={{ display: 'flex', gap: 20 }}>
-                  {[
-                    ['includeGraph',   '보장 그래프 포함'],
-                    ['includeRemodel', '리모델링 제안 포함'],
-                  ].map(([key, label]) => (
-                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
-                      <input
-                        type="checkbox"
-                        checked={outputConfig[key as keyof OutputConfig] as boolean}
-                        onChange={(e) => setOutputConfig((prev) => ({ ...prev, [key]: e.target.checked }))}
-                        style={{ accentColor: '#1a2744' }}
-                      />
-                      {label}
-                    </label>
-                  ))}
-                  </div>
-              </div>
-
-              {/* 요약 + 다운로드 */}
-              <div className="coverage-pro-card coverage-pro-card-pad">
-                <div className="coverage-pro-section-title">최종 확인 · 다운로드</div>
-                <div className="coverage-pro-grid-2" style={{ marginBottom: 16 }}>
-                  <Info label="고객명"     value={customer?.name || '미지정'} />
-                  <Info label="계약 수"    value={`${contracts.length}건`} />
-                  <Info label="월 보험료"  value={formatWon(stats.premium)} />
-                  <Info label="출력 형식"  value={
-                    outputConfig.outputType === 'excel' ? '엑셀 1장'
-                    : outputConfig.outputType === 'full_pdf' ? '전체 보장 리포트'
-                    : '주요보장 리포트'
-                  } />
-                </div>
-                <div className="coverage-pro-muted" style={{ marginBottom: 12 }}>
-                  엑셀은 보장분석시트.xlsx 템플릿에 데이터를 주입해 다운로드합니다.<br />
-                  PDF는 인쇄용 프리뷰 새 탭으로 열립니다. (인쇄/PDF저장 버튼 포함)
-                </div>
-                <div className="coverage-pro-actions" style={{ justifyContent: 'flex-start' }}>
-                  <ExcelDownloadBtn customerName={customer?.name || '고객'} contracts={contracts} />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
+                  <ExcelDownloadBtn
+                    customerName={customer?.name || ''}
+                    contracts={contracts}
+                  />
                   <PdfExportBtn
-                    customerName={customer?.name || '고객'}
+                    customerName={customer?.name || ''}
                     contracts={contracts}
                     outputType={outputConfig.outputType}
-                    disabled={contracts.length === 0}
                   />
                 </div>
               </div>
             </div>
           )}
+
         </div>
-      </main>
-    </div>
+      </main>    </div>
   )
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="coverage-pro-stat">
-      <span>{label}</span>
-      <b style={{ fontSize: 15 }}>{value}</b>
-    </div>
-  )
-}
-
-function getStepState(step: StepNumber, customer: ProCustomer | undefined, contracts: ProContract[]): StepStatus {
-  if (step === 1) return customer ? 'done' : 'warning'
-  if (step === 3 || step === 4 || step === 5) return contracts.length ? 'done' : 'warning'
-  return 'done'
-}
-
-function titleByStep(step: StepNumber): string {
-  return ({
-    1: '고객 선택',
-    2: '기본 정보 확인',
-    3: '현재 보험 계약',
-    4: '담보 확인',
-    5: '분석 결과',
-    6: '리모델링 제안',
-    7: '출력 · 다운로드',
-  } as Record<StepNumber, string>)[step]
-}
-
-function formatWon(value: number): string {
-  return value ? `${Math.round(value).toLocaleString()}원` : '-'
 }

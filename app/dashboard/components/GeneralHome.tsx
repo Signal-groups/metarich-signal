@@ -1,20 +1,33 @@
 'use client'
 
-import { Bell, BookOpen, Lightbulb, Megaphone, ShieldCheck, Star } from 'lucide-react'
+import {
+  ArrowLeftRight, BarChart3, Bell, BookOpen, Calculator, CarFront,
+  ClipboardCheck, FileSearch, Hospital, Lightbulb, Megaphone,
+  PieChart, Scale, Search, ShieldCheck, Star, Stethoscope, ScrollText,
+} from 'lucide-react'
 import type { ConsultingTool } from '../../../lib/consultingTools'
 
-function ToolIcon({ icon, className = 'h-5 w-5' }: { icon: string; className?: string }) {
-  const icons: Record<string, string> = {
-    cafe: '📚', search: '🔍', hospital: '🏥', pill: '💊', crash: '⚖️',
-    chart: '📊', 'calculator-car': '🚗', code: '📋', compare: '🔄',
-    surgery: '🩺', document: '📄', checklist: '✅', shield: '🛡️',
-    calculator: '🧮', finance: '📈', exam: '🎓', dm: '📨',
+function ToolIcon({ icon, size = 18 }: { icon: string; size?: number }) {
+  const props = { size, color: '#0a3a86' }
+  switch (icon) {
+    case 'cafe':           return <BookOpen {...props} />
+    case 'search':         return <Search {...props} />
+    case 'hospital':       return <Hospital {...props} />
+    case 'crash':          return <Scale {...props} />
+    case 'chart':          return <BarChart3 {...props} />
+    case 'calculator-car': return <CarFront {...props} />
+    case 'code':           return <FileSearch {...props} />
+    case 'compare':        return <ArrowLeftRight {...props} />
+    case 'surgery':        return <Stethoscope {...props} />
+    case 'document':       return <ScrollText {...props} />
+    case 'checklist':      return <ClipboardCheck {...props} />
+    case 'shield':         return <ShieldCheck {...props} />
+    case 'calculator':     return <Calculator {...props} />
+    case 'finance':        return <PieChart {...props} />
+    case 'exam':           return <BookOpen {...props} />
+    case 'dm':             return <ScrollText {...props} />
+    default:               return <Search {...props} />
   }
-  return (
-    <span style={{ fontSize: 20 }} className={className}>
-      {icons[icon] ?? '🔧'}
-    </span>
-  )
 }
 
 interface GeneralHomeProps {
@@ -171,7 +184,7 @@ export default function GeneralHome({
       {/* ── 프로 기능 안내 배너 ── */}
       {!isApproved && (
         <section style={{ background: 'linear-gradient(135deg, #fef9ec 0%, #fff8e1 100%)', borderRadius: 14, border: '1px solid #f6d860', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={{ fontSize: 36 }}>⭐</div>
+          <Star size={28} style={{ fill: '#f59e0b', color: '#f59e0b', flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 900, color: '#92400e', marginBottom: 4 }}>프로 기능 안내</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#78350f' }}>

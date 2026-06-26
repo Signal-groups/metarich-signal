@@ -2868,32 +2868,37 @@ export default function ProposalPage() {
                     setSavedDrafts(drafts)
                     if (drafts.length === 0) loadDraft(false)
                     else setShowDraftMenu((prev) => !prev)
-                  }}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:border-cyan-300 hover:text-cyan-700"
+                  }}                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"
                 >
                   <FolderOpen className="h-4 w-4" />
-                  최근 불러오기
+                  불러오기
                 </button>
                 {showDraftMenu && savedDrafts.length > 0 && (
-                  <div className="absolute right-0 top-12 z-40 w-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                    <div className="border-b border-slate-100 px-4 py-3">
-                      <p className="text-xs font-black text-slate-500">최근 저장 제안서</p>
-                      <p className="mt-0.5 text-[11px] font-bold text-slate-400">로그인한 직원 기준 최대 10개까지 보관됩니다.</p>
+                  <div className="absolute right-0 top-full z-50 mt-1 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div className="border-b border-slate-100 px-4 py-2.5">
+                      <p className="text-xs font-black text-slate-500">저장된 제안서</p>
                     </div>
-                    <div className="max-h-[360px] overflow-y-auto p-2">
+                    <ul className="max-h-64 overflow-y-auto">
                       {savedDrafts.map((draft) => (
-                        <button
-                          key={draft.id}
-                          type="button"
-                          onClick={() => loadDraftItem(draft)}
-                          className="block w-full rounded-xl px-3 py-2.5 text-left hover:bg-slate-50"
-                        >
-                          <p className="truncate text-sm font-black text-slate-800">{draft.title || draftTitle(draft)}</p>
-                          <p className="mt-0.5 text-[11px] font-bold text-slate-400">
-                            {new Date(draft.savedAt).toLocaleString("ko-KR")}
-                          </p>
-                        </button>
+                        <li key={draft.id}>
+                          <button
+                            type="button"
+                            onClick={() => loadDraftItem(draft)}
+                            className="w-full px-4 py-3 text-left text-xs font-bold text-slate-700 hover:bg-slate-50"
+                          >
+                            {draft.title}
+                          </button>
+                        </li>
                       ))}
+                    </ul>
+                    <div className="border-t border-slate-100 px-4 py-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowDraftMenu(false)}
+                        className="text-xs font-black text-slate-400 hover:text-slate-600"
+                      >
+                        닫기
+                      </button>
                     </div>
                   </div>
                 )}
@@ -2901,178 +2906,181 @@ export default function ProposalPage() {
               <button
                 type="button"
                 onClick={openPreviewTab}
-                disabled={mode === "bundle" && bundleIds.length < 2}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#2D4A8A] disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#1a3a6e]"
               >
-                미리보기
-                <ChevronRight className="h-4 w-4" />
+                <Download className="h-4 w-4" />
+                미리보기 · 출력
               </button>
             </div>
           </div>
         </div>
 
-        <div className="no-print mx-auto grid max-w-[1440px] gap-5 px-6 py-6 xl:grid-cols-[360px_1fr]">
-          <aside className="space-y-4 xl:sticky xl:top-[104px] xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto xl:pr-1">
-            {/* 고객·설계사 정보 — 최상단 고정, PDF 업로드로 변경 안 됨 */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">고객 · 설계사</p>
-              <div className="space-y-3">
-                <Input label="고객명" value={customerName} onChange={setCustomerName} placeholder="예: 홍길동" />
-                <Input label="설계사명" value={consultant.name} onChange={(value) => setConsultant((prev) => ({ ...prev, name: value }))} />
-                <Input label="연락처" value={consultant.phone} onChange={(value) => setConsultant((prev) => ({ ...prev, phone: value }))} />
+        {/* ── 메인 콘텐츠 ── */}
+        <div className="mx-auto max-w-[1440px] space-y-6 px-6 py-8">
+
+          {/* 고객 · 설계사 정보 */}
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-base font-black text-slate-950">고객 · 설계사 정보</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <Input
+                label="고객 이름"
+                value={customerName}
+                onChange={setCustomerName}
+                placeholder="홍길동"
+              />
+              <Input
+                label="설계사 이름"
+                value={consultant.name}
+                onChange={(value) => setConsultant((prev) => ({ ...prev, name: value }))}
+                placeholder="이름"
+              />
+              <Input
+                label="설계사 연락처"
+                value={consultant.phone}
+                onChange={(value) => setConsultant((prev) => ({ ...prev, phone: value }))}
+                placeholder="010-0000-0000"
+              />
+            </div>
+          </section>
+
+          {/* 카테고리 · 모드 · 포커스 */}
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-base font-black text-slate-950">제안서 설정</h2>
+            <div className="space-y-5">
+              <div>
+                <p className="mb-2 text-xs font-black text-slate-500">보험 종류</p>
+                <CategorySelector selected={template} onSelect={selectCategory} />
               </div>
-            </section>
-
-            {/* 생성 방식 */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">생성 방식</p>
-              <ModeSelector mode={mode} onMode={selectMode} />
-            </section>
-
-            {/* 비교 기준 — 복수 선택 */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">비교 기준 (복수 선택)</p>
-              <FocusSelector focus={focus} onFocus={setFocus} disabled={mode === "single" && template.id !== "shortlife"} />
-            </section>
-
-            {/* 보장 카테고리 */}
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-slate-400">보장 카테고리</p>
-              <CategorySelector selected={template} onSelect={selectCategory} />
-            </section>
-          </aside>
-
-          <div className="space-y-5">
-            <GptsImportPanel onApply={applyGptsPayload} />
-
-            {mode === "bundle" ? (
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-cyan-600" />
-                  <h2 className="text-base font-black text-slate-950">번들 구성</h2>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-xs font-black text-slate-500">제안 방식</p>
+                  <ModeSelector mode={mode} onMode={selectMode} />
                 </div>
-                <div className="mb-5 flex flex-wrap gap-2">
-                  {categories.map((c) => {
-                    const active = bundleIds.includes(c.id)
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setBundleIds((prev) =>
-                          active ? prev.filter((id) => id !== c.id) : [...prev, c.id]
-                        )}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-black transition ${active ? "border-cyan-500 bg-cyan-500 text-white" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}
-                      >
-                        {c.label}
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="space-y-6">
-                  {bundleIds.map((id) => {
-                    const tpl = categories.find((c) => c.id === id)
-                    if (!tpl) return null
-                    return (
-                      <div key={id}>
-                        <div className={`mb-3 flex items-center gap-2 rounded-2xl bg-gradient-to-r ${tpl.tone} px-4 py-3 text-white`}>
-                          <CategoryIcon template={tpl} />
-                          <p className="text-sm font-black">{tpl.label}</p>
-                        </div>
-                        <PlanEditor
-                          plan={bundlePlans[id]}
-                          template={tpl}
-                          mode="single"
-                          index={0}
-                          onChange={(next) => setBundlePlans((prev) => ({ ...prev, [id]: next }))}
-                          onCustomerName={undefined}
-                        />
-                      </div>
-                    )
-                  })}
-                </div>
-              </section>
-            ) : (
-              <>
-                {plans.map((plan, index) => (
-                  <PlanEditor
-                    key={plan.id}
-                    plan={plan}
-                    template={template}
-                    mode={mode}
-                    index={index}
-                    onChange={(next) => updatePlan(plan.id, next)}
-                    onRemove={plans.length > 1 ? () => removePlan(plan.id) : undefined}
-                    canRemove={plans.length > 1}
-                    onCustomerName={undefined}
-                  />
-                ))}
-                {(mode === "compare" || mode === "cross") && plans.length < 4 && (
-                  <button
-                    type="button"
-                    onClick={addPlan}
-                    className="flex w-full items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-slate-300 bg-white py-4 text-sm font-black text-slate-400 transition hover:border-cyan-400 hover:text-cyan-600"
-                  >
-                    <Plus className="h-5 w-5" />
-                    상품 추가
-                  </button>
+                {mode !== "single" && mode !== "bundle" && (
+                  <div>
+                    <p className="mb-2 text-xs font-black text-slate-500">비교 포커스</p>
+                    <FocusSelector focus={focus} onFocus={setFocus} disabled={template.id === "shortlife"} />
+                  </div>
                 )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {showPreview && (
-          <div className="preview-shell fixed inset-0 z-50 overflow-y-auto bg-[#d8e4f0] py-8">
-            <div className="no-print mx-auto mb-6 flex max-w-[1240px] items-center justify-between px-6">
-              <p className="text-sm font-black text-[#102a4c]">
-                미리보기 — PDF 저장은 브라우저 인쇄 (Ctrl+P) 를 이용하세요
-              </p>
-              <div className="flex items-center gap-3">
-                {saveStatus !== "idle" && (
-                  <span className={`rounded-full px-3 py-1 text-xs font-black ${saveStatus === "saved" ? "bg-emerald-100 text-emerald-700" : saveStatus === "loaded" ? "bg-cyan-100 text-cyan-700" : "bg-amber-100 text-amber-700"}`}>
-                    {saveStatus === "saved" ? "저장됨" : saveStatus === "loaded" ? "불러옴" : "저장 없음"}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={saveDraft}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"
-                >
-
-                  임시저장
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPreview(false)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white hover:bg-[#1a3f6f]"
-                >
-                  ✕ 닫기
-                </button>
               </div>
             </div>
+          </section>
 
-            <div className="proposal-print-area mx-auto max-w-[1240px] px-6">
+          {/* 번들 모드: 카테고리별 단일 플랜 */}
+          {mode === "bundle" ? (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setBundleIds((prev) =>
+                      prev.includes(cat.id) ? prev.filter((item) => item !== cat.id) : [...prev, cat.id]
+                    )}
+                    className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-black transition-colors ${
+                      bundleIds.includes(cat.id)
+                        ? "border-[#102a4c] bg-[#102a4c] text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <cat.icon className="h-4 w-4" />
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+              {bundleIds.map((id) => {
+                const cat = categories.find((c) => c.id === id)
+                if (!cat) return null
+                return (
+                  <PlanEditor
+                    key={id}
+                    plan={bundlePlans[id]}
+                    index={0}
+                    template={cat}
+                    mode="single"
+                    onChange={(next) => setBundlePlans((prev) => ({ ...prev, [id]: next }))}
+                    onCustomerName={setCustomerName}
+                  />
+                )
+              })}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {visiblePlans.map((plan, index) => (
+                <PlanEditor
+                  key={plan.id}
+                  plan={plan}
+                  index={index}
+                  template={template}
+                  mode={mode}
+                  onChange={(next) => updatePlan(plan.id, next)}
+                  onRemove={() => removePlan(plan.id)}
+                  canRemove={visiblePlans.length > (mode === "single" ? 1 : 2)}
+                  onCustomerName={index === 0 ? setCustomerName : undefined}
+                />
+              ))}
+              {(mode === "compare" || mode === "cross") && (
+                <button
+                  type="button"
+                  onClick={addPlan}
+                  className="inline-flex items-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-6 py-4 text-sm font-black text-slate-500 hover:border-[#102a4c] hover:text-[#102a4c]"
+                >
+                  <Plus className="h-5 w-5" />
+                  플랜 추가
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* GPTs 자동 입력 */}
+          <GptsImportPanel onApply={applyGptsPayload} />
+
+          {/* 미리보기 오버레이 */}
+          {showPreview && (
+            <div className="preview-shell fixed inset-0 z-50 overflow-auto bg-white">
+              <div className="no-print sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
+                <p className="text-sm font-black text-slate-700">미리보기</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white"
+                  >
+                    <Download className="h-4 w-4" />
+                    인쇄 · PDF 저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(false)}
+                    className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
               {mode === "bundle" ? (
                 <ProposalBundle
-                  sections={bundleIds.map(id => ({ templateId: id, plan: bundlePlans[id] }))}
+                  sections={bundleIds
+                    .map((id) => ({ templateId: id, plan: bundlePlans[id] }))
+                    .filter((s) => bundleIds.includes(s.templateId))}
+                  focus={primaryFocus}
                   customerName={customerName}
                   consultant={consultant}
-                  focus={focus[0] ?? "balance"}
                 />
               ) : (
                 <ProposalReport
                   template={template}
                   mode={mode}
-                  plans={plans}
-                  focus={focus[0] ?? "balance"}
+                  plans={visiblePlans}
+                  focus={primaryFocus}
                   customerName={customerName}
                   consultant={consultant}
-                  pageOffset={1}
                 />
               )}
             </div>
-          </div>
-        )}
+          )}
+
+        </div>
       </main>
     </>
   )

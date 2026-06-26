@@ -414,7 +414,8 @@ export default function Sidebar({
               {canUseOffice && (
                 <NavItem
                   icon="업무"
-                  label="업무관리"
+                  iconNode={<MessageSquareText className="h-5 w-5 opacity-80" />}
+                  label="사무실업무"
                   active={mode === 'office'}
                   onClick={openOffice}
                 />
@@ -535,7 +536,7 @@ export default function Sidebar({
           <MobileNavButton label="홈" active={mode === 'consulting' && !isOpen} onClick={openConsulting}>
             <Home className="h-5 w-5" />
           </MobileNavButton>
-          <MobileNavButton label="업무" active={mode === 'office' && !isOpen} onClick={openOffice} disabled={!canUseOffice}>
+          <MobileNavButton label="사무실업무" active={mode === 'office' && !isOpen} onClick={openOffice} disabled={!canUseOffice}>
             <MessageSquareText className="h-5 w-5" />
           </MobileNavButton>
           <MobileNavButton label="DM" onClick={openContentStudio} disabled={!isApproved}>
@@ -677,7 +678,7 @@ function MobileNavButton({ children, label, active, disabled, onClick }: { child
   );
 }
 
-function NavItem({ icon, label, active, onClick, variant, badge, iconNode }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" | "support", badge?: string, iconNode?: React.ReactNode }) {
+function NavItem({ icon, label, active, onClick, variant, badge, iconNode, arrow }: { icon: string, label: string, active?: boolean, onClick: () => void, variant?: "naver" | "kakao" | "support", badge?: string, iconNode?: React.ReactNode, arrow?: boolean }) {
   const variantClass =
     variant === "naver"
       ? "bg-[#03c75a] text-white hover:bg-[#02b150] shadow-lg shadow-emerald-950/20"
@@ -706,8 +707,8 @@ function NavItem({ icon, label, active, onClick, variant, badge, iconNode }: { i
       <span className={iconClass}>{iconNode ?? icon}</span>
       <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
       <span className="ml-auto flex items-center gap-2">
-        {badge && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white/80">{badge}</span>}
-      </span>
+        {badge && <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">{badge}</span>}
+        {arrow && <span className="text-[10px] opacity-50">→</span>}      </span>
     </button>
-  );
+  )
 }
