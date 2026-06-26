@@ -41,9 +41,7 @@ import MasterView from "./components/MasterView"
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
-import GeneralHome from "./components/GeneralHome"
-import ProHome from "./components/ProHome"
-import { CONSULTING_TOOLS, CONSULTING_TOOL_GROUPS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
+import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, CONSULTING_TOOL_GROUPS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice, canAccessCrm } from "../../lib/roles"
 import { ensureUserProfile } from "../../lib/userProfile"
 
@@ -433,24 +431,28 @@ export default function DashboardPage() {
     return m.access === "public";
   });
   const favoriteTools = CONSULTING_TOOLS.filter(t => favorites.includes(t.id) && visibleConsultingTools.some(v => v.id === t.id));
-  const faceTools: ConsultingTool[] = [];
 
   const renderConsultingView = () => {
-    const toolSections = CONSULTING_TOOL_GROUPS
-      .map((group) => ({
-        ...group,
-        tools: group.toolIds
-          .map((id) => visibleConsultingTools.find((tool) => tool.id === id))
-          .filter(Boolean) as ConsultingTool[],
-      }))
-      .filter((group) => group.tools.length > 0)
+    // 마스터 일반 보기: 미승인 사용자 기준으로 도구 재계산
+    const previewTools = (isMaster && masterPreviewMode === 'general')
+      ? CONSULTING_TOOLS.filter(m => m.placement !== 'office' && m.access === 'public' && m.guestVisible === true)
+      : visibleConsultingTools
 
-    const cardBase: React.CSSProperties = {
-      background: "#fff",
-      border: "1px solid #dce6f1",
-      borderRadius: 12,
-      boxShadow: "0 4px 14px rgba(16,32,58,0.04)",
-    }
+    const faceTools = previewTools.filter(t => t.category === 'face')
+
+    // 카테고리별 섹션: 전체 도구를 보여주되 접근 불가면 PRO 배지
+    const categorySections = CONSULTING_TOOL_CATEGORIES
+      .map(cat => {
+        const allCatTools = CONSULTING_TOOLS.filter(t => t.category === cat.id && t.placement !== 'office')
+        return {
+          ...cat,
+          tools: allCatTools.map(t => ({
+            ...t,
+            locked: !previewTools.some(v => v.id === t.id),
+          })),
+        }
+      })
+      .filter(cat => cat.tools.length > 0)
 
     return (
       <div className="mx-auto max-w-[1680px] min-w-0 pb-3">
@@ -655,30 +657,48 @@ export default function DashboardPage() {
           </section>
         )}
 
-        <section className="mb-4 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-4">
-          {toolSections.map((category, index) => (
-            <div key={category.id} className={`p-4 ${index > 0 ? "border-t border-[#e8eef5] md:border-l md:border-t-0" : ""}`}>
-              <h2 className="text-[17px] font-black text-[#10203a]">{category.title}</h2>
-              <p className="mt-1 text-[11px] font-bold text-[#64748b]">{category.desc}</p>
-              <div className="mt-4 space-y-2">
-                {category.tools.slice(0, 4).map((tool) => (
-                  <button
-                    key={tool.id}
-                    type="button"
-                    onClick={() => !isConsultEditMode && handleNavigation(tool)}
-                    className="flex h-10 w-full items-center gap-3 rounded-lg border border-[#dce6f1] bg-white px-3 text-left transition hover:bg-[#f8fbff]"
-                  >
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-[#f3f6fa] text-[#0a3a86]">
-                      <ToolIcon icon={tool.icon} className="h-4 w-4" />
-                    </span>
-                    <span className="flex-1 text-[13px] font-black text-[#10203a]">{tool.title}</span>
-                    {isConsultEditMode && tool.editable ? (
-                      <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} className="h-4 w-4 accent-[#082b5f]" onClick={(e) => e.stopPropagation()} />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-[#10203a]" />
-                    )}
-                  </button>
-                ))}
+        <section className="mb-4 grid grid-cols-1 overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm md:grid-cols-2 xl:grid-cols-3">
+          {categorySections.filter(c => c.id !== 'face').map((cat, index) => (
+            <div key={cat.id} className={`p-5 ${index > 0 ? "border-t border-[#e8eef5] md:border-l md:border-t-0" : ""} ${index >= 2 ? "xl:border-t xl:border-[#e8eef5]" : ""}`}
+              style={{ background: index % 2 === 0 ? '#fff' : '#fafbfd' }}>
+              <div className="mb-3 flex items-center gap-2">
+                <h2 className="text-[15px] font-black text-[#10203a]">{cat.title}</h2>
+                <span className="rounded-full bg-[#f0f4f9] px-2.5 py-0.5 text-[10px] font-black text-[#64748b]">
+                  {cat.tools.filter(t => !(t as any).locked).length}개
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {cat.tools.map((tool) => {
+                  const locked = (tool as any).locked
+                  return (
+                    <button
+                      key={tool.id}
+                      type="button"
+                      onClick={() => {
+                        if (locked) return
+                        if (isConsultEditMode && tool.editable) { toggleMenu(tool.id); return }
+                        handleNavigation(tool)
+                      }}
+                      className={`flex h-10 w-full items-center gap-3 rounded-lg border px-3 text-left transition ${
+                        locked
+                          ? 'border-[#edf0f5] bg-[#f8f9fb] opacity-60 cursor-default'
+                          : 'border-[#dce6f1] bg-white hover:bg-[#f3f7fe] hover:border-[#b8d0f0]'
+                      }`}
+                    >
+                      <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md ${locked ? 'bg-[#edf0f5] text-[#9aadbe]' : 'bg-[#eef4fb] text-[#0a3a86]'}`}>
+                        <ToolIcon icon={tool.icon} className="h-4 w-4" />
+                      </span>
+                      <span className={`flex-1 text-[13px] font-black ${locked ? 'text-[#9aadbe]' : 'text-[#10203a]'}`}>{tool.title}</span>
+                      {locked ? (
+                        <span className="rounded-full bg-[#1a2744] px-2 py-0.5 text-[9px] font-black text-white">PRO</span>
+                      ) : isConsultEditMode && tool.editable ? (
+                        <input type="checkbox" checked={menuStatus[tool.id] !== false} onChange={() => toggleMenu(tool.id)} className="h-4 w-4 accent-[#082b5f]" onClick={(e) => e.stopPropagation()} />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-[#c8d6e5]" />
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ))}
@@ -812,81 +832,9 @@ export default function DashboardPage() {
                 return <AgentView {...props} />;
               })()
             )
-          ) : (() => {
-            const showPro = isMaster ? masterPreviewMode === 'pro' : (isApproved && canUseCrm)
-            const commonProps = {
-              user, announcements, favorites, isFavEditMode,
-              visibleTools: visibleConsultingTools,
-              onFavEditToggle: () => setIsFavEditMode((v) => !v),
-              onFavToggle: toggleFavorite,
-              onNavigate: handleNavigation,
-              onNoticeClick: () => setShowNoticeModal(true),
-              onUpdateClick: () => setShowUpdateModal(true),
-            }
-            return showPro
-              ? <ProHome {...commonProps} recentCustomers={recentCustomers} />
-              : <GeneralHome {...commonProps} />
-          })()}
+          ) : renderConsultingView()}
         </div>
 
-        {showNoticeModal && (
-          <div style={{ position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(10,20,40,0.45)' }}
-            onClick={() => setShowNoticeModal(false)}>
-            <div style={{ background:'white',borderRadius:14,maxWidth:520,width:'calc(100% - 32px)',padding:'24px 24px 20px',boxShadow:'0 8px 40px rgba(0,0,0,0.18)',position:'relative',maxHeight:'70vh',overflowY:'auto' }}
-              onClick={e => e.stopPropagation()}>
-              <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16 }}>
-                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>공지사항</h2>
-                <div style={{ display:'flex',gap:8,alignItems:'center' }}>
-                  {isMaster && <button onClick={() => { addAnnouncement('notice'); setShowNoticeModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#1b54ad',background:'#eef4fb',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ 추가</button>}
-                  <button onClick={() => setShowNoticeModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>×</button>
-                </div>
-              </div>
-              {announcements.filter(a => a.category === 'notice').length === 0
-                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>공지사항이 없습니다.</p>
-                : announcements.filter(a => a.category === 'notice').map(ann => (
-                  <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowNoticeModal(false); }}
-                    style={{ display:'block',width:'100%',textAlign:'left',padding:'12px 0',borderBottom:'1px solid #eef3f8',background:'none',border:'none',cursor:'pointer' }}>
-                    <p style={{ fontSize:14,fontWeight:900,color:'#10203a' }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</p>
-                    <p style={{ fontSize:11,color:'#8aa0ba',marginTop:4 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
-                  </button>
-                ))}
-            </div>
-          </div>
-        )}
-        {showUpdateModal && (
-          <div style={{ position:'fixed',inset:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(10,20,40,0.45)' }}
-            onClick={() => setShowUpdateModal(false)}>
-            <div style={{ background:'white',borderRadius:14,maxWidth:520,width:'calc(100% - 32px)',padding:'24px 24px 20px',boxShadow:'0 8px 40px rgba(0,0,0,0.18)',position:'relative',maxHeight:'70vh',overflowY:'auto' }}
-              onClick={e => e.stopPropagation()}>
-              <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16 }}>
-                <h2 style={{ fontSize:18,fontWeight:900,color:'#10203a' }}>업데이트 소식</h2>
-                <div style={{ display:'flex',gap:8,alignItems:'center' }}>
-                  {isMaster && <button onClick={() => { addAnnouncement('update'); setShowUpdateModal(false); }} style={{ fontSize:12,fontWeight:700,color:'#0f6e56',background:'#e1f5ee',border:'none',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>+ 추가</button>}
-                  <button onClick={() => setShowUpdateModal(false)} style={{ background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#9ab4c8' }}>×</button>
-                </div>
-              </div>
-              {announcements.filter(a => a.category === 'update').length === 0
-                ? <p style={{ fontSize:13,color:'#b8ccd8',fontWeight:700 }}>업데이트 소식이 없습니다.</p>
-                : announcements.filter(a => a.category === 'update').map(ann => (
-                  <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowUpdateModal(false); }}
-                    style={{ display:'block',width:'100%',textAlign:'left',padding:'12px 0',borderBottom:'1px solid #eef3f8',background:'none',border:'none',cursor:'pointer' }}>
-                    <span style={{ background:'#dcfce7',color:'#15803d',fontSize:9,fontWeight:900,borderRadius:12,padding:'2px 8px',marginRight:8 }}>NEW</span>
-                    <span style={{ fontSize:14,fontWeight:900,color:'#10203a' }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</span>
-                    <p style={{ fontSize:11,color:'#8aa0ba',marginTop:4 }}>{new Date(ann.created_at).toLocaleDateString('ko-KR')}</p>
-                  </button>
-                ))}
-            </div>
-          </div>
-        )}
-        {selectedAnnouncement && (
-          <AnnouncementModal
-            item={selectedAnnouncement}
-            onClose={() => setSelectedAnnouncement(null)}
-            onSave={saveAnnouncement}
-            onDelete={deleteAnnouncement}
-            isMaster={isMaster}
-          />
-        )}
       </main>
     </div>
   )
