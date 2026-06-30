@@ -251,7 +251,7 @@ function radarChartSvg(contracts: ProContract[]): string {
     return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" font-size="10" fill="#1a2744" font-weight="700">${escHtml(a.label)}</text>` +
            `<text x="${lx.toFixed(1)}" y="${(ly+12).toFixed(1)}" text-anchor="${anchor}" font-size="9" fill="#64748b">${pct}%</text>`
   }).join('')
-  return `<svg viewBox="0 0 280 280" width="200" height="200">${gridLines}${axisLines}${polygon}${dots}${labels}</svg>`
+  return `<svg viewBox="0 0 280 280" width="180" height="180">${gridLines}${axisLines}${polygon}${dots}${labels}</svg>`
 }
 
 // ── 추천 제안 ─────────────────────────────────────────────────────────────
@@ -484,18 +484,21 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   </div>`
   // 실손 정보 (재가입기준 제외, 주요보장 체크 2x2 그리드 4번째 칸)
   const silsonInfo = inferSilsonInfo(contracts)
+  const silsonHasInfo = silsonInfo.generation && silsonInfo.generation !== '미가입'
+  const silsonColor = silsonHasInfo ? '#10b981' : '#ef4444'
+  const silsonLabel = silsonHasInfo ? '가입' : '미가입'
   const silsonMiniCardHtml =
     '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:9px;break-inside:avoid;page-break-inside:avoid">' +
-    '<div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:6px">&#128138;&nbsp;실손의료비</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">' +
-    '<div style="background:#f0f9ff;border-radius:6px;padding:5px">' +
-    '<span style="display:block;font-size:9px;font-weight:800;color:#94a3b8">세대</span>' +
-    '<b style="display:block;font-size:10px;font-weight:900;color:#1a2744;margin-top:2px">' + escHtml(silsonInfo.generation) + '</b>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">' +
+    '<span style="font-size:11px;font-weight:900;color:#1a2744">&#128138;&nbsp;실손의료비</span>' +
+    '<span style="font-size:10px;font-weight:900;color:' + silsonColor + '">' + silsonLabel + '</span>' +
     '</div>' +
-    '<div style="background:#f0f9ff;border-radius:6px;padding:5px">' +
-    '<span style="display:block;font-size:9px;font-weight:800;color:#94a3b8">가입연월</span>' +
-    '<b style="display:block;font-size:10px;font-weight:900;color:#1a2744;margin-top:2px">' + escHtml(silsonInfo.joinedAt) + '</b>' +
+    '<div style="height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-bottom:4px">' +
+    '<div style="height:6px;border-radius:999px;background:' + silsonColor + ';width:' + (silsonHasInfo ? '100' : '4') + '%"></div>' +
     '</div>' +
+    '<div style="font-size:9px;color:#64748b;font-weight:700">' +
+    '세대&nbsp;<b style="color:#1a2744">' + escHtml(silsonInfo.generation || '-') + '</b>' +
+    '&nbsp;&nbsp;가입연월&nbsp;<b style="color:#1a2744">' + escHtml(silsonInfo.joinedAt || '-') + '</b>' +
     '</div>' +
     '</div>'
 
@@ -887,11 +890,10 @@ ${advisorInfo ? `
       <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:12px">
         <div class="gauge-grid">${gaugesHtml}</div>
         <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts)}</div>
-      </div>
-      <!-- 주요보장 체크: 레이더 아래 별도 카드 -->
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-top:8px;break-inside:avoid;page-break-inside:avoid">
-        <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #1a2744">&#10003;&nbsp;주요보장 체크</div>
-        ${diagnosisAverageHtml}
+        <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0">
+          <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:6px">&#10003;&nbsp;주요보장 체크</div>
+          ${diagnosisAverageHtml}
+        </div>
       </div>
     </div>
     <div>
