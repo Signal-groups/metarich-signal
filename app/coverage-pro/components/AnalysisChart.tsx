@@ -1,15 +1,21 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
+import { loadBenchmark, type BenchmarkAmounts } from './BenchmarkSettings'
 
 const RADAR_GROUPS = [
-  { key: 'death',    label: '사망',     match: ['death_'],                        recommend: 100_000_000 },
-  { key: 'cancer',   label: '암진단',   match: ['cancer_general'],                recommend: 30_000_000 },
-  { key: 'brain',    label: '뇌질환',   match: ['brain_stroke', 'brain_vascular', 'vascular_major'], recommend: 20_000_000 },
-  { key: 'heart',    label: '심장(허혈성)', match: ['heart_ischemic', 'vascular_major'], recommend: 20_000_000 },
-  { key: 'surgery',  label: '수술비',   match: ['surgery_'],                      recommend: 5_000_000 },
-  { key: 'hospital', label: '입원/간병', match: ['hospital_disease_daily', 'hospital_injury_daily', 'nursing_hospital'], recommend: 200_000 },
+  { key: 'death',    label: '사망',        match: ['death_'],                        bmKey: 'death' as const },
+  { key: 'cancer',   label: '암진단',      match: ['cancer_general'],                bmKey: 'cancer' as const },
+  { key: 'brain',    label: '뇌질환',      match: ['brain_stroke', 'brain_vascular', 'vascular_major'], bmKey: 'brain' as const },
+  { key: 'heart',    label: '심장(허혈성)', match: ['heart_ischemic', 'vascular_major'], bmKey: 'heart_ischemic' as const },
+  { key: 'surgery',  label: '수술비',      match: ['surgery_'],                      bmKey: 'surgery' as const },
+  { key: 'hospital', label: '입원/간병',   match: ['hospital_disease_daily', 'hospital_injury_daily', 'nursing_hospital'], bmKey: 'nursing' as const },
 ]
+
+function getRecommend(bm: BenchmarkAmounts, bmKey: keyof BenchmarkAmounts): number {
+  return (bm[bmKey] || 0) * 10_000
+}
 
 const PREMIUM_COLORS = ['#1a2744','#2d4a8a','#c9a96e','#0ea5e9','#10b981','#f59e0b','#8b5cf6']
 
@@ -26,14 +32,15 @@ function getPremiumRows(contracts: ProContract[]): PremiumRow[] {
     .sort((a, b) => b.monthlyPremium - a.monthlyPremium)
 }
 
-function getRadarData(contracts: ProContract[]) {
+function getRadarData(contracts: ProContract[], bm: BenchmarkAmounts) {
   return RADAR_GROUPS.map((group) => {
     const amount = contracts.flatMap((c) => c.coverages)
       .filter((cov) => group.match.some((kw) =>
         kw.endsWith('_') ? cov.rowKey.startsWith(kw) : cov.rowKey === kw
       ))
       .reduce((sum, cov) => sum + Number(cov.amount || 0) * 10_000, 0)
-    return { ...group, amount }
+    const recommend = getRecommend(bm, group.bmKey)
+    return { ...group, amount, recommend }
   })
 }
 
@@ -111,10 +118,19 @@ function RadarChart({ items }: { items: { label: string; amount: number; recomme
 }
 
 export default function AnalysisChart({ contracts }: { contracts: ProContract[] }) {
+  const [benchmark, setBenchmark] = useState<BenchmarkAmounts>(() => loadBenchmark())
+
+  useEffect(() => {
+    setBenchmark(loadBenchmark())
+    const onStorage = () => setBenchmark(loadBenchmark())
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   const premiumRows = getPremiumRows(contracts)
   const premiumTotal = premiumRows.reduce((sum, r) => sum + r.monthlyPremium, 0)
   const premiumMax = Math.max(...premiumRows.map((r) => r.monthlyPremium), 1)
-  const radarData = getRadarData(contracts)
+  const radarData = getRadarData(contracts, benchmark)
   const okCount = radarData.filter((d) => d.amount >= d.recommend).length
   const warnCount = radarData.filter((d) => d.amount > 0 && d.amount < d.recommend).length
   const missCount = radarData.filter((d) => d.amount === 0).length

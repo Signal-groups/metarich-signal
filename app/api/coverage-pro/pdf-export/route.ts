@@ -251,7 +251,7 @@ function radarChartSvg(contracts: ProContract[]): string {
     return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" font-size="10" fill="#1a2744" font-weight="700">${escHtml(a.label)}</text>` +
            `<text x="${lx.toFixed(1)}" y="${(ly+12).toFixed(1)}" text-anchor="${anchor}" font-size="9" fill="#64748b">${pct}%</text>`
   }).join('')
-  return `<svg viewBox="0 0 280 280" width="170" height="170">${gridLines}${axisLines}${polygon}${dots}${labels}</svg>`
+  return `<svg viewBox="0 0 280 280" width="200" height="200">${gridLines}${axisLines}${polygon}${dots}${labels}</svg>`
 }
 
 // ── 추천 제안 ─────────────────────────────────────────────────────────────
@@ -755,10 +755,12 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       min-height:180mm;break-after:page;page-break-after:always}
     .img-fullpage img{max-width:100%;max-height:180mm;object-fit:contain}
 
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     @media print{
       body{background:#fff}
       .print-bar{display:none}
       .pdf-page{background:#fff}
+      .cover-page{background:transparent!important}
       tr{page-break-inside:avoid}
       /* 비교표 인쇄 시 페이지 폭에 맞게 자동 축소 */
       .compare-wrap{overflow:visible}
@@ -776,7 +778,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
 
 ${advisorInfo ? `
 <!-- ════ COVER PAGE ════ -->
-<div class="pdf-page">
+<div class="pdf-page cover-page">
 <div style="
   height:100%; display:flex; flex-direction:column;
   justify-content:space-between;
@@ -787,8 +789,9 @@ ${advisorInfo ? `
   <div style="
     position:absolute;inset:0;
     background-image:url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80');
-    background-size:cover;background-position:center top;
-    opacity:0.22;
+    background-size:cover;background-position:center 30%;
+    opacity:0.32;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
   "></div>
   <!-- 딥네이비 그라디언트 오버레이 -->
   <div style="position:absolute;inset:0;background:linear-gradient(165deg,rgba(8,14,30,0.95) 0%,rgba(15,30,65,0.82) 45%,rgba(10,18,40,0.96) 100%)"></div>
@@ -877,13 +880,12 @@ ${advisorInfo ? `
       <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
       <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:12px">
         <div class="gauge-grid">${gaugesHtml}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;align-items:start">
-          <div style="display:flex;justify-content:center">${radarChartSvg(contracts)}</div>
-          <div>
-            <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:6px;padding-top:2px;border-top:2px solid #1a2744">&#10003; 주요보장 체크</div>
-            ${diagnosisAverageHtml}
-          </div>
-        </div>
+        <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts)}</div>
+      </div>
+      <!-- 주요보장 체크: 레이더 아래 별도 카드 -->
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-top:8px">
+        <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #1a2744">&#10003;&nbsp;주요보장 체크</div>
+        ${diagnosisAverageHtml}
       </div>
     </div>
     <div>
