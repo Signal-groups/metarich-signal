@@ -487,6 +487,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
   const [proposal,     setProposal]     = useState<RemodelProposal>(() => draft?.proposal || defaultProposal)
   const [outputConfig, setOutputConfig] = useState<OutputConfig>(() => draft?.outputConfig || defaultOutputConfig)
   const [saveStatus,   setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [advisorInfo, setAdvisorInfo]   = useState<{ name: string; phone: string; userId: string }>({ name: '', phone: '', userId: '' })
 
   // ── 기준금액 설정 모달 ──────────────────────────────────────────────
   const [showBenchmark, setShowBenchmark] = useState(false)
@@ -522,10 +523,16 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
           stepStatus: draft?.stepStatus || {}, remodelProposal: draft?.proposal,
           outputConfig: draft?.outputConfig, version: 1, createdAt: now, updatedAt: now,
         }
+        // 설계사 프로필 로드 (savedId 분기)
+        const { data: profile2 } = await supabase.from('users').select('name,phone').eq('id', session.user.id).maybeSingle()
+        setAdvisorInfo({ name: (profile2 as { name?: string; phone?: string } | null)?.name || '', phone: (profile2 as { name?: string; phone?: string } | null)?.phone || '', userId: session.user.id })
         return
       }
       const newSession = await createProSession(session.user.id, draft?.customer?.id)
       if (newSession) { sessionRef.current = newSession; localStorage.setItem(SESSION_ID_KEY, newSession.id) }
+      // 설계사 프로필 로드
+      const { data: profile } = await supabase.from('users').select('name,phone').eq('id', session.user.id).maybeSingle()
+      setAdvisorInfo({ name: (profile as { name?: string; phone?: string } | null)?.name || '', phone: (profile as { name?: string; phone?: string } | null)?.phone || '', userId: session.user.id })
     }
     void init()
   }, [draft, initialStep])
@@ -1071,7 +1078,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
 
           {/* ══════════════ STEP 6 — 리모델링 ════════════════════════ */}
           {currentStep === 6 && (
-            <RemodelComparison contracts={contracts} proposal={proposal} onChange={setProposal} />
+            <RemodelComparison contracts={contracts} proposal={proposal} onChange={setProposal} userId={advisorInfo.userId} />
           )}
 
           {/* ══════════════ STEP 7 — 출력 · 다운로드 ════════════════════ */}
@@ -1090,11 +1097,15 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                     customerName={customer?.name || ''}
                     contracts={contracts}
                     outputType="key_pdf"
+                    proposal={proposal}
+                    advisorInfo={advisorInfo}
                   />
                   <PdfExportBtn
                     customerName={customer?.name || ''}
                     contracts={contracts}
                     outputType="full_pdf"
+                    proposal={proposal}
+                    advisorInfo={advisorInfo}
                   />
                 </div>
               </div>

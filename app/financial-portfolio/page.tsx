@@ -126,8 +126,11 @@ const starter: ClientPortfolio = {
 }
 
 // ── 유틸 ────────────────────────────────────────────────────────────────────
-const money = (v:number) => Math.round(v||0).toLocaleString("ko-KR")
-const manwon = (v:number) => `${Math.round((v||0)/10000).toLocaleString("ko-KR")}만원`
+const money = (v:number) => Math.round(Number(v)||0).toLocaleString("ko-KR")
+const krw = (v:number) => `${money(v)}원`
+const manwon = (v:number) => `${Math.round((Number(v)||0)/10000).toLocaleString("ko-KR")}만원`
+const moneyWithUnit = (v:number) => `${krw(v)} (${manwon(v)})`
+const percentValue = (v:number) => `${Number(v||0).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}%`
 const pct = (v:number, t:number) => t>0 ? Math.round((v/t)*1000)/10 : 0
 const sum = (items:Entry[]) => items.reduce((a,i)=>a+Number(i.amount||0),0)
 const bounded = (v:number) => Math.max(0,Math.min(100,Math.round(v)))
@@ -197,13 +200,12 @@ function getAllocation(profile:string) {
 }
 
 // ── MoneyInput 컴포넌트 ──────────────────────────────────────────────────────
-function MoneyInput({ value, onChange, placeholder }: { value: number; onChange: (n: number) => void; placeholder?: string }) {
-  const [focused, setFocused] = useState(false)
+function MoneyInput({ value, onChange, placeholder, unit = "원" }: { value: number; onChange: (n: number) => void; placeholder?: string; unit?: string }) {
   const [raw, setRaw] = useState(value === 0 ? "" : value.toString())
 
   useEffect(() => {
-    if (!focused) setRaw(value === 0 ? "" : value.toString())
-  }, [value, focused])
+    setRaw(value === 0 ? "" : value.toString())
+  }, [value])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/[^0-9]/g, "")
@@ -211,23 +213,55 @@ function MoneyInput({ value, onChange, placeholder }: { value: number; onChange:
     onChange(Number(digits))
   }
 
-  const displayValue = focused ? raw : (Number(raw || 0) > 0 ? Number(raw).toLocaleString("ko-KR") : "")
+  const displayValue = Number(raw || 0) > 0 ? Number(raw).toLocaleString("ko-KR") : ""
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <input
-        value={displayValue}
-        onChange={handleChange}
-        onFocus={() => setFocused(true)}
-        onBlur={() => { setFocused(false); setRaw(value === 0 ? "" : value.toString()) }}
-        placeholder={placeholder || "0"}
-        style={{ width: "100%", height: 34, border: 0, background: "#fff7bd", padding: "0 8px", fontWeight: 800, outline: 0, color: "#172033", textAlign: "right" }}
-      />
+      <div style={{ position: "relative" }}>
+        <input
+          value={displayValue}
+          onChange={handleChange}
+          onBlur={() => setRaw(value === 0 ? "" : value.toString())}
+          placeholder={placeholder || "0"}
+          inputMode="numeric"
+          style={{ width: "100%", height: 34, border: 0, background: "#fff7bd", padding: "0 30px 0 8px", fontWeight: 800, outline: 0, color: "#172033", textAlign: "right" }}
+        />
+        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 11, fontWeight: 900, color: "#64748b", pointerEvents: "none" }}>
+          {unit}
+        </span>
+      </div>
       {Number(raw || 0) > 0 && (
         <span style={{ fontSize: 10, color: "#64748b", textAlign: "right", fontWeight: 700 }}>
-          {manwon(Number(raw))}
+          {moneyWithUnit(Number(raw))}
         </span>
       )}
+    </div>
+  )
+}
+
+function RateInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [raw, setRaw] = useState(value === 0 ? "" : String(value))
+
+  useEffect(() => {
+    setRaw(value === 0 ? "" : String(value))
+  }, [value])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
+    setRaw(next)
+    onChange(Number(next || 0))
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        value={raw}
+        onChange={handleChange}
+        inputMode="decimal"
+        placeholder="0"
+        style={{ width: "100%", height: 34, border: 0, background: "#fff7bd", padding: "0 24px 0 8px", fontWeight: 800, outline: 0, color: "#172033", textAlign: "right" }}
+      />
+      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 11, fontWeight: 900, color: "#64748b", pointerEvents: "none" }}>%</span>
     </div>
   )
 }
@@ -321,13 +355,13 @@ function BeforeAfterSection({ client, totals }: {
                   <tr key={r.label}>
                     <td style={{ border:"1px solid #dce4ef",padding:"8px 12px",fontSize:13,fontWeight:800,background:"#f8fafc" }}>{r.label}</td>
                     <td style={{ border:"1px solid #dce4ef",padding:"8px 12px",fontSize:13,fontWeight:800,textAlign:"right" }}>
-                      {r.before === 0 ? "–" : (r.unit === "%" ? `${r.before.toFixed(1)}%` : `${money(r.before)}원`)}
+                      {r.before === 0 ? "–" : (r.unit === "%" ? percentValue(r.before) : krw(r.before))}
                     </td>
                     <td style={{ border:"1px solid #dce4ef",padding:"8px 12px",fontSize:13,fontWeight:900,textAlign:"right",color:"#1E5FA8" }}>
-                      {r.after === 0 ? "–" : (r.unit === "%" ? `${r.after.toFixed(1)}%` : `${money(r.after)}원`)}
+                      {r.after === 0 ? "–" : (r.unit === "%" ? percentValue(r.after) : krw(r.after))}
                     </td>
                     <td style={{ border:"1px solid #dce4ef",padding:"8px 12px",fontSize:13,fontWeight:900,color: isNeutral?"#64748b":isPositive?"#0E7E6B":"#C0392B" }}>
-                      {isNeutral ? "–" : `${diff > 0 ? "▲" : "▼"} ${r.unit === "%" ? Math.abs(diff).toFixed(1)+"%" : money(Math.abs(diff))+"원"}`}
+                      {isNeutral ? "–" : `${diff > 0 ? "▲" : "▼"} ${r.unit === "%" ? percentValue(Math.abs(diff)) : krw(Math.abs(diff))}`}
                     </td>
                   </tr>
                 )
@@ -580,32 +614,32 @@ export default function FinancialPortfolioPage() {
 
           {/* 핵심 지표 */}
           <section className="fp-metrics">
-            <Metric label="자산 합계" value={money(totals.totalAssets)} sub={manwon(totals.totalAssets)} tone="#1E5FA8" />
-            <Metric label="부채 합계" value={money(totals.totalLiabilities)} sub={`부채비율 ${totals.debtRatio}%`} tone="#C0392B" />
-            <Metric label="순자산" value={money(totals.netWorth)} sub={manwon(totals.netWorth)} tone="#0E7E6B" />
-            <Metric label="월 현금흐름" value={money(totals.cashFlow)} sub={`저축가능률 ${totals.savingsRate}%`} tone="#C9A84C" />
+            <Metric label="자산 합계" value={krw(totals.totalAssets)} sub={manwon(totals.totalAssets)} tone="#1E5FA8" />
+            <Metric label="부채 합계" value={krw(totals.totalLiabilities)} sub={`부채비율 ${percentValue(totals.debtRatio)}`} tone="#C0392B" />
+            <Metric label="순자산" value={krw(totals.netWorth)} sub={manwon(totals.netWorth)} tone="#0E7E6B" />
+            <Metric label="월 현금흐름" value={krw(totals.cashFlow)} sub={`저축가능률 ${percentValue(totals.savingsRate)}`} tone="#C9A84C" />
           </section>
 
           {/* 수입/지출 요약 */}
           <Panel title="수입 · 지출 현황" icon={<BarChart3 className="h-5 w-5" />}>
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16 }}>
               <div>
-                <p style={{ fontWeight:900,fontSize:13,color:"#10233e",marginBottom:8 }}>월 소득 합계: {money(totals.totalIncome)}원</p>
+                <p style={{ fontWeight:900,fontSize:13,color:"#10233e",marginBottom:8 }}>월 소득 합계: {krw(totals.totalIncome)}</p>
                 {groupByCategory(client.incomes).map(i=>(
                   <div key={i.name} style={{ display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #f1f5f9",fontSize:13,fontWeight:700 }}>
-                    <span>{i.name}</span><span>{money(i.value)}원 ({pct(i.value,totals.totalIncome)}%)</span>
+                    <span>{i.name}</span><span>{krw(i.value)} ({percentValue(pct(i.value,totals.totalIncome))})</span>
                   </div>
                 ))}
               </div>
               <div>
-                <p style={{ fontWeight:900,fontSize:13,color:"#10233e",marginBottom:8 }}>월 지출 합계: {money(totals.totalExpense)}원</p>
+                <p style={{ fontWeight:900,fontSize:13,color:"#10233e",marginBottom:8 }}>월 지출 합계: {krw(totals.totalExpense)}</p>
                 <div style={{ display:"flex",justifyContent:"space-between",background:"#fff7ed",borderRadius:6,padding:"6px 10px",marginBottom:6 }}>
                   <span style={{ fontSize:12,fontWeight:800,color:"#b45309" }}>소비지출 소계</span>
-                  <span style={{ fontSize:12,fontWeight:900,color:"#b45309" }}>{money(totals.consumptionTotal)}원</span>
+                  <span style={{ fontSize:12,fontWeight:900,color:"#b45309" }}>{krw(totals.consumptionTotal)}</span>
                 </div>
                 <div style={{ display:"flex",justifyContent:"space-between",background:"#eff6ff",borderRadius:6,padding:"6px 10px" }}>
                   <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8" }}>비소비지출 소계</span>
-                  <span style={{ fontSize:12,fontWeight:900,color:"#1d4ed8" }}>{money(totals.nonConsumptionTotal)}원</span>
+                  <span style={{ fontSize:12,fontWeight:900,color:"#1d4ed8" }}>{krw(totals.nonConsumptionTotal)}</span>
                 </div>
               </div>
             </div>
@@ -712,7 +746,7 @@ export default function FinancialPortfolioPage() {
                 ]}>
                   <XAxis dataKey="name" tick={{ fontSize:12,fontWeight:800 }} />
                   <YAxis hide />
-                  <Tooltip formatter={v=>`${money(Number(v))}원`} />
+                  <Tooltip formatter={v=>krw(Number(v))} />
                   <Bar dataKey="value" radius={[8,8,0,0]}>
                     {COLORS.slice(0,5).map(c=><Cell key={c} fill={c} />)}
                   </Bar>
@@ -729,8 +763,8 @@ export default function FinancialPortfolioPage() {
         <DataSection title="지출 입력" section="expenses" total={totals.totalExpense} rows={client.expenses} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry}
           extraHeader={
             <div style={{ display:"flex",gap:12,alignItems:"center" }}>
-              <span style={{ fontSize:12,fontWeight:800,color:"#b45309",background:"#fff7ed",padding:"3px 10px",borderRadius:999 }}>소비지출 {money(totals.consumptionTotal)}원</span>
-              <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8",background:"#eff6ff",padding:"3px 10px",borderRadius:999 }}>비소비지출 {money(totals.nonConsumptionTotal)}원</span>
+              <span style={{ fontSize:12,fontWeight:800,color:"#b45309",background:"#fff7ed",padding:"3px 10px",borderRadius:999 }}>소비지출 {krw(totals.consumptionTotal)}</span>
+              <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8",background:"#eff6ff",padding:"3px 10px",borderRadius:999 }}>비소비지출 {krw(totals.nonConsumptionTotal)}</span>
             </div>
           }
         />
@@ -870,13 +904,13 @@ function Donut({ title, data, total }: { title:string; data:{name:string;value:n
   return (
     <div className="fp-donut">
       <h3>{title}</h3>
-      <p>합계 {money(total)}원 ({manwon(total)})</p>
+      <p>합계 {krw(total)} ({manwon(total)})</p>
       <ResponsiveContainer width="100%" height={200}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" innerRadius={44} outerRadius={74} paddingAngle={2}>
             {data.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]} />)}
           </Pie>
-          <Tooltip formatter={(v,n)=>[`${money(Number(v))}원 (${pct(Number(v),total)}%)`,n]} />
+          <Tooltip formatter={(v,n)=>[`${krw(Number(v))} (${percentValue(pct(Number(v),total))})`,n]} />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -904,7 +938,7 @@ function DataSection({
     <Panel title={title} icon={<FileText className="h-5 w-5" />}>
       <div className="fp-section-head" style={{ marginBottom:12 }}>
         <div style={{ display:"flex",gap:12,alignItems:"center",flexWrap:"wrap" }}>
-          <strong style={{ fontSize:14 }}>합계 {money(total)}원 <span style={{ fontSize:12,fontWeight:700,color:"#64748b" }}>({manwon(total)})</span></strong>
+          <strong style={{ fontSize:14 }}>합계 {krw(total)} <span style={{ fontSize:12,fontWeight:700,color:"#64748b" }}>({manwon(total)})</span></strong>
           {extraHeader}
         </div>
         <button onClick={()=>onAdd(section)}><Plus className="h-4 w-4" /> 항목 추가</button>
@@ -959,7 +993,7 @@ function DataSection({
                   <td><MoneyInput value={item.payment||0} onChange={v=>onUpdate(section,item.id,{ payment:v })} /></td>
                 )}
                 {(section==="assets"||section==="liabilities") && (
-                  <td><input type="number" value={item.rate||0} step={0.01} onChange={e=>onUpdate(section,item.id,{ rate:Number(e.target.value) })} /></td>
+                  <td><RateInput value={item.rate||0} onChange={v=>onUpdate(section,item.id,{ rate:v })} /></td>
 
                 )}
                 <td><input value={item.memo||""} onChange={e=>onUpdate(section,item.id,{ memo:e.target.value })} /></td>

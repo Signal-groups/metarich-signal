@@ -117,6 +117,53 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
   ],
 }
 
+
+// ── 제안서 불러오기: 메트릭키 → rowKey 역매핑 ─────────────────────────
+const METRIC_TO_ROW_KEY: Record<string, string> = {
+  cancer: 'cancer_general', minorCancer: 'cancer_similar',
+  brain: 'brain_stroke', heart: 'heart_acute_mi',
+  injurySurgery: 'surgery_injury', diseaseSurgery: 'surgery_disease',
+  diseaseTypeSurgery: 'surgery_1_5', diseaseNSurgery: 'surgery_n_major',
+  chemoDrug: 'cancer_chemo', chemoRadiation: 'cancer_radiation',
+  targetDrug: 'cancer_targeted', heavyIon: 'cancer_hadron',
+  robotCancerSurgery: 'cancer_davinci',
+  cancerMajorTreatmentGeneral: 'cancer_major_benefit',
+  cancerMajorTreatmentNonCovered: 'cancer_major_nonbenefit',
+  twoMajorTreatmentComprehensive: 'vascular_major',
+  care: 'nursing_hospital', liability: 'other_liability',
+  trafficSupport: 'driver_accident', lawyer: 'driver_lawyer', finePerson: 'driver_fine',
+}
+type ProposalDraftPlan = {
+  company: string; productName: string; monthlyPremium: string
+  paymentYears: string
+  metrics: Record<string, string>
+  customCoverages?: Array<{ name: string; amount: string }>
+}
+type ProposalDraftItem = {
+  id: string; title?: string; savedAt: string
+  customerName?: string; templateId?: string
+  plans?: ProposalDraftPlan[]
+}
+const PROPOSAL_DRAFTS_KEY_PREFIX = 'metarich_proposal_drafts'
+
+function planToProContract(plan: ProposalDraftPlan, draftId: string, idx: number): ProContract {
+  const coverages: ProCoverage[] = []
+  for (const [mKey, amtStr] of Object.entries(plan.metrics || {})) {
+    const rowKey = METRIC_TO_ROW_KEY[mKey]
+    if (rowKey && Number(amtStr) > 0)
+      coverages.push({ id: `pi-${draftId}-${idx}-${rowKey}`, contractId: '', rowKey, name: ROW_KEY_LABEL[rowKey] ?? rowKey, amount: Number(amtStr) })
+  }
+  for (const cc of plan.customCoverages || [])
+    if (cc.name && cc.amount)
+      coverages.push({ id: `pi-cc-${draftId}-${cc.name}`, contractId: '', rowKey: 'unknown', name: cc.name, amount: Number(cc.amount) || 0 })
+  return {
+    id: `proposal-import-${draftId}-${idx}`,
+    company: plan.company || '제안 보험사', productName: plan.productName || '제안 상품',
+    paymentPeriod: plan.paymentYears || undefined,
+    monthlyPremium: Number(plan.monthlyPremium) || 0, coverages, status: 'active',
+  }
+}
+
 const COVERAGE_TABS: CoverageTab[] = ['진단', '수술', '입원', '간병', '재가', '기타', '운전자', '실손', '주요치료비']
 
 // ── 신규 상품 추가 폼 초기값 ───────────────────────────────────────────
@@ -135,12 +182,16 @@ export default function RemodelComparison({
   contracts,
   proposal,
   onChange,
+  userId,
 }: {
   contracts: ProContract[]
   proposal: RemodelProposal
   onChange: (proposal: RemodelProposal) => void
+  userId?: string
 }) {
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showProposalPicker, setShowProposalPicker] = useState(false)
+  const [proposalDrafts, setProposalDrafts] = useState<ProposalDraftItem[]>([])
   const [form, setForm] = useState(emptyAddForm)
   const [coverageTab, setCoverageTab] = useState<CoverageTab>('진단')
 
@@ -377,14 +428,32 @@ export default function RemodelComparison({
 
       {/* ── 상품 추가 버튼 ──────────────────────────────────────────── */}
       {!showAddForm && (
-        <button
-          type="button"
-          className="coverage-pro-btn primary"
-          style={{ alignSelf: 'flex-start' }}
-          onClick={() => setShowAddForm(true)}
-        >
-          + 신규 상품 추가
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="coverage-pro-btn primary"
+            style={{ alignSelf: 'flex-start' }}
+            onClick={() => setShowAddForm(true)}
+          >
+            + 신규 상품 추가
+          </button>
+          <button
+            type="button"
+            className="coverage-pro-btn"
+            style={{ alignSelf: 'flex-start', background: '#f0f4ff', color: '#1a2744', border: '1px solid #c7d7f5' }}
+            onClick={() => {
+              if (typeof window === 'undefined') return
+              const key = `${PROPOSAL_DRAFTS_KEY_PREFIX}_${userId || 'guest'}`
+              try {
+                const drafts = JSON.parse(window.localStorage.getItem(key) || '[]')
+                setProposalDrafts(Array.isArray(drafts) ? drafts : [])
+              } catch { setProposalDrafts([]) }
+              setShowProposalPicker(true)
+            }}
+          >
+            📋 제안서 불러오기
+          </button>
+        </div>
       )}
 
       {/* ── 신규 상품 추가 폼 ─────────────────────────────────────── */}
@@ -614,14 +683,90 @@ export default function RemodelComparison({
 
       {/* ── 제안 메모 ─────────────────────────────────────────────── */}
       <div className="coverage-pro-card coverage-pro-card-pad">
-        <div className="coverage-pro-section-title">제안 메모</div>
+        <div className="coverage-pro-section-title">제안 메모 (PDF에 인쇄)</div>
         <textarea
           className="coverage-pro-textarea"
           value={proposal.memo}
           onChange={(e) => onChange({ ...proposal, memo: e.target.value })}
-          placeholder="해지 이유, 보완 사유, 고객 희망 보험료 등을 정리하세요."
+          placeholder="해지 이유, 보완 사유, 고객 희망 보험료, 시나리오 설명 등을 정리하세요. PDF 시나리오 페이지에 포함됩니다."
         />
       </div>
+
+      {/* ── 제안서 불러오기 모달 ──────────────────────────────────── */}
+      {showProposalPicker && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 14, width: 560, maxHeight: '80vh',
+            display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 15, color: '#1a2744' }}>제안서 불러오기</div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>저장된 제안서의 상품을 신규 추가로 가져옵니다</div>
+              </div>
+              <button onClick={() => setShowProposalPicker(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af' }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+              {proposalDrafts.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '32px 0', fontSize: 14 }}>
+                  저장된 제안서가 없습니다.<br/>
+                  <span style={{ fontSize: 12 }}>제안서 페이지에서 저장 후 다시 시도하세요.</span>
+                </div>
+              ) : proposalDrafts.map((draft) => {
+                const date = new Date(draft.savedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                const planCount = draft.plans?.length || 0
+                return (
+                  <div
+                    key={draft.id}
+                    style={{
+                      border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 14px',
+                      marginBottom: 8, cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#1a2744')}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                    onClick={() => {
+                      if (!draft.plans || draft.plans.length === 0) { alert('상품 정보가 없는 제안서입니다.'); return }
+                      const newContracts = draft.plans.map((p, i) => planToProContract(p, draft.id, i))
+                      onChange({ ...proposal, addContracts: [...proposal.addContracts, ...newContracts] })
+                      setShowProposalPicker(false)
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: '#1a2744' }}>
+                          {draft.customerName || '고객명 없음'} · {draft.title || '제안서'}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>
+                          상품 {planCount}개 · {date}
+                        </div>
+                        {draft.plans && draft.plans.length > 0 && (
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                            {draft.plans.slice(0, 3).map((p, i) => (
+                              <span key={i}>{i > 0 ? ' / ' : ''}{p.company} {p.productName}</span>
+                            ))}
+                            {draft.plans.length > 3 ? ` 외 ${draft.plans.length - 3}개` : ''}
+                          </div>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 11, color: '#c9a96e', fontWeight: 700, whiteSpace: 'nowrap', marginLeft: 8 }}>불러오기 →</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+              <button
+                onClick={() => setShowProposalPicker(false)}
+                style={{ background: '#f3f4f6', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}
+              >닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
