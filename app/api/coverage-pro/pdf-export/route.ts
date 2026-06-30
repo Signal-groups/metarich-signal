@@ -270,6 +270,75 @@ function buildRecommendations(contracts: ProContract[]) {
   return [...recs.filter(r => r.type === '보장성').slice(0, 3), ...recs.filter(r => r.type === '저축성').slice(0, 2)]
 }
 
+
+// ── 보험회사별 보장 현황 (상세 출력 전용) ─────────────────────────────────
+function buildContractBreakdownPage(contracts: ProContract[]): string {
+  if (!contracts.length) return ''
+
+  const fmtWonB = (v: number) => v ? `${v.toLocaleString()}만원` : '-'
+  const fmtDate = (d?: string) => d ? d.replace(/^(\d{2,4})[.\-](\d{1,2})[.\-](\d{1,2}).*/, '$1.$2').replace(/^(\d{2})\.(\d{1,2})$/, '20$1.$2') : ''
+
+  const activeContracts = contracts.filter(c => c.status !== 'lapsed' && c.status !== 'expired')
+  const cards = activeContracts.map(c => {
+    const premium = Number(c.monthlyPremium || 0)
+    const covRows = c.coverages
+      .filter(cv => Number(cv.amount) > 0)
+      .map(cv =>
+        '<div style="display:flex;justify-content:space-between;align-items:center;' +
+        'padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:10px">' +
+        '<span style="color:#374151;flex:1;padding-right:6px">' + escHtml(cv.name || cv.rowKey) + '</span>' +
+        '<span style="color:#1a2744;font-weight:700;white-space:nowrap">' + fmtWonB(Number(cv.amount)) + '</span>' +
+        '</div>'
+      ).join('')
+    const covEmpty = c.coverages.filter(cv => Number(cv.amount) > 0).length === 0
+    const typeLabel = c.policyType === 'savings' ? '저축성' : '보장성'
+    const typeColor = c.policyType === 'savings' ? '#f59e0b' : '#1a2744'
+    const dateStr = fmtDate(c.contractDate)
+    const periodStr = c.paymentPeriod || ''
+
+    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;' +
+      'break-inside:avoid;page-break-inside:avoid;overflow:hidden">' +
+      // 헤더
+      '<div style="background:#1a2744;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">' +
+        '<div>' +
+          '<div style="font-size:12px;font-weight:900;color:#fff">' + escHtml(c.company) + '</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">' + escHtml(c.productName || '') + '</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:13px;font-weight:900;color:#c9a96e">' + (premium ? premium.toLocaleString() + '원/월' : '-') + '</div>' +
+          '<div style="display:flex;gap:6px;margin-top:3px;justify-content:flex-end">' +
+            '<span style="font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);font-weight:700">' + typeLabel + '</span>' +
+            (dateStr ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + dateStr + '</span>' : '') +
+            (periodStr ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + escHtml(periodStr) + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      // 담보 목록
+      '<div style="padding:8px 12px">' +
+        (covEmpty
+          ? '<div style="font-size:10px;color:#94a3b8;text-align:center;padding:8px">담보 정보 없음</div>'
+          : covRows) +
+      '</div>' +
+    '</div>'
+  }).join('')
+
+  // 2열 그리드 레이아웃
+  const totalPremium = activeContracts.reduce((s, c) => s + Number(c.monthlyPremium || 0), 0)
+  return (
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start">' +
+    cards +
+    '</div>' +
+    '<div style="margin-top:14px;padding:10px 14px;background:#f8fafc;border-radius:8px;' +
+    'display:flex;justify-content:space-between;align-items:center;font-size:11px">' +
+      '<span style="color:#64748b">총 ' + activeContracts.length + '건 · ' +
+        activeContracts.filter(c => c.policyType !== 'savings').length + '건 보장성 / ' +
+        activeContracts.filter(c => c.policyType === 'savings').length + '건 저축성' +
+      '</span>' +
+      '<span style="font-weight:900;color:#1a2744">월 합계 ' + totalPremium.toLocaleString() + '원</span>' +
+    '</div>'
+  )
+}
+
 // ── 담보비교표 (항상 마지막 페이지) ─────────────────────────────────────
 function buildContactsPage(contracts: ProContract[], addContracts: ProContract[] = []): string {
   const allCos = [...contracts, ...addContracts].map(c => c.company || '').filter(Boolean)
@@ -1250,6 +1319,20 @@ ${hasRemodel ? `
       </div>
     </div>
   </div>
+</div>
+</div>
+` : ''}
+
+${!isKey ? `
+<!-- ════ PAGE CONTRACTS: 보험회사별 보장 현황 (상세 전용) ════ -->
+<div class="pdf-page">
+<div class="page-inner">
+  <div class="page-label">보험회사별 보장 현황 (상세)</div>
+  <div class="section-title"><span class="section-num">📋</span>보험회사별 보장 현황</div>
+  <div style="font-size:11px;color:#64748b;margin-bottom:14px">
+    계약별 보장 담보 목록입니다. 상담 시 어느 보험에 어떤 보장이 준비되어 있는지 확인하세요.
+  </div>
+  ${buildContractBreakdownPage(contracts)}
 </div>
 </div>
 ` : ''}
