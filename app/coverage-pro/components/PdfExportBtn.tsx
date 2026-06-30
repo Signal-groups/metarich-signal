@@ -76,7 +76,7 @@ const IMAGE_CATALOG: ImageCategory[] = [
 const RADAR_AXES = [
   { label: '암진단비',  keys: ['cancer_general'],                                               rec: 50_000_000 },
   { label: '뇌진단비',  keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],          rec: 40_000_000 },
-  { label: '심장진단',  keys: ['heart_acute_mi', 'heart_ischemic'],                           rec: 40_000_000 },
+  { label: '심장(허혈성)',  keys: ['heart_ischemic'],                                        rec: 40_000_000 },
   { label: '수술비',        keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],            rec:  5_000_000 },
   { label: '실손의료',  keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],        rec: 50_000_000 },
   { label: '사망보장',  keys: ['death_general', 'death_disease', 'death_injury'],             rec: 100_000_000 },

@@ -221,7 +221,7 @@ function radarChartSvg(contracts: ProContract[]): string {
   const AXES = [
     { label: '암진단비',  keys: ['cancer_general'],                                          rec: 50_000_000 },
     { label: '뇌진단비',  keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],      rec: 40_000_000 },
-    { label: '심장진단비', keys: ['heart_acute_mi', 'heart_ischemic', 'heart_vascular'],     rec: 40_000_000 },
+    { label: '심장(허혈성)', keys: ['heart_ischemic', 'heart_vascular'],                    rec: 40_000_000 },
     { label: '수술비',    keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],         rec:  5_000_000 },
     { label: '실손',      keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],      rec: 50_000_000 },
     { label: '사망',      keys: ['death_general', 'death_disease', 'death_injury'],           rec: 100_000_000 },
@@ -251,7 +251,7 @@ function radarChartSvg(contracts: ProContract[]): string {
     return `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" font-size="10" fill="#1a2744" font-weight="700">${escHtml(a.label)}</text>` +
            `<text x="${lx.toFixed(1)}" y="${(ly+12).toFixed(1)}" text-anchor="${anchor}" font-size="9" fill="#64748b">${pct}%</text>`
   }).join('')
-  return `<svg viewBox="0 0 280 280" width="220" height="220">${gridLines}${axisLines}${polygon}${dots}${labels}</svg>`
+  return `<svg viewBox="0 0 280 280" width="170" height="170">${gridLines}${axisLines}${polygon}${dots}${labels}</svg>`
 }
 
 // ── 추천 제안 ─────────────────────────────────────────────────────────────
@@ -779,51 +779,80 @@ ${advisorInfo ? `
 <div class="pdf-page">
 <div style="
   height:100%; display:flex; flex-direction:column;
-  justify-content:center; align-items:center; text-align:center;
-  background:linear-gradient(150deg,#0d1b36 0%,#1a2744 50%,#2d4a8a 100%);
-  position:relative; overflow:hidden;
+  justify-content:space-between;
+  position:relative; overflow:hidden; padding:0;
+  background:#0a0f1e;
 ">
-  <!-- 배경 장식 원 -->
-  <div style="position:absolute;top:-80px;right:-80px;width:300px;height:300px;border-radius:50%;background:rgba(201,169,110,0.06)"></div>
-  <div style="position:absolute;bottom:-100px;left:-60px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,0.03)"></div>
+  <!-- 실사 배경 이미지 -->
+  <div style="
+    position:absolute;inset:0;
+    background-image:url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80');
+    background-size:cover;background-position:center top;
+    opacity:0.22;
+  "></div>
+  <!-- 딥네이비 그라디언트 오버레이 -->
+  <div style="position:absolute;inset:0;background:linear-gradient(165deg,rgba(8,14,30,0.95) 0%,rgba(15,30,65,0.82) 45%,rgba(10,18,40,0.96) 100%)"></div>
+  <!-- 황금 사선 액센트 -->
+  <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#c9a96e 0%,#e8a84b 50%,#c9a96e 100%)"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#c9a96e,transparent)"></div>
 
-  <div style="position:relative;z-index:1;width:100%;padding:0 60px">
-    <!-- 브랜드 -->
-    <div style="font-size:11px;color:rgba(201,169,110,0.8);font-weight:900;letter-spacing:0.25em;margin-bottom:48px">
-      METARICH SIGNAL GROUP
+  <!-- 상단 브랜드 -->
+  <div style="position:relative;z-index:2;padding:36px 56px 0;display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <div style="font-size:10px;color:rgba(201,169,110,0.9);font-weight:900;letter-spacing:0.3em;margin-bottom:4px">METARICH SIGNAL GROUP</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.1em">정확한 분석, 신속한 청구</div>
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.3)">${new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' })} 작성</div>
+  </div>
+
+  <!-- 중앙 메인 콘텐츠 -->
+  <div style="position:relative;z-index:2;flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 56px">
+    <!-- 카테고리 라벨 -->
+    <div style="
+      display:inline-block;width:fit-content;
+      background:rgba(201,169,110,0.15);border:1px solid rgba(201,169,110,0.4);
+      border-radius:4px;padding:5px 14px;margin-bottom:28px;
+    ">
+      <span style="font-size:10px;color:#c9a96e;font-weight:900;letter-spacing:0.2em">보 장 분 석 리 포 트</span>
     </div>
 
     <!-- 고객명 -->
-    <div style="font-size:52px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:8px">
-      ${escHtml(customerName)}님
-    </div>
-    <div style="font-size:22px;color:rgba(255,255,255,0.65);font-weight:700;margin-bottom:40px">
-      보장 분석 리포트
+    <div style="font-size:62px;font-weight:900;color:#ffffff;line-height:1.0;margin-bottom:6px;letter-spacing:-0.01em">
+      ${escHtml(customerName)}<span style="font-size:36px;font-weight:700;color:rgba(255,255,255,0.7)"> 님</span>
     </div>
 
-    <!-- 구분선 -->
-    <div style="width:60px;height:3px;background:linear-gradient(90deg,#c9a96e,#e8a84b);margin:0 auto 40px;border-radius:2px"></div>
-
-    <!-- 날짜 -->
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:60px">
-      ${new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' })} 작성
+    <!-- 서브 텍스트 -->
+    <div style="font-size:16px;color:rgba(255,255,255,0.45);font-weight:500;margin-top:10px;margin-bottom:40px;letter-spacing:0.03em">
+      현재 보유 보장을 점검하고 최적의 보장 설계를 제안드립니다
     </div>
 
-    <!-- 설계사 정보 카드 -->
+    <!-- 황금 구분선 -->
+    <div style="width:80px;height:2px;background:linear-gradient(90deg,#c9a96e,#e8a84b);border-radius:1px"></div>
+  </div>
+
+  <!-- 하단 설계사 카드 -->
+  <div style="position:relative;z-index:2;padding:0 56px 40px">
     <div style="
-      display:inline-block;
-      background:rgba(255,255,255,0.08);
-      border:1px solid rgba(255,255,255,0.15);
-      border-radius:14px; padding:20px 40px; min-width:260px;
+      display:flex;align-items:center;gap:24px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.12);
+      border-left:3px solid #c9a96e;
+      border-radius:8px;padding:18px 28px;
     ">
-      <div style="font-size:10px;color:rgba(201,169,110,0.7);font-weight:700;letter-spacing:0.15em;margin-bottom:8px">
-        담당 설계사
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(201,169,110,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="font-size:20px">&#128100;</span>
       </div>
-      <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:6px">
-        ${escHtml(advisorInfo.name || '담당 설계사')}
+      <div>
+        <div style="font-size:9px;color:rgba(201,169,110,0.7);font-weight:900;letter-spacing:0.15em;margin-bottom:4px">담 당 설 계 사</div>
+        <div style="font-size:18px;font-weight:900;color:#ffffff;line-height:1.2">
+          ${escHtml(advisorInfo.name || '담당 설계사')}
+        </div>
       </div>
-      <div style="font-size:14px;color:#c9a96e;font-weight:700;letter-spacing:0.05em">
-        ${escHtml(advisorInfo.phone || '')}
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-bottom:4px">상담 연락처</div>
+        <div style="font-size:16px;font-weight:700;color:#c9a96e;letter-spacing:0.05em">
+          ${escHtml(advisorInfo.phone || '')}
+        </div>
       </div>
     </div>
   </div>
@@ -848,11 +877,12 @@ ${advisorInfo ? `
       <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
       <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:12px">
         <div class="gauge-grid">${gaugesHtml}</div>
-        <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts)}</div>
-        <div style="margin-top:4px">
-          <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:4px;padding-top:4px;border-top:1px solid #e2e8f0">주요보장 체크</div>
-          ${diagnosisAverageHtml}
-          ${silsonInfoHtml}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;align-items:start">
+          <div style="display:flex;justify-content:center">${radarChartSvg(contracts)}</div>
+          <div>
+            <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:6px;padding-top:2px;border-top:2px solid #1a2744">&#10003; 주요보장 체크</div>
+            ${diagnosisAverageHtml}
+          </div>
         </div>
       </div>
     </div>

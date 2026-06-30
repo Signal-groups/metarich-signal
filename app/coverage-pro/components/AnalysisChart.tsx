@@ -6,7 +6,7 @@ const RADAR_GROUPS = [
   { key: 'death',    label: '사망',     match: ['death_'],                        recommend: 100_000_000 },
   { key: 'cancer',   label: '암진단',   match: ['cancer_general'],                recommend: 30_000_000 },
   { key: 'brain',    label: '뇌질환',   match: ['brain_stroke', 'brain_vascular', 'vascular_major'], recommend: 20_000_000 },
-  { key: 'heart',    label: '심장',     match: ['heart_ischemic', 'heart_acute_mi', 'vascular_major'], recommend: 20_000_000 },
+  { key: 'heart',    label: '심장(허혈성)', match: ['heart_ischemic', 'vascular_major'], recommend: 20_000_000 },
   { key: 'surgery',  label: '수술비',   match: ['surgery_'],                      recommend: 5_000_000 },
   { key: 'hospital', label: '입원/간병', match: ['hospital_disease_daily', 'hospital_injury_daily', 'nursing_hospital'], recommend: 200_000 },
 ]
