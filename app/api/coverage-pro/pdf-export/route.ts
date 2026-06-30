@@ -276,7 +276,43 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
   if (!contracts.length) return ''
 
   const fmtWonB = (v: number) => v ? `${v.toLocaleString()}만원` : '-'
-  const fmtDate = (d?: string) => d ? d.replace(/^(\d{2,4})[.\-](\d{1,2})[.\-](\d{1,2}).*/, '$1.$2').replace(/^(\d{2})\.(\d{1,2})$/, '20$1.$2') : ''
+
+  // contractDate 파싱 → Date 객체
+  function parseContractDate(d?: string): Date | null {
+    if (!d) return null
+    // "2020.02.14", "20.02.14", "2020-02-14", "24.03" 등
+    const m = d.match(/(\d{2,4})[.\-](\d{1,2})(?:[.\-](\d{1,2}))?/)
+    if (!m) return null
+    let y = parseInt(m[1])
+    if (y < 100) y += 2000
+    const mo = parseInt(m[2]) - 1
+    const dy = m[3] ? parseInt(m[3]) : 1
+    return new Date(y, mo, dy)
+  }
+
+  // paymentPeriod에서 납입년수 파싱 ("10년납/80세만기" → 10)
+  function parsePaymentYears(p?: string): number | null {
+    if (!p) return null
+    const m = p.match(/(\d+)년납/)
+    return m ? parseInt(m[1]) : null
+  }
+
+  // 만기 정보 파싱 ("80세만기" → "80세만기", "100세만기" → "100세만기")
+  function parseMaturity(p?: string): string {
+    if (!p) return ''
+    const m = p.match(/(\d+세만기|종신|전기납)/)
+    return m ? m[1] : p
+  }
+
+  // 날짜 포맷 YYYY.MM.DD
+  function fmtD(d: Date): string {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}.${m}.${day}`
+  }
+
+  const today = new Date()
 
   const activeContracts = contracts.filter(c => c.status !== 'lapsed' && c.status !== 'expired')
   const cards = activeContracts.map(c => {
@@ -292,26 +328,50 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
       ).join('')
     const covEmpty = c.coverages.filter(cv => Number(cv.amount) > 0).length === 0
     const typeLabel = c.policyType === 'savings' ? '저축성' : '보장성'
-    const typeColor = c.policyType === 'savings' ? '#f59e0b' : '#1a2744'
-    const dateStr = fmtDate(c.contractDate)
-    const periodStr = c.paymentPeriod || ''
+
+    // 납입기간 계산
+    const startDate = parseContractDate(c.contractDate)
+    const payYears = parsePaymentYears(c.paymentPeriod)
+    const maturity = parseMaturity(c.paymentPeriod)
+
+    let periodLine = ''
+    let payCountLine = ''
+    if (startDate && payYears) {
+      const endDate = new Date(startDate.getFullYear() + payYears, startDate.getMonth(), startDate.getDate() - 1)
+      const totalMonths = payYears * 12
+      const elapsed = Math.max(0, (today.getFullYear() - startDate.getFullYear()) * 12 + (today.getMonth() - startDate.getMonth()))
+      const paid = Math.min(elapsed, totalMonths)
+      periodLine = fmtD(startDate) + '~' + fmtD(endDate)
+      payCountLine = '납입 ' + String(paid).padStart(2, '0') + '/' + totalMonths + '회'
+    } else if (startDate && c.contractDate) {
+      periodLine = fmtD(startDate)
+    }
 
     return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;' +
       'break-inside:avoid;page-break-inside:avoid;overflow:hidden">' +
       // 헤더
-      '<div style="background:#1a2744;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">' +
-        '<div>' +
-          '<div style="font-size:12px;font-weight:900;color:#fff">' + escHtml(c.company) + '</div>' +
-          '<div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">' + escHtml(c.productName || '') + '</div>' +
-        '</div>' +
-        '<div style="text-align:right">' +
-          '<div style="font-size:13px;font-weight:900;color:#c9a96e">' + (premium ? premium.toLocaleString() + '원/월' : '-') + '</div>' +
-          '<div style="display:flex;gap:6px;margin-top:3px;justify-content:flex-end">' +
+      '<div style="background:#1a2744;padding:10px 12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+          '<div>' +
+            '<div style="font-size:12px;font-weight:900;color:#fff">' + escHtml(c.company) + '</div>' +
+            '<div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">' + escHtml(c.productName || '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right">' +
+            '<div style="font-size:13px;font-weight:900;color:#c9a96e">' + (premium ? premium.toLocaleString() + '원/월' : '-') + '</div>' +
             '<span style="font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);font-weight:700">' + typeLabel + '</span>' +
-            (dateStr ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + dateStr + '</span>' : '') +
-            (periodStr ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + escHtml(periodStr) + '</span>' : '') +
           '</div>' +
         '</div>' +
+        // 기간/납입 정보 행
+        (periodLine || payCountLine || maturity ? (
+          '<div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.12);' +
+          'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">' +
+            (periodLine ? '<span style="font-size:9px;color:rgba(255,255,255,0.6)">📅 ' + escHtml(periodLine) + '</span>' : '') +
+            '<div style="display:flex;gap:8px;margin-left:auto">' +
+              (payCountLine ? '<span style="font-size:9px;color:#c9a96e;font-weight:700">' + escHtml(payCountLine) + '</span>' : '') +
+              (maturity ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + escHtml(maturity) + '</span>' : '') +
+            '</div>' +
+          '</div>'
+        ) : '') +
       '</div>' +
       // 담보 목록
       '<div style="padding:8px 12px">' +
@@ -322,21 +382,80 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
     '</div>'
   }).join('')
 
-  // 2열 그리드 레이아웃
-  const totalPremium = activeContracts.reduce((s, c) => s + Number(c.monthlyPremium || 0), 0)
-  return (
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start">' +
-    cards +
-    '</div>' +
-    '<div style="margin-top:14px;padding:10px 14px;background:#f8fafc;border-radius:8px;' +
-    'display:flex;justify-content:space-between;align-items:center;font-size:11px">' +
-      '<span style="color:#64748b">총 ' + activeContracts.length + '건 · ' +
-        activeContracts.filter(c => c.policyType !== 'savings').length + '건 보장성 / ' +
-        activeContracts.filter(c => c.policyType === 'savings').length + '건 저축성' +
-      '</span>' +
-      '<span style="font-weight:900;color:#1a2744">월 합계 ' + totalPremium.toLocaleString() + '원</span>' +
+  // 2열 그리드 — 카드 2개씩 행으로 묶어 페이지 경계에서 카드가 잘리지 않게 처리
+  const cardArr = activeContracts.map((c, i) => {
+    const premium = Number(c.monthlyPremium || 0)
+    const covRowsInner = c.coverages
+      .filter(cv => Number(cv.amount) > 0)
+      .map(cv =>
+        '<div style="display:flex;justify-content:space-between;align-items:center;' +
+        'padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:10px">' +
+        '<span style="color:#374151;flex:1;padding-right:6px">' + escHtml(cv.name || cv.rowKey) + '</span>' +
+        '<span style="color:#1a2744;font-weight:700;white-space:nowrap">' + fmtWonB(Number(cv.amount)) + '</span>' +
+        '</div>'
+      ).join('')
+    const covEmptyInner = c.coverages.filter(cv => Number(cv.amount) > 0).length === 0
+    const typeLabel = c.policyType === 'savings' ? '저축성' : '보장성'
+    const startDate = parseContractDate(c.contractDate)
+    const payYears = parsePaymentYears(c.paymentPeriod)
+    const maturity = parseMaturity(c.paymentPeriod)
+    let periodLine = ''
+    let payCountLine = ''
+    if (startDate && payYears) {
+      const endDate = new Date(startDate.getFullYear() + payYears, startDate.getMonth(), startDate.getDate() - 1)
+      const totalMonths = payYears * 12
+      const elapsed = Math.max(0, (today.getFullYear() - startDate.getFullYear()) * 12 + (today.getMonth() - startDate.getMonth()))
+      const paid = Math.min(elapsed, totalMonths)
+      periodLine = fmtD(startDate) + '~' + fmtD(endDate)
+      payCountLine = '납입 ' + String(paid).padStart(2, '0') + '/' + totalMonths + '회'
+    } else if (startDate) {
+      periodLine = fmtD(startDate)
+    }
+    return (
+      '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;' +
+      'break-inside:avoid;page-break-inside:avoid;overflow:hidden">' +
+      '<div style="background:#1a2744;padding:10px 12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+          '<div>' +
+            '<div style="font-size:12px;font-weight:900;color:#fff">' + escHtml(c.company) + '</div>' +
+            '<div style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px">' + escHtml(c.productName || '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right">' +
+            '<div style="font-size:13px;font-weight:900;color:#c9a96e">' + (premium ? premium.toLocaleString() + '원/월' : '-') + '</div>' +
+            '<span style="font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);font-weight:700">' + typeLabel + '</span>' +
+          '</div>' +
+        '</div>' +
+        (periodLine || payCountLine || maturity ? (
+          '<div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.12);' +
+          'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">' +
+            (periodLine ? '<span style="font-size:9px;color:rgba(255,255,255,0.6)">📅 ' + escHtml(periodLine) + '</span>' : '') +
+            '<div style="display:flex;gap:8px;margin-left:auto">' +
+              (payCountLine ? '<span style="font-size:9px;color:#c9a96e;font-weight:700">' + escHtml(payCountLine) + '</span>' : '') +
+              (maturity ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + escHtml(maturity) + '</span>' : '') +
+            '</div>' +
+          '</div>'
+        ) : '') +
+      '</div>' +
+      '<div style="padding:8px 12px">' +
+        (covEmptyInner
+          ? '<div style="font-size:10px;color:#94a3b8;text-align:center;padding:8px">담보 정보 없음</div>'
+          : covRowsInner) +
+      '</div>' +
     '</div>'
-  )
+    )
+  })
+
+  // 2개씩 행으로 묶기 — 행 단위로 break-inside:avoid 적용
+  let rows = ''
+  for (let i = 0; i < cardArr.length; i += 2) {
+    rows +=
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;' +
+      'break-inside:avoid;page-break-inside:avoid;margin-bottom:10px">' +
+      cardArr[i] +
+      (cardArr[i + 1] || '<div></div>') +
+      '</div>'
+  }
+  return rows
 }
 
 // ── 담보비교표 (항상 마지막 페이지) ─────────────────────────────────────
@@ -732,6 +851,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       color:#111;background:#f5f7fb;word-break:keep-all;font-size:13px}
 
     .pdf-page{background:#fff;padding:0;break-after:page;page-break-after:always}
+    .cover-page{height:210mm;min-height:595px}
     .pdf-page:last-child{break-after:avoid;page-break-after:avoid}
     .page-inner{max-width:1160px;margin:0 auto;padding:16px 20px}
 
@@ -832,7 +952,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       body{background:#fff}
       .print-bar{display:none}
       .pdf-page{background:#fff}
-      .cover-page{background:transparent!important}
+      .cover-page{background:transparent!important;height:100vh}
       tr{page-break-inside:avoid}
       /* 비교표 인쇄 시 페이지 폭에 맞게 자동 축소 */
       .compare-wrap{overflow:visible}
@@ -873,8 +993,8 @@ ${advisorInfo ? `
   <!-- 하단 라인 -->
   <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1a2744,#2d6a9a,transparent)"></div>
 
-  <!-- 콘텐츠 -->
-  <div style="position:relative;z-index:2;display:flex;flex-direction:column;height:100%;padding:50px 70px">
+  <!-- 콘텐츠 — 상단/중앙/하단 space-between -->
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;justify-content:space-between;height:100%;padding:36px 70px 44px">
 
     <!-- 상단 브랜드 + 날짜 -->
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -887,51 +1007,53 @@ ${advisorInfo ? `
     </div>
 
     <!-- 중앙 메인 타이틀 -->
-    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center">
+    <div style="text-align:center">
       <div style="
         font-size:22px;font-weight:700;
         color:#1a3a6b;font-style:italic;
-        letter-spacing:0.05em;margin-bottom:16px;
+        letter-spacing:0.05em;margin-bottom:18px;
         text-shadow:0 1px 4px rgba(255,255,255,0.9);
       ">
         ${escHtml(customerName)} 고객님을 위한
       </div>
       <div style="
-        font-size:52px;font-weight:900;
-        color:#0d1f42;line-height:1.1;
-        letter-spacing:-0.01em;
-        text-shadow:0 2px 10px rgba(255,255,255,0.95),0 1px 2px rgba(0,0,0,0.06);
-        margin-bottom:24px;
+        font-size:56px;font-weight:900;
+        color:#0d1f42;line-height:1.05;
+        letter-spacing:-0.02em;
+        text-shadow:0 2px 12px rgba(255,255,255,0.95),0 1px 2px rgba(0,0,0,0.06);
+        margin-bottom:28px;
       ">
         고객보장분석 리포트
       </div>
       <div style="display:flex;align-items:center;justify-content:center;gap:12px">
-        <div style="height:1px;width:80px;background:linear-gradient(90deg,transparent,#2d6a9a)"></div>
-        <div style="width:7px;height:7px;border-radius:50%;background:#2d6a9a;opacity:0.7"></div>
-        <div style="height:1px;width:80px;background:linear-gradient(90deg,#2d6a9a,transparent)"></div>
+        <div style="height:1px;width:100px;background:linear-gradient(90deg,transparent,#2d6a9a)"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#2d6a9a;opacity:0.7"></div>
+        <div style="height:1px;width:100px;background:linear-gradient(90deg,#2d6a9a,transparent)"></div>
       </div>
     </div>
 
-    <!-- 하단 설계사 카드 (왼쪽) -->
-    <div style="display:flex;justify-content:flex-start">
+    <!-- 하단 설계사 카드 -->
+    <div>
       <div style="
-        background:rgba(255,255,255,0.6);
+        background:rgba(255,255,255,0.62);
         border:1.5px solid rgba(26,39,68,0.18);
         border-left:4px solid #1a2744;
-        border-radius:10px;padding:18px 28px;
-        min-width:280px;
+        border-radius:10px;padding:20px 30px;
+        display:inline-flex;gap:28px;align-items:center;
       ">
-        <div style="font-size:10px;font-weight:700;color:#2d4a8a;letter-spacing:0.12em;margin-bottom:8px;opacity:0.8">
-          담당 설계사
+        <div>
+          <div style="font-size:9px;font-weight:700;color:#2d4a8a;letter-spacing:0.15em;margin-bottom:6px;opacity:0.8">담 당 설 계 사</div>
+          <div style="font-size:20px;font-weight:900;color:#0d1f42;line-height:1.2">
+            보험전문가 ${escHtml(advisorInfo.name || '담당 설계사')}
+          </div>
+          <div style="font-size:11px;color:#2d4a8a;font-weight:600;margin-top:4px;opacity:0.8">메타리치 시그널그룹</div>
         </div>
-        <div style="font-size:20px;font-weight:900;color:#0d1f42;margin-bottom:5px">
-          보험전문가 ${escHtml(advisorInfo.name || '담당 설계사')}
-        </div>
-        <div style="font-size:12px;color:#2d4a8a;font-weight:600;margin-bottom:5px;opacity:0.8">
-          메타리치 시그널그룹
-        </div>
-        <div style="font-size:14px;color:#1a2744;font-weight:700;letter-spacing:0.04em">
-          &#128222; ${escHtml(advisorInfo.phone || '')}
+        <div style="width:1px;height:48px;background:rgba(26,39,68,0.15)"></div>
+        <div>
+          <div style="font-size:9px;font-weight:700;color:#2d4a8a;letter-spacing:0.1em;margin-bottom:6px;opacity:0.8">상 담 연 락 처</div>
+          <div style="font-size:18px;font-weight:700;color:#1a2744;letter-spacing:0.04em">
+            &#128222; ${escHtml(advisorInfo.phone || '')}
+          </div>
         </div>
       </div>
     </div>
