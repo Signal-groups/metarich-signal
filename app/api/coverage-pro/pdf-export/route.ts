@@ -22,30 +22,46 @@ type PdfExportInput = {
   advisorInfo?: AdvisorInfo
 }
 
-// ── 주요 보험사 고객센터 ──────────────────────────────────────────────────
-const INSURER_CONTACTS: Array<{ name: string; phone: string; type: 'life' | 'nonlife' }> = [
-  { name: '삼성생명',    phone: '1588-3114', type: 'life' },
-  { name: '한화생명',    phone: '1588-6363', type: 'life' },
-  { name: '교보생명',    phone: '1588-1001', type: 'life' },
-  { name: '신한라이프',  phone: '1588-5580', type: 'life' },
-  { name: 'KB라이프',    phone: '1588-9922', type: 'life' },
-  { name: 'NH농협생명',  phone: '1544-4000', type: 'life' },
-  { name: '동양생명',    phone: '1577-1004', type: 'life' },
-  { name: '라이나생명',  phone: '1588-0058', type: 'life' },
+// ── 보험사 고객센터 (금융감독원 공시 기준) ──────────────────────────────
+const INSURER_CONTACTS: Array<{ name: string; phone: string; type: 'life' | 'nonlife'; aliases?: string[] }> = [
+  // 생명보험사
+  { name: 'ABL생명',      phone: '1588-6500', type: 'life', aliases: ['ABL'] },
+  { name: 'AIA생명',      phone: '1588-9898', type: 'life', aliases: ['AIA'] },
+  { name: 'KB라이프',     phone: '1588-9922', type: 'life', aliases: ['KB생명', 'KB라이프생명'] },
+  { name: 'KDB생명',      phone: '1588-4040', type: 'life', aliases: ['KDB'] },
+  { name: 'MetLife생명',  phone: '1588-9600', type: 'life', aliases: ['메트라이프', 'MetLife'] },
+  { name: 'NH농협생명',   phone: '1544-4000', type: 'life', aliases: ['농협생명'] },
+  { name: '교보생명',     phone: '1588-1001', type: 'life' },
+  { name: '동양생명',     phone: '1577-1004', type: 'life' },
+  { name: '라이나생명',   phone: '1588-0058', type: 'life', aliases: ['Lina'] },
   { name: '미래에셋생명', phone: '1588-0220', type: 'life' },
-  { name: 'AIA생명',     phone: '1588-9898', type: 'life' },
-  { name: '흥국생명',    phone: '1588-2288', type: 'life' },
-  { name: 'ABL생명',     phone: '1588-6500', type: 'life' },
-  { name: '삼성화재',    phone: '1588-5114', type: 'nonlife' },
-  { name: '현대해상',    phone: '1588-5656', type: 'nonlife' },
-  { name: 'DB손해보험',  phone: '1588-0100', type: 'nonlife' },
-  { name: 'KB손해보험',  phone: '1544-0114', type: 'nonlife' },
-  { name: '메리츠화재',  phone: '1566-7711', type: 'nonlife' },
-  { name: '한화손해보험', phone: '1566-8000', type: 'nonlife' },
-  { name: '롯데손해보험', phone: '1588-3344', type: 'nonlife' },
-  { name: 'NH농협손해보험', phone: '1644-9000', type: 'nonlife' },
-  { name: '흥국화재',    phone: '1688-1688', type: 'nonlife' },
-  { name: '우체국보험',  phone: '1599-0100', type: 'nonlife' },
+  { name: '삼성생명',     phone: '1588-3114', type: 'life' },
+  { name: '신한라이프',   phone: '1588-5580', type: 'life', aliases: ['신한생명', '오렌지라이프'] },
+  { name: '처브라이프',   phone: '1599-4600', type: 'life', aliases: ['Chubb생명'] },
+  { name: '푸본현대생명', phone: '1577-3311', type: 'life', aliases: ['현대라이프', '푸본'] },
+  { name: '하나생명',     phone: '1577-1112', type: 'life' },
+  { name: '한화생명',     phone: '1588-6363', type: 'life' },
+  { name: '흥국생명',     phone: '1588-2288', type: 'life' },
+  { name: 'IBK연금보험',  phone: '1577-4117', type: 'life', aliases: ['IBK'] },
+  { name: 'DGB생명',      phone: '1588-4770', type: 'life', aliases: ['DGB'] },
+  // 손해보험사
+  { name: 'DB손해보험',   phone: '1588-0100', type: 'nonlife', aliases: ['DB손보', 'DB화재', '동부화재'] },
+  { name: 'KB손해보험',   phone: '1544-0114', type: 'nonlife', aliases: ['KB손보', 'KB화재'] },
+  { name: 'MG손해보험',   phone: '1588-5959', type: 'nonlife', aliases: ['MG'] },
+  { name: 'NH농협손해보험', phone: '1644-9000', type: 'nonlife', aliases: ['농협손해'] },
+  { name: '롯데손해보험', phone: '1588-3344', type: 'nonlife', aliases: ['롯데손보'] },
+  { name: '메리츠화재',   phone: '1566-7711', type: 'nonlife', aliases: ['메리츠'] },
+  { name: '삼성화재',     phone: '1588-5114', type: 'nonlife' },
+  { name: '한화손해보험', phone: '1566-8000', type: 'nonlife', aliases: ['한화손보'] },
+  { name: '현대해상',     phone: '1588-5656', type: 'nonlife' },
+  { name: '흥국화재',     phone: '1688-1688', type: 'nonlife' },
+  { name: '우체국보험',   phone: '1599-0100', type: 'nonlife', aliases: ['우체국'] },
+  { name: 'AXA손해보험',  phone: '1566-1566', type: 'nonlife', aliases: ['AXA'] },
+  { name: 'AIG손해보험',  phone: '1544-2792', type: 'nonlife', aliases: ['AIG'] },
+  { name: '처브손해보험', phone: '1544-0100', type: 'nonlife', aliases: ['Chubb'] },
+  { name: '하나손해보험', phone: '1688-1688', type: 'nonlife', aliases: ['하나손보'] },
+  { name: '캐롯손해보험', phone: '1566-1566', type: 'nonlife', aliases: ['캐롯'] },
+  { name: '카카오손해보험', phone: '1588-8000', type: 'nonlife', aliases: ['카카오'] },
 ]
 
 export async function POST(req: NextRequest) {
@@ -63,7 +79,13 @@ export async function POST(req: NextRequest) {
 
 // ── 집계 헬퍼 ──────────────────────────────────────────────────────────────
 // surgery_1_5 / surgery_n_major 은 보험사별 최대값 사용 (중복 합산 방지)
-const MAX_ROW_KEYS = new Set(['surgery_1_5', 'surgery_n_major'])
+// 실손·수술비 특수종목: 중복 합산 금지, 계약 중 최대값 사용
+const MAX_ROW_KEYS = new Set([
+  'surgery_1_5', 'surgery_n_major',
+  'silson_disease_inpatient', 'silson_injury_inpatient',
+  'silson_disease_outpatient', 'silson_injury_outpatient',
+  'silson_3major',
+])
 
 function sumAmount(contracts: ProContract[], ...rowKeys: string[]): number {
   let total = 0
@@ -252,9 +274,10 @@ function buildRecommendations(contracts: ProContract[]) {
 function buildContactsPage(contracts: ProContract[], addContracts: ProContract[] = []): string {
   const allCos = [...contracts, ...addContracts].map(c => c.company || '').filter(Boolean)
   const uniqueCos = [...new Set(allCos)]
-  const matched = INSURER_CONTACTS.filter(ic =>
-    uniqueCos.some(co => co.includes(ic.name) || ic.name.includes(co))
-  )
+  const matched = INSURER_CONTACTS.filter(ic => {
+    const names = [ic.name, ...(ic.aliases || [])]
+    return uniqueCos.some(co => names.some(n => co.includes(n) || n.includes(co)))
+  })
   const lifeList = matched.filter(ic => ic.type === 'life')
   const nonlifeList = matched.filter(ic => ic.type === 'nonlife')
   const renderRows = (list: typeof matched) => list.map(ic =>
@@ -550,13 +573,18 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     tcRow('심장질환 진단비',    sumAmount(contracts, 'heart_vascular')),
   ].join(''))
 
-  // 수술비
+  // 수술비 (구 생명보험: 상해+질병 통합 계약은 surgery_disease 또는 surgery_injury 둘 다 매핑될 수 있음)
+  const surgeryDiseaseAmt = sumAmount(contracts, 'surgery_disease')
+  const surgeryInjuryAmt  = sumAmount(contracts, 'surgery_injury')
+  const surgeryNote = (surgeryDiseaseAmt === 0 && surgeryInjuryAmt > 0)
+    ? '<div style="font-size:9px;color:#94a3b8;padding:3px 6px">※ 구 생명보험 통합수술비는 상해 기준 표기</div>'
+    : ''
   const surgeryCard = tcCard('🏥', '수술비', [
-    tcRow('수술비(질병)',   sumAmount(contracts, 'surgery_disease')),
-    tcRow('수술비(상해)',   sumAmount(contracts, 'surgery_injury')),
+    tcRow('수술비(질병)',  surgeryDiseaseAmt),
+    tcRow('수술비(상해)',  surgeryInjuryAmt),
     tcRow('1~5종 수술비', sumAmount(contracts, 'surgery_1_5')),
     tcRow('N대 수술비',   sumAmount(contracts, 'surgery_n_major')),
-  ].join(''))
+  ].join('') + surgeryNote)
 
   // 간병 4분류
   const nursingCard = tcCard('🤝', '간병인', [
@@ -584,16 +612,19 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     tcRow('벌금',                   sumAmount(contracts, 'driver_fine')),
   ].join(''))
 
-  // 추천 제안
-  const recsHtml = buildRecommendations(contracts).map(r => `
-    <div class="rec-card rec-${r.type === '보장성' ? 'protect' : 'save'}">
-      <div class="rec-icon">${r.icon}</div>
-      <div>
-        <div class="rec-type">${r.type}</div>
-        <div class="rec-title">${escHtml(r.title)}</div>
-        <div class="rec-desc">${escHtml(r.desc)}</div>
-      </div>
-    </div>`).join('')
+  // 추천 제안 — 3개씩 가로 그리드
+  const recsItems = buildRecommendations(contracts)
+  const recsHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
+    recsItems.map(r => `
+      <div class="rec-card rec-${r.type === '보장성' ? 'protect' : 'save'}" style="margin:0">
+        <div class="rec-icon">${r.icon}</div>
+        <div>
+          <div class="rec-type">${r.type}</div>
+          <div class="rec-title">${escHtml(r.title)}</div>
+          <div class="rec-desc">${escHtml(r.desc)}</div>
+        </div>
+      </div>`).join('') +
+    '</div>'
 
   // 보험료 구성 인포그래픽 (실손 제외, 가로 바)
   const premiumInfoHtml = `
@@ -839,28 +870,46 @@ ${advisorInfo ? `
 <div class="pdf-page">
 <div class="page-inner">
   <div class="page-label">치료비 · 수술비 · 간병 · 실손 상세</div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start">
+
+  <!-- ① 1행: 암치료비 / 뇌심장치료비 / 수술비 / 실손의료비 -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
     <div>
-      <div class="section-title" style="font-size:12px"><span class="section-num">3</span>암 치료비</div>
+      <div class="section-title" style="font-size:11px"><span class="section-num">3</span>암 치료비</div>
       ${cancerCard}
     </div>
     <div>
-      <div class="section-title" style="font-size:12px"><span class="section-num">4</span>뇌·심장 치료비</div>
+      <div class="section-title" style="font-size:11px"><span class="section-num">4</span>뇌·심장 치료비</div>
       ${brainCard}
     </div>
     <div>
-      <div class="section-title" style="font-size:12px"><span class="section-num">5</span>수술비</div>
+      <div class="section-title" style="font-size:11px"><span class="section-num">5</span>수술비</div>
       ${surgeryCard}
-      <div class="section-title" style="font-size:12px;margin-top:10px"><span class="section-num">6</span>간병인</div>
-      ${nursingCard}
     </div>
     <div>
-      <div class="section-title" style="font-size:12px"><span class="section-num">7</span>실손의료비</div>
+      <div class="section-title" style="font-size:11px"><span class="section-num">7</span>실손의료비</div>
       ${silsonCard}
-      ${!isKey ? `<div class="section-title" style="font-size:12px;margin-top:10px"><span class="section-num">8</span>운전자보험</div>${driverCard}` : ''}
     </div>
   </div>
-  ${!isKey ? `<div style="margin-top:14px;padding-top:10px;border-top:1px solid #e2e8f0"><div class="section-title" style="font-size:12px;margin-bottom:6px"><span class="section-num">9</span>추천 제안</div>${recsHtml}</div>` : ''}
+
+  <!-- ② 구분선 -->
+  <div style="border-top:1px solid #e2e8f0;margin-bottom:10px"></div>
+
+  <!-- ③ 2행: 간병인+입원일당 / 운전자 / 추천제안 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr ${!isKey ? '2fr' : '1fr'};gap:10px;align-items:start">
+    <div>
+      <div class="section-title" style="font-size:11px"><span class="section-num">6</span>간병인 · 입원일당</div>
+      ${nursingCard}
+    </div>
+    ${!isKey ? `
+    <div>
+      <div class="section-title" style="font-size:11px"><span class="section-num">8</span>운전자보험</div>
+      ${driverCard}
+    </div>
+    <div>
+      <div class="section-title" style="font-size:11px;margin-bottom:6px"><span class="section-num">9</span>추천 제안</div>
+      ${recsHtml}
+    </div>` : ''}
+  </div>
 </div>
 </div>
 

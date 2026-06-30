@@ -4,8 +4,13 @@ import { useState } from 'react'
 import type { ProContract, ProCoverage } from '../../../lib/coverageAnalysis/types'
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 
-// 최대값으로 집계할 rowKey (수술비 — 종별 최고 금액이 의미 있음)
-const MAX_ROW_KEYS = new Set(['surgery_1_5', 'surgery_n_major'])
+// 최대값으로 집계할 rowKey (실손·수술비 — 중복 합산 불가, 최고 계약 기준)
+const MAX_ROW_KEYS = new Set([
+  'surgery_1_5', 'surgery_n_major',
+  'silson_disease_inpatient', 'silson_injury_inpatient',
+  'silson_disease_outpatient', 'silson_injury_outpatient',
+  'silson_3major',
+])
 
 // 주요 보장 항목 — 카테고리별 정의
 const CATEGORY_GROUPS = [
