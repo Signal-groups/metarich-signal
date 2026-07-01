@@ -30,6 +30,15 @@ type Entry = {
   memo?: string
 }
 
+type GoalItem = {
+  id: string
+  horizon: '단기' | '중기' | '장기'   // 단기 1-3년 / 중기 3-7년 / 장기 7년+
+  purpose: string                      // 목적 (예: 비상자금, 자녀교육, 노후준비)
+  targetAmount: number                 // 목표금액 (원)
+  periodYears: number                  // 기간 (년)
+  memo?: string
+}
+
 type Proposal = {
   monthlyIncome: number
   totalExpense: number
@@ -38,6 +47,7 @@ type Proposal = {
   debtReduction: number
   investmentAdd: number
   memo: string
+  goals?: GoalItem[]                   // 목적자금 목표 목록
 }
 
 type ClientPortfolio = {
@@ -88,7 +98,7 @@ function row(id:string, category:string, name:string, institution:string, amount
 
 const defaultProposal: Proposal = {
   monthlyIncome:0, totalExpense:0, savingsIncrease:0,
-  insuranceOptimize:0, debtReduction:0, investmentAdd:0, memo:""
+  insuranceOptimize:0, debtReduction:0, investmentAdd:0, memo:"", goals:[]
 }
 
 const starter: ClientPortfolio = {
@@ -313,6 +323,311 @@ function PdfCover({ client, today }: { client: ClientPortfolio; today: string })
   )
 }
 
+
+// ── 포트폴리오 제안 섹션 (안정/중립/적극) ──────────────────────────────────
+const SCENARIOS = [
+  {
+    type: '안정형' as const,
+    color: '#0E7E6B', bg: '#ecfdf5', border: '#6ee7b7',
+    rate: 0.035,
+    label: '안정형 (Conservative)',
+    expenseCutRatio: 0.05,
+    products: [
+      { from:'단기금융상품(CMA·MMF)', to:'고금리 정기예금·파킹통장', reason:'원금 보전 + 즉시 유동성' },
+      { from:'주식형 펀드', to:'채권형 펀드·채권혼합형', reason:'변동성 축소, 안정 수익' },
+      { from:'저금리 적금', to:'연 3.5~4.5% 특판 적금·ISA', reason:'세제 혜택 + 확정금리' },
+      { from:'만기 임박 보험', to:'보장 리모델링 후 저축성→보장성 전환', reason:'보험료 최적화' },
+    ],
+    goalRates: { '단기': 0.030, '중기': 0.035, '장기': 0.040 },
+    description: '원금 보전이 최우선. 안정적인 확정금리 상품 중심으로 현금흐름을 강화하고 비상자금을 먼저 확보합니다.',
+  },
+  {
+    type: '중립형' as const,
+    color: '#1E5FA8', bg: '#eff6ff', border: '#93c5fd',
+    rate: 0.055,
+    label: '중립형 (Balanced)',
+    expenseCutRatio: 0.10,
+    products: [
+      { from:'단기금융상품(CMA·MMF)', to:'ISA 계좌(채권+ETF 균형)', reason:'세제 혜택 + 중수익' },
+      { from:'단순 예금 적립', to:'TDF·연금저축펀드(주식50%+채권50%)', reason:'장기 복리 + 세액공제' },
+      { from:'고금리 신용대출', to:'대환대출 → 상환 가속화', reason:'이자 절감 → 투자 재원 확보' },
+      { from:'만기 임박 저축보험', to:'해지환급금 → 연금전환 또는 ETF', reason:'수익률 개선' },
+    ],
+    goalRates: { '단기': 0.035, '중기': 0.055, '장기': 0.065 },
+    description: '안정성과 성장성을 균형 있게 배분. 세제 혜택 상품(ISA·연금저축)을 최대 활용하고 단계적 자산 성장을 추구합니다.',
+  },
+  {
+    type: '적극형' as const,
+    color: '#C0392B', bg: '#fff7ed', border: '#fca5a5',
+    rate: 0.075,
+    label: '적극형 (Aggressive)',
+    expenseCutRatio: 0.15,
+    products: [
+      { from:'예금·적금 중심', to:'ETF 적립식 투자(국내+해외 분산)', reason:'장기 고수익 추구' },
+      { from:'채권형 펀드', to:'성장주 ETF·테마ETF·리츠', reason:'자산 성장 가속화' },
+      { from:'연금저축 보수형', to:'연금저축펀드(주식형 100%)', reason:'장기 수익 극대화 + 세액공제' },
+      { from:'유지 중 저축보험', to:'해지 후 ETF 전환 + 보장 분리', reason:'수익률 월등 개선 기대' },
+    ],
+    goalRates: { '단기': 0.040, '중기': 0.065, '장기': 0.080 },
+    description: '장기 자산 성장이 목표. 변동성을 감수하고 ETF·성장주 중심으로 고수익을 추구. 비상자금 확보 후 투자 비중 확대.',
+  },
+]
+
+// 월 납입액 계산: 복리 가정 PMT = FV * r / ((1+r)^n - 1)
+function calcMonthlyPmt(targetAmount: number, periodYears: number, annualRate: number): number {
+  if (periodYears <= 0 || targetAmount <= 0) return 0
+  const r = annualRate / 12
+  const n = periodYears * 12
+  if (r === 0) return targetAmount / n
+  return Math.round(targetAmount * r / (Math.pow(1 + r, n) - 1))
+}
+
+// 현재 지출에서 절감 가능 항목 분석
+function analyzeExpenseCuts(expenses: Entry[], cutRatio: number): { name: string; current: number; target: number; saving: number }[] {
+  const consumption = expenses.filter(e => e.consumptionType === '소비지출' || !e.consumptionType)
+  const cuttable = [
+    '여가/문화', '의류/쇼핑', '식비', '교통/주유비', '통신비', '생활비', '기타 소비',
+  ]
+  return consumption
+    .filter(e => cuttable.some(k => e.category.includes(k) || e.name.includes(k)))
+    .map(e => ({
+      name: e.name || e.category,
+      current: e.amount,
+      target: Math.round(e.amount * (1 - cutRatio)),
+      saving: Math.round(e.amount * cutRatio),
+    }))
+    .filter(e => e.saving > 0)
+    .sort((a, b) => b.saving - a.saving)
+    .slice(0, 5)
+}
+
+// 기본 목적자금 자동 생성
+function autoGoals(client: ClientPortfolio, freeCapacity: number): GoalItem[] {
+  const goals: GoalItem[] = []
+  const uid = () => Math.random().toString(36).slice(2, 8)
+  const totalAssets = client.assets.reduce((s, a) => s + Number(a.amount || 0), 0)
+  const totalIncome = client.incomes.reduce((s, i) => s + Number(i.amount || 0), 0)
+  const hasEmergency = totalAssets >= totalIncome * 6
+  if (!hasEmergency)
+    goals.push({ id: uid(), horizon: '단기', purpose: '비상자금 확보', targetAmount: totalIncome * 6, periodYears: 2, memo: '월 소득 6개월치 목표' })
+
+  const hasHome = client.assets.some(a => a.category.includes('부동산') || a.name.includes('아파트') || a.name.includes('주택'))
+  if (!hasHome && client.age < 40)
+    goals.push({ id: uid(), horizon: '중기', purpose: '주택 마련 자금', targetAmount: 50000000, periodYears: 5, memo: '전세→자가 전환 목표' })
+
+  const hasChild = (client.memo || '').includes('자녀') || client.job.includes('자녀')
+  if (client.age < 50)
+    goals.push({ id: uid(), horizon: '중기', purpose: '자녀 교육비', targetAmount: 30000000, periodYears: 7, memo: '대학 입학 전까지 준비' })
+
+  const retireAge = 65
+  const retireYears = Math.max(retireAge - client.age, 10)
+  goals.push({ id: uid(), horizon: '장기', purpose: '노후 준비 자금', targetAmount: totalIncome * 12 * 20, periodYears: retireYears, memo: `${retireAge}세 은퇴 기준, 20년 생활비` })
+
+  goals.push({ id: uid(), horizon: '장기', purpose: '부채 완전 상환', targetAmount: client.liabilities.reduce((s, l) => s + Number(l.amount || 0), 0), periodYears: Math.min(retireYears, 15), memo: '은퇴 전 부채 제로 목표' })
+
+  return (client.proposal.goals && client.proposal.goals.length > 0) ? client.proposal.goals : goals
+}
+
+function PortfolioProposalSection({ client, totals }: {
+  client: ClientPortfolio
+  totals: { totalIncome: number; totalExpense: number; cashFlow: number; savingsRate: number; debtRatio: number }
+}) {
+  const [activeTab, setActiveTab] = useState<'안정형'|'중립형'|'적극형'>('중립형')
+  const sc = SCENARIOS.find(s => s.type === activeTab)!
+  const goals = autoGoals(client, totals.cashFlow)
+
+  // 지출 절감 분석
+  const cuts = analyzeExpenseCuts(client.expenses, sc.expenseCutRatio)
+  const totalCutSaving = cuts.reduce((s, c) => s + c.saving, 0)
+
+  // 현재 보험료 (비소비지출 > 보험 항목)
+  const insuranceItems = client.expenses.filter(e =>
+    e.consumptionType === '비소비지출' &&
+    (e.category.includes('보험') || e.name.includes('보험') || e.name.includes('보장') || e.name.includes('실손') || e.name.includes('종신'))
+  )
+  const totalInsurance = insuranceItems.reduce((s, e) => s + e.amount, 0)
+  const optimizedInsurance = Math.round(totalInsurance * (1 - sc.expenseCutRatio * 0.5))
+
+  const freeCapacityAfter = totals.cashFlow + totalCutSaving + (totalInsurance - optimizedInsurance)
+
+  return (
+    <section className="fp-panel" style={{ pageBreakBefore: 'always', breakInside: 'avoid' }}>
+      <div className="fp-panel-title"><FileText className="h-5 w-5" />포트폴리오 제안 — 안정 · 중립 · 적극형</div>
+      <div className="fp-panel-body">
+
+        {/* 탭 (화면) / 전체 출력 (인쇄) */}
+        <div className="fp-proposal-tabs" style={{ display:'flex', gap:8, marginBottom:20 }}>
+          {SCENARIOS.map(s => (
+            <button key={s.type}
+              onClick={() => setActiveTab(s.type)}
+              style={{
+                padding:'8px 20px', borderRadius:8, fontSize:13, fontWeight:900, cursor:'pointer',
+                border:`2px solid ${s.border}`,
+                background: activeTab === s.type ? s.color : '#fff',
+                color: activeTab === s.type ? '#fff' : s.color,
+                transition:'all .15s',
+              }}
+            >{s.label}</button>
+          ))}
+        </div>
+
+        {/* 화면: 선택된 탭만 / 인쇄: 모두 */}
+        {SCENARIOS.map(scenario => (
+          <div key={scenario.type}
+            className="fp-scenario-block"
+            style={{
+              display: activeTab === scenario.type ? 'block' : 'none',
+              border:`2px solid ${scenario.border}`, borderRadius:12,
+              overflow:'hidden', marginBottom:16,
+            }}
+          >
+            {/* 시나리오 헤더 */}
+            <div style={{ background: scenario.color, padding:'14px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div>
+                <div style={{ fontSize:16, fontWeight:900, color:'#fff' }}>{scenario.label}</div>
+                <div style={{ fontSize:12, color:'rgba(255,255,255,0.8)', marginTop:3 }}>{scenario.description}</div>
+              </div>
+              <div style={{ textAlign:'right', color:'#fff' }}>
+                <div style={{ fontSize:11, opacity:.7 }}>예상 수익률</div>
+                <div style={{ fontSize:22, fontWeight:900 }}>{(scenario.rate * 100).toFixed(1)}%/년</div>
+              </div>
+            </div>
+
+            <div style={{ padding:'16px 20px', background: scenario.bg, display:'grid', gap:20 }}>
+
+              {/* ① 지출 절감 방안 */}
+              <div>
+                <div style={{ fontSize:13, fontWeight:900, color: scenario.color, marginBottom:10, borderLeft:`3px solid ${scenario.color}`, paddingLeft:10 }}>
+                  ① 지출 절감 방안 — 월 {krw(totalCutSaving)} 절감 가능
+                </div>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                  <thead>
+                    <tr style={{ background: scenario.color }}>
+                      {['지출 항목','현재 지출','절감 목표','절감액/월'].map(h =>
+                        <th key={h} style={{ padding:'7px 10px', color:'#fff', fontWeight:900, textAlign:h==='지출 항목'?'left':'right', border:'1px solid rgba(255,255,255,0.2)' }}>{h}</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cuts.length === 0
+                      ? <tr><td colSpan={4} style={{ padding:'12px', textAlign:'center', color:'#64748b' }}>소비지출 항목을 입력하면 절감 분석이 표시됩니다.</td></tr>
+                      : cuts.map((c, i) => (
+                        <tr key={i} style={{ background: i%2===0 ? '#fff' : scenario.bg }}>
+                          <td style={{ padding:'7px 10px', fontWeight:700, border:'1px solid #e2e8f0' }}>{c.name}</td>
+                          <td style={{ padding:'7px 10px', textAlign:'right', border:'1px solid #e2e8f0' }}>{krw(c.current)}</td>
+                          <td style={{ padding:'7px 10px', textAlign:'right', border:'1px solid #e2e8f0', color: scenario.color, fontWeight:800 }}>{krw(c.target)}</td>
+                          <td style={{ padding:'7px 10px', textAlign:'right', border:'1px solid #e2e8f0', fontWeight:900, color:'#0E7E6B' }}>▼ {krw(c.saving)}</td>
+                        </tr>
+                      ))
+                    }
+                    {cuts.length > 0 && (
+                      <tr style={{ background: scenario.color }}>
+                        <td colSpan={3} style={{ padding:'7px 10px', fontWeight:900, color:'#fff', border:'1px solid rgba(255,255,255,0.2)' }}>월 총 절감액</td>
+                        <td style={{ padding:'7px 10px', textAlign:'right', fontWeight:900, color:'#fff', border:'1px solid rgba(255,255,255,0.2)' }}>▼ {krw(totalCutSaving)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ② 금융상품 변경 방안 */}
+              <div>
+                <div style={{ fontSize:13, fontWeight:900, color: scenario.color, marginBottom:10, borderLeft:`3px solid ${scenario.color}`, paddingLeft:10 }}>
+                  ② 금융상품 변경 방안
+                </div>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                  <thead>
+                    <tr style={{ background: scenario.color }}>
+                      {['현재 상품','→ 변경 제안','변경 이유'].map(h =>
+                        <th key={h} style={{ padding:'7px 10px', color:'#fff', fontWeight:900, textAlign:'left', border:'1px solid rgba(255,255,255,0.2)' }}>{h}</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scenario.products.map((p, i) => (
+                      <tr key={i} style={{ background: i%2===0 ? '#fff' : scenario.bg }}>
+                        <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', color:'#64748b' }}>{p.from}</td>
+                        <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', fontWeight:800, color: scenario.color }}>{p.to}</td>
+                        <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', fontSize:11, color:'#374151' }}>{p.reason}</td>
+                      </tr>
+                    ))}
+                    {insuranceItems.length > 0 && (
+                      <tr style={{ background:'#fef3c7' }}>
+                        <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', color:'#64748b' }}>현재 보험료 합계 {krw(totalInsurance)}/월</td>
+                        <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', fontWeight:800, color:'#b45309' }}>리모델링 후 목표 {krw(optimizedInsurance)}/월</td>
+                        <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', fontSize:11, color:'#374151' }}>중복담보 제거, 불필요 특약 정리로 보험료 절감</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ③ 단기/중기/장기 목적자금 계획 */}
+              <div>
+                <div style={{ fontSize:13, fontWeight:900, color: scenario.color, marginBottom:10, borderLeft:`3px solid ${scenario.color}`, paddingLeft:10 }}>
+                  ③ 목적자금별 저축 계획  (현재 투자가능액 {krw(freeCapacityAfter)}/월 기준)
+                </div>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                  <thead>
+                    <tr style={{ background: scenario.color }}>
+                      {['구분','목적','목표금액','기간','필요 월적립','대응 방안','우선순위'].map(h =>
+                        <th key={h} style={{ padding:'7px 10px', color:'#fff', fontWeight:900, textAlign:h==='목표금액'||h==='필요 월적립'?'right':'left', border:'1px solid rgba(255,255,255,0.2)' }}>{h}</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {goals.length === 0
+                      ? <tr><td colSpan={7} style={{ padding:'12px', textAlign:'center', color:'#64748b' }}>목적자금을 입력하면 계획이 표시됩니다.</td></tr>
+                      : goals.map((g, i) => {
+                          const rate = scenario.goalRates[g.horizon]
+                          const pmt = calcMonthlyPmt(g.targetAmount, g.periodYears, rate)
+                          const horizonColor = g.horizon==='단기' ? '#0E7E6B' : g.horizon==='중기' ? '#1E5FA8' : '#7C3AED'
+                          const actionMap: Record<string, string> = {
+                            '비상자금': 'CMA·파킹통장 자동이체',
+                            '주택': 'ISA + 청약저축 병행',
+                            '교육': '어린이펀드·교육보험',
+                            '노후': '연금저축펀드 + IRP 세액공제',
+                            '부채': '원금 추가상환 월정기이체',
+                          }
+                          const action = Object.entries(actionMap).find(([k]) => g.purpose.includes(k))?.[1] || '적립식 투자'
+                          return (
+                            <tr key={g.id} style={{ background: i%2===0 ? '#fff' : scenario.bg }}>
+                              <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', textAlign:'center' }}>
+                                <span style={{ background: horizonColor, color:'#fff', padding:'2px 8px', borderRadius:20, fontSize:10, fontWeight:900 }}>{g.horizon}</span>
+                              </td>
+                              <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', fontWeight:800 }}>{g.purpose}</td>
+                              <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', textAlign:'right', fontWeight:800 }}>{krw(g.targetAmount)}</td>
+                              <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', textAlign:'center' }}>{g.periodYears}년</td>
+                              <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', textAlign:'right', fontWeight:900, color: scenario.color }}>{krw(pmt)}</td>
+                              <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', fontSize:11 }}>{action}</td>
+                              <td style={{ padding:'7px 10px', border:'1px solid #e2e8f0', textAlign:'center', fontSize:11, fontWeight:900, color:'#64748b' }}>#{i+1}</td>
+                            </tr>
+                          )
+                        })
+                    }
+                    {goals.length > 0 && (
+                      <tr style={{ background: scenario.color }}>
+                        <td colSpan={4} style={{ padding:'7px 10px', color:'#fff', fontWeight:900, border:'1px solid rgba(255,255,255,0.2)' }}>월 총 필요 적립액</td>
+                        <td style={{ padding:'7px 10px', textAlign:'right', color:'#fff', fontWeight:900, border:'1px solid rgba(255,255,255,0.2)' }}>
+                          {krw(goals.reduce((s, g) => s + calcMonthlyPmt(g.targetAmount, g.periodYears, scenario.goalRates[g.horizon]), 0))}
+                        </td>
+                        <td colSpan={2} style={{ padding:'7px 10px', color:'rgba(255,255,255,0.8)', fontSize:11, border:'1px solid rgba(255,255,255,0.2)' }}>
+                          투자가능액 대비 {krw(freeCapacityAfter - goals.reduce((s, g) => s + calcMonthlyPmt(g.targetAmount, g.periodYears, scenario.goalRates[g.horizon]), 0))} {freeCapacityAfter - goals.reduce((s, g) => s + calcMonthlyPmt(g.targetAmount, g.periodYears, scenario.goalRates[g.horizon]), 0) >= 0 ? '여유' : '부족'}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 // ── 제안 전/후 비교 섹션 ─────────────────────────────────────────────────────
 function BeforeAfterSection({ client, totals }: {
   client: ClientPortfolio
@@ -390,6 +705,9 @@ export default function FinancialPortfolioPage() {
   const [selectedId, setSelectedId] = useState(starter.id)
   const [isExporting, setIsExporting] = useState(false)
   const [syncStatus, setSyncStatus] = useState<"idle"|"saving"|"saved"|"error">("idle")
+  const [uploadStatus, setUploadStatus] = useState<"idle"|"loading"|"ok"|"error">("idle")
+  const [uploadMsg, setUploadMsg] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null)
 
   useEffect(() => {
@@ -597,6 +915,80 @@ export default function FinancialPortfolioPage() {
           <button onClick={addClient}><Plus className="h-4 w-4" /> 고객 추가</button>
           <button onClick={deleteClient} disabled={clients.length<=1}><Trash2 className="h-4 w-4" /> 삭제</button>
           <button onClick={()=>updateClient({ updatedAt:new Date().toISOString() })}><Save className="h-4 w-4" /> 저장</button>
+
+          {/* ── 엑셀 업로드 버튼 ── */}
+          <button
+            onClick={()=>fileInputRef.current?.click()}
+            disabled={uploadStatus==="loading"}
+            style={{ background:"#0e7e6b", color:"#fff", border:"none", borderRadius:8,
+              padding:"0 14px", height:38, fontWeight:700, fontSize:13, cursor:"pointer",
+              display:"flex", alignItems:"center", gap:6, opacity: uploadStatus==="loading" ? 0.6 : 1 }}
+          >
+            <FileText className="h-4 w-4" />
+            {uploadStatus==="loading" ? "업로드 중..." : "엑셀 파일 업로드"}
+          </button>
+          <a
+            href="/재무현황입력양식.xlsx"
+            download
+            style={{ background:"#1a2744", color:"#c9a96e", border:"1px solid #c9a96e", borderRadius:8,
+              padding:"0 14px", height:38, fontWeight:700, fontSize:13, cursor:"pointer",
+              display:"flex", alignItems:"center", gap:6, textDecoration:"none" }}
+          >
+            <Download className="h-4 w-4" /> 양식 다운로드
+          </a>
+          {uploadMsg && (
+            <span style={{ fontSize:12, color: uploadStatus==="ok" ? "#4ade80" : "#f87171", fontWeight:700 }}>
+              {uploadMsg}
+            </span>
+          )}
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display:"none" }}
+            onChange={async e => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              setUploadStatus("loading"); setUploadMsg("")
+              try {
+                const fd = new FormData(); fd.append("file", file)
+                const res = await fetch("/api/financial-portfolio/import", { method:"POST", body:fd })
+                const json = await res.json()
+                if (!res.ok || !json.ok) { setUploadStatus("error"); setUploadMsg(json.error || "파싱 실패"); return }
+                const d = json.data
+                // 기존 고객명 매칭
+                const match = clients.find(c => c.name === d.customerName)
+                if (match) {
+                  setClients(prev => prev.map(c => c.id === match.id ? {
+                    ...c,
+                    age: d.age ?? c.age, gender: d.gender ?? c.gender,
+                    job: d.job ?? c.job, creditGrade: d.creditGrade ?? c.creditGrade,
+                    memo: d.memo ?? c.memo,
+                    assets: d.assets, liabilities: d.liabilities,
+                    incomes: d.incomes, expenses: d.expenses,
+                    updatedAt: new Date().toISOString(),
+                  } : c))
+                  setSelectedId(match.id)
+                  setUploadStatus("ok"); setUploadMsg(`✓ "${d.customerName}" 고객 데이터 업데이트 완료`)
+                } else {
+                  // 신규 고객 생성
+                  const newId = Math.random().toString(36).slice(2,10)
+                  const newClient: ClientPortfolio = {
+                    ...starter, id: newId, name: d.customerName,
+                    age: d.age ?? 0, gender: d.gender ?? "", job: d.job ?? "",
+                    creditGrade: d.creditGrade ?? 5, memo: d.memo ?? "",
+                    assets: d.assets, liabilities: d.liabilities,
+                    incomes: d.incomes, expenses: d.expenses,
+                    updatedAt: new Date().toISOString(),
+                  }
+                  setClients(prev => [...prev, newClient])
+                  setSelectedId(newId)
+                  setUploadStatus("ok"); setUploadMsg(`✓ "${d.customerName}" 신규 고객 생성 완료`)
+                }
+              } catch {
+                setUploadStatus("error"); setUploadMsg("업로드 중 오류 발생")
+              } finally {
+                e.target.value = ""
+                setTimeout(()=>{ setUploadStatus("idle"); setUploadMsg("") }, 5000)
+              }
+            }}
+          />
         </section>
 
         {/* ── 본문 보고서 ── */}
@@ -655,6 +1047,9 @@ export default function FinancialPortfolioPage() {
           {/* 제안 전/후 비교 */}
           <BeforeAfterSection client={client} totals={totals} />
 
+          {/* 포트폴리오 제안 — 안정/중립/적극형 */}
+          <PortfolioProposalSection client={client} totals={totals} />
+
           {/* 제안 입력 패널 */}
           <Panel title="제안 계획 입력 (설계사 전용)" icon={<FileText className="h-5 w-5" />}>
             <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12 }}>
@@ -684,6 +1079,68 @@ export default function FinancialPortfolioPage() {
                   placeholder="제안 핵심 내용, 목표 달성 시뮬레이션, 상담 포인트를 입력하세요."
                 />
               </div>
+            </div>
+
+            {/* 목적자금 목표 편집 */}
+            <div style={{ marginTop:16, borderTop:"1px solid #e2e8f0", paddingTop:16 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                <span style={{ fontSize:13,fontWeight:900,color:"#10203a" }}>목적자금 목표 설정</span>
+                <button
+                  onClick={() => {
+                    const goals = client.proposal.goals || []
+                    updateClient({ proposal:{ ...client.proposal, goals:[...goals,{
+                      id:Math.random().toString(36).slice(2,8),
+                      horizon:'중기' as const, purpose:'', targetAmount:0, periodYears:5
+                    }]}})
+                  }}
+                  style={{ fontSize:12,fontWeight:900,padding:"4px 12px",borderRadius:6,background:"#1a2744",color:"#fff",border:"none",cursor:"pointer" }}
+                >+ 목표 추가</button>
+              </div>
+              {(client.proposal.goals||[]).length === 0 && (
+                <p style={{ fontSize:12,color:"#94a3b8",textAlign:"center",padding:"12px 0" }}>
+                  목표를 추가하면 3가지 시나리오별 월 적립액이 자동 계산됩니다.
+                </p>
+              )}
+              {(client.proposal.goals||[]).map((g,gi) => (
+                <div key={g.id} style={{ display:"grid",gridTemplateColumns:"90px 1fr 120px 80px auto",gap:8,alignItems:"center",marginBottom:8 }}>
+                  <select value={g.horizon}
+                    onChange={e => {
+                      const goals = [...(client.proposal.goals||[])]
+                      goals[gi] = {...g, horizon: e.target.value as '단기'|'중기'|'장기'}
+                      updateClient({ proposal:{...client.proposal, goals} })
+                    }}
+                    style={{ border:"1px solid #dce4ef",borderRadius:6,padding:"6px 8px",fontSize:12,fontWeight:800 }}>
+                    <option value="단기">단기</option>
+                    <option value="중기">중기</option>
+                    <option value="장기">장기</option>
+                  </select>
+                  <input value={g.purpose} placeholder="목적 (예: 노후준비)"
+                    onChange={e => {
+                      const goals = [...(client.proposal.goals||[])]
+                      goals[gi] = {...g, purpose: e.target.value}
+                      updateClient({ proposal:{...client.proposal, goals} })
+                    }}
+                    style={{ border:"1px solid #dce4ef",borderRadius:6,padding:"6px 10px",fontSize:12 }} />
+                  <input type="number" value={g.targetAmount/10000||""} placeholder="목표금액(만원)"
+                    onChange={e => {
+                      const goals = [...(client.proposal.goals||[])]
+                      goals[gi] = {...g, targetAmount: Number(e.target.value)*10000}
+                      updateClient({ proposal:{...client.proposal, goals} })
+                    }}
+                    style={{ border:"1px solid #dce4ef",borderRadius:6,padding:"6px 10px",fontSize:12 }} />
+                  <input type="number" value={g.periodYears||""} placeholder="기간(년)"
+                    onChange={e => {
+                      const goals = [...(client.proposal.goals||[])]
+                      goals[gi] = {...g, periodYears: Number(e.target.value)}
+                      updateClient({ proposal:{...client.proposal, goals} })
+                    }}
+                    style={{ border:"1px solid #dce4ef",borderRadius:6,padding:"6px 10px",fontSize:12 }} />
+                  <button onClick={() => {
+                    const goals = (client.proposal.goals||[]).filter((_,i)=>i!==gi)
+                    updateClient({ proposal:{...client.proposal, goals} })
+                  }} style={{ background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontWeight:900,fontSize:14 }}>✕</button>
+                </div>
+              ))}
             </div>
           </Panel>
 
@@ -852,7 +1309,13 @@ function Shell({ children }: { children: React.ReactNode }) {
         @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}}
         @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics{grid-template-columns:1fr 1fr}}
         @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}}
-        @media print{.fp-actions,.fp-clientbar button,.fp-delete{display:none!important}.fp-page{padding:0}.fp-shell,.fp-report{background:white}.fp-panel,.fp-metric,.fp-profile,.fp-clientbar,.fp-hero{break-inside:avoid}}
+        @media print{
+  .fp-actions,.fp-clientbar button,.fp-delete{display:none!important}
+  .fp-page{padding:0}.fp-shell,.fp-report{background:white}
+  .fp-panel,.fp-metric,.fp-profile,.fp-clientbar,.fp-hero{break-inside:avoid}
+  .fp-proposal-tabs{display:none!important}
+  .fp-scenario-block{display:block!important;margin-bottom:24px;page-break-inside:avoid}
+}
       `}</style>
     </div>
   )

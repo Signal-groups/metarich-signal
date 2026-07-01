@@ -28,6 +28,8 @@ const IMAGE_CATALOG: ImageCategory[] = [
       { path: '/coverage-stats/cancer-treatment-process.png',       label: '암 치료 과정' },
       { path: '/coverage-stats/cancer-target-cost-2605.png',        label: '표적항암 비용' },
       { path: '/coverage-stats/cancer-target-cost-detail-2605.png', label: '표적항암 비용 상세' },
+      { path: '/coverage-stats/targeted-anticancer-1.jpg',          label: '가방항암(경구) ①' },
+      { path: '/coverage-stats/targeted-anticancer-2.jpg',          label: '가방항암(경구) ②' },
       { path: '/coverage-stats/cancer-death-probability.png',       label: '암 사망 확률' },
       { path: '/coverage-stats/cancer-top5-gender.png',             label: '성별 암 TOP5' },
       { path: '/coverage-stats/cancer-treatment-cost-ratio.png',    label: '암 치료비 구성' },
