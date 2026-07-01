@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
-import { loadBenchmark, type BenchmarkAmounts } from './BenchmarkSettings'
+import { BENCHMARK_UPDATED_EVENT, loadBenchmark, type BenchmarkAmounts } from './BenchmarkSettings'
 
 const RADAR_GROUPS = [
   { key: 'death',    label: '사망',        match: ['death_'],                        bmKey: 'death' as const },
@@ -123,8 +123,13 @@ export default function AnalysisChart({ contracts }: { contracts: ProContract[] 
   useEffect(() => {
     setBenchmark(loadBenchmark())
     const onStorage = () => setBenchmark(loadBenchmark())
+    const onBenchmarkUpdated = () => setBenchmark(loadBenchmark())
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener(BENCHMARK_UPDATED_EVENT, onBenchmarkUpdated)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener(BENCHMARK_UPDATED_EVENT, onBenchmarkUpdated)
+    }
   }, [])
 
   const premiumRows = getPremiumRows(contracts)

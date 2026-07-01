@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   loadBenchmark,
+  BENCHMARK_UPDATED_EVENT,
   BENCHMARK_ITEMS,
   ROW_KEY_TO_BENCHMARK,
   type BenchmarkAmounts,
@@ -140,8 +141,13 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
   useEffect(() => {
     setBenchmark(loadBenchmark())
     const onStorage = () => setBenchmark(loadBenchmark())
+    const onBenchmarkUpdated = () => setBenchmark(loadBenchmark())
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener(BENCHMARK_UPDATED_EVENT, onBenchmarkUpdated)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener(BENCHMARK_UPDATED_EVENT, onBenchmarkUpdated)
+    }
   }, [])
 
   if (!benchmark) return null

@@ -835,11 +835,11 @@ function PlanEditor({
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#102a4c] text-sm font-black text-white">
-            {mode === "compare" ? String.fromCharCode(65 + index) : "1"}
+            {(mode === "compare" || mode === "cross") ? String.fromCharCode(65 + index) : "1"}
           </div>
           <div>
             <h3 className="text-base font-black text-slate-950">
-              {mode === "compare" ? `${String.fromCharCode(65 + index)}안 상품` : "단일 제안 상품"}
+              {(mode === "compare" || mode === "cross") ? `${String.fromCharCode(65 + index)}${mode === "cross" ? "사 상품" : "안 상품"}` : "단일 제안 상품"}
             </h3>
             <p className="text-xs font-bold text-slate-400">{template.label} 기준 항목을 입력합니다.</p>
           </div>
@@ -1301,12 +1301,24 @@ function FocusSelector({ focus, onFocus, disabled }: { focus: CompareFocus[]; on
   )
 }
 
-function ReportHeader({ template, customerName, consultant }: { template: CategoryTemplate; customerName: string; consultant: ConsultantInfo }) {
+function ReportHeader({ template, customerName, consultant, mode }: { template: CategoryTemplate; customerName: string; consultant: ConsultantInfo; mode?: ProposalMode }) {
+  const modeLabel: Record<string, string> = {
+    single: "단일 제안서",
+    compare: "비교 제안서",
+    cross: "교차 설계서",
+    bundle: "통합 제안서",
+  }
+  const modeBadge = mode ? (modeLabel[mode] ?? null) : null
   return (
     <div className={`rounded-t-[28px] bg-gradient-to-r ${template.tone} px-8 py-6 text-white`}>
       <div className="flex items-start justify-between gap-6">
         <div>
-          <p className="text-[11px] font-black tracking-[0.2em] text-white/70">맞춤형 보장 점검 및 제안서</p>
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-black tracking-[0.2em] text-white/70">맞춤형 보장 점검 및 제안서</p>
+            {modeBadge && (
+              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black tracking-[0.1em] text-white">{modeBadge}</span>
+            )}
+          </div>
           <h1 className="mt-2 text-[28px] font-black tracking-[-0.01em]">
             {customerName || "고객"}님 {template.label} 보장 제안
           </h1>
@@ -1354,7 +1366,7 @@ function ProposalReport({
   return (
     <div className="proposal-print-area">
       <ReportPage>
-        <ReportHeader template={template} customerName={customerName} consultant={consultant} />
+        <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
         <div className="grid flex-1 grid-cols-[1.05fr_1fr] gap-5 p-8">
           <section>
             <div className="mb-4 flex items-center gap-2">
@@ -1367,8 +1379,17 @@ function ProposalReport({
             </div>
             <div className="mt-4 grid grid-cols-3 gap-3">
               <SummaryTile label="상품군" value={template.label} />
-              <SummaryTile label="비교 기준" value={focusOptions.find((item) => item.id === focus)?.label || "균형형"} />
-              <SummaryTile label="월 보험료 최저" value={lowest ? `${lowest.company || "입력 상품"} ${formatPremium(lowest)}` : "-"} />
+              {mode === "single" ? (
+                <>
+                  <SummaryTile label="설계 목적" value={focusOptions.find((item) => item.id === focus)?.label || "균형형"} />
+                  <SummaryTile label="월 보험료" value={lowest ? formatPremium(lowest) : "-"} />
+                </>
+              ) : (
+                <>
+                  <SummaryTile label="비교 기준" value={focusOptions.find((item) => item.id === focus)?.label || "균형형"} />
+                  <SummaryTile label="월 보험료 최저" value={lowest ? `${lowest.company || "입력 상품"} ${formatPremium(lowest)}` : "-"} />
+                </>
+              )}
             </div>
             <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
               <p className="text-sm font-black text-cyan-900">고객 설명 포인트</p>
@@ -1377,8 +1398,10 @@ function ProposalReport({
               </p>
             </div>
             <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h2 className="text-sm font-black text-slate-950">각 보험사별 설계 목적</h2>
-              <div className={`mt-3 grid gap-3 ${visiblePlans.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
+              <h2 className="text-sm font-black text-slate-950">
+                {mode === "single" ? "상품 설계 포인트" : "각 보험사별 설계 목적"}
+              </h2>
+              <div className={`mt-3 grid gap-3 ${mode === "single" ? "grid-cols-1" : visiblePlans.length > 2 ? "grid-cols-3" : "grid-cols-2"}`}>
                 {visiblePlans.map((plan, index) => (
                   <PlanMemo key={plan.id} plan={plan} index={index} template={template} />
                 ))}
@@ -1398,7 +1421,7 @@ function ProposalReport({
       </ReportPage>
 
       <ReportPage>
-        <ReportHeader template={template} customerName={customerName} consultant={consultant} />
+        <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
         <div className="grid flex-1 grid-cols-[0.9fr_1.1fr] gap-5 p-8">
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="text-lg font-black text-slate-950">비용 분석</h2>
@@ -1426,7 +1449,7 @@ function ProposalReport({
 
       {outputGroups.map((group, chunkIndex) => (
         <ReportPage key={`detail-${chunkIndex}`}>
-          <ReportHeader template={template} customerName={customerName} consultant={consultant} />
+          <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
           <div className="flex flex-1 flex-col p-8">
             <section className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between">
@@ -2070,7 +2093,7 @@ function CrossCoveragePage({
 
   return (
     <ReportPage last={last}>
-      <ReportHeader template={template} customerName={customerName} consultant={consultant} />
+      <ReportHeader template={template} customerName={customerName} consultant={consultant} mode="cross" />
       <div className="grid flex-1 grid-cols-[1fr_1fr] gap-5 p-8">
         {/* 좌: 합산 보장 구조 */}
         <section className="flex flex-col gap-4">
@@ -2761,6 +2784,14 @@ function buildRecommendation(template: CategoryTemplate, mode: ProposalMode, pla
   const lowest = bestPremium(plans)
   const primaryFocus = Array.isArray(focus) ? focus[0] : focus
   const focusLabel = focusOptions.find((item) => item.id === primaryFocus)?.label || "균형형"
+  if (mode === "cross") {
+    const companies = [...new Set(plans.map((p) => p.company).filter(Boolean))]
+    const companiesStr = companies.length > 0 ? companies.join(" + ") : `${plans.length}개 보험사`
+    return {
+      title: `${companiesStr} — 담보별 최저 보험료 교차 조합`,
+      body: "1개 상품을 2개 이상 보험사에 분산 설계해 담보별로 가장 유리한 회사를 선택합니다. 합산 보험료는 단일사 대비 낮추면서 주요 담보 보장 수준은 유지하는 구조입니다. 마지막 페이지에서 합산 커버리지와 월 보험료 절감액을 확인합니다.",
+    }
+  }
   return {
     title: `${focusLabel} 기준으로 ${plans.length}개 보험사를 비교합니다`,
     body: lowest

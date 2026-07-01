@@ -12,6 +12,7 @@ type RemodelProposal = {
   memo: string
 }
 type AdvisorInfo = { name: string; phone: string }
+type BenchmarkAmounts = Record<string, number>
 
 type PdfExportInput = {
   customerName: string
@@ -20,6 +21,7 @@ type PdfExportInput = {
   selectedImages?: string[]
   proposal?: RemodelProposal
   advisorInfo?: AdvisorInfo
+  benchmark?: BenchmarkAmounts
 }
 
 // ── 보험사 고객센터 (금융감독원 공시 기준) ──────────────────────────────
@@ -133,6 +135,10 @@ function formatPercent(current: number, target: number): string {
   if (!target) return '0%'
   return `${Math.min(999, Math.round(current / target * 100))}%`
 }
+function benchmarkWon(benchmark: BenchmarkAmounts | undefined, key: string, fallbackWon: number): number {
+  const value = Number(benchmark?.[key])
+  return value > 0 ? value * 10_000 : fallbackWon
+}
 function escHtml(s: string | number | undefined): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
@@ -217,7 +223,7 @@ function gauge(pct: number, color: string, label: string, value: string): string
 }
 
 // ── 레이더 차트 SVG ───────────────────────────────────────────────────────
-function radarChartSvg(contracts: ProContract[]): string {
+function radarChartSvg(contracts: ProContract[], benchmark?: BenchmarkAmounts): string {
   const AXES = [
     { label: '암진단비',  keys: ['cancer_general'],                                          rec: 50_000_000 },
     { label: '뇌진단비',  keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],      rec: 40_000_000 },
@@ -599,6 +605,7 @@ function buildCompareTable(contracts: ProContract[]): string {
 // ── 메인 HTML ─────────────────────────────────────────────────────────────
 async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   const { customerName, contracts, selectedImages = [], proposal, advisorInfo } = input
+  const benchmark = input.benchmark
   const hasRemodel = !!proposal && (proposal.addContracts.length > 0 || proposal.removeContractIds.length > 0)
   const beforeContracts = proposal
     ? contracts.filter(c => !proposal.removeContractIds.includes(c.id))
@@ -641,7 +648,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   // 2대주요치료비 파생
   const derived = deriveVascularMajor(contracts)
   const diagnosisItems = [
-    { label: '암', current: sumAmount(contracts, 'cancer_general'), target: 50_000_000 },
+    { label: '암', current: sumAmount(contracts, 'cancer_general'), target: benchmarkWon(benchmark, 'cancer', 50_000_000) },
     { label: '뇌', current: sumAmount(contracts, 'brain_stroke', 'brain_hemorrhage', 'brain_vascular'), target: 40_000_000 },
     { label: '심장', current: sumAmount(contracts, 'heart_acute_mi', 'heart_ischemic', 'heart_vascular'), target: 40_000_000 },
   ]
@@ -1081,7 +1088,7 @@ ${advisorInfo ? `
       <div class="section-title"><span class="section-num">1</span>주요 보장 현황</div>
       <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:12px;padding:12px">
         <div class="gauge-grid">${gaugesHtml}</div>
-        <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts)}</div>
+        <div style="display:flex;justify-content:center;margin-top:8px">${radarChartSvg(contracts, benchmark)}</div>
         <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0">
           <div style="font-size:11px;font-weight:900;color:#1a2744;margin-bottom:6px">&#10003;&nbsp;주요보장 체크</div>
           ${diagnosisAverageHtml}
@@ -1493,7 +1500,7 @@ ${!isKey ? `
 
 ${selectedImageSources.map((item, idx) => `
 <div class="img-fullpage">
-  <img src="${escHtml(item.dataUrl)}" alt="참고자료 ${idx + 1}" loading="eager"/>
+  <img src="${escHtml(item.dataUrl)}" alt="ì°¸ê³ ìë£ ${idx + 1}" loading="eager"/>
 </div>`).join('')}
 
 <script>

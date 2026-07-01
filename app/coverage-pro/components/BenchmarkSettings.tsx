@@ -119,6 +119,7 @@ export const BENCHMARK_PRESETS: Record<'min' | 'standard' | 'comfort', Benchmark
 
 const LS_KEY = 'coverage_pro_benchmark'
 const LS_CUSTOM_KEY = 'coverage_pro_benchmark_custom'
+export const BENCHMARK_UPDATED_EVENT = 'coverage-pro-benchmark-updated'
 
 export function loadBenchmark(): BenchmarkAmounts {
   try {
@@ -131,6 +132,7 @@ export function loadBenchmark(): BenchmarkAmounts {
 function saveBenchmark(amounts: BenchmarkAmounts) {
   localStorage.setItem(LS_KEY, JSON.stringify(amounts))
   window.dispatchEvent(new Event('storage'))
+  window.dispatchEvent(new CustomEvent(BENCHMARK_UPDATED_EVENT, { detail: amounts }))
 }
 
 function loadCustomBenchmark(): BenchmarkAmounts | null {

@@ -29,8 +29,9 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['간병인'], rowKey: 'nursing_hospital' },
 
   // ── 입원일당 (실비 "입원" 패턴보다 앞에 위치해야 함) ─────────────────
-  { patterns: ['질병입원일당', '질병 입원일당', '상급종합병원질병입원일당', '종합병원이하질병입원일당'], rowKey: 'hospital_disease_daily' },
-  { patterns: ['상해입원일당', '상해 입원일당', '상급종합병원상해입원일당', '종합병원이하상해입원일당', '입원일당'], rowKey: 'hospital_injury_daily' },
+  { patterns: ['상급병원입원일당', '1인실입원일당', '1인실일당', '특실입원일당', '상급병실입원일당', '상급종합병원입원일당'], rowKey: 'hospital_premium_room' },
+  { patterns: ['질병입원일당', '질병 입원일당', '종합병원이하질병입원일당'], rowKey: 'hospital_disease_daily' },
+  { patterns: ['상해입원일당', '상해 입원일당', '종합병원이하상해입원일당', '입원일당'], rowKey: 'hospital_injury_daily' },
 
   // ── 3대비급여 (개별 항목 포함 — 실비보다 앞에) ───────────────────────
   { patterns: ['3대비급여', '비급여도수치료', '도수치료', '비급여주사치료', '프롤로주사', '비급여mri', '비급여초음파', '응급실내원비', '응급실내원', '상급병실차액', '상급병실료'], rowKey: 'silson_3major' },
@@ -86,9 +87,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['일반사망', '사망보험금', '사망급여금', '사망보장'], rowKey: 'death_general' },
 
   // ── 수술비 — 1-5종/111대 먼저 (질병수술비보다 구체적) ─────────────────
-  { patterns: ['1-5종', '1~5종', '종수술'], rowKey: 'surgery_1_5' },           // surgery_disease보다 앞에!
+  { patterns: ['1-5종', '1~5종', '종수술비'], rowKey: 'surgery_1_5' },          // surgery_disease보다 앞에!
   { patterns: ['111대', '100대', '64대', '32대', 'n대수술'], rowKey: 'surgery_n_major' },
-  { patterns: ['질병수술비', '질병수술(유병자)', '질병중수술', '질병수술'], rowKey: 'surgery_disease' },
+  { patterns: ['상급수술비', '상급수술', '1종수술', '2종수술비', '2종수술'], rowKey: 'surgery_advanced' },
+  { patterns: ['종합수술비', '종합수술', '3종수술', '4종수술', '5종수술'], rowKey: 'surgery_comprehensive' },
+  { patterns: ['질병수술비', '질병수술(유병자)', '질병중수술', '질병수술', '종수술'], rowKey: 'surgery_disease' },
   { patterns: ['상해수술비', '상해중수술', '특정상해수술', '상해수술'], rowKey: 'surgery_injury' },
 
   // ── 상해진단 ─────────────────────────────────────────────────────────
@@ -208,14 +211,17 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   death_general:             '사망 — 일반',
   death_disease:             '사망 — 질병',
   death_injury:              '사망 — 상해',
-  surgery_disease:           '수술비 — 질병',
-  surgery_injury:            '수술비 — 상해',
-  surgery_1_5:               '수술비 — 1-5종',
-  surgery_n_major:           '수술비 — 111대질병',
+  surgery_disease:           '수술비 — 질병 일반',
+  surgery_injury:            '수술비 — 상해 일반',
+  surgery_advanced:          '수술비 — 상급',
+  surgery_comprehensive:     '수술비 — 종합',
+  surgery_1_5:               '수술비 — 종수술 (1~5종)',
+  surgery_n_major:           '수술비 — N대 질병',
   fracture_diagnosis:        '상해진단 — 골절',
   burn_diagnosis:            '상해진단 — 화상',
   hospital_disease_daily:    '입원일당 — 질병',
   hospital_injury_daily:     '입원일당 — 상해',
+  hospital_premium_room:     '입원일당 — 상급병원/1인실',
   nursing_hospital:          '간병인 — 질병/일반',
   nursing_injury:            '간병인 — 상해',
   nursing_care_hospital:     '간병인 — 요양병원',

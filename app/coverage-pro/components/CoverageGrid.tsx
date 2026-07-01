@@ -4,13 +4,19 @@ import { useState } from 'react'
 import type { ProContract, ProCoverage } from '../../../lib/coverageAnalysis/types'
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 
-// 최대값으로 집계할 rowKey (실손·수술비 — 중복 합산 불가, 최고 계약 기준)
+// 최대값으로 집계할 rowKey (실손·수술비·간병인 등 중복 합산 불가, 최고 계약 기준)
 const MAX_ROW_KEYS = new Set([
-  'surgery_1_5', 'surgery_n_major',
+  'surgery_1_5', 'surgery_n_major', 'surgery_advanced', 'surgery_comprehensive',
   'silson_disease_inpatient', 'silson_injury_inpatient',
   'silson_disease_outpatient', 'silson_injury_outpatient',
   'silson_3major',
+  'cancer_general',   // 통합암진단비 — 최고 계약 기준 (중복가입 각각 최고액)
+  'nursing_hospital', // 간병인 질병 — 최고 계약 기준
+  'nursing_injury',   // 간병인 상해 — 최고 계약 기준
 ])
+
+// 개수 집계할 rowKey (최고값 + 계약 개수 함께 표시)
+const COUNT_ROW_KEYS = new Set(['cancer_general'])
 
 // 주요 보장 항목 — 카테고리별 정의
 const CATEGORY_GROUPS = [
@@ -29,7 +35,8 @@ const CATEGORY_GROUPS = [
     items: [
       { rowKey: 'cancer_general',          label: '일반암 진단비' },
       { rowKey: 'cancer_similar',          label: '유사암 진단비' },
-      { rowKey: 'cancer_chemo',            label: '항암 치료비' },
+      { rowKey: 'cancer_chemo',            label: '항암약물 치료비' },
+      { rowKey: 'cancer_radiation',        label: '방사선 치료비' },
       { rowKey: 'cancer_targeted',         label: '표적항암 치료비' },
       { rowKey: 'cancer_major_benefit',    label: '암 주요치료비(급여)' },
       { rowKey: 'cancer_major_nonbenefit', label: '암 주요치료비(비급여)' },
@@ -63,12 +70,15 @@ const CATEGORY_GROUPS = [
   {
     key: 'surgery', label: '수술비 / 입원일당', color: '#f59e0b',
     items: [
-      { rowKey: 'surgery_disease',        label: '질병 수술비' },
-      { rowKey: 'surgery_injury',         label: '상해 수술비' },
-      { rowKey: 'surgery_1_5',            label: '1~5종 수술비 (최고종)' },
+      { rowKey: 'surgery_disease',        label: '질병 수술비 (일반)' },
+      { rowKey: 'surgery_injury',         label: '상해 수술비 (일반)' },
+      { rowKey: 'surgery_advanced',       label: '상급 수술비' },
+      { rowKey: 'surgery_comprehensive',  label: '종합 수술비' },
+      { rowKey: 'surgery_1_5',            label: '종수술비 (1~5종 최고)' },
       { rowKey: 'surgery_n_major',        label: 'N대 수술비 (최고액)' },
       { rowKey: 'hospital_disease_daily', label: '질병 입원일당' },
       { rowKey: 'hospital_injury_daily',  label: '상해 입원일당' },
+      { rowKey: 'hospital_premium_room',  label: '상급병원/1인실 입원일당' },
     ],
   },
   {
@@ -104,7 +114,6 @@ const CATEGORY_GROUPS = [
 // 최대값/합산 집계
 // 수동 계약(MANUAL_CONTRACT_ID)에 값이 있는 rowKey는 수동 값으로 override (합산 아님)
 function aggregateByRowKey(contracts: ProContract[]): Record<string, number> {
-  // 수동 override rowKey 목록 미리 수집
   const manualOverrides = new Set<string>()
   for (const c of contracts) {
     if (c.id !== MANUAL_CONTRACT_ID) continue
@@ -118,7 +127,6 @@ function aggregateByRowKey(contracts: ProContract[]): Record<string, number> {
   for (const c of contracts) {
     for (const cov of c.coverages) {
       if (!cov.rowKey || cov.rowKey === 'unknown') continue
-      // override된 rowKey는 수동 계약만 반영
       if (manualOverrides.has(cov.rowKey) && c.id !== MANUAL_CONTRACT_ID) continue
       const v = Number(cov.amount || 0)
       if (MAX_ROW_KEYS.has(cov.rowKey)) {
@@ -129,6 +137,39 @@ function aggregateByRowKey(contracts: ProContract[]): Record<string, number> {
     }
   }
   return { ...sum, ...max }
+}
+
+// COUNT_ROW_KEYS 담보 개수 집계 (계약 개수 아닌 coverage 항목 개수)
+function countByRowKey(contracts: ProContract[]): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const c of contracts) {
+    for (const cov of c.coverages) {
+      if (!cov.rowKey || !COUNT_ROW_KEYS.has(cov.rowKey)) continue
+      if (Number(cov.amount || 0) <= 0) continue
+      counts[cov.rowKey] = (counts[cov.rowKey] || 0) + 1
+    }
+  }
+  return counts
+}
+
+// rowKey === 'unknown'인 담보를 계약별로 그룹핑
+function unknownCoveragesByContract(contracts: ProContract[]): Array<{
+  contractId: string
+  company: string
+  productName: string
+  coverages: Array<{ name: string; amount: number }>
+}> {
+  return contracts
+    .filter((c) => c.id !== MANUAL_CONTRACT_ID)
+    .map((c) => ({
+      contractId: c.id,
+      company: c.company || '보험사 미입력',
+      productName: c.productName || '상품명 미입력',
+      coverages: c.coverages
+        .filter((cov) => !cov.rowKey || cov.rowKey === 'unknown')
+        .map((cov) => ({ name: cov.name || '담보명 없음', amount: Number(cov.amount || 0) })),
+    }))
+    .filter((g) => g.coverages.length > 0)
 }
 
 function fmtAmt(v: number): string {
@@ -265,6 +306,8 @@ export default function CoverageGrid({
 }) {
   const [editTarget, setEditTarget] = useState<{ rowKey: string; label: string; currentAmount: number } | null>(null)
   const amounts = aggregateByRowKey(contracts)
+  const counts = countByRowKey(contracts)
+  const unknownGroups = unknownCoveragesByContract(contracts)
 
   const allItems = CATEGORY_GROUPS.flatMap((g) => g.items)
   const coveredCount = allItems.filter((item) => (amounts[item.rowKey] || 0) > 0).length
@@ -411,7 +454,10 @@ export default function CoverageGrid({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       {hasIt ? (
                         <span style={{ fontSize: 12, fontWeight: 900, color: group.color, whiteSpace: 'nowrap' }}>
-                          {fmtAmt(item.amount)}{isMaxKey ? ' (최고)' : ''}
+                          {fmtAmt(item.amount)}
+                          {isMaxKey ? ' (최고)' : ''}
+                          {COUNT_ROW_KEYS.has(item.rowKey) && (counts[item.rowKey] ?? 0) > 1
+                            ? ` (${counts[item.rowKey]}개)` : ''}
                         </span>
                       ) : (
                         <span style={{
@@ -473,6 +519,55 @@ export default function CoverageGrid({
                 <span style={{ fontSize: 12, fontWeight: 900, color: '#64748b', whiteSpace: 'nowrap' }}>
                   {fmtAmt(amt)}
                 </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 미매핑 기타보장 — 회사/상품별로 담보명 목록 */}
+      {unknownGroups.length > 0 && (
+        <div className="coverage-pro-card" style={{ overflow: 'hidden' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 18px', borderBottom: '1px solid #f1f5f9', background: '#fafaf8',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 4, height: 20, borderRadius: 2, background: '#94a3b8' }} />
+              <span style={{ fontSize: 14, fontWeight: 900, color: '#1a2744' }}>기타 보장</span>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>자동 매핑 불가 — 가입 현황만 확인</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {unknownGroups.map((group, gi) => (
+              <div key={group.contractId} style={{
+                padding: '10px 18px',
+                borderBottom: gi < unknownGroups.length - 1 ? '1px solid #f1f5f9' : undefined,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 900, color: '#fff',
+                    background: '#64748b', borderRadius: 6,
+                    padding: '2px 8px', whiteSpace: 'nowrap',
+                  }}>
+                    {group.company}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>
+                    {group.productName}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {group.coverages.map((cov, ci) => (
+                    <span key={ci} style={{
+                      fontSize: 11, fontWeight: 600,
+                      padding: '2px 10px', borderRadius: 9999,
+                      border: '1px solid #e2e8f0', background: '#f8fafc',
+                      color: '#64748b', whiteSpace: 'nowrap',
+                    }}>
+                      {cov.name}{cov.amount > 0 ? ` ${fmtAmt(cov.amount)}` : ''}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

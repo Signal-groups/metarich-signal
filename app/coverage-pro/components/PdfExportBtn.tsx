@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { OutputConfig, ProContract, RemodelProposal } from '../../../lib/coverageAnalysis/types'
+import { loadBenchmark } from './BenchmarkSettings'
 
 type ImageItem = { path: string; label: string }
 type ImageCategory = { category: string; items: ImageItem[] }
@@ -317,10 +318,11 @@ export default function PdfExportBtn({
     setLoading(true)
     try {
       const type = outputType === 'key_pdf' ? 'key' : 'full'
+      const benchmark = loadBenchmark()
       const res = await fetch('/api/coverage-pro/pdf-export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerName, contracts, type, selectedImages: images, proposal, advisorInfo }),
+        body: JSON.stringify({ customerName, contracts, type, selectedImages: images, proposal, advisorInfo, benchmark }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: '알 수 없는 오류' }))
