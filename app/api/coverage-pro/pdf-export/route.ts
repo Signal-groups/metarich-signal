@@ -959,10 +959,28 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     @media print{
       body{background:#fff}
       .print-bar{display:none}
-      .pdf-page{background:#fff}
-      .cover-page{background:transparent!important;height:100vh}
+
+      /* ── 핵심 수정: 각 pdf-page 정확히 A4 landscape 1페이지 = 186mm ── */
+      .pdf-page{
+        background:#fff;
+        height:186mm!important;
+        overflow:hidden!important;
+        break-after:page!important;
+        page-break-after:always!important;
+      }
+      /* 표지: screen 210mm → print 186mm */
+      .cover-page{background:transparent!important;height:186mm!important}
+
+      /* 콘텐츠 zoom — 186mm 안에 들어오도록 82%로 축소 */
+      .page-inner{padding:8px 14px!important;zoom:0.82!important}
+
+      /* 보험사별 상세·비교표 페이지: 내용이 많으면 자연스럽게 여러 페이지 허용 */
+      .pdf-page-auto{height:auto!important;overflow:visible!important}
+
+      /* 이미지 전체 페이지 */
+      .img-fullpage{height:186mm!important;min-height:unset!important}
+
       tr{page-break-inside:avoid}
-      /* 비교표 인쇄 시 페이지 폭에 맞게 자동 축소 */
       .compare-wrap{overflow:visible}
       .compare-table{font-size:8px;width:100%}
       .compare-table th,.compare-table td{padding:2px 3px}
@@ -1455,7 +1473,7 @@ ${hasRemodel ? `
 
 ${!isKey ? `
 <!-- ════ PAGE CONTRACTS: 보험회사별 보장 현황 (상세 전용) ════ -->
-<div class="pdf-page">
+<div class="pdf-page pdf-page-auto">
 <div class="page-inner">
   <div class="page-label">보험회사별 보장 현황 (상세)</div>
   <div class="section-title"><span class="section-num">📋</span>보험회사별 보장 현황</div>
@@ -1483,7 +1501,7 @@ ${!isKey ? `
 </div>
 
 <!-- ════ PAGE LAST: 보험사별 담보 비교표 (주요/전체 공통) ════ -->
-<div class="pdf-page">
+<div class="pdf-page pdf-page-auto">
 <div class="page-inner">
   <div class="page-label">보험사별 · 담보별 비교표</div>
 
