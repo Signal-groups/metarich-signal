@@ -2990,12 +2990,24 @@ export default function ProposalPage() {
       ? importedPlans
       : [...importedPlans, ...normalizePlans(nextTemplate, minCount - importedPlans.length)]
 
+    const nextCustomerName = asText(payload.customerName || payload.customer_name)
+    if (nextCustomerName) setCustomerName(nextCustomerName)
+
+    // 통합제안(bundle) 모드에서는 해당 카테고리의 bundlePlans만 업데이트, 모드 유지
+    if (mode === "bundle") {
+      const catId = nextCategoryId as CategoryId
+      if (!bundleIds.includes(catId)) {
+        setBundleIds((prev) => [...prev, catId])
+      }
+      setBundlePlans((prev) => ({ ...prev, [catId]: nextPlans }))
+      setSaveStatus("loaded")
+      return
+    }
+
     setTemplate(nextTemplate)
     setMode(nextMode)
     setFocus(normalizeFocus(payload.focus))
     setPlans(nextPlans)
-    const nextCustomerName = asText(payload.customerName || payload.customer_name)
-    if (nextCustomerName) setCustomerName(nextCustomerName)
     setSaveStatus("loaded")
   }
 
