@@ -945,7 +945,8 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
 
     .img-fullpage{background:#fff;display:flex;align-items:center;justify-content:center;
       min-height:180mm;break-after:page;page-break-after:always}
-    .img-fullpage img{max-width:100%;max-height:180mm;object-fit:contain}
+    .img-fullpage:last-child{break-after:avoid;page-break-after:avoid}
+    .img-fullpage img{max-width:100%;max-height:180mm;object-fit:contain;display:block}
 
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     @media print{

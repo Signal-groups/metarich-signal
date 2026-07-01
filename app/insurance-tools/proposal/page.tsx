@@ -487,6 +487,29 @@ function parseProposalGptsJson(input: string): GptsProposalPayload {
   return parsed
 }
 
+// GPTs plan의 metrics 키를 보고 가장 적합한 카테고리 자동 감지
+function detectCategoryFromMetrics(metrics: Record<string, string>): CategoryId {
+  const filledKeys = new Set(
+    Object.entries(metrics)
+      .filter(([, v]) => parseFloat(String(v)) > 0 || (v && v !== ""))
+      .map(([k]) => k)
+  )
+  let bestId: CategoryId = "health"
+  let bestScore = 0
+  for (const cat of categories) {
+    const catKeySet = new Set(cat.metrics.map((m) => m.key))
+    let score = 0
+    for (const k of filledKeys) {
+      if (catKeySet.has(k)) score++
+    }
+    if (score > bestScore) {
+      bestScore = score
+      bestId = cat.id as CategoryId
+    }
+  }
+  return bestId
+}
+
 function gptsPlanToPlanData(payload: GptsPlanPayload, template: CategoryTemplate, index: number, summary?: GptsProposalPayload["summary"]): PlanData {
   const base = emptyPlan(template, index)
   const allowedMetricKeys = new Set(template.metrics.map((metric) => metric.key))
@@ -3035,15 +3058,51 @@ export default function ProposalPage() {
     const nextCategoryId = normalizeCategoryId(payload.categoryId || payload.category_id) || template.id
     const nextTemplate = categories.find((category) => category.id === nextCategoryId) || template
     const rawPlans = Array.isArray(payload.plans) ? payload.plans : []
+    const nextCustomerName = asText(payload.customerName || payload.customer_name)
+    if (nextCustomerName) setCustomerName(nextCustomerName)
+
+    // ── 다중 카테고리 감지: 서로 다른 카테고리면 bundle 자동 분리 ──────────
+    if (rawPlans.length > 1) {
+      const planMetrics = rawPlans.map((p) =>
+        Object.fromEntries(Object.entries(p.metrics || {}).map(([k, v]) => [k, String(v ?? "")]))
+      )
+      const planCatIds = planMetrics.map(detectCategoryFromMetrics)
+      const uniqueCats = [...new Set(planCatIds)]
+
+      if (uniqueCats.length > 1) {
+        // 카테고리가 2개 이상 → bundle 모드로 자동 전환, 각 플랜을 해당 카테고리에 배치
+        const newBundlePlans: Record<CategoryId, PlanData[]> = { ...Object.fromEntries(
+          categories.map((c) => [c.id, [emptyPlan(c, 0)]])
+        ) } as Record<CategoryId, PlanData[]>
+        const newBundleIds: CategoryId[] = []
+
+        rawPlans.forEach((rawPlan, idx) => {
+          const catId = planCatIds[idx]
+          const cat = categories.find((c) => c.id === catId) || nextTemplate
+          const importedPlan = gptsPlanToPlanData(rawPlan, cat, 0, payload.summary)
+          if (!newBundleIds.includes(catId)) {
+            newBundleIds.push(catId)
+            newBundlePlans[catId] = [importedPlan]
+          } else {
+            newBundlePlans[catId] = [...newBundlePlans[catId], importedPlan]
+          }
+        })
+
+        setBundleIds(newBundleIds)
+        setBundlePlans(newBundlePlans)
+        setMode("bundle")
+        setSaveStatus("loaded")
+        return
+      }
+    }
+
+    // ── 단일 카테고리 처리 ────────────────────────────────────────────────
     const nextMode = normalizeProposalMode(payload.mode, rawPlans.length)
     const importedPlans = rawPlans.map((plan, index) => gptsPlanToPlanData(plan, nextTemplate, index, payload.summary))
     const minCount = nextMode === "single" ? 1 : 2
     const nextPlans = importedPlans.length >= minCount
       ? importedPlans
       : [...importedPlans, ...normalizePlans(nextTemplate, minCount - importedPlans.length)]
-
-    const nextCustomerName = asText(payload.customerName || payload.customer_name)
-    if (nextCustomerName) setCustomerName(nextCustomerName)
 
     // 통합제안(bundle) 모드에서는 해당 카테고리의 bundlePlans만 업데이트, 모드 유지
     if (mode === "bundle") {
@@ -3370,7 +3429,13 @@ export default function ProposalPage() {
                 <ProposalBundle
                   sections={bundleIds
                     .map((id) => ({ templateId: id, plans: bundlePlans[id] || [] }))
-                    .filter((s) => s.plans.length > 0)}
+                    .filter((s) =>
+                      s.plans.length > 0 &&
+                      s.plans.some((p) =>
+                        p.company || p.productName || p.monthlyPremium ||
+                        Object.values(p.metrics).some((v) => v && parseFloat(String(v)) > 0)
+                      )
+                    )}
                   focus={primaryFocus}
                   customerName={customerName}
                   consultant={consultant}
