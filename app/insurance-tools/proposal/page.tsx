@@ -1638,45 +1638,78 @@ function CategoryGraphic({ template, plans }: { template: CategoryTemplate; plan
   )
 }
 
-const healthOverviewCards = [
+// 진단비 카드
+const healthDiagnosisCards = [
   { label: "일반암 진단비", keys: ["cancer"], tone: "border-rose-100 bg-rose-50 text-rose-700" },
   { label: "유사암 진단비", keys: ["minorCancer"], tone: "border-pink-100 bg-pink-50 text-pink-700" },
   { label: "뇌혈관 진단비", keys: ["brain"], tone: "border-cyan-100 bg-cyan-50 text-cyan-700" },
   { label: "심장 진단비", keys: ["heart"], tone: "border-orange-100 bg-orange-50 text-orange-700" },
+]
+
+// 수술비 카드 (종수술비 상해/질병 분리)
+const healthSurgeryCards: { label: string; sub?: string; keys: string[]; tone: string; wide?: boolean }[] = [
   { label: "상해수술", sub: "종합/상급", keys: ["injuryComprehensiveSurgery", "injuryAdvancedSurgery", "injurySurgery"], tone: "border-slate-200 bg-slate-50 text-slate-700" },
   { label: "질병수술", sub: "종합/상급", keys: ["diseaseComprehensiveSurgery", "diseaseAdvancedSurgery", "diseaseSurgery"], tone: "border-emerald-100 bg-emerald-50 text-emerald-700" },
-  { label: "종수술비", sub: "상해/질병", keys: ["injuryTypeSurgery", "diseaseTypeSurgery"], tone: "border-blue-100 bg-blue-50 text-blue-700" },
-  { label: "N대 수술비", keys: ["diseaseNSurgery"], tone: "border-violet-100 bg-violet-50 text-violet-700" },
-  { label: "간병인 보장", keys: ["care"], tone: "border-teal-100 bg-teal-50 text-teal-700", wide: true },
+  { label: "상해 종수술비", sub: "최대금액", keys: ["injuryTypeSurgery"], tone: "border-blue-100 bg-blue-50 text-blue-700" },
+  { label: "질병 종수술비", sub: "최대금액", keys: ["diseaseTypeSurgery"], tone: "border-indigo-100 bg-indigo-50 text-indigo-700" },
+  { label: "N대 수술비", keys: ["diseaseNSurgery"], tone: "border-violet-100 bg-violet-50 text-violet-700", wide: true },
+]
+
+// 간병 카드 (질병/상해/요양병원 분리, diseaseCareDaily 없으면 care fallback)
+const healthCareCards = [
+  { label: "질병 간병일당", sub: "일당", primaryKeys: ["diseaseCareDaily"], fallbackKeys: ["care"], tone: "border-teal-100 bg-teal-50 text-teal-700" },
+  { label: "상해 간병일당", sub: "일당", primaryKeys: ["injuryCareDaily"], fallbackKeys: [] as string[], tone: "border-green-100 bg-green-50 text-green-700" },
+  { label: "요양병원 간병", sub: "일당", primaryKeys: ["nursingHospitalDaily"], fallbackKeys: [] as string[], tone: "border-emerald-200 bg-emerald-50 text-emerald-700" },
 ]
 
 function HealthCoverageOverviewGraphic({ plans }: { plans: PlanData[] }) {
-  const cardValue = (keys: string[]) => {
-    const values = plans.map((plan) => keys.reduce((sum, key) => sum + num(plan.metrics[key] || ""), 0))
-    return Math.max(...values, 0)
+  const sumKeys = (keys: string[]) =>
+    Math.max(...plans.map((plan) => keys.reduce((sum, key) => sum + num(plan.metrics[key] || ""), 0)), 0)
+  const resolveValue = (primaryKeys: string[], fallbackKeys: string[]) => {
+    const v = sumKeys(primaryKeys)
+    return v > 0 ? v : sumKeys(fallbackKeys)
   }
+
+  const CardItem = ({ label, sub, value, tone, wide }: { label: string; sub?: string; value: number; tone: string; wide?: boolean }) => (
+    <div className={`${wide ? "col-span-2" : ""} rounded-xl border p-2.5 ${tone}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-black leading-5">{label}</p>
+          {sub && <p className="text-[9px] font-bold opacity-70">{sub}</p>}
+        </div>
+        <p className="shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-xs font-black text-slate-900">
+          {value > 0 ? `${won(value)}만원` : "-"}
+        </p>
+      </div>
+    </div>
+  )
 
   return (
     <div className="flex h-full flex-col">
-      <h2 className="text-lg font-black text-slate-950">보장 인포그래픽</h2>
-      <p className="mt-1 text-xs font-bold text-slate-400">회사별 비교는 상세 페이지에서 보고, 여기서는 보장 구조만 압축해서 확인합니다.</p>
-      <div className="mt-4 grid flex-1 grid-cols-2 gap-2">
-        {healthOverviewCards.map((card) => {
-          const value = cardValue(card.keys)
-          return (
-            <div key={card.label} className={`${card.wide ? "col-span-2" : ""} rounded-2xl border p-3 ${card.tone}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-black leading-5">{card.label}</p>
-                  {card.sub && <p className="mt-0.5 text-[10px] font-black opacity-70">{card.sub}</p>}
-                </div>
-                <p className="shrink-0 rounded-full bg-white/80 px-2 py-1 text-xs font-black text-slate-900">
-                  {value > 0 ? `${won(value)}만원` : "-"}
-                </p>
-              </div>
-            </div>
-          )
-        })}
+      <h2 className="text-base font-black text-slate-950">보장 인포그래픽</h2>
+      <p className="mt-0.5 text-[10px] font-bold text-slate-400">회사별 비교는 상세 페이지에서 보고, 여기서는 보장 구조만 압축해서 확인합니다.</p>
+
+      {/* 진단비 */}
+      <div className="mt-2 grid grid-cols-2 gap-1.5">
+        {healthDiagnosisCards.map((c) => (
+          <CardItem key={c.label} label={c.label} value={sumKeys(c.keys)} tone={c.tone} />
+        ))}
+      </div>
+
+      {/* 수술비 */}
+      <p className="mt-2.5 text-[9px] font-black tracking-[0.12em] text-slate-400 uppercase">수술비</p>
+      <div className="mt-1 grid grid-cols-2 gap-1.5">
+        {healthSurgeryCards.map((c) => (
+          <CardItem key={c.label} label={c.label} sub={c.sub} value={sumKeys(c.keys)} tone={c.tone} wide={c.wide} />
+        ))}
+      </div>
+
+      {/* 간병 */}
+      <p className="mt-2.5 text-[9px] font-black tracking-[0.12em] text-slate-400 uppercase">간병 보장</p>
+      <div className="mt-1 grid grid-cols-3 gap-1.5">
+        {healthCareCards.map((c) => (
+          <CardItem key={c.label} label={c.label} sub={c.sub} value={resolveValue(c.primaryKeys, c.fallbackKeys)} tone={c.tone} />
+        ))}
       </div>
     </div>
   )
@@ -2386,7 +2419,7 @@ function ScenarioPage4({
       </div>
 
       {/* A안: 3개 사례 카드 */}
-      <div className="flex-1 px-8 pt-5">
+      <div className="flex flex-1 flex-col justify-between px-8 py-5">
         <div className="mb-3 flex items-center gap-2">
           <span className="rounded-full bg-[#102a4c] px-3 py-1 text-[11px] font-black text-white">A안 — 실제 비용 사례</span>
           <span className="text-[11px] font-bold text-slate-500">준비하지 않으면 전액 자부담이 발생합니다</span>
@@ -2420,7 +2453,7 @@ function ScenarioPage4({
         </div>
 
         {/* B안: 타임라인 → 결론 */}
-        <div className="mt-4">
+        <div className="mt-3">
           <div className="mb-2 flex items-center gap-2">
             <span className="rounded-full bg-cyan-600 px-3 py-1 text-[11px] font-black text-white">B안 — 보험으로 준비하면</span>
             <span className="text-[11px] font-bold text-slate-500">사고·질병 발생 → 청구 → 보장 확인</span>
@@ -2482,7 +2515,7 @@ function HealthTreatmentPage({
         <p className="mt-1 text-[11px] font-bold text-white/80">{cfg.subtitle}</p>
       </div>
 
-      <div className="flex-1 px-8 pt-5">
+      <div className="flex flex-1 flex-col justify-between px-8 py-5">
         {/* 치료 단계 흐름 */}
         <div className="flex items-stretch gap-2">
           {cfg.steps.map((step, idx) => (
@@ -2510,7 +2543,7 @@ function HealthTreatmentPage({
         </div>
 
         {/* 급여 vs 비급여 범례 */}
-        <div className="mt-5 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-sm font-black text-slate-900">급여 항목 (본인부담 5 ~ 20%)</p>
             <p className="mt-2 text-xs font-bold leading-6 text-slate-600">
@@ -2553,61 +2586,80 @@ function BundleCoverPage({
   consultant: ConsultantInfo
 }) {
   const totalMonthly = sections.reduce((sum, s) => sum + s.plans.reduce((ps, p) => ps + (p.isDollar ? num(p.monthlyPremium) * (num(p.exchangeRate ?? "") || 1400) : num(p.monthlyPremium)), 0), 0)
+  const totalPlans = sections.reduce((sum, s) => sum + s.plans.length, 0)
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
 
   return (
     <ReportPage>
-      <div className="flex h-full flex-col">
-        <div className="rounded-t-[28px] bg-gradient-to-br from-[#1A2744] to-[#2D4A8A] px-10 py-8 text-white">
-          <p className="text-[11px] font-black tracking-[0.22em] text-white/60">맞춤형 통합 보장 제안서</p>
-          <h1 className="mt-3 text-[36px] font-black leading-tight">
-            {customerName || "고객"}님을 위한<br />통합 보장 플랜
+      <div className="relative flex h-full flex-col">
+        {/* 헤더 */}
+        <div className="shrink-0 bg-gradient-to-br from-[#0F172A] via-[#1C2B45] to-[#243B5E] px-10 py-8 text-white">
+          <p className="text-[10px] font-black tracking-[0.28em] text-[#C9A96E]/70 uppercase">Metarich Signal Group · 맞춤형 통합 보장 제안서</p>
+          <h1 className="mt-3 text-[36px] font-black leading-[1.2]">
+            {customerName || "고객"}님을 위한<br />
+            <span className="text-[#C9A96E]">통합 보장 플랜</span>
           </h1>
-          <p className="mt-3 text-sm font-bold text-white/70">{today} · 메타리치 시그널그룹</p>
+          <p className="mt-3 text-[11px] font-bold text-white/50">{today} · {sections.length}개 보장 영역 · {totalPlans}개 플랜</p>
         </div>
 
-        <div className="flex-1 grid grid-cols-2 gap-4 p-8">
-          <div className="flex flex-col gap-3">
-            <p className="text-sm font-black text-slate-500">이번 제안에 포함된 보장 영역</p>
-            {sections.map((s, idx) => {
-              const tpl = categories.find((c) => c.id === s.templateId)
-              if (!tpl) return null
-              return (
-                <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tpl.tone} text-white`}>
-                      <CategoryIcon template={tpl} />
-                    </div>
-                    <p className="text-sm font-black text-slate-950">{tpl.label}</p>
+        {/* 보장 영역 목록 */}
+        <div className="flex-1 flex flex-col p-8 pb-4 gap-3 overflow-hidden">
+          <p className="text-[10px] font-black tracking-[0.15em] text-slate-400 uppercase">이번 제안에 포함된 보장 영역</p>
+          {sections.map((s, idx) => {
+            const tpl = categories.find((c) => c.id === s.templateId)
+            if (!tpl) return null
+            return (
+              <div key={idx} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                {/* 카테고리 헤더바 */}
+                <div className={`flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${tpl.tone} text-white`}>
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center">
+                    <CategoryIcon template={tpl} />
                   </div>
-                  {s.plans.map((p, pi) => (
-                    <div key={pi} className="flex items-center justify-between text-xs py-1 border-t border-slate-100">
-                      <span className="text-slate-500 font-bold">{p.company || "보험사 미입력"} · {p.productName || "상품명 미입력"}</span>
-                      <span className="font-black text-cyan-700">{formatPremium(p)}</span>
-                    </div>
-                  ))}
+                  <p className="text-sm font-black">{tpl.label}</p>
                 </div>
-              )
-            })}
+                {/* 플랜 행 */}
+                {s.plans.map((p, pi) => (
+                  <div key={pi} className="grid items-center gap-2 border-t border-slate-100 px-4 py-2.5"
+                    style={{ gridTemplateColumns: "1fr auto auto auto" }}>
+                    <div className="min-w-0">
+                      <p className="truncate text-[11px] font-black text-slate-800">
+                        {p.company || "보험사 미입력"} · {p.productName || "상품명 미입력"}
+                      </p>
+                    </div>
+                    {p.paymentYears ? (
+                      <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600">
+                        {p.paymentYears}년납
+                      </span>
+                    ) : <span />}
+                    {p.coverageYears ? (
+                      <span className="shrink-0 rounded bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600">
+                        ~{p.coverageYears}
+                      </span>
+                    ) : <span />}
+                    <span className="shrink-0 text-[11px] font-black text-[#1A2744]">{formatPremium(p)}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 하단: 합산 + 설계사 */}
+        <div className="grid grid-cols-2 gap-4 px-8 pb-7">
+          <div className="rounded-2xl bg-[#0F172A] px-6 py-4 text-white">
+            <p className="text-[10px] font-black tracking-[0.15em] text-white/40 uppercase">월 합산 보험료</p>
+            <p className="mt-1.5 text-[28px] font-black text-[#C9A96E]">
+              {totalMonthly > 0 ? formatKrw(totalMonthly) : "미입력"}
+            </p>
+            <p className="mt-1 text-[10px] font-bold text-white/40">{sections.length}개 보장 영역 합산</p>
           </div>
-
-          <div className="flex flex-col justify-between">
-            <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-5">
-              <p className="text-sm font-black text-cyan-900">월 합산 보험료</p>
-              <p className="mt-2 text-[32px] font-black text-[#102a4c]">
-                {totalMonthly > 0 ? formatKrw(totalMonthly) : "미입력"}
-              </p>
-              <p className="mt-1 text-xs font-bold text-cyan-700">{sections.length}개 보장 영역 합산</p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-[10px] font-black text-slate-400">담당 설계사</p>
-              <p className="mt-2 text-xl font-black text-slate-950">{consultant.name || "설계사명"}</p>
-              <p className="text-sm font-bold text-slate-500">{consultant.phone || "연락처"}</p>
-              <p className="mt-3 text-[10px] font-bold leading-5 text-slate-400">
-                본 제안서는 상담 자료로 제공되며, 최종 보험료와 보장 내용은 청약 시 약관 기준을 따릅니다.
-              </p>
-            </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4">
+            <p className="text-[10px] font-black tracking-[0.1em] text-slate-400">담당 설계사</p>
+            <p className="mt-1.5 text-lg font-black text-slate-950">{consultant.name || "설계사명"}</p>
+            <p className="text-sm font-bold text-slate-500">{consultant.phone || "연락처"}</p>
+            <p className="mt-2 text-[10px] font-bold leading-[1.6] text-slate-400">
+              본 제안서는 상담 자료로 제공되며, 최종 보험료와 보장 내용은 청약 시 약관 기준을 따릅니다.
+            </p>
           </div>
         </div>
 
@@ -3054,6 +3106,9 @@ export default function ProposalPage() {
           body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           main { display: block !important; background: white !important; padding: 0 !important; min-height: 0 !important; overflow: visible !important; }
           .no-print { display: none !important; }
+          /* 미리보기 오버레이 밖 본문(PlanEditor 영역) 숨김 */
+          body > *:not(.preview-shell) { visibility: hidden !important; }
+          .preview-shell, .preview-shell * { visibility: visible !important; }
           .print-only { display: block !important; }
           .preview-shell { position: static !important; inset: auto !important; display: block !important; width: 297mm !important; overflow: visible !important; background: white !important; padding: 0 !important; }
           .proposal-print-area { display: block !important; width: 297mm !important; background: white !important; }
