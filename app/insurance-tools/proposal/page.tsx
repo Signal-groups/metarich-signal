@@ -3194,20 +3194,17 @@ export default function ProposalPage() {
           @page { size: A4 landscape; margin: 0; }
           html, body { width: 297mm !important; margin: 0 !important; background: white !important; overflow: visible !important; }
           body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          main { display: block !important; background: white !important; padding: 0 !important; min-height: 0 !important; overflow: visible !important; }
           .no-print { display: none !important; }
-          /* 미리보기 오버레이 밖 본문(PlanEditor 영역) 숨김 */
-          body > *:not(.preview-shell) { visibility: hidden !important; }
-          .preview-shell, .preview-shell * { visibility: visible !important; }
-          .print-only { display: block !important; }
+          /* 핵심 수정: visibility:hidden(공간 유지) → display:none(완전 제거)
+             main 직접 자식 중 preview-shell 외 모든 폼 요소를 layout에서 제거 */
+          main { display: block !important; background: white !important; padding: 0 !important; min-height: 0 !important; overflow: visible !important; height: auto !important; }
+          main > *:not(.preview-shell) { display: none !important; }
           .preview-shell { position: static !important; inset: auto !important; display: block !important; width: 297mm !important; overflow: visible !important; background: white !important; padding: 0 !important; }
-          .proposal-print-area { display: block !important; width: 297mm !important; background: white !important; }
-          .proposal-page { width: 297mm !important; height: 210mm !important; box-shadow: none !important; margin: 0 !important; overflow: hidden !important; break-after: page; page-break-after: always; }
-          .proposal-page:last-child { break-after: avoid; page-break-after: avoid; }
+          .proposal-page { width: 297mm !important; height: 210mm !important; box-shadow: none !important; margin: 0 !important; overflow: hidden !important; break-after: page !important; page-break-after: always !important; }
+          .proposal-page:last-child { break-after: avoid !important; page-break-after: avoid !important; }
         }
         @media screen {
           .proposal-page { position: relative; margin: 0 auto 24px; }
-          .print-only { display: none !important; }
         }
       `}</style>
 
@@ -3433,58 +3430,60 @@ export default function ProposalPage() {
           {/* GPTs 자동 입력 */}
           <GptsImportPanel onApply={applyGptsPayload} />
 
-          {/* 미리보기 오버레이 */}
-          {showPreview && (
-            <div className="preview-shell fixed inset-0 z-50 overflow-auto bg-white">
-              <div className="no-print sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
-                <p className="text-sm font-black text-slate-700">미리보기</p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white"
-                  >
-                    <Download className="h-4 w-4" />
-                    인쇄 · PDF 저장
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPreview(false)}
-                    className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              {mode === "bundle" ? (
-                <ProposalBundle
-                  sections={bundleIds
-                    .map((id) => ({ templateId: id, plans: bundlePlans[id] || [] }))
-                    .filter((s) =>
-                      s.plans.length > 0 &&
-                      s.plans.some((p) =>
-                        p.company || p.productName || p.monthlyPremium ||
-                        Object.values(p.metrics).some((v) => v && parseFloat(String(v)) > 0)
-                      )
-                    )}
-                  focus={primaryFocus}
-                  customerName={customerName}
-                  consultant={consultant}
-                />
-              ) : (
-                <ProposalReport
-                  template={template}
-                  mode={mode}
-                  plans={visiblePlans}
-                  focus={primaryFocus}
-                  customerName={customerName}
-                  consultant={consultant}
-                />
-              )}
-            </div>
-          )}
 
         </div>
+
+        {/* 미리보기 오버레이 */}
+        {showPreview && (
+          <div className="preview-shell fixed inset-0 z-50 overflow-auto bg-white">
+            <div className="no-print sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
+              <p className="text-sm font-black text-slate-700">미리보기</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white"
+                >
+                  <Download className="h-4 w-4" />
+                  인쇄 · PDF 저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(false)}
+                  className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            {mode === "bundle" ? (
+              <ProposalBundle
+                sections={bundleIds
+                  .map((id) => ({ templateId: id, plans: bundlePlans[id] || [] }))
+                  .filter((s) =>
+                    s.plans.length > 0 &&
+                    s.plans.some((p) =>
+                      p.company || p.productName || p.monthlyPremium ||
+                      Object.values(p.metrics).some((v) => v && parseFloat(String(v)) > 0)
+                    )
+                  )}
+                focus={primaryFocus}
+                customerName={customerName}
+                consultant={consultant}
+              />
+            ) : (
+              <ProposalReport
+                template={template}
+                mode={mode}
+                plans={visiblePlans}
+                focus={primaryFocus}
+                customerName={customerName}
+                consultant={consultant}
+              />
+            )}
+          </div>
+        )}
+
       </main>
     </>
   )
