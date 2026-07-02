@@ -1334,6 +1334,95 @@ function ReportHeader({ template, customerName, consultant, mode }: { template: 
   )
 }
 
+function ReportCoverPage({
+  template,
+  customerName,
+  consultant,
+  mode,
+  plans,
+}: {
+  template: CategoryTemplate
+  customerName: string
+  consultant: ConsultantInfo
+  mode: ProposalMode
+  plans: PlanData[]
+}) {
+  const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })
+  const totalMonthly = plans.reduce(
+    (sum, p) => sum + (p.isDollar ? num(p.monthlyPremium) * (num(p.exchangeRate ?? "") || 1400) : num(p.monthlyPremium)),
+    0
+  )
+  return (
+    <ReportPage>
+      <div className="relative flex h-full flex-col">
+        {/* 헤더 */}
+        <div className="shrink-0 bg-gradient-to-br from-[#0F172A] via-[#1C2B45] to-[#243B5E] px-10 py-9 text-white">
+          <p className="text-[10px] font-black tracking-[0.28em] text-[#C9A96E]/70 uppercase">
+            Metarich Signal Group · 맞춤형 보장 제안서
+          </p>
+          <h1 className="mt-4 text-[34px] font-black leading-[1.2]">
+            {customerName || "고객"}님을 위한<br />
+            <span className="text-[#C9A96E]">{template.label} 제안</span>
+          </h1>
+          <p className="mt-3 text-[11px] font-bold text-white/50">
+            {today}
+            {mode === "compare" ? ` · ${plans.length}개 플랜 비교` : " · 단독 제안"}
+          </p>
+        </div>
+
+        {/* 플랜 목록 */}
+        <div className="flex-1 overflow-hidden px-8 py-6">
+          <p className="mb-4 text-[10px] font-black tracking-[0.15em] text-slate-400 uppercase">제안 플랜</p>
+          <div className="space-y-3">
+            {plans.map((plan, idx) => (
+              <div key={idx} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
+                <div>
+                  <p className="text-base font-black text-slate-950">{plan.company || "보험사 미입력"}</p>
+                  <p className="text-sm font-bold text-slate-500">{plan.productName || "상품명 미입력"}</p>
+                  <div className="mt-1.5 flex gap-2">
+                    {plan.paymentYears ? (
+                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600">{plan.paymentYears}년납</span>
+                    ) : null}
+                    {plan.coverageYears ? (
+                      <span className="rounded bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600">~{plan.coverageYears}</span>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-black text-[#1A2744]">{formatPremium(plan)}</p>
+                  <p className="text-xs font-bold text-slate-400">월 보험료</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 하단: 합산 + 설계사 */}
+        <div className="grid grid-cols-2 gap-4 px-8 pb-7">
+          <div className="rounded-2xl bg-[#0F172A] px-6 py-4 text-white">
+            <p className="text-[10px] font-black tracking-[0.15em] text-white/40 uppercase">월 보험료</p>
+            <p className="mt-1.5 text-[28px] font-black text-[#C9A96E]">
+              {totalMonthly > 0 ? formatKrw(totalMonthly) : "미입력"}
+            </p>
+            {mode === "compare" && (
+              <p className="mt-1 text-[10px] font-bold text-white/40">{plans.length}개 플랜 합산</p>
+            )}
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4">
+            <p className="text-[10px] font-black tracking-[0.1em] text-slate-400">담당 설계사</p>
+            <p className="mt-1.5 text-lg font-black text-slate-950">{consultant.name || "설계사명"}</p>
+            <p className="text-sm font-bold text-slate-500">{consultant.phone || "연락처"}</p>
+            <p className="mt-2 text-[10px] font-bold leading-[1.6] text-slate-400">
+              본 제안서는 상담 자료로 제공되며, 최종 보험료와 보장 내용은 청약 시 약관 기준을 따릅니다.
+            </p>
+          </div>
+        </div>
+        <PageNum num={1} />
+      </div>
+    </ReportPage>
+  )
+}
+
 function ProposalReport({
   template,
   mode,
@@ -1342,6 +1431,7 @@ function ProposalReport({
   customerName,
   consultant,
   pageOffset = 0,
+  showCover = false,
 }: {
   template: CategoryTemplate
   mode: ProposalMode
@@ -1350,6 +1440,7 @@ function ProposalReport({
   customerName: string
   consultant: ConsultantInfo
   pageOffset?: number
+  showCover?: boolean
 }) {
   const visiblePlans = mode === "single" ? plans.slice(0, 1) : plans
   const lowest = bestPremium(visiblePlans)
@@ -1365,6 +1456,15 @@ function ProposalReport({
 
   return (
     <div className="proposal-print-area">
+      {showCover && (
+        <ReportCoverPage
+          template={template}
+          customerName={customerName}
+          consultant={consultant}
+          mode={mode}
+          plans={visiblePlans}
+        />
+      )}
       <ReportPage>
         <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
         <div className="grid flex-1 grid-cols-[1.05fr_1fr] gap-5 p-8">
@@ -2885,6 +2985,36 @@ function GptsImportPanel({
   )
 }
 
+function printProposal() {
+  const area = document.querySelector('.proposal-print-area')
+  if (!area) { window.print(); return }
+  const links = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+    .map((l) => `<link rel="stylesheet" href="${l.href}">`)
+    .join('')
+  const html =
+    `<!DOCTYPE html><html><head><meta charset="utf-8">${links}` +
+    `<style>@page{size:A4 landscape;margin:0}body{margin:0;background:#fff;` +
+    `-webkit-print-color-adjust:exact;print-color-adjust:exact}` +
+    `.proposal-page{width:297mm!important;height:210mm!important;` +
+    `overflow:hidden!important;break-after:page!important;` +
+    `page-break-after:always!important;box-shadow:none!important;margin:0!important}` +
+    `.proposal-page:last-child{break-after:avoid!important;page-break-after:avoid!important}` +
+    `</style></head><body>${area.outerHTML}</body></html>`
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0'
+  document.body.appendChild(iframe)
+  const doc = iframe.contentDocument
+  if (!doc) { window.print(); return }
+  doc.open()
+  doc.write(html)
+  doc.close()
+  setTimeout(() => {
+    iframe.contentWindow?.print()
+    setTimeout(() => { try { document.body.removeChild(iframe) } catch(e){} }, 500)
+  }, 600)
+}
+
+
 export default function ProposalPage() {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
@@ -3441,7 +3571,7 @@ export default function ProposalPage() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={printProposal}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#102a4c] px-4 py-2 text-sm font-black text-white"
                 >
                   <Download className="h-4 w-4" />
@@ -3479,6 +3609,8 @@ export default function ProposalPage() {
                 focus={primaryFocus}
                 customerName={customerName}
                 consultant={consultant}
+                  showCover
+                  pageOffset={1}
               />
             )}
           </div>
