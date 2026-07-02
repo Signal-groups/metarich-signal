@@ -1564,61 +1564,66 @@ function ProposalReport({
           <ReportPage key="detail-single">
             <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
             <div className="flex flex-1 flex-col gap-2 overflow-hidden p-4">
-              {/* 주요 보장 그룹 — 2×2 그리드 */}
+              {/* 주요 보장 그룹 — 2×2 그리드 / 마지막 셀(간병)에 추가담보 포함 */}
               <div
-                className="grid grid-cols-2 gap-2"
-                style={{ flex: hasCustom ? "1 1 0" : "1", gridTemplateRows: `repeat(${Math.ceil(sortedMain.length / 2)}, 1fr)` }}
+                className="grid flex-1 grid-cols-2 gap-2"
+                style={{ gridTemplateRows: `repeat(${Math.ceil(sortedMain.length / 2)}, 1fr)` }}
               >
-                {sortedMain.map((group, idx) => (
-                  <section key={idx} className="flex min-h-0 flex-col overflow-auto rounded-2xl border border-slate-200 bg-white p-3">
-                    <p className="mb-1.5 shrink-0 text-[11px] font-black text-slate-800">{group.title}</p>
-                    <table className="w-full border-collapse text-left">
-                      <thead>
-                        <tr className="bg-slate-50">
-                          <th className="px-2 py-1 text-[10px] font-black text-slate-500">보장 항목</th>
-                          <th className="px-2 py-1 text-[10px] font-black text-slate-700">보장 금액</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {group.metrics.map((metric) => (
-                          <tr key={metric.key} className="border-t border-slate-100">
-                            <td className="px-2 py-1 text-[10px] font-bold text-slate-600">{metric.label}</td>
-                            <td className="px-2 py-1 text-[10px] font-black text-slate-900">
-                              {metricText(metric, visiblePlans[0].metrics[metric.key], visiblePlans[0])}
-                            </td>
+                {sortedMain.map((group, idx) => {
+                  const isLast = idx === sortedMain.length - 1
+                  return (
+                    <section key={idx} className="flex min-h-0 flex-col overflow-auto rounded-2xl border border-slate-200 bg-white p-3">
+                      <p className="mb-1.5 shrink-0 text-[11px] font-black text-slate-800">{group.title}</p>
+                      <table className="w-full border-collapse text-left">
+                        <thead>
+                          <tr className="bg-slate-50">
+                            <th className="px-2 py-1 text-[10px] font-black text-slate-500">보장 항목</th>
+                            <th className="px-2 py-1 text-[10px] font-black text-slate-700">보장 금액</th>
                           </tr>
-                        ))}
-                        {group.metrics.length === 0 && (
-                          <tr className="border-t border-slate-100">
-                            <td colSpan={2} className="px-2 py-4 text-center text-[10px] font-bold text-slate-400">-</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </section>
-                ))}
+                        </thead>
+                        <tbody>
+                          {group.metrics.map((metric) => (
+                            <tr key={metric.key} className="border-t border-slate-100">
+                              <td className="px-2 py-1 text-[10px] font-bold text-slate-600">{metric.label}</td>
+                              <td className="px-2 py-1 text-[10px] font-black text-slate-900">
+                                {metricText(metric, visiblePlans[0].metrics[metric.key], visiblePlans[0])}
+                              </td>
+                            </tr>
+                          ))}
+                          {group.metrics.length === 0 && (
+                            <tr className="border-t border-slate-100">
+                              <td colSpan={2} className="px-2 py-4 text-center text-[10px] font-bold text-slate-400">-</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                      {/* 마지막 그룹(간병) 아래에 추가담보 */}
+                      {isLast && hasCustom && (
+                        <>
+                          <p className="mb-1 mt-2 shrink-0 border-t border-slate-200 pt-2 text-[11px] font-black text-slate-800">추가 담보</p>
+                          <table className="w-full border-collapse text-left">
+                            <tbody>
+                              {customItems.map((name) => {
+                                const item = (visiblePlans[0].customCoverages ?? []).find(
+                                  (c) => (c.name.trim() || "추가 담보") === name
+                                )
+                                return (
+                                  <tr key={name} className="border-t border-slate-100 bg-slate-50/60">
+                                    <td className="px-2 py-1 text-[10px] font-bold text-slate-600">{name}</td>
+                                    <td className="px-2 py-1 text-[10px] font-black text-slate-900">
+                                      {item?.amount ? `${won(num(item.amount))}만원` : "-"}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </>
+                      )}
+                    </section>
+                  )
+                })}
               </div>
-              {/* 추가 담보 — 하단 전체 너비 */}
-              {hasCustom && (
-                <section className="flex shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3">
-                  <p className="mb-1.5 shrink-0 text-[11px] font-black text-slate-800">추가 담보</p>
-                  <div className="grid grid-cols-4 gap-x-4">
-                    {customItems.map((name) => {
-                      const item = (visiblePlans[0].customCoverages ?? []).find(
-                        (c) => (c.name.trim() || "추가 담보") === name
-                      )
-                      return (
-                        <div key={name} className="flex items-center justify-between border-b border-slate-100 py-1.5">
-                          <span className="text-[10px] font-bold text-slate-600">{name}</span>
-                          <span className="ml-2 shrink-0 text-[10px] font-black text-slate-900">
-                            {item?.amount ? `${won(num(item.amount))}만원` : "-"}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </section>
-              )}
             </div>
             <PageNum num={pageOffset + 3} />
           </ReportPage>
