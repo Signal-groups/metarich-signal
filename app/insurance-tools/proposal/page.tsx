@@ -1310,25 +1310,24 @@ function ReportHeader({ template, customerName, consultant, mode }: { template: 
   }
   const modeBadge = mode ? (modeLabel[mode] ?? null) : null
   return (
-    <div className={`rounded-t-[28px] bg-gradient-to-r ${template.tone} px-8 py-6 text-white`}>
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="text-[11px] font-black tracking-[0.2em] text-white/70">맞춤형 보장 점검 및 제안서</p>
-            {modeBadge && (
-              <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black tracking-[0.1em] text-white">{modeBadge}</span>
-            )}
-          </div>
-          <h1 className="mt-2 text-[28px] font-black tracking-[-0.01em]">
-            {customerName || "고객"}님 {template.label} 보장 제안
-          </h1>
-          <p className="mt-2 text-sm font-bold text-white/80">{template.summary}</p>
+    <div className="flex items-start justify-between gap-6 border-b border-slate-200 bg-white px-8 py-4">
+      <div>
+        <div className="flex items-center gap-2">
+          <div className={`h-[18px] w-1 shrink-0 rounded-full bg-gradient-to-b ${template.tone}`} />
+          <p className="text-[11px] font-black tracking-[0.2em] text-slate-400">맞춤형 보장 점검 및 제안서</p>
+          {modeBadge && (
+            <span className={`rounded-full bg-gradient-to-r ${template.tone} px-2.5 py-0.5 text-[10px] font-black tracking-[0.1em] text-white`}>{modeBadge}</span>
+          )}
         </div>
-        <div className="text-right">
-          <p className="text-xs font-bold text-white/70">보험의 기준</p>
-          <p className="mt-1 text-lg font-black">{consultant.name || "담당 설계사"}</p>
-          <p className="text-xs font-bold text-white/70">{consultant.phone}</p>
-        </div>
+        <h1 className="mt-1 text-[22px] font-black tracking-[-0.01em] text-[#0F172A]">
+          {customerName || "고객"}님 {template.label} 보장 제안
+        </h1>
+        <p className="mt-1 text-xs font-bold text-slate-500">{template.summary}</p>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="text-[10px] font-bold text-slate-400">보험의 기준</p>
+        <p className="mt-0.5 text-base font-black text-[#0F172A]">{consultant.name || "담당 설계사"}</p>
+        <p className="text-xs font-bold text-slate-500">{consultant.phone}</p>
       </div>
     </div>
   )
@@ -1452,7 +1451,7 @@ function ProposalReport({
   const outputGroups = groups.filter((group) =>
     group.metrics.length > 0 || (template.id === "health" && group.title.includes("추가 담보") && hasCustomCoverage)
   )
-  const scenarioPageNum = pageOffset + 3 + outputGroups.length
+  const scenarioPageNum = mode === "single" ? pageOffset + 4 : pageOffset + 3 + outputGroups.length
 
   return (
     <div className="proposal-print-area">
@@ -1547,31 +1546,52 @@ function ProposalReport({
         <PageNum num={pageOffset + 2} />
       </ReportPage>
 
-      {outputGroups.map((group, chunkIndex) => (
-        <ReportPage key={`detail-${chunkIndex}`}>
+      {mode === "single" ? (
+        <ReportPage key="detail-single">
           <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
-          <div className="flex flex-1 flex-col p-8">
-            <section className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-black text-slate-950">{group.title}</h2>
-                {outputGroups.length > 1 && (
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black text-slate-500">
-                    {chunkIndex + 1}/{outputGroups.length}
-                  </span>
-                )}
-              </div>
-              <ComparisonTable
-                template={template}
-                plans={visiblePlans}
-                showCross={mode === "cross"}
-                metrics={group.metrics}
-                includeCustomRows={template.id !== "health" || group.title.includes("추가 담보")}
-              />
-            </section>
+          <div className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
+            {outputGroups.map((group, idx) => (
+              <section key={idx} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4">
+                <h2 className="mb-2 text-sm font-black text-slate-900">{group.title}</h2>
+                <ComparisonTable
+                  template={template}
+                  plans={visiblePlans}
+                  showCross={false}
+                  metrics={group.metrics}
+                  includeCustomRows={template.id !== "health" || group.title.includes("추가 담보")}
+                />
+              </section>
+            ))}
           </div>
-          <PageNum num={pageOffset + 3 + chunkIndex} />
+          <PageNum num={pageOffset + 3} />
         </ReportPage>
-      ))}
+      ) : (
+        outputGroups.map((group, chunkIndex) => (
+          <ReportPage key={`detail-${chunkIndex}`}>
+            <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
+            <div className="flex flex-1 flex-col p-8">
+              <section className="flex flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-black text-slate-950">{group.title}</h2>
+                  {outputGroups.length > 1 && (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black text-slate-500">
+                      {chunkIndex + 1}/{outputGroups.length}
+                    </span>
+                  )}
+                </div>
+                <ComparisonTable
+                  template={template}
+                  plans={visiblePlans}
+                  showCross={mode === "cross"}
+                  metrics={group.metrics}
+                  includeCustomRows={template.id !== "health" || group.title.includes("추가 담보")}
+                />
+              </section>
+            </div>
+            <PageNum num={pageOffset + 3 + chunkIndex} />
+          </ReportPage>
+        ))
+      )}
 
       {/* 4페이지: 교차설계면 합산 커버리지, 아니면 사례 인포그래픽 */}
       {mode === "cross" ? (
@@ -2088,21 +2108,24 @@ function ComparisonTable({
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="bg-slate-50">
-            <th className="w-[170px] px-4 py-2.5 text-xs font-black text-slate-500">비교 항목</th>
-            {plans.map((plan, index) => (
+            <th className="w-[170px] px-4 py-2.5 text-xs font-black text-slate-500">{plans.length === 1 ? "보장 항목" : "비교 항목"}</th>
+            {plans.length > 1 && plans.map((plan, index) => (
               <th key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-700">
                 {plan.company || `${String.fromCharCode(65 + index)}안`}
               </th>
             ))}
+            {plans.length === 1 && <th className="px-4 py-2.5 text-xs font-black text-slate-700">보장 금액</th>}
             {showCross && <th className="px-4 py-2.5 text-xs font-black text-emerald-700">합산 보장</th>}
           </tr>
         </thead>
         <tbody>
-          <tr className="border-t border-slate-100">
-            <td className="px-4 py-2.5 text-xs font-black text-slate-500">월 보험료</td>
-            {plans.map((plan) => <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
-            {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
-          </tr>
+          {plans.length > 1 && (
+            <tr className="border-t border-slate-100">
+              <td className="px-4 py-2.5 text-xs font-black text-slate-500">월 보험료</td>
+              {plans.map((plan) => <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
+              {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
+            </tr>
+          )}
           {visibleMetrics.map((metric) => (
             <tr key={metric.key} className="border-t border-slate-100">
               <td className="px-4 py-2.5 text-xs font-black text-slate-500">{metric.label}</td>
