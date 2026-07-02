@@ -295,7 +295,7 @@ export default function Sidebar({
   };
 
   const openCustomerSupportApp = () => {
-    window.open("https://drive.google.com/file/d/100qSbwVs3mVSpV-oin44xryavNW40GMa/view?usp=sharing", "_blank", "noopener,noreferrer");
+    window.open("https://drive.google.com/file/d/1VWrxYq8sal3CB-c7eRv-mKQOocfw_IIa/view?usp=sharing", "_blank", "noopener,noreferrer");
     setIsOpen(false);
   };
 
