@@ -29,6 +29,7 @@ export type CategoryScenarioConfig = {
   page4Title: string
   page4Subtitle: string
   cases: ScenarioCase[]
+  checkPoints?: string[]
   page5?: {
     title: string
     subtitle: string
@@ -69,18 +70,22 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
         conclusion: "형사합의 + 법적 대응 비용까지 — 운전자보험 하나로 대응 가능"
       },
       {
-        icon: "🚗",
-        label: "일반 인명사고 (추돌·부상 3주)",
-        situation: "급정거 또는 추돌로 탑승자가 3주 진단을 받으면 형사합의 절차가 시작됩니다. 단순 사고도 합의금 수백만원 + 대인벌금 최대 2,000만원이 발생합니다.",
-        totalEstimate: "약 500 ~ 1,000만원",
+        icon: "🅿️",
+        label: "주차장 사망사고 (야간·기소유예 → 정식기소)",
+        situation: "심야 주차장 사망사고에서 검찰이 기소유예를 고려했으나 변호인단의 객관적 근거 제시로 정식기소가 이루어진 실제 판례. 기소유예 시 피해자 유족의 합의금 기회가 박탈됩니다.",
+        totalEstimate: "사망사고 형사합의금 최대 2억원 (2024~2025 신규 담보)",
         costItems: [
-          { label: "형사합의금", amount: "300 ~ 500만원", covered: true, coverLabel: "교통사고처리지원금" },
-          { label: "대인 벌금", amount: "최대 2,000만원", covered: true, coverLabel: "벌금 대인" },
-          { label: "자동차사고 부상치료비", amount: "100 ~ 300만원", covered: true, coverLabel: "자동차사고부상치료비" },
+          { label: "교통사고처리지원금 (사망)", amount: "최대 2억원", covered: true, coverLabel: "교통사고처리지원금" },
+          { label: "중상해·장기진단 보장", amount: "최대 1억 5천만원", covered: true, coverLabel: "중상해 담보" },
+          { label: "변호사 선임비 (기소유예 대응)", amount: "300 ~ 500만원", covered: true, coverLabel: "변호사선임비용" },
         ],
-        conclusion: "합의금 + 대인벌금 2,000만원 — 운전자보험으로 실질 대비 가능"
+        conclusion: "기소유예 → 정식기소 과정, 변호사비 + 최대 2억 합의금 담보로 완전 대비"
       }
-    ]
+    ],
+    checkPoints: [
+      "이번 주차장 사망 사고는 단순 과실을 넘어 교통사고처리특례법 위반이라는 중대한 형사 책임으로 이어질 수 있음을 보여줍니다.",
+      "변호인단이 제시한 객관적 근거로 검찰의 '기소유예'를 철회시켜 '정식 기소'를 이끌어낸 사례로, 변호사비 지원과 최대 2억원 교통사고처리지원금 담보가 실질적 방패가 됩니다."
+    ],
   },
 
   // ── 건강보험 (암·뇌·심장) ────────────────────────────────────────────────
@@ -362,18 +367,7 @@ export const CATEGORY_SCENARIOS: Record<string, CategoryScenarioConfig> = {
           { label: "치아보험 지급금 (예시 50만원×3)", amount: "최대 150만원", covered: true, coverLabel: "크라운 담보" },
         ],
         conclusion: "연간 3개 한도 상품 기준 크라운 비용 대부분 보전 가능"
-      },
-      {
-        icon: "🦴",
-        label: "틀니 (부분·완전)",
-        situation: "여러 치아 상실 후 부분틀니 또는 완전틀니를 제작합니다. 65세 미만은 건강보험 적용이 어렵습니다.",
-        totalEstimate: "약 100 ~ 200만원",
-        costItems: [
-          { label: "틀니 제작비 (비급여)", amount: "100 ~ 200만원", covered: false },
-          { label: "치아보험 지급금 (예시)", amount: "최대 130만원", covered: true, coverLabel: "틀니 담보" },
-        ],
-        conclusion: "치아보험으로 고령 전 틀니 발생 비용 실질 보전 가능"
       }
     ]
-  }
+  },
 }

@@ -1549,19 +1549,63 @@ function ProposalReport({
       {mode === "single" ? (
         <ReportPage key="detail-single">
           <ReportHeader template={template} customerName={customerName} consultant={consultant} mode={mode} />
-          <div className="flex flex-1 flex-col gap-3 overflow-hidden p-5">
-            {outputGroups.map((group, idx) => (
-              <section key={idx} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4">
-                <h2 className="mb-2 text-sm font-black text-slate-900">{group.title}</h2>
-                <ComparisonTable
-                  template={template}
-                  plans={visiblePlans}
-                  showCross={false}
-                  metrics={group.metrics}
-                  includeCustomRows={template.id !== "health" || group.title.includes("추가 담보")}
-                />
-              </section>
-            ))}
+          <div className="flex flex-1 overflow-hidden p-4">
+            <div
+              className="grid flex-1 gap-2"
+              style={{ gridTemplateColumns: `repeat(${outputGroups.length}, 1fr)` }}
+            >
+              {outputGroups.map((group, idx) => (
+                <section key={idx} className="flex min-h-0 flex-col overflow-auto rounded-2xl border border-slate-200 bg-white p-3">
+                  <p className="mb-1.5 shrink-0 text-[11px] font-black text-slate-800">{group.title}</p>
+                  <table className="w-full border-collapse text-left">
+                    <thead>
+                      <tr className="bg-slate-50">
+                        <th className="px-2 py-1 text-[10px] font-black text-slate-500">보장 항목</th>
+                        <th className="px-2 py-1 text-[10px] font-black text-slate-700">보장 금액</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.metrics.map((metric) => (
+                        <tr key={metric.key} className="border-t border-slate-100">
+                          <td className="px-2 py-1 text-[10px] font-bold text-slate-600">{metric.label}</td>
+                          <td className="px-2 py-1 text-[10px] font-black text-slate-900">
+                            {metricText(metric, visiblePlans[0].metrics[metric.key], visiblePlans[0])}
+                          </td>
+                        </tr>
+                      ))}
+                      {(template.id !== "health" || group.title.includes("추가 담보")) &&
+                        Array.from(new Set(
+                          visiblePlans.flatMap((p) =>
+                            (p.customCoverages ?? [])
+                              .filter((c) => c.name.trim() || c.amount.trim())
+                              .map((c) => c.name.trim() || "추가 담보")
+                          )
+                        )).map((name) => {
+                          const item = (visiblePlans[0].customCoverages ?? []).find(
+                            (c) => (c.name.trim() || "추가 담보") === name
+                          )
+                          return (
+                            <tr key={name} className="border-t border-slate-100 bg-slate-50/60">
+                              <td className="px-2 py-1 text-[10px] font-bold text-slate-600">{name}</td>
+                              <td className="px-2 py-1 text-[10px] font-black text-slate-900">
+                                {item?.amount ? `${won(num(item.amount))}만원` : "-"}
+                              </td>
+                            </tr>
+                          )
+                        })
+                      }
+                      {group.metrics.length === 0 && (
+                        <tr className="border-t border-slate-100">
+                          <td colSpan={2} className="px-2 py-4 text-center text-[10px] font-bold text-slate-400">
+                            -
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </section>
+              ))}
+            </div>
           </div>
           <PageNum num={pageOffset + 3} />
         </ReportPage>
@@ -2621,32 +2665,49 @@ function ScenarioPage4({
           ))}
         </div>
 
-        {/* B안: 타임라인 → 결론 */}
-        <div className="mt-3">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="rounded-full bg-cyan-600 px-3 py-1 text-[11px] font-black text-white">B안 — 보험으로 준비하면</span>
-            <span className="text-[11px] font-bold text-slate-500">사고·질병 발생 → 청구 → 보장 확인</span>
-          </div>
-          <div className="flex items-center gap-0">
-            {cases.map((c, idx) => (
-              <div key={idx} className="flex flex-1 items-center">
-                <div className="flex-1 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3">
-                  <p className="text-[11px] font-black text-cyan-900">{c.icon} {c.label}</p>
-                  <p className="mt-1 text-[10px] font-bold text-cyan-700">{c.conclusion}</p>
+        {/* B안: checkPoints 있으면 체크포인트, 없으면 타임라인 */}
+        {cfg.checkPoints ? (
+          <div className="mt-3">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="rounded-full bg-amber-500 px-3 py-1 text-[11px] font-black text-white">★ Check Point</span>
+              <span className="text-[11px] font-bold text-slate-500">실제 판례 기반 핵심 포인트</span>
+            </div>
+            <div className="space-y-2">
+              {cfg.checkPoints.map((point, idx) => (
+                <div key={idx} className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <span className="mt-0.5 shrink-0 text-base text-amber-500">★</span>
+                  <p className="text-[11px] font-bold leading-5 text-amber-900">{point}</p>
                 </div>
-                {idx < cases.length - 1 && (
-                  <ChevronRight className="mx-1 h-5 w-5 shrink-0 text-cyan-400" />
-                )}
-              </div>
-            ))}
-            <ChevronRight className="mx-1 h-5 w-5 shrink-0 text-emerald-500" />
-            <div className="flex w-36 shrink-0 flex-col items-center justify-center rounded-2xl bg-emerald-600 px-4 py-4 text-center">
-              <CheckCircle2 className="mb-1 h-5 w-5 text-white" />
-              <p className="text-[12px] font-black text-white">제안서로 준비하면</p>
-              <p className="text-[11px] font-black text-emerald-200">보장 가능</p>
+              ))}
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-3">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="rounded-full bg-cyan-600 px-3 py-1 text-[11px] font-black text-white">B안 — 보험으로 준비하면</span>
+              <span className="text-[11px] font-bold text-slate-500">사고·질병 발생 → 청구 → 보장 확인</span>
+            </div>
+            <div className="flex items-center gap-0">
+              {cases.map((c, idx) => (
+                <div key={idx} className="flex flex-1 items-center">
+                  <div className="flex-1 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+                    <p className="text-[11px] font-black text-cyan-900">{c.icon} {c.label}</p>
+                    <p className="mt-1 text-[10px] font-bold text-cyan-700">{c.conclusion}</p>
+                  </div>
+                  {idx < cases.length - 1 && (
+                    <ChevronRight className="mx-1 h-5 w-5 shrink-0 text-cyan-400" />
+                  )}
+                </div>
+              ))}
+              <ChevronRight className="mx-1 h-5 w-5 shrink-0 text-emerald-500" />
+              <div className="flex w-36 shrink-0 flex-col items-center justify-center rounded-2xl bg-emerald-600 px-4 py-4 text-center">
+                <CheckCircle2 className="mb-1 h-5 w-5 text-white" />
+                <p className="text-[12px] font-black text-white">제안서로 준비하면</p>
+                <p className="text-[11px] font-black text-emerald-200">보장 가능</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <PageNum num={pageNum} />
