@@ -312,10 +312,10 @@ export default function PremiumComparePage() {
   }).sort((a,b)=>b.fv-a.fv),[monthlySav,payPeriod])
 
   return (
-    <div className="min-h-screen bg-[#eef3fb]">
+    <div className="premium-compare-page min-h-screen bg-[#eef3fb]">
       {/* ── 상단 sticky 헤더 ── */}
       <div className="sticky top-0 z-50 bg-[#0d1f3c] shadow-lg">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-5 py-2.5">
+        <div className="mx-auto flex max-w-[1600px] flex-col items-start gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between md:px-5">
           <div>
             <p className="text-[14px] font-black text-white">🛡 보험료 비교</p>
             <p className="text-[10px] text-blue-300">교차설계 시스템 · {AGE_LABEL[ageBand]} {gender} · {DISC_LABEL[disc]}</p>
@@ -324,10 +324,10 @@ export default function PremiumComparePage() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1600px] items-start gap-4 px-4 py-4 md:px-6">
+      <div className="mx-auto flex max-w-[1600px] flex-col items-stretch gap-4 px-3 py-3 md:px-6 lg:flex-row lg:items-start">
 
         {/* ── 왼쪽 사이드바 ── */}
-        <aside className="w-52 shrink-0 sticky top-[52px]">
+        <aside className="w-full shrink-0 lg:sticky lg:top-[52px] lg:w-52">
           {/* 보험 유형 */}
           <div className="mb-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="bg-[#1f5597] px-4 py-2.5">

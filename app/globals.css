@@ -212,3 +212,201 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+@media (max-width: 768px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .premium-compare-page,
+  .first-coverage-page,
+  .coverage-stats-page,
+  .financial-calc-page,
+  .surgery-tool-page {
+    overflow-x: hidden;
+  }
+
+  .premium-compare-page aside {
+    position: static !important;
+  }
+
+  .premium-compare-page aside > div {
+    margin-bottom: 10px !important;
+  }
+
+  .premium-compare-page aside > div > div:last-child {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding: 10px !important;
+    scrollbar-width: none;
+  }
+
+  .premium-compare-page aside > div > div:last-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  .premium-compare-page aside button {
+    min-width: max-content;
+    white-space: nowrap;
+  }
+
+  .premium-compare-page section,
+  .first-coverage-page section,
+  .coverage-stats-page section,
+  .surgery-tool-page section {
+    max-width: 100%;
+  }
+
+  .premium-compare-page table,
+  .coverage-stats-page table,
+  .surgery-tool-page table {
+    min-width: 640px;
+  }
+
+  .premium-compare-page [class*="grid-cols-3"],
+  .premium-compare-page [class*="grid-cols-4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .premium-compare-page [class*="overflow-x-auto"],
+  .coverage-stats-page [class*="overflow-x-auto"],
+  .surgery-tool-page [class*="overflow-x-auto"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .first-coverage-page header {
+    align-items: stretch !important;
+  }
+
+  .first-coverage-page header > div,
+  .first-coverage-page header button {
+    width: 100%;
+  }
+
+  .first-coverage-page header > div {
+    justify-content: flex-start !important;
+  }
+
+  .first-coverage-page .result-cards-grid,
+  .first-coverage-page .cancer-cost-grid,
+  .first-coverage-page .cancer-cost-inner,
+  .first-coverage-page .brain-heart-grid,
+  .first-coverage-page .treatment-result-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .first-coverage-page [class*="grid-cols-[0.9fr_1.25fr]"],
+  .first-coverage-page [class*="grid-cols-[1.1fr_0.9fr]"],
+  .first-coverage-page [class*="grid-cols-[1fr_"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .first-coverage-page table {
+    min-width: 620px;
+  }
+
+  .first-coverage-page .fixed .relative {
+    width: min(96vw, 980px) !important;
+    max-height: 88vh !important;
+  }
+
+  .coverage-stats-page > div {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .coverage-stats-page .grid {
+    min-width: 0;
+  }
+
+  .financial-calc-page-header {
+    height: auto !important;
+    min-height: 52px !important;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .financial-calc-tool {
+    padding: 14px 10px 28px !important;
+  }
+
+  .financial-calc-layout {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .financial-calc-side {
+    position: static !important;
+    padding: 12px !important;
+  }
+
+  .financial-calc-side > div:last-child {
+    display: flex !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .financial-calc-side > div:last-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  .financial-calc-side button {
+    min-width: 150px;
+  }
+
+  .financial-calc-main {
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .financial-calc-main [style*="grid-template-columns: repeat(3"],
+  .financial-calc-main [style*="grid-template-columns: repeat(4"],
+  .financial-calc-main [style*="grid-template-columns: 1fr 1fr"],
+  .financial-calc-main [style*="grid-template-columns: 1.1fr 0.9fr"],
+  .financial-calc-main [style*="grid-template-columns: 0.95fr 1.05fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .surgery-tool-page > div {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .surgery-tool-page [class*="xl:grid-cols-[240px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .surgery-tool-page [class*="grid-cols-4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .premium-compare-page [class*="grid-cols-2"],
+  .premium-compare-page [class*="grid-cols-3"],
+  .premium-compare-page [class*="grid-cols-4"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .first-coverage-page {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .first-coverage-page .fixed {
+    padding: 10px !important;
+  }
+
+  .coverage-stats-page [class*="grid-cols-3"],
+  .coverage-stats-page [class*="grid-cols-6"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

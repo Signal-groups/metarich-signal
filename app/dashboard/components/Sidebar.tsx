@@ -577,6 +577,13 @@ export default function Sidebar({
               </a>
             </div>
             <button
+              onClick={openCustomerSupportApp}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-3 py-3 text-[12px] font-black text-white shadow-[0_8px_20px_rgba(37,99,235,0.28)] transition-colors hover:bg-[#1d4ed8]"
+            >
+              <span className="rounded-md bg-white px-2 py-1 text-[10px] font-black text-[#2563eb]">APP</span>
+              고객관리 서포트앱
+            </button>
+            <button
               onClick={() => router.push("/dashboard/settings")}
               style={{ width: "100%", padding: "7px 12px", borderRadius: 8, background: "rgba(55,138,221,0.1)", border: "0.5px solid rgba(55,138,221,0.2)", color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}
             >⚙️ 설정</button>

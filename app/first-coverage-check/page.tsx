@@ -1026,7 +1026,7 @@ export default function FirstCoverageCheckPage() {
           .coverage-print-report { display: none !important; }
         }
       `}</style>
-      <main className="min-h-screen bg-[#eef3f8] p-4 text-slate-900 sm:p-6 lg:p-8">
+      <main className="first-coverage-page min-h-screen bg-[#eef3f8] p-3 text-slate-900 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1440px]">
         <header className="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
           <button onClick={() => { if (window.opener) { window.opener.focus(); window.close(); } else { router.push("/dashboard"); } }} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm">

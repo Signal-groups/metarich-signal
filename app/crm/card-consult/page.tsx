@@ -220,9 +220,9 @@ export default function CardConsultPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+    <div className="card-consult-page" style={{ minHeight: '100vh', background: '#f1f5f9' }}>
       {/* ── 헤더 ── */}
-      <div style={{ background: '#1A2744', padding: '18px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="card-consult-header" style={{ background: '#1A2744', padding: '18px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ color: '#C9A96E', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', marginBottom: 3 }}>METARICH SIGNAL</div>
           <div style={{ color: '#fff', fontSize: 18, fontWeight: 900 }}>보장 카드 상담</div>
@@ -261,7 +261,7 @@ export default function CardConsultPage() {
       </div>
 
       {/* 스텝 레이블 */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '10px 28px' }}>
+      <div className="card-consult-stepbar" style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '10px 28px' }}>
         <div style={{ display: 'flex', gap: 0, maxWidth: 640, margin: '0 auto' }}>
           {stepLabels.map((label, i) => {
             const s = i + 1
@@ -280,7 +280,7 @@ export default function CardConsultPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '28px 20px 48px' }}>
+      <div className="card-consult-content" style={{ maxWidth: 680, margin: '0 auto', padding: '28px 20px 48px' }}>
 
         {/* ═══════════════════════════════════════════
             STEP 1 — 기본 정보
@@ -720,6 +720,43 @@ export default function CardConsultPage() {
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 640px) {
+          .card-consult-page {
+            overflow-x: hidden;
+          }
+          .card-consult-header {
+            padding: 14px 14px !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+            flex-direction: column !important;
+          }
+          .card-consult-header > div:last-child {
+            width: 100%;
+            justify-content: space-between;
+            gap: 8px !important;
+            overflow-x: auto;
+            padding-bottom: 2px;
+          }
+          .card-consult-stepbar {
+            padding: 9px 10px !important;
+            overflow-x: auto;
+          }
+          .card-consult-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 18px 12px 32px !important;
+            box-sizing: border-box;
+          }
+          .card-consult-content input,
+          .card-consult-content textarea,
+          .card-consult-content select {
+            font-size: 16px !important;
+          }
+          .card-consult-content [style*="minmax(130px"] {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
         }
       `}</style>
     </div>

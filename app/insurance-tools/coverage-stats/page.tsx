@@ -822,7 +822,7 @@ export default function CoverageStatsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#eef3fb] text-slate-900">
+    <main className="coverage-stats-page min-h-screen bg-[#eef3fb] text-slate-900">
       <div className="mx-auto max-w-[1500px] px-5 py-6 md:px-8">
         <header className="mb-5 rounded-2xl bg-[#1f5597] text-white shadow-lg">
           <div className="flex flex-col gap-4 px-6 py-6 md:flex-row md:items-end md:justify-between">

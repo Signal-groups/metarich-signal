@@ -266,9 +266,9 @@ export default function FinancialCalc() {
   const reset = () => setState(DEFAULT_STATE)
 
   return (
-    <div style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#EEF3F8", minHeight: "100vh", padding: "24px 18px 40px" }}>
-      <div style={{ maxWidth: 1220, margin: "0 auto", display: "grid", gridTemplateColumns: "250px minmax(0,1fr)", gap: 18, alignItems: "start" }}>
-        <aside style={{ position: "sticky", top: 76, background: C.navy, borderRadius: 22, padding: 16, color: "#fff", boxShadow: "0 16px 28px rgba(15,30,53,0.18)" }}>
+    <div className="financial-calc-tool" style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#EEF3F8", minHeight: "100vh", padding: "24px 18px 40px" }}>
+      <div className="financial-calc-layout" style={{ maxWidth: 1220, margin: "0 auto", display: "grid", gridTemplateColumns: "250px minmax(0,1fr)", gap: 18, alignItems: "start" }}>
+        <aside className="financial-calc-side" style={{ position: "sticky", top: 76, background: C.navy, borderRadius: 22, padding: 16, color: "#fff", boxShadow: "0 16px 28px rgba(15,30,53,0.18)" }}>
           <div style={{ padding: "8px 8px 14px", borderBottom: "1px solid rgba(255,255,255,0.09)", marginBottom: 12 }}>
             <p style={{ margin: 0, color: C.gold, fontSize: 12, fontWeight: 950, letterSpacing: "0.4px" }}>계산 메뉴</p>
             <p style={{ margin: "5px 0 0", color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 700, lineHeight: 1.45 }}>상담 목적에 맞춰 계산기를 선택하세요.</p>
@@ -298,7 +298,7 @@ export default function FinancialCalc() {
           </div>
         </aside>
 
-        <main style={{ minWidth: 0, maxWidth: "100%", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22, padding: 24, boxShadow: "0 12px 30px rgba(15,30,53,0.06)", overflow: "hidden" }}>
+        <main className="financial-calc-main" style={{ minWidth: 0, maxWidth: "100%", background: "#fff", border: `1px solid ${C.border}`, borderRadius: 22, padding: 24, boxShadow: "0 12px 30px rgba(15,30,53,0.06)", overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 24 }}>
             <div>
               <p style={{ margin: "0 0 7px", color: C.blue, fontSize: 11, fontWeight: 900, letterSpacing: "1px" }}>FINANCIAL CALCULATOR</p>

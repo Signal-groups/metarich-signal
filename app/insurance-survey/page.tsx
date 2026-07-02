@@ -593,7 +593,7 @@ function saveQuestions(questions: Question[]) {
 }
 
 const styles = `
-.survey-page{min-height:100vh;background:#e8eef6;padding:22px;font-family:'Pretendard Variable','Pretendard','Apple SD Gothic Neo',Arial,sans-serif;color:#17243a}
+.survey-page{min-height:100vh;background:#e8eef6;padding:22px;font-family:'Pretendard Variable','Pretendard','Apple SD Gothic Neo',Arial,sans-serif;color:#17243a;overflow-x:hidden}
 .survey-shell{max-width:1120px;margin:0 auto;display:grid;gap:14px}
 .survey-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .survey-header h1{margin:0;font-size:25px;font-weight:950}
@@ -681,7 +681,8 @@ const styles = `
 @media (max-width: 820px){
   .survey-page{padding:12px;background:#f1f5f9}
   .survey-shell{max-width:100%}
-  .survey-header{align-items:flex-start}
+  .survey-header{align-items:flex-start;flex-direction:column}
+  .survey-header .dark-button{width:100%}
   .survey-header h1{font-size:22px}
   .survey-header p{font-size:12px}
   .panel{padding:14px;border-radius:15px}
@@ -691,6 +692,8 @@ const styles = `
   .step-head{align-items:center}
   .question-card p{font-size:17px}
   .option{width:100%;justify-content:flex-start;min-height:46px}
+  .option-grid{display:grid;grid-template-columns:1fr;gap:8px}
+  .field input,.extra-input,.medical-add input,.medical-base-row input,.medical-base-row select{font-size:16px}
   .medical-base-row{grid-template-columns:1fr}
   .medical-add{grid-template-columns:1fr}
   .action-panel{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(241,245,249,0),#f1f5f9 26%);padding:24px 0 4px;z-index:5}

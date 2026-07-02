@@ -316,7 +316,7 @@ export default function SurgeryPage() {
   }, [nSurgeryModalCompany])
 
   return (
-    <div className="min-h-screen bg-[#eef3ff]">
+    <div className="surgery-tool-page min-h-screen bg-[#eef3ff]">
 
       {/* ── 헤더 ── */}
       <div className="px-4 pt-6 pb-4 lg:px-8">

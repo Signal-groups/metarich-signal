@@ -4,9 +4,9 @@ import FinancialCalc from '../dashboard/components/FinancialCalc'
 
 export default function FinancialCalcPage() {
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
+    <div className="financial-calc-page min-h-screen bg-[#F5F7FA]">
       {/* 상단 헤더 바 */}
-      <div style={{
+      <div className="financial-calc-page-header" style={{
         position: 'sticky',
         top: 0,
         zIndex: 50,
