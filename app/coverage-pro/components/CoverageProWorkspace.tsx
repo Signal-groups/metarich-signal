@@ -28,6 +28,62 @@ const SESSION_ID_KEY = 'coverage-pro-session-id'
 const DEBOUNCE_MS   = 1500
 const PROPOSAL_IMPORT_KEY = 'metarich_proposal_import_payload'
 
+// ── PRO rowKey → CRM category 변환 ─────────────────────────────────────────
+function rowKeyToCrmCategory(rowKey: string): string {
+  if (rowKey.startsWith('cancer') || rowKey.startsWith('radiation') || rowKey.startsWith('chemo') || rowKey.startsWith('targeted')) return 'cancer'
+  if (rowKey.startsWith('brain') || rowKey.startsWith('vascular')) return 'brain'
+  if (rowKey.startsWith('heart')) return 'heart'
+  if (rowKey.startsWith('surgery')) return 'surgery'
+  if (rowKey.startsWith('indemnity') || rowKey.startsWith('hospital')) return 'hospitalization'
+  if (rowKey.startsWith('nursing') || rowKey.startsWith('care')) return 'nursing'
+  if (rowKey.startsWith('driver') || rowKey.startsWith('traffic')) return 'driver'
+  if (rowKey.startsWith('death')) return 'death'
+  if (rowKey.startsWith('disability')) return 'disability'
+  return 'etc'
+}
+
+// ── PRO → CRM 동기화 (source_type='coverage_pro' 행만 교체) ─────────────────
+async function syncProToCRM(customerId: string, contracts: ProContract[]) {
+  try {
+    // 기존 PRO 출처 policies 조회
+    const { data: existing } = await supabase
+      .from('policies').select('id').eq('customer_id', customerId).eq('source_type', 'coverage_pro')
+    if (existing?.length) {
+      const ids = existing.map((p: { id: string }) => p.id)
+      await supabase.from('coverages').delete().in('policy_id', ids)
+      await supabase.from('policies').delete().in('id', ids)
+    }
+    // 새 policies + coverages 삽입
+    for (const contract of contracts) {
+      if (!contract.company && !contract.productName) continue
+      const { data: policy } = await supabase.from('policies').insert({
+        customer_id: customerId,
+        company: contract.company,
+        product_name: contract.productName,
+        monthly_premium: Math.round(contract.monthlyPremium || 0),
+        source_type: 'coverage_pro',
+        policy_type: 'pro_synced',
+        status: contract.status || 'active',
+      }).select('id').single()
+      if (policy?.id && contract.coverages.length > 0) {
+        const covRows = contract.coverages
+          .filter(cov => cov.amount > 0)
+          .map(cov => ({
+            customer_id: customerId,
+            policy_id: policy.id,
+            name: cov.name,
+            amount: Math.round(cov.amount * 10000),
+            row_key: cov.rowKey,
+            category: rowKeyToCrmCategory(cov.rowKey),
+          }))
+        if (covRows.length > 0) await supabase.from('coverages').insert(covRows)
+      }
+    }
+  } catch (_e) {
+    // 동기화 실패해도 PRO 저장은 정상 완료된 것으로 처리
+  }
+}
+
 const defaultProposal: RemodelProposal      = { addContracts: [], removeContractIds: [], memo: '' }
 const defaultOutputConfig: OutputConfig     = { outputType: 'full_pdf', includeGraph: true, includeRemodel: true }
 
@@ -559,7 +615,13 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
       sessionRef.current = updated
       const ok = await saveProSession(updated)
       setSaveStatus(ok ? 'saved' : 'error')
-      if (ok) setTimeout(() => setSaveStatus('idle'), 2000)
+      if (ok) {
+        setTimeout(() => setSaveStatus('idle'), 2000)
+        // PRO → CRM 자동 동기화
+        if (updated.customerId && nextContracts.length > 0) {
+          void syncProToCRM(updated.customerId, nextContracts)
+        }
+      }
     }, DEBOUNCE_MS)
   }, [])
 
@@ -1071,10 +1133,12 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
               )}
             </div>
           )}
+
           {/* ══════════════ STEP 4 — 보장 확인 ═══════════════════════ */}
           {currentStep === 4 && <CoverageGrid contracts={contracts} onUpdate={setContracts} />}
 
-          {/* ══════════════ STEP 5 — 분석 결과 ═══════════════════════ */}          {currentStep === 5 && <AnalysisChart contracts={contracts} />}
+          {/* ══════════════ STEP 5 — 분석 결과 ═══════════════════════ */}
+          {currentStep === 5 && <AnalysisChart contracts={contracts} />}
 
           {/* ══════════════ STEP 6 — 리모델링 ════════════════════════ */}
           {currentStep === 6 && (
@@ -1109,6 +1173,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                   />
                 </div>
               </div>
+              <BenchmarkSummary contracts={contracts} />
             </div>
           )}
 

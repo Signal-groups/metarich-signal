@@ -90,6 +90,7 @@ export default function CustomerDetailPage() {
   const [simResult, setSimResult] = useState<null | { byCompany: { company: string; items: { name: string; amount: number }[]; total: number }[]; grandTotal: number }>(null)
   const [simSaving, setSimSaving] = useState(false)
   const [simSaved, setSimSaved] = useState(false)
+  const [activeScenario, setActiveScenario] = useState<string | null>(null)
 
   const dmTemplates = [
     { id: 'birthday', title: '생일 축하', content: (name: string, adv: string, ph: string) => `${name} 고객님, 생일을 진심으로 축하드립니다!\n\n항상 건강하고 행복하세요.\n\n담당자 ${adv} ${ph}` },
@@ -263,32 +264,96 @@ export default function CustomerDetailPage() {
     setTimeout(() => setCopiedDm(null), 2000)
   }
 
-  const runSimulator = () => {
-    // 이벤트 타입에 따라 관련 카테고리 필터
-    const categoryMap: Record<string, string[]> = {
-      diagnosis: ['cancer', 'brain', 'heart'],
-      hospitalization: ['hospitalization', 'cancer', 'brain', 'heart', 'surgery', 'nursing'],
-      surgery: ['surgery', 'cancer', 'brain', 'heart'],
-    }
-    const relevantCategories = categoryMap[simEventType]
-    const keyword = simKeyword.trim().toLowerCase()
-    const days = Number(simDays) || 0
+  // 상황별 프리셋 정의
+  const SCENARIOS = [
+    {
+      id: 'fracture_all', label: '🦴 골절', desc: '골절 진단+수술+입원',
+      eventType: 'surgery' as const,
+      categories: ['surgery', 'hospitalization'],
+      rowKeyPrefixes: ['fracture', 'disability'],
+      keywords: ['골절', '깁스', '5대골절'],
+    },
+    {
+      id: 'surgery_general', label: '🔪 일반 수술', desc: '수술비+입원비',
+      eventType: 'surgery' as const,
+      categories: ['surgery', 'hospitalization'],
+      rowKeyPrefixes: ['surgery', 'hospital'],
+      keywords: [],
+    },
+    {
+      id: 'hospitalization', label: '🛏 입원', desc: '입원일당+실손+간병',
+      eventType: 'hospitalization' as const,
+      categories: ['hospitalization', 'nursing'],
+      rowKeyPrefixes: ['hospital', 'indemnity', 'nursing', 'care'],
+      keywords: ['입원', '실손', '간병'],
+    },
+    {
+      id: 'cancer', label: '🎗 암 진단', desc: '암진단+치료비+수술',
+      eventType: 'diagnosis' as const,
+      categories: ['cancer'],
+      rowKeyPrefixes: ['cancer', 'radiation', 'chemo', 'targeted'],
+      keywords: ['암'],
+    },
+    {
+      id: 'brain_heart', label: '🧠 뇌·심장', desc: '뇌혈관+심장질환',
+      eventType: 'diagnosis' as const,
+      categories: ['brain', 'heart'],
+      rowKeyPrefixes: ['brain', 'heart', 'vascular'],
+      keywords: ['뇌', '심장', '뇌혈관', '심혈관'],
+    },
+    {
+      id: 'nursing', label: '💊 간병', desc: '간병인+요양병원',
+      eventType: 'hospitalization' as const,
+      categories: ['nursing'],
+      rowKeyPrefixes: ['nursing', 'care'],
+      keywords: ['간병', '요양'],
+    },
+    {
+      id: 'death', label: '💀 사망', desc: '사망보험금',
+      eventType: 'diagnosis' as const,
+      categories: ['death', 'disability'],
+      rowKeyPrefixes: ['death', 'disability'],
+      keywords: ['사망', '후유장해'],
+    },
+  ]
 
-    // 관련 담보 필터링
+  const runSimulatorWithScenario = (scenarioId: string | null, overrideKeyword?: string, overrideDays?: number) => {
+    const scenario = scenarioId ? SCENARIOS.find(s => s.id === scenarioId) : null
+    const keyword = (overrideKeyword ?? simKeyword).trim().toLowerCase()
+    const days = overrideDays ?? Number(simDays) ?? 0
+
     const matched = coverages.filter((cov: any) => {
-      const inCategory = relevantCategories.includes(cov.category)
-      const nameMatch = keyword ? (cov.name || '').toLowerCase().includes(keyword) || (cov.condition || '').toLowerCase().includes(keyword) : true
+      if (scenario) {
+        const rowKey: string = cov.row_key || ''
+        const inCategory = scenario.categories.includes(cov.category || '')
+        const inRowKey = scenario.rowKeyPrefixes.some((pfx: string) => rowKey.startsWith(pfx))
+        const inKeyword = scenario.keywords.length === 0 || scenario.keywords.some((kw: string) => (cov.name || '').includes(kw))
+        const manualKeyword = keyword ? (cov.name || '').toLowerCase().includes(keyword) : false
+        return inCategory || inRowKey || inKeyword || manualKeyword
+      }
+      // 기본 모드
+      const categoryMap: Record<string, string[]> = {
+        diagnosis: ['cancer', 'brain', 'heart'],
+        hospitalization: ['hospitalization', 'cancer', 'brain', 'heart', 'surgery', 'nursing'],
+        surgery: ['surgery', 'cancer', 'brain', 'heart'],
+      }
+      const inCategory = (categoryMap[simEventType] || []).includes(cov.category)
+      const nameMatch = keyword ? (cov.name || '').toLowerCase().includes(keyword) : true
       return inCategory || nameMatch
     })
 
-    // 회사별 그룹핑
-    const companyMap: Record<string, { name: string; amount: number }[]> = {}
+    // 회사 이름: coverages에 company가 없으면 policy_id로 policies에서 찾기
+    const policyMap: Record<string, any> = {}
+    policies.forEach((p: any) => { policyMap[p.id] = p })
+
+    const companyMap: Record<string, { name: string; amount: number; policyInfo?: string }[]> = {}
     matched.forEach((cov: any) => {
-      const co = cov.company || cov.product_name?.split(' ')[0] || '기타'
+      const linkedPolicy = cov.policy_id ? policyMap[cov.policy_id] : null
+      const co = linkedPolicy?.company || cov.company || '기타'
       if (!companyMap[co]) companyMap[co] = []
       let amt = Number(cov.amount) || 0
-      // 입원일 경우 일당 × 일수 처리 (1만원 이하 값은 일당으로 간주)
-      if (simEventType === 'hospitalization' && days > 0 && amt > 0 && amt <= 300000) {
+      const isDaily = simEventType === 'hospitalization' || scenario?.eventType === 'hospitalization'
+      if (isDaily && days > 0 && amt > 0 && amt <= 300000) {
         amt = amt * days
       }
       if (amt > 0) companyMap[co].push({ name: cov.name || '담보', amount: amt })
@@ -304,6 +369,8 @@ export default function CustomerDetailPage() {
     setSimResult({ byCompany, grandTotal })
     setSimSaved(false)
   }
+
+  const runSimulator = () => runSimulatorWithScenario(activeScenario)
 
   const saveSimulation = async () => {
     if (!simResult) return
@@ -734,42 +801,61 @@ export default function CustomerDetailPage() {
 
         {tab === 'simulator' && (
           <>
-            <div className="card-title">보장 계산</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-              고객이 입원·수술·진단을 받을 경우 보험사별 예상 수령액을 간단히 안내합니다.
+            <div className="card-title">빠른 보장 조회</div>
+
+            {/* 보험 기본 현황 */}
+            {policies.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+                {policies.map((p: any) => (
+                  <div key={p.id} style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 10, padding: '7px 14px', fontSize: 12 }}>
+                    <span style={{ fontWeight: 700, color: '#0369a1' }}>{p.company}</span>
+                    {p.monthly_premium > 0 && <span style={{ color: '#64748b', marginLeft: 6 }}>{(p.monthly_premium / 10000).toFixed(1)}만원</span>}
+                    {p.payment_day && <span style={{ color: '#94a3b8', marginLeft: 4 }}>· {p.payment_day}일 이체</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 상황 프리셋 */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 8 }}>상황 선택</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {SCENARIOS.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      const next = activeScenario === s.id ? null : s.id
+                      setActiveScenario(next)
+                      setSimEventType(s.eventType)
+                      setSimResult(null)
+                      if (next) setTimeout(() => runSimulatorWithScenario(next), 0)
+                    }}
+                    title={s.desc}
+                    style={{
+                      padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      border: activeScenario === s.id ? 'none' : '1px solid #e2e8f0',
+                      background: activeScenario === s.id ? '#1a2744' : '#f8fafc',
+                      color: activeScenario === s.id ? '#fff' : '#475569',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >{s.label}</button>
+                ))}
+              </div>
             </div>
 
-            {/* 이벤트 타입 선택 */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              {[
-                { id: 'diagnosis', label: '진단비' },
-                { id: 'hospitalization', label: '입원비' },
-                { id: 'surgery', label: '수술비' },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => { setSimEventType(item.id as any); setSimResult(null) }}
-                  style={{
-                    padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700,
-                    border: simEventType === item.id ? 'none' : '1px solid #e2e8f0',
-                    background: simEventType === item.id ? '#1a2744' : '#fff',
-                    color: simEventType === item.id ? '#fff' : '#475569',
-                    cursor: 'pointer',
-                  }}
-                >{item.label}</button>
-              ))}
-            </div>
-
-            <div className="grid-2" style={{ marginBottom: 16 }}>
-              <Field label="진단명 / 수술명 (키워드)">
-                <input
-                  className="form-input"
-                  placeholder="예: 암, 뇌경색, 충수염"
-                  value={simKeyword}
-                  onChange={(e) => { setSimKeyword(e.target.value); setSimResult(null) }}
-                />
-              </Field>
-              {simEventType === 'hospitalization' && (
+            {/* 수동 검색 */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <Field label="추가 키워드 (선택)">
+                  <input
+                    className="form-input"
+                    placeholder="예: 암, 뇌경색, 충수염"
+                    value={simKeyword}
+                    onChange={(e) => { setSimKeyword(e.target.value); setSimResult(null) }}
+                  />
+                </Field>
+              </div>
+              <div style={{ width: 110 }}>
                 <Field label="입원 일수">
                   <input
                     type="number"
@@ -779,17 +865,22 @@ export default function CustomerDetailPage() {
                     onChange={(e) => { setSimDays(e.target.value); setSimResult(null) }}
                   />
                 </Field>
-              )}
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={runSimulator}
+                disabled={coverages.length === 0}
+                style={{ height: 40, marginBottom: 0 }}
+              >
+                {coverages.length === 0 ? '데이터 없음' : '조회'}
+              </button>
             </div>
 
-            <button
-              className="btn btn-primary"
-              onClick={runSimulator}
-              disabled={coverages.length === 0}
-              style={{ marginBottom: 24 }}
-            >
-              {coverages.length === 0 ? '보장 데이터 없음 (보장분석 필요)' : '계산하기'}
-            </button>
+            {coverages.length === 0 && (
+              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 12, padding: 16, fontSize: 13, color: '#92400e', textAlign: 'center' }}>
+                보장 데이터가 없습니다. 보장분석 PRO에서 분석하면 자동으로 반영됩니다.
+              </div>
+            )}
 
             {simResult && (
               <div>
@@ -798,20 +889,29 @@ export default function CustomerDetailPage() {
                 ) : (
                   <>
                     <div style={{ marginBottom: 16 }}>
-                      {simResult.byCompany.map((co) => (
-                        <div key={co.company} style={{ background: '#f8fafc', borderRadius: 12, padding: 16, marginBottom: 10 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: '#1a2744' }}>{co.company}</div>
-                            <div style={{ fontWeight: 800, fontSize: 15, color: '#2563eb' }}>{formatCoverageAmount(co.total)}</div>
-                          </div>
-                          {co.items.map((item, i) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', padding: '3px 0', borderTop: i === 0 ? '1px solid #e2e8f0' : undefined }}>
-                              <span>{item.name}</span>
-                              <span>{formatCoverageAmount(item.amount)}</span>
+                      {simResult.byCompany.map((co) => {
+                        const linkedPolicy = policies.find((p: any) => p.company === co.company)
+                        return (
+                          <div key={co.company} style={{ background: '#f8fafc', borderRadius: 12, padding: 16, marginBottom: 10, border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: '#1a2744' }}>{co.company}</div>
+                              <div style={{ fontWeight: 800, fontSize: 15, color: '#2563eb' }}>{formatCoverageAmount(co.total)}</div>
                             </div>
-                          ))}
-                        </div>
-                      ))}
+                            {linkedPolicy && (
+                              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8, display: 'flex', gap: 10 }}>
+                                {linkedPolicy.monthly_premium > 0 && <span>월 {(linkedPolicy.monthly_premium / 10000).toFixed(1)}만원</span>}
+                                {linkedPolicy.payment_day && <span>{linkedPolicy.payment_institution || ''} {linkedPolicy.payment_day}일 {linkedPolicy.payment_type || '자동이체'}</span>}
+                              </div>
+                            )}
+                            {co.items.map((item, i) => (
+                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', padding: '3px 0', borderTop: '1px solid #f1f5f9' }}>
+                                <span>{item.name}</span>
+                                <span style={{ fontWeight: 600 }}>{formatCoverageAmount(item.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })}
                     </div>
 
                     <div style={{ background: '#1a2744', color: '#fff', borderRadius: 14, padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -1231,14 +1331,14 @@ function AlertsTab({ customer, alerts, onRefresh }: { customer: any; alerts: any
               </span>
               <div className="alert-info" style={{ flex: 1 }}>
                 <div className="alert-msg">{alert.message || alert.type}</div>
+                {alert.due_date && <div className="alert-date">{alert.due_date}</div>}
               </div>
-              <div className="alert-date" style={{ whiteSpace: 'nowrap' }}>{alert.due_date}</div>
               <button
                 onClick={() => toggleDone(alert)}
                 disabled={toggling === alert.id}
-                style={{ border: 'none', background: '#f0fdf4', color: '#16a34a', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                style={{ border: 'none', background: '#dcfce7', color: '#166534', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
               >
-                {toggling === alert.id ? '...' : '완료'}
+                완료
               </button>
             </div>
           ))}
