@@ -888,6 +888,21 @@ export default function DashboardPage() {
             isMaster={isMaster}
           />
         )}
+
+        {/* ── 저작권 경고 푸터 ── */}
+        <footer className="mt-6 border-t border-[#dce6f1] pt-5 pb-2">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 mb-4">
+            <p className="text-[12px] font-black text-amber-800 mb-1">⚠️ 저작권 및 이용 제한 안내</p>
+            <p className="text-[11px] font-bold text-amber-700 leading-relaxed">
+              본 플랫폼(메타리치 시그널 CRM)에 포함된 모든 콘텐츠·도구·데이터·분석 결과물은 <strong>메타리치 시그널그룹</strong>의 독점 저작물로,
+              무단 복제·배포·상업적 이용이 금지됩니다.
+              소속 설계사 본인의 업무 목적 외 사용, 제3자 공유, 타사 유출 시 관련 법령(저작권법·부정경쟁방지법)에 따라 민·형사상 책임을 질 수 있습니다.
+            </p>
+          </div>
+          <p className="text-center text-[11px] font-bold text-[#9ab4c8]">
+            © {new Date().getFullYear()} Metarich Signal Group. All rights reserved. 본 시스템은 소속 설계사 전용이며 무단 이용을 금합니다.
+          </p>
+        </footer>
       </div>
     );
   };

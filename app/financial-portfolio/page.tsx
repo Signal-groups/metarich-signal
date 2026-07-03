@@ -1418,18 +1418,6 @@ export default function FinancialPortfolioPage() {
           </div>
         </header>
 
-        <section className="fp-profile fp-profile-top">
-          <Input label="고객명" value={client.name} onChange={v=>updateClient({name:v})} span="span-2" />
-          <Input label="나이" value={String(client.age)} type="number" onChange={v=>updateClient({age:Number(v)})} span="span-1" />
-          <Input label="성별" value={client.gender} onChange={v=>updateClient({gender:v})} />
-          <Input label="직업" value={client.job||""} onChange={v=>updateClient({job:v})} span="span-2" />
-          <Input label="신용등급" value={String(client.creditGrade)} type="number" onChange={v=>updateClient({creditGrade:Math.min(7,Math.max(1,Number(v)||1))})} />
-          <Input label="제안자" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} span="span-2" />
-          <Input label="소속" value={client.advisorCompany||""} onChange={v=>updateClient({advisorCompany:v})} span="span-2" />
-          <Input label="전화번호" value={client.advisorPhone||""} onChange={v=>updateClient({advisorPhone:v})} span="span-2" />
-          <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} span="span-2" />
-        </section>
-
         <section className="fp-clientbar">
           <label>
             <UserRound className="h-4 w-4" />
@@ -1518,6 +1506,20 @@ export default function FinancialPortfolioPage() {
             }}
           />
         </section>
+
+        <section className="fp-profile fp-profile-top">
+          <Input label="고객명" value={client.name} onChange={v=>updateClient({name:v})} span="span-2" />
+          <Input label="나이" value={String(client.age)} type="number" onChange={v=>updateClient({age:Number(v)})} span="span-1" />
+          <Input label="성별" value={client.gender} onChange={v=>updateClient({gender:v})} />
+          <Input label="직업" value={client.job||""} onChange={v=>updateClient({job:v})} span="span-2" />
+          <Input label="신용등급" value={String(client.creditGrade)} type="number" onChange={v=>updateClient({creditGrade:Math.min(7,Math.max(1,Number(v)||1))})} />
+          <Input label="제안자" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} span="span-2" />
+          <Input label="소속" value={client.advisorCompany||""} onChange={v=>updateClient({advisorCompany:v})} span="span-2" />
+          <Input label="전화번호" value={client.advisorPhone||""} onChange={v=>updateClient({advisorPhone:v})} span="span-2" />
+          <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} span="span-2" />
+        </section>
+
+
 
         <section className="fp-mode-panel">
           <div className="fp-mode-tabs">
