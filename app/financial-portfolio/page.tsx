@@ -52,8 +52,18 @@ type Proposal = {
 
 type InputMode = "simple" | "detail"
 
+type SimpleDebtItem = {
+  id: string
+  name: string
+  balance: number
+  monthlyPayment: number
+  remainingYears: number
+  memo?: string
+}
+
 type SimpleDraft = {
   goals: GoalItem[]
+  debts: SimpleDebtItem[]
   incomeSalary: number
   incomeBusiness: number
   incomeInterest: number
@@ -108,6 +118,7 @@ type IndexItem = {
 // ── 상수 ────────────────────────────────────────────────────────────────────
 const COLORS = ["#1E5FA8","#0E7E6B","#C9A84C","#C0392B","#7C3AED","#0EA5E9","#64748B","#F59E0B"]
 const STORAGE_KEY = "mr-financial-portfolios"
+const MAX_CLIENTS = 10
 
 const EXPENSE_CATEGORIES: Record<"소비지출"|"비소비지출", string[]> = {
   소비지출: ["식비","생활비","교통/주유비","통신비","교육비","의료비","여가/문화","의류/쇼핑","기타 소비"],
@@ -157,9 +168,18 @@ function createSimpleDraft(client: ClientPortfolio): SimpleDraft {
     .reduce((a,i)=>a+Number(i.amount||0),0) - expenseUtilities
   const totalExpense = Math.max(expenseLiving, 0) + expenseUtilities + expenseInsurance + currentSavingTotal
   const goals = ensureSimpleGoals(client.proposal.goals)
+  const debts = ensureSimpleDebts(client.liabilities.map((item, index) => ({
+    id: item.id || `simple-debt-${index}`,
+    name: item.name || item.category || "대출",
+    balance: Number(item.amount || 0),
+    monthlyPayment: Number(item.payment || 0),
+    remainingYears: Number(item.memo?.match(/(\d+)년/)?.[1] || 0),
+    memo: item.memo || "",
+  })))
 
   return {
     goals,
+    debts,
     incomeSalary,
     incomeBusiness,
     incomeInterest,
@@ -212,15 +232,55 @@ function ensureSimpleGoals(goals?: GoalItem[]) {
   return normalized
 }
 
+function blankDebt(index: number): SimpleDebtItem {
+  const names = ["주택담보대출", "신용대출", "학자금대출"]
+  return {
+    id: `simple-debt-${index}`,
+    name: names[index] || "기타 대출",
+    balance: 0,
+    monthlyPayment: 0,
+    remainingYears: 0,
+    memo: "",
+  }
+}
+
+function ensureSimpleDebts(debts?: SimpleDebtItem[]) {
+  const normalized = [...(debts || [])]
+  if (normalized.length === 0) normalized.push(blankDebt(0))
+  return normalized
+}
+
 function simpleTotals(draft: SimpleDraft) {
   const incomeTotal = draft.incomeSalary + draft.incomeBusiness + draft.incomeInterest + draft.incomeDividend + draft.incomePension + draft.incomeOther
-  const expenseTotal = draft.expenseLiving + draft.expenseUtilities + draft.expenseInsurance + draft.savingBank + draft.savingSecurities + draft.savingInsurance
+  const debtPaymentTotal = ensureSimpleDebts(draft.debts).reduce((sumValue, debt) => sumValue + Number(debt.monthlyPayment || 0), 0)
+  const debtBalanceTotal = ensureSimpleDebts(draft.debts).reduce((sumValue, debt) => sumValue + Number(debt.balance || 0), 0)
+  const spendingTotal = draft.expenseLiving + draft.expenseUtilities + draft.expenseInsurance + debtPaymentTotal
   const savingTotal = draft.savingBank + draft.savingSecurities + draft.savingInsurance
-  const proposedExpense = draft.proposalLiving + draft.proposalUtilities + draft.proposalInsurance + draft.proposalBank + draft.proposalSecurities + draft.proposalInsuranceSaving
+  const expenseTotal = spendingTotal
+  const outflowTotal = spendingTotal + savingTotal
+  const savingCapacity = Math.max(incomeTotal - spendingTotal - savingTotal, 0)
+  const proposedSpending = draft.proposalLiving + draft.proposalUtilities + draft.proposalInsurance
   const proposedSaving = draft.proposalBank + draft.proposalSecurities + draft.proposalInsuranceSaving
-  const available = savingTotal + Math.max(incomeTotal - expenseTotal, 0)
-  const proposedAvailable = proposedSaving + Math.max(incomeTotal - proposedExpense, 0)
-  return { incomeTotal, expenseTotal, savingTotal, proposedExpense, proposedSaving, available, proposedAvailable }
+  const proposedExpense = proposedSpending + proposedSaving
+  const proposedSavingCapacity = Math.max(incomeTotal - proposedSpending - proposedSaving, 0)
+  const available = savingTotal + savingCapacity
+  const proposedAvailable = proposedSaving + proposedSavingCapacity
+  return {
+    incomeTotal,
+    spendingTotal,
+    expenseTotal,
+    outflowTotal,
+    savingTotal,
+    debtPaymentTotal,
+    debtBalanceTotal,
+    savingCapacity,
+    proposedSpending,
+    proposedExpense,
+    proposedSaving,
+    proposedSavingCapacity,
+    available,
+    proposedAvailable,
+  }
 }
 
 const defaultProposal: Proposal = {
@@ -285,7 +345,7 @@ function loadClients(): ClientPortfolio[] {
     if (!saved) return [starter]
     const parsed = JSON.parse(saved) as Partial<ClientPortfolio>[]
     if (!Array.isArray(parsed)||parsed.length===0) return [starter]
-    return parsed.map(item=>({
+    return parsed.slice(0, MAX_CLIENTS).map(item=>({
       ...starter, ...item,
       creditGrade: Number(item.creditGrade||3),
       foodExpense: Number(item.foodExpense||0),
@@ -829,16 +889,25 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
   const currentRate = pct(totals.available, monthlyNeed)
   const proposedRate = pct(totals.proposedAvailable, monthlyNeed)
   const emergencyRate = pct(draft.emergencyCurrent, draft.emergencyTarget)
+  const annualIncome = totals.incomeTotal * 12
+  const pensionTaxRate = annualIncome <= 55000000 ? 16.5 : 13.2
+  const pensionTaxMax = Math.round(9000000 * (pensionTaxRate / 100))
   const beforeRows = [
-    { label: "총수입", value: totals.incomeTotal, color: "#1E5FA8" },
-    { label: "총지출", value: totals.expenseTotal, color: "#C0392B" },
-    { label: "현재 저축", value: totals.savingTotal, color: "#0E7E6B" },
-    { label: "가용 여력", value: totals.available, color: "#C9A84C" },
+    { label: "월 총수입", value: totals.incomeTotal, color: "#1E5FA8" },
+    { label: "실제지출", value: totals.expenseTotal, color: "#C0392B" },
+    { label: "현재저축", value: totals.savingTotal, color: "#0E7E6B" },
+    { label: "남은 저축여력", value: totals.savingCapacity, color: "#C9A84C" },
   ]
   const afterRows = [
-    { label: "제안 후 지출", value: totals.proposedExpense, color: "#C0392B" },
+    { label: "제안 후 지출", value: totals.proposedSpending, color: "#C0392B" },
     { label: "제안 후 저축", value: totals.proposedSaving, color: "#0E7E6B" },
-    { label: "제안 후 가용", value: totals.proposedAvailable, color: "#1E5FA8" },
+    { label: "제안 후 여력", value: totals.proposedSavingCapacity, color: "#C9A84C" },
+    { label: "제안 후 준비액", value: totals.proposedAvailable, color: "#1E5FA8" },
+  ]
+  const allocationRows = [
+    { label: "은행", current: draft.savingBank, proposed: draft.proposalBank, tip: "비상금·1~3년 단기자금" },
+    { label: "증권", current: draft.savingSecurities, proposed: draft.proposalSecurities, tip: "ISA·ETF·중장기 목적자금" },
+    { label: "보험", current: draft.savingInsurance, proposed: draft.proposalInsuranceSaving, tip: "연금·보장 목적 장기자금" },
   ]
 
   return (
@@ -857,7 +926,7 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
           <ReportKpi label="현재 목적자금 달성률" value={`${Math.round(currentRate)}%`} sub={`필요 ${krw(monthlyNeed)}/월`} tone="#C0392B" />
           <ReportKpi label="제안 후 달성률" value={`${Math.round(proposedRate)}%`} sub={`준비 가능 ${krw(totals.proposedAvailable)}/월`} tone="#0E7E6B" />
           <ReportKpi label="비상금 준비율" value={`${Math.round(emergencyRate)}%`} sub={`${manwon(draft.emergencyCurrent)} / ${manwon(draft.emergencyTarget)}`} tone="#1E5FA8" />
-          <ReportKpi label="월 현금흐름" value={krw(totals.incomeTotal - totals.expenseTotal)} sub="총수입 - 총지출" tone="#C9A84C" />
+          <ReportKpi label="남은 저축여력" value={krw(totals.savingCapacity)} sub="총수입 - 실제지출 - 현재저축" tone="#C9A84C" />
         </div>
 
         <div className="fp-landscape-grid">
@@ -922,16 +991,54 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
           <h2>제안 전후 핵심 비교</h2>
           <div className="fp-before-after-table">
             <div><span>항목</span><span>현재</span><span>제안 후</span><span>변화</span></div>
-            <div><b>월 지출</b><span>{krw(totals.expenseTotal)}</span><span>{krw(totals.proposedExpense)}</span><em>{krw(totals.expenseTotal - totals.proposedExpense)}</em></div>
+            <div><b>월 실제지출</b><span>{krw(totals.expenseTotal)}</span><span>{krw(totals.proposedSpending)}</span><em>{krw(totals.expenseTotal - totals.proposedSpending)}</em></div>
             <div><b>월 저축</b><span>{krw(totals.savingTotal)}</span><span>{krw(totals.proposedSaving)}</span><em>{krw(totals.proposedSaving - totals.savingTotal)}</em></div>
+            <div><b>남은 저축여력</b><span>{krw(totals.savingCapacity)}</span><span>{krw(totals.proposedSavingCapacity)}</span><em>{krw(totals.proposedSavingCapacity - totals.savingCapacity)}</em></div>
+            <div><b>부채 상환</b><span>{krw(totals.debtPaymentTotal)}</span><span>{krw(totals.debtPaymentTotal)}</span><em>대출잔액 {manwon(totals.debtBalanceTotal)}</em></div>
             <div><b>목적자금 달성률</b><span>{Math.round(currentRate)}%</span><span>{Math.round(proposedRate)}%</span><em>{Math.round(proposedRate - currentRate)}%p</em></div>
-            <div><b>비상금 준비율</b><span>{Math.round(emergencyRate)}%</span><span>{Math.round(emergencyRate)}%</span><em>기준 유지</em></div>
           </div>
         </div>
 
         <div className="fp-report-card wide">
+          <h2>은행 · 증권 · 보험 배분 제안</h2>
+          <div className="fp-allocation-compare">
+            {allocationRows.map(rowItem => (
+              <div key={rowItem.label}>
+                <strong>{rowItem.label}</strong>
+                <span>현재 {krw(rowItem.current)} → 제안 {krw(rowItem.proposed)}</span>
+                <em>{rowItem.tip}</em>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="fp-landscape-page">
+        <header className="fp-landscape-head compact">
+          <div>
+            <p>PORTFOLIO OPTIONS</p>
+            <h1>안정 · 중립 · 적극형 예시와 세액공제 팁</h1>
+          </div>
+          <div className="fp-landscape-badge">상담 설명용</div>
+        </header>
+
+        <div className="fp-landscape-grid three-col">
+          {SCENARIOS.map(scenario => (
+            <div key={scenario.type} className="fp-report-card scenario" style={{ borderTopColor: scenario.color }}>
+              <h2>{scenario.label}</h2>
+              <p>{scenario.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="fp-report-card wide">
+          <h2>연말정산 세액공제 팁</h2>
+          <p>연금저축은 연 600만원, 연금저축+IRP 합산은 연 900만원까지 세액공제 한도로 활용할 수 있습니다. 총급여 5,500만원 이하 기준 세액공제율은 16.5%, 초과 구간은 13.2%로 계산하며, 현재 연소득 기준 예상 최대 공제효과는 약 {krw(pensionTaxMax)}입니다. ISA는 중장기 투자 수익의 과세 부담을 낮추는 계좌로 함께 검토하면 좋습니다.</p>
+        </div>
+
+        <div className="fp-report-card wide">
           <h2>상담 메시지</h2>
-          <p>현재 구조에서는 목적자금별 필요 월저축액 대비 준비 가능액이 부족할 수 있습니다. 제안안은 보험료와 고정지출을 점검하고, 은행·증권·보험 저축의 역할을 나누어 목적기간에 맞춘 달성률을 높이는 방향입니다.</p>
+          <p>현재 구조에서는 실제지출과 기존 저축을 제외한 남은 저축여력이 핵심입니다. 제안안은 생활비, 보험료, 대출상환 부담을 점검하고 은행·증권·보험의 역할을 나누어 목적기간에 맞춘 달성률을 높이는 방향입니다.</p>
         </div>
       </section>
     </div>
@@ -984,7 +1091,7 @@ export default function FinancialPortfolioPage() {
       if (!(role === "master" || (isPlannerOrAbove && isApprovedUser(userInfo)))) { setAllowed(false); return }
       setAdvisorId(session.user.id)
       if (!error && rows && rows.length > 0) {
-        const loaded = rows.map(r => ({ ...starter, ...(r.portfolio as Partial<ClientPortfolio>), id: r.id as string }))
+        const loaded = rows.slice(0, MAX_CLIENTS).map(r => ({ ...starter, ...(r.portfolio as Partial<ClientPortfolio>), id: r.id as string }))
         setClients(loaded); setSelectedId(loaded[0].id)
       }
       setAllowed(true)
@@ -1052,6 +1159,7 @@ export default function FinancialPortfolioPage() {
   const allocationData = getAllocation(investorProfile)
   const simpleCalc = simpleTotals(simpleDraft)
   const simpleGoals = ensureSimpleGoals(simpleDraft.goals)
+  const simpleDebts = ensureSimpleDebts(simpleDraft.debts)
 
   const updateClient = (patch: Partial<ClientPortfolio>) =>
     setClients(prev => prev.map(i => i.id === client.id ? { ...i, ...patch, updatedAt: new Date().toISOString() } : i))
@@ -1084,6 +1192,8 @@ export default function FinancialPortfolioPage() {
         periodYears: Math.max(1, g.periodYears || 1),
         memo: g.memo || "간단 입력으로 설정한 목적자금",
       }))
+    const activeDebts = ensureSimpleDebts(simpleDraft.debts)
+      .filter(debt => debt.name.trim() || debt.balance > 0 || debt.monthlyPayment > 0)
 
     updateClient({
       incomes: [
@@ -1098,10 +1208,27 @@ export default function FinancialPortfolioPage() {
         ...client.assets.filter(a => a.id !== "simple-emergency"),
         row("simple-emergency", "현금", "비상금(예비비)", "", simpleDraft.emergencyCurrent),
       ],
+      liabilities: activeDebts.map((debt, index) =>
+        row(
+          debt.id || `simple-debt-${index}`,
+          debt.name.includes("주택") ? "장기부채" : debt.name.includes("학자금") ? "학자금대출" : "대출",
+          debt.name || `대출 ${index + 1}`,
+          "",
+          debt.balance,
+          debt.monthlyPayment,
+          0,
+        )
+      ).map((debtRow, index) => ({
+        ...debtRow,
+        memo: activeDebts[index]?.remainingYears ? `${activeDebts[index].remainingYears}년 남음` : activeDebts[index]?.memo || "",
+      })),
       expenses: [
         row("simple-exp-living", "생활비", "생활비", "", simpleDraft.expenseLiving, 0, 0, "소비지출"),
         row("simple-exp-utilities", "공과금/통신", "공과금·통신·구독·렌탈", "", simpleDraft.expenseUtilities, 0, 0, "소비지출"),
         row("simple-exp-insurance", "보장성보험", "보험료(보장)", "", simpleDraft.expenseInsurance, 0, 0, "비소비지출"),
+        ...activeDebts
+          .filter(debt => debt.monthlyPayment > 0)
+          .map((debt, index) => row(`simple-debt-payment-${index}`, "대출원리금", debt.name || `대출 ${index + 1}`, "", debt.monthlyPayment, 0, 0, "비소비지출")),
         row("simple-save-bank", "저축/투자", "은행 저축", "은행", simpleDraft.savingBank, 0, 0, "비소비지출"),
         row("simple-save-securities", "저축/투자", "증권 저축", "증권", simpleDraft.savingSecurities, 0, 0, "비소비지출"),
         row("simple-save-insurance", "저축/투자", "보험 저축", "보험", simpleDraft.savingInsurance, 0, 0, "비소비지출"),
@@ -1109,7 +1236,7 @@ export default function FinancialPortfolioPage() {
       proposal: {
         ...client.proposal,
         monthlyIncome: totals.incomeTotal,
-        totalExpense: totals.proposedExpense,
+        totalExpense: totals.proposedSpending,
         savingsIncrease: Math.max(totals.proposedAvailable - totals.available, 0),
         insuranceOptimize: Math.max(simpleDraft.expenseInsurance - simpleDraft.proposalInsurance, 0),
         investmentAdd: totals.proposedAvailable,
@@ -1120,6 +1247,10 @@ export default function FinancialPortfolioPage() {
   }
 
   const addClient = () => {
+    if (clients.length >= MAX_CLIENTS) {
+      alert(`고객은 최대 ${MAX_CLIENTS}명까지 임시 저장할 수 있습니다.`)
+      return
+    }
     const id = crypto.randomUUID()
     setClients(prev => [...prev, { ...starter, id, name:"신규 고객", assets:[], liabilities:[], incomes:[], expenses:[], proposal:defaultProposal, updatedAt:new Date().toISOString() }])
     setSelectedId(id)
@@ -1240,6 +1371,16 @@ export default function FinancialPortfolioPage() {
           </div>
         </header>
 
+        <section className="fp-profile fp-profile-top">
+          <Input label="고객명" value={client.name} onChange={v=>updateClient({name:v})} span="span-2" />
+          <Input label="나이" value={String(client.age)} type="number" onChange={v=>updateClient({age:Number(v)})} span="span-1" />
+          <Input label="성별" value={client.gender} onChange={v=>updateClient({gender:v})} />
+          <Input label="직업" value={client.job||""} onChange={v=>updateClient({job:v})} span="span-2" />
+          <Input label="신용등급" value={String(client.creditGrade)} type="number" onChange={v=>updateClient({creditGrade:Math.min(7,Math.max(1,Number(v)||1))})} />
+          <Input label="담당 설계사" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} span="span-2" />
+          <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} span="span-3" />
+        </section>
+
         <section className="fp-clientbar">
           <label>
             <UserRound className="h-4 w-4" />
@@ -1247,7 +1388,7 @@ export default function FinancialPortfolioPage() {
               {clients.map(i=><option key={i.id} value={i.id}>{i.name}</option>)}
             </select>
           </label>
-          <button onClick={addClient}><Plus className="h-4 w-4" /> 고객 추가</button>
+          <button onClick={addClient} disabled={clients.length>=MAX_CLIENTS}><Plus className="h-4 w-4" /> 고객 추가 ({clients.length}/{MAX_CLIENTS})</button>
           <button onClick={deleteClient} disabled={clients.length<=1}><Trash2 className="h-4 w-4" /> 삭제</button>
           <button onClick={()=>updateClient({ updatedAt:new Date().toISOString() })}><Save className="h-4 w-4" /> 저장</button>
 
@@ -1302,6 +1443,9 @@ export default function FinancialPortfolioPage() {
                   setSelectedId(match.id)
                   setUploadStatus("ok"); setUploadMsg(`✓ "${d.customerName}" 고객 데이터 업데이트 완료`)
                 } else {
+                  if (clients.length >= MAX_CLIENTS) {
+                    setUploadStatus("error"); setUploadMsg(`고객은 최대 ${MAX_CLIENTS}명까지 임시 저장할 수 있습니다.`); return
+                  }
                   // 신규 고객 생성
                   const newId = Math.random().toString(36).slice(2,10)
                   const newClient: ClientPortfolio = {
@@ -1406,6 +1550,81 @@ export default function FinancialPortfolioPage() {
                     )}
                   </div>
                 ))}
+              </div>
+
+              <div className="fp-simple-subtitle">
+                <strong>부채 현황</strong>
+                <button
+                  type="button"
+                  onClick={() => updateSimpleDraft({ debts: [...simpleDebts, blankDebt(simpleDebts.length)] })}
+                >
+                  + 대출 추가
+                </button>
+              </div>
+              <div className="fp-simple-debts">
+                {simpleDebts.map((debt, index) => (
+                  <div key={debt.id || index} className="fp-simple-debt-row">
+                    <input
+                      value={debt.name}
+                      onChange={e => {
+                        const debts = [...simpleDebts]
+                        debts[index] = { ...debt, name: e.target.value }
+                        updateSimpleDraft({ debts })
+                      }}
+                      placeholder="대출명"
+                    />
+                    <div>
+                      <label>현재 대출잔액</label>
+                      <MoneyInput
+                        value={debt.balance}
+                        onChange={value => {
+                          const debts = [...simpleDebts]
+                          debts[index] = { ...debt, balance: value }
+                          updateSimpleDraft({ debts })
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label>월 상환액</label>
+                      <MoneyInput
+                        value={debt.monthlyPayment}
+                        onChange={value => {
+                          const debts = [...simpleDebts]
+                          debts[index] = { ...debt, monthlyPayment: value }
+                          updateSimpleDraft({ debts })
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label>남은 기간</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={debt.remainingYears || ""}
+                        onChange={e => {
+                          const debts = [...simpleDebts]
+                          debts[index] = { ...debt, remainingYears: Number(e.target.value) }
+                          updateSimpleDraft({ debts })
+                        }}
+                        placeholder="년"
+                      />
+                    </div>
+                    {simpleDebts.length > 1 && (
+                      <button
+                        type="button"
+                        className="fp-simple-remove"
+                        onClick={() => updateSimpleDraft({ debts: simpleDebts.filter((_, i) => i !== index) })}
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <div className="fp-simple-debt-summary">
+                  <span>총 대출잔액 {krw(simpleCalc.debtBalanceTotal)}</span>
+                  <span>월 상환액 {krw(simpleCalc.debtPaymentTotal)}</span>
+                  <span>수입 대비 상환률 {percentValue(pct(simpleCalc.debtPaymentTotal, simpleCalc.incomeTotal))}</span>
+                </div>
               </div>
 
               <div className="fp-simple-block-grid">
@@ -1513,18 +1732,26 @@ export default function FinancialPortfolioPage() {
                 ))}
               </div>
 
-              <div className="fp-simple-summary">
+              <div className="fp-simple-summary four">
                 <div>
-                  <span>월 현금흐름 예상</span>
-                  <strong>{krw(simpleCalc.incomeTotal - simpleCalc.expenseTotal)}</strong>
+                  <span>월 총수입</span>
+                  <strong>{krw(simpleCalc.incomeTotal)}</strong>
+                  <em>기준 100%</em>
                 </div>
                 <div>
-                  <span>현재 준비 가능액</span>
-                  <strong>{krw(simpleCalc.available)}</strong>
+                  <span>월 실제지출</span>
+                  <strong>{krw(simpleCalc.expenseTotal)}</strong>
+                  <em>{percentValue(pct(simpleCalc.expenseTotal, simpleCalc.incomeTotal))}</em>
                 </div>
                 <div>
-                  <span>제안 후 준비 가능액</span>
-                  <strong>{krw(simpleCalc.proposedAvailable)}</strong>
+                  <span>현재 저축금액</span>
+                  <strong>{krw(simpleCalc.savingTotal)}</strong>
+                  <em>{percentValue(pct(simpleCalc.savingTotal, simpleCalc.incomeTotal))}</em>
+                </div>
+                <div>
+                  <span>남은 저축여력</span>
+                  <strong>{krw(simpleCalc.savingCapacity)}</strong>
+                  <em>{percentValue(pct(simpleCalc.savingCapacity, simpleCalc.incomeTotal))}</em>
                 </div>
               </div>
             </div>
@@ -1561,17 +1788,6 @@ export default function FinancialPortfolioPage() {
         )}
 
         <div ref={reportRef} className="fp-report">
-          {/* 고객 기본정보 */}
-          <section className="fp-profile">
-            <Input label="고객명" value={client.name} onChange={v=>updateClient({name:v})} span="span-2" />
-            <Input label="나이" value={String(client.age)} type="number" onChange={v=>updateClient({age:Number(v)})} span="span-1" />
-            <Input label="성별" value={client.gender} onChange={v=>updateClient({gender:v})} />
-            <Input label="직업" value={client.job||""} onChange={v=>updateClient({job:v})} span="span-2" />
-            <Input label="신용등급" value={String(client.creditGrade)} type="number" onChange={v=>updateClient({creditGrade:Math.min(7,Math.max(1,Number(v)||1))})} />
-            <Input label="담당 설계사" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} span="span-2" />
-            <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} span="span-3" />
-          </section>
-
           {/* 핵심 지표 */}
           <section className="fp-metrics">
             <Metric label="자산 합계" value={krw(totals.totalAssets)} sub={manwon(totals.totalAssets)} tone="#1E5FA8" />
@@ -1592,16 +1808,22 @@ export default function FinancialPortfolioPage() {
                 ))}
               </div>
               <div>
-                <p style={{ fontWeight:900,fontSize:13,color:"#10233e",marginBottom:8 }}>월 지출 합계: {krw(totals.totalExpense)}</p>
+                <p style={{ fontWeight:900,fontSize:13,color:"#10233e",marginBottom:8 }}>월 지출 합계: {krw(totals.consumptionTotal + totals.protectionExpense + totals.loanPayments)}</p>
                 <div style={{ display:"flex",justifyContent:"space-between",background:"#fff7ed",borderRadius:6,padding:"6px 10px",marginBottom:6 }}>
                   <span style={{ fontSize:12,fontWeight:800,color:"#b45309" }}>소비지출 소계</span>
                   <span style={{ fontSize:12,fontWeight:900,color:"#b45309" }}>{krw(totals.consumptionTotal)}</span>
                 </div>
                 <div style={{ display:"flex",justifyContent:"space-between",background:"#eff6ff",borderRadius:6,padding:"6px 10px" }}>
-                  <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8" }}>비소비지출 소계</span>
-                  <span style={{ fontSize:12,fontWeight:900,color:"#1d4ed8" }}>{krw(totals.nonConsumptionTotal)}</span>
+                  <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8" }}>대출상환 + 보장보험</span>
+                  <span style={{ fontSize:12,fontWeight:900,color:"#1d4ed8" }}>{krw(totals.loanPayments + totals.protectionExpense)}</span>
                 </div>
               </div>
+            </div>
+            <div className="fp-flow-formula">
+              <div><span>월 총수입</span><strong>{krw(totals.totalIncome)}</strong><em>100%</em></div>
+              <div><span>월 실제지출</span><strong>{krw(totals.consumptionTotal + totals.protectionExpense + totals.loanPayments)}</strong><em>{percentValue(pct(totals.consumptionTotal + totals.protectionExpense + totals.loanPayments, totals.totalIncome))}</em></div>
+              <div><span>현재 저축</span><strong>{krw(totals.savingExpense)}</strong><em>{percentValue(pct(totals.savingExpense, totals.totalIncome))}</em></div>
+              <div><span>남은 저축여력</span><strong>{krw(Math.max(totals.totalIncome - (totals.consumptionTotal + totals.protectionExpense + totals.loanPayments) - totals.savingExpense, 0))}</strong><em>{percentValue(pct(Math.max(totals.totalIncome - (totals.consumptionTotal + totals.protectionExpense + totals.loanPayments) - totals.savingExpense, 0), totals.totalIncome))}</em></div>
             </div>
           </Panel>
 
@@ -1832,6 +2054,12 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-simple-goals{display:grid;gap:8px}
         .fp-simple-goal-row{display:grid;grid-template-columns:minmax(180px,1fr) 180px 90px auto;gap:8px;align-items:start}
         .fp-simple-goal-row>input{height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0}
+        .fp-simple-debts{display:grid;gap:8px}
+        .fp-simple-debt-row{display:grid;grid-template-columns:minmax(170px,1fr) 170px 150px 90px auto;gap:8px;align-items:end}
+        .fp-simple-debt-row>input,.fp-simple-debt-row input{height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0;min-width:0}
+        .fp-simple-debt-row label{display:block;margin-bottom:5px;font-size:11px;font-weight:950;color:#64748b}
+        .fp-simple-debt-summary{display:flex;gap:8px;flex-wrap:wrap}
+        .fp-simple-debt-summary span{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:950}
         .fp-simple-block-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
         .fp-simple-block-grid.two{grid-template-columns:1fr 1fr}
         .fp-simple-block-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -1848,9 +2076,16 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-simple-card p{margin:8px 0 0;color:#64748b;font-size:12px;font-weight:850}
         .fp-simple-card textarea{width:100%;border:1px solid #dce4ef;border-radius:8px;padding:10px 11px;font-size:13px;font-weight:800;color:#172033;outline:0;font-family:inherit;resize:vertical}
         .fp-simple-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+        .fp-simple-summary.four{grid-template-columns:repeat(4,minmax(0,1fr))}
         .fp-simple-summary div{border:1px solid #dbeafe;background:#eff6ff;border-radius:10px;padding:12px}
         .fp-simple-summary span{display:block;color:#1d4ed8;font-size:11px;font-weight:950}
         .fp-simple-summary strong{display:block;margin-top:5px;color:#10233e;font-size:18px;font-weight:950}
+        .fp-simple-summary em{display:block;margin-top:4px;color:#64748b;font-size:11px;font-weight:900;font-style:normal}
+        .fp-flow-formula{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+        .fp-flow-formula div{border:1px solid #dbeafe;background:#f8fbff;border-radius:10px;padding:11px}
+        .fp-flow-formula span{display:block;color:#64748b;font-size:11px;font-weight:950}
+        .fp-flow-formula strong{display:block;margin-top:5px;color:#10233e;font-size:17px;font-weight:950}
+        .fp-flow-formula em{display:block;margin-top:4px;color:#1E5FA8;font-size:11px;font-weight:950;font-style:normal}
         .fp-detail-note{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:10px;padding:14px;color:#64748b;font-size:13px;font-weight:850}
         .fp-detail-inputs{display:grid;gap:12px;border:1px solid #dce4ef;border-radius:10px;background:#fff;padding:14px}
         .fp-detail-input-head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding-bottom:12px}
@@ -1954,10 +2189,16 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-before-after-table>div:first-child{background:#10233e;color:#fff}
         .fp-before-after-table span,.fp-before-after-table b,.fp-before-after-table em{padding:9px 11px;border-right:1px solid #dce4ef;border-bottom:1px solid #dce4ef;font-size:12px;font-weight:900;font-style:normal}
         .fp-before-after-table em{color:#0E7E6B}
+        .fp-allocation-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .fp-allocation-compare div{border:1px solid #e2e8f0;background:#f8fafc;border-radius:9px;padding:10px}
+        .fp-allocation-compare strong{display:block;color:#10233e;font-size:13px;font-weight:950}
+        .fp-allocation-compare span{display:block;margin-top:5px;color:#1E5FA8;font-size:12px;font-weight:950}
+        .fp-allocation-compare em{display:block;margin-top:5px;color:#64748b;font-size:11px;font-weight:850;font-style:normal}
+        .fp-report-card.scenario{border-top:4px solid #1E5FA8}
         @keyframes fp-spin{to{transform:rotate(360deg)}}
         @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}.fp-simple-grid,.fp-simple-block-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics,.fp-simple-summary,.fp-simple-block-grid.two,.fp-simple-block-grid.three{grid-template-columns:1fr 1fr}.fp-simple-grid,.fp-simple-block-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-simple-goal-row{grid-template-columns:1fr 160px 80px auto}}
-        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid,.fp-simple-grid,.fp-simple-summary,.fp-simple-block-grid,.fp-simple-block-grid.two,.fp-simple-block-grid.three,.fp-simple-goal-row,.fp-emergency-row{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}.fp-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.fp-simple-head{align-items:stretch;flex-direction:column}.fp-simple-head button{width:100%}}
+        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics,.fp-simple-summary,.fp-simple-summary.four,.fp-flow-formula,.fp-simple-block-grid.two,.fp-simple-block-grid.three{grid-template-columns:1fr 1fr}.fp-simple-grid,.fp-simple-block-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-simple-goal-row{grid-template-columns:1fr 160px 80px auto}.fp-simple-debt-row{grid-template-columns:1fr 1fr 1fr}}
+        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid,.fp-simple-grid,.fp-simple-summary,.fp-simple-summary.four,.fp-flow-formula,.fp-simple-block-grid,.fp-simple-block-grid.two,.fp-simple-block-grid.three,.fp-simple-goal-row,.fp-simple-debt-row,.fp-emergency-row{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}.fp-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.fp-simple-head{align-items:stretch;flex-direction:column}.fp-simple-head button{width:100%}}
         @media print{
   @page{size:A4 landscape;margin:7mm}
   .fp-actions,.fp-clientbar button,.fp-delete,.fp-mode-panel{display:none!important}
