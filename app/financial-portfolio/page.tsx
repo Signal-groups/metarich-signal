@@ -53,16 +53,33 @@ type Proposal = {
 type InputMode = "simple" | "detail"
 
 type SimpleDraft = {
-  goalPurpose: string
-  goalAmount: number
-  goalYears: number
-  savingMethod: string
-  currentSaving: number
-  savingCapacity: number
+  goals: GoalItem[]
+  incomeSalary: number
+  incomeBusiness: number
+  incomeInterest: number
+  incomeDividend: number
+  incomePension: number
+  incomeOther: number
+  expenseLiving: number
+  expenseUtilities: number
+  expenseInsurance: number
+  savingBank: number
+  savingSecurities: number
+  savingInsurance: number
+  emergencyCurrent: number
+  emergencyTarget: number
+  proposalLiving: number
+  proposalUtilities: number
+  proposalInsurance: number
+  proposalBank: number
+  proposalSecurities: number
+  proposalInsuranceSaving: number
   totalIncome: number
   totalExpense: number
-  insuranceExpense: number
-  livingExpense: number
+  advisorOpinion: string
+  financeMemo: string
+  taxMemo: string
+  coverageMemo: string
 }
 
 type ClientPortfolio = {
@@ -112,29 +129,63 @@ function row(id:string, category:string, name:string, institution:string, amount
 }
 
 function createSimpleDraft(client: ClientPortfolio): SimpleDraft {
+  const incomeBy = (keywords: string[]) => client.incomes
+    .filter(i => keywords.some(k => i.category.includes(k) || i.name.includes(k)))
+    .reduce((a,i)=>a+Number(i.amount||0),0)
+  const expenseBy = (keywords: string[]) => client.expenses
+    .filter(i => keywords.some(k => i.category.includes(k) || i.name.includes(k)))
+    .reduce((a,i)=>a+Number(i.amount||0),0)
   const totalIncome = sum(client.incomes)
-  const totalExpense = sum(client.expenses)
-  const insuranceExpense = client.expenses
+  const incomeSalary = incomeBy(["근로", "급여"])
+  const incomeBusiness = incomeBy(["사업", "부업"])
+  const incomeInterest = incomeBy(["이자", "금융"])
+  const incomeDividend = incomeBy(["배당"])
+  const incomePension = incomeBy(["연금"])
+  const incomeOther = Math.max(totalIncome - incomeSalary - incomeBusiness - incomeInterest - incomeDividend - incomePension, 0)
+  const expenseInsurance = client.expenses
     .filter(i => i.consumptionType === "비소비지출" && (i.category.includes("보험") || i.category.includes("보장") || i.category.includes("실손") || i.category.includes("종신") || i.name.includes("보험")))
     .reduce((a,i)=>a+Number(i.amount||0),0)
-  const currentSavingItems = client.expenses.filter(i => i.consumptionType === "비소비지출" && (i.category.includes("저축") || i.category.includes("투자") || i.category.includes("연금")))
-  const currentSaving = currentSavingItems.reduce((a,i)=>a+Number(i.amount||0),0)
-  const livingExpense = client.expenses
-    .filter(i => i.consumptionType !== "비소비지출")
+  const savingBank = expenseBy(["은행", "적금", "예금", "청약"])
+  const savingSecurities = expenseBy(["증권", "ETF", "펀드", "주식"])
+  const savingInsurance = client.expenses
+    .filter(i => i.consumptionType === "비소비지출" && (i.category.includes("저축") || i.category.includes("투자") || i.category.includes("연금")) && (i.category.includes("보험") || i.name.includes("보험")))
     .reduce((a,i)=>a+Number(i.amount||0),0)
-  const firstGoal = client.proposal.goals?.[0]
+  const currentSavingTotal = savingBank + savingSecurities + savingInsurance
+  const expenseUtilities = expenseBy(["공과금", "통신", "구독", "렌탈"])
+  const expenseLiving = client.expenses
+    .filter(i => i.consumptionType !== "비소비지출")
+    .reduce((a,i)=>a+Number(i.amount||0),0) - expenseUtilities
+  const totalExpense = Math.max(expenseLiving, 0) + expenseUtilities + expenseInsurance + currentSavingTotal
+  const goals = ensureSimpleGoals(client.proposal.goals)
 
   return {
-    goalPurpose: firstGoal?.purpose || "",
-    goalAmount: firstGoal?.targetAmount || 0,
-    goalYears: firstGoal?.periodYears || 5,
-    savingMethod: currentSavingItems[0]?.name || currentSavingItems[0]?.memo || "",
-    currentSaving,
-    savingCapacity: Number(client.proposal.investmentAdd || client.proposal.savingsIncrease || Math.max(totalIncome - totalExpense, 0)),
+    goals,
+    incomeSalary,
+    incomeBusiness,
+    incomeInterest,
+    incomeDividend,
+    incomePension,
+    incomeOther,
+    expenseLiving: Math.max(expenseLiving, 0),
+    expenseUtilities,
+    expenseInsurance,
+    savingBank,
+    savingSecurities,
+    savingInsurance,
+    emergencyCurrent: client.assets.find(i => i.category.includes("현금") || i.name.includes("비상") || i.name.includes("예비"))?.amount || 0,
+    emergencyTarget: Math.max(totalIncome * 6, 0),
+    proposalLiving: Math.max(expenseLiving, 0),
+    proposalUtilities: expenseUtilities,
+    proposalInsurance: expenseInsurance,
+    proposalBank: savingBank,
+    proposalSecurities: savingSecurities,
+    proposalInsuranceSaving: savingInsurance,
     totalIncome,
     totalExpense,
-    insuranceExpense,
-    livingExpense,
+    advisorOpinion: client.proposal.memo || "",
+    financeMemo: "",
+    taxMemo: "연금저축·IRP·ISA 등은 세액공제와 과세 방식이 달라 목적기간에 맞춰 선택합니다.",
+    coverageMemo: "보장성 보험료는 유지 가능한 수준에서 중복 담보를 줄이고 핵심 보장을 우선합니다.",
   }
 }
 
@@ -142,6 +193,34 @@ function goalHorizon(years: number): GoalItem["horizon"] {
   if (years <= 3) return "단기"
   if (years <= 7) return "중기"
   return "장기"
+}
+
+function blankGoal(index: number): GoalItem {
+  return {
+    id: `simple-goal-${index}`,
+    horizon: index === 0 ? "단기" : index === 1 ? "중기" : "장기",
+    purpose: "",
+    targetAmount: 0,
+    periodYears: index === 0 ? 2 : index === 1 ? 5 : 10,
+    memo: "",
+  }
+}
+
+function ensureSimpleGoals(goals?: GoalItem[]) {
+  const normalized = [...(goals || [])]
+  while (normalized.length < 3) normalized.push(blankGoal(normalized.length))
+  return normalized
+}
+
+function simpleTotals(draft: SimpleDraft) {
+  const incomeTotal = draft.incomeSalary + draft.incomeBusiness + draft.incomeInterest + draft.incomeDividend + draft.incomePension + draft.incomeOther
+  const expenseTotal = draft.expenseLiving + draft.expenseUtilities + draft.expenseInsurance + draft.savingBank + draft.savingSecurities + draft.savingInsurance
+  const savingTotal = draft.savingBank + draft.savingSecurities + draft.savingInsurance
+  const proposedExpense = draft.proposalLiving + draft.proposalUtilities + draft.proposalInsurance + draft.proposalBank + draft.proposalSecurities + draft.proposalInsuranceSaving
+  const proposedSaving = draft.proposalBank + draft.proposalSecurities + draft.proposalInsuranceSaving
+  const available = savingTotal + Math.max(incomeTotal - expenseTotal, 0)
+  const proposedAvailable = proposedSaving + Math.max(incomeTotal - proposedExpense, 0)
+  return { incomeTotal, expenseTotal, savingTotal, proposedExpense, proposedSaving, available, proposedAvailable }
 }
 
 const defaultProposal: Proposal = {
@@ -743,11 +822,140 @@ function BeforeAfterSection({ client, totals }: {
   )
 }
 
+function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfolio; draft: SimpleDraft; today: string }) {
+  const totals = simpleTotals(draft)
+  const goals = ensureSimpleGoals(draft.goals).filter(g => g.purpose.trim() || g.targetAmount > 0)
+  const monthlyNeed = goals.reduce((sumValue, goal) => sumValue + calcMonthlyPmt(goal.targetAmount, Math.max(goal.periodYears || 1, 1), 0.04), 0)
+  const currentRate = pct(totals.available, monthlyNeed)
+  const proposedRate = pct(totals.proposedAvailable, monthlyNeed)
+  const emergencyRate = pct(draft.emergencyCurrent, draft.emergencyTarget)
+  const beforeRows = [
+    { label: "총수입", value: totals.incomeTotal, color: "#1E5FA8" },
+    { label: "총지출", value: totals.expenseTotal, color: "#C0392B" },
+    { label: "현재 저축", value: totals.savingTotal, color: "#0E7E6B" },
+    { label: "가용 여력", value: totals.available, color: "#C9A84C" },
+  ]
+  const afterRows = [
+    { label: "제안 후 지출", value: totals.proposedExpense, color: "#C0392B" },
+    { label: "제안 후 저축", value: totals.proposedSaving, color: "#0E7E6B" },
+    { label: "제안 후 가용", value: totals.proposedAvailable, color: "#1E5FA8" },
+  ]
+
+  return (
+    <div className="fp-landscape-report">
+      <section className="fp-landscape-page">
+        <header className="fp-landscape-head">
+          <div>
+            <p>FINANCIAL PORTFOLIO</p>
+            <h1>{client.name || "고객"}님 목적자금 달성 제안서</h1>
+            <span>{today} · {client.advisorName || "담당 설계사"}</span>
+          </div>
+          <div className="fp-landscape-badge">간단 입력 기준</div>
+        </header>
+
+        <div className="fp-landscape-kpis">
+          <ReportKpi label="현재 목적자금 달성률" value={`${Math.round(currentRate)}%`} sub={`필요 ${krw(monthlyNeed)}/월`} tone="#C0392B" />
+          <ReportKpi label="제안 후 달성률" value={`${Math.round(proposedRate)}%`} sub={`준비 가능 ${krw(totals.proposedAvailable)}/월`} tone="#0E7E6B" />
+          <ReportKpi label="비상금 준비율" value={`${Math.round(emergencyRate)}%`} sub={`${manwon(draft.emergencyCurrent)} / ${manwon(draft.emergencyTarget)}`} tone="#1E5FA8" />
+          <ReportKpi label="월 현금흐름" value={krw(totals.incomeTotal - totals.expenseTotal)} sub="총수입 - 총지출" tone="#C9A84C" />
+        </div>
+
+        <div className="fp-landscape-grid">
+          <div className="fp-report-card span-2">
+            <h2>목적자금 달성 현황</h2>
+            <div className="fp-goal-report-list">
+              {goals.map((goal, index) => {
+                const need = calcMonthlyPmt(goal.targetAmount, Math.max(goal.periodYears || 1, 1), 0.04)
+                const rate = pct(totals.available, need)
+                const proposed = pct(totals.proposedAvailable, need)
+                return (
+                  <div key={goal.id || index} className="fp-goal-report-row">
+                    <div>
+                      <strong>{goal.purpose || `목적자금 ${index + 1}`}</strong>
+                      <span>{manwon(goal.targetAmount)} · {goal.periodYears}년 준비</span>
+                    </div>
+                    <div className="fp-goal-bars">
+                      <ReportBar label="현재" value={rate} tone="#C0392B" />
+                      <ReportBar label="제안" value={proposed} tone="#0E7E6B" />
+                    </div>
+                    <b>{krw(need)}/월</b>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="fp-report-card">
+            <h2>현재 구조</h2>
+            {beforeRows.map(rowItem => <ReportMiniBar key={rowItem.label} {...rowItem} max={Math.max(...beforeRows.map(r => r.value), 1)} />)}
+          </div>
+
+          <div className="fp-report-card">
+            <h2>제안 후 구조</h2>
+            {afterRows.map(rowItem => <ReportMiniBar key={rowItem.label} {...rowItem} max={Math.max(...afterRows.map(r => r.value), 1)} />)}
+            <div className="fp-report-delta">제안 후 월 준비 가능액 {krw(Math.max(totals.proposedAvailable - totals.available, 0))} 증가</div>
+          </div>
+        </div>
+
+        <footer className="fp-landscape-opinion">
+          <strong>작성자 의견</strong>
+          <p>{draft.advisorOpinion || "현재 현금흐름과 저축구조를 목적자금에 맞춰 조정하면 달성 가능성이 높아집니다."}</p>
+        </footer>
+      </section>
+
+      <section className="fp-landscape-page">
+        <header className="fp-landscape-head compact">
+          <div>
+            <p>PROPOSAL DETAILS</p>
+            <h1>제안 전후 변화와 실행 방향</h1>
+          </div>
+          <div className="fp-landscape-badge">가로 A4 출력</div>
+        </header>
+
+        <div className="fp-landscape-grid three-col">
+          <div className="fp-report-card"><h2>어떤 금융을 이용할까</h2><p>{draft.financeMemo || "단기자금은 은행성 상품, 중장기 목적자금은 증권·연금 계좌를 함께 활용하는 방식이 적합합니다."}</p></div>
+          <div className="fp-report-card"><h2>세금 참고사항</h2><p>{draft.taxMemo}</p></div>
+          <div className="fp-report-card"><h2>보장 개선 포인트</h2><p>{draft.coverageMemo}</p></div>
+        </div>
+
+        <div className="fp-report-card wide">
+          <h2>제안 전후 핵심 비교</h2>
+          <div className="fp-before-after-table">
+            <div><span>항목</span><span>현재</span><span>제안 후</span><span>변화</span></div>
+            <div><b>월 지출</b><span>{krw(totals.expenseTotal)}</span><span>{krw(totals.proposedExpense)}</span><em>{krw(totals.expenseTotal - totals.proposedExpense)}</em></div>
+            <div><b>월 저축</b><span>{krw(totals.savingTotal)}</span><span>{krw(totals.proposedSaving)}</span><em>{krw(totals.proposedSaving - totals.savingTotal)}</em></div>
+            <div><b>목적자금 달성률</b><span>{Math.round(currentRate)}%</span><span>{Math.round(proposedRate)}%</span><em>{Math.round(proposedRate - currentRate)}%p</em></div>
+            <div><b>비상금 준비율</b><span>{Math.round(emergencyRate)}%</span><span>{Math.round(emergencyRate)}%</span><em>기준 유지</em></div>
+          </div>
+        </div>
+
+        <div className="fp-report-card wide">
+          <h2>상담 메시지</h2>
+          <p>현재 구조에서는 목적자금별 필요 월저축액 대비 준비 가능액이 부족할 수 있습니다. 제안안은 보험료와 고정지출을 점검하고, 은행·증권·보험 저축의 역할을 나누어 목적기간에 맞춘 달성률을 높이는 방향입니다.</p>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function ReportKpi({ label, value, sub, tone }: { label:string; value:string; sub:string; tone:string }) {
+  return <div className="fp-report-kpi" style={{ borderTopColor: tone }}><span>{label}</span><strong style={{ color: tone }}>{value}</strong><em>{sub}</em></div>
+}
+
+function ReportBar({ label, value, tone }: { label:string; value:number; tone:string }) {
+  return <div className="fp-report-bar"><span>{label}</span><div><i style={{ width: `${Math.min(value, 100)}%`, background: tone }} /></div><b>{Math.round(value)}%</b></div>
+}
+
+function ReportMiniBar({ label, value, color, max }: { label:string; value:number; color:string; max:number }) {
+  return <div className="fp-mini-bar"><div><span>{label}</span><b>{krw(value)}</b></div><i><em style={{ width: `${Math.max((value / max) * 100, 4)}%`, background: color }} /></i></div>
+}
+
 // ── 메인 페이지 ──────────────────────────────────────────────────────────────
 export default function FinancialPortfolioPage() {
   const router = useRouter()
   const coverRef = useRef<HTMLDivElement>(null)
   const reportRef = useRef<HTMLDivElement>(null)
+  const simpleReportRef = useRef<HTMLDivElement>(null)
   const [allowed, setAllowed] = useState<boolean | null>(null)
   const [advisorId, setAdvisorId] = useState<string | null>(null)
   const [clients, setClients] = useState<ClientPortfolio[]>(() => loadClients())
@@ -842,6 +1050,8 @@ export default function FinancialPortfolioPage() {
   const currentCreditRate = CREDIT_RATE_TABLE[Math.min(Math.max(client.creditGrade,1),7)-1] || CREDIT_RATE_TABLE[6]
   const investorProfile = getInvestorProfile(totals, client.age)
   const allocationData = getAllocation(investorProfile)
+  const simpleCalc = simpleTotals(simpleDraft)
+  const simpleGoals = ensureSimpleGoals(simpleDraft.goals)
 
   const updateClient = (patch: Partial<ClientPortfolio>) =>
     setClients(prev => prev.map(i => i.id === client.id ? { ...i, ...patch, updatedAt: new Date().toISOString() } : i))
@@ -856,39 +1066,55 @@ export default function FinancialPortfolioPage() {
     updateClient({ [section]: client[section].filter(i => i.id !== id) } as Partial<ClientPortfolio>)
 
   const updateSimpleDraft = (patch: Partial<SimpleDraft>) =>
-    setSimpleDraft(prev => ({ ...prev, ...patch }))
+    setSimpleDraft(prev => {
+      const next = { ...prev, ...patch }
+      const totals = simpleTotals(next)
+      return { ...next, totalIncome: totals.incomeTotal, totalExpense: totals.expenseTotal }
+    })
 
   const applySimpleInput = () => {
-    const otherExpense = Math.max(
-      simpleDraft.totalExpense - simpleDraft.insuranceExpense - simpleDraft.livingExpense - simpleDraft.currentSaving,
-      0
-    )
-    const goal: GoalItem = {
-      id: client.proposal.goals?.[0]?.id || "simple-goal",
-      horizon: goalHorizon(simpleDraft.goalYears || 5),
-      purpose: simpleDraft.goalPurpose || "목적자금 준비",
-      targetAmount: simpleDraft.goalAmount,
-      periodYears: Math.max(1, simpleDraft.goalYears || 1),
-      memo: "간단 입력으로 설정한 목적자금",
-    }
+    const totals = simpleTotals(simpleDraft)
+    const activeGoals = ensureSimpleGoals(simpleDraft.goals)
+      .filter(g => g.purpose.trim() || g.targetAmount > 0)
+      .map((g, index) => ({
+        ...g,
+        id: g.id || `simple-goal-${index}`,
+        horizon: goalHorizon(g.periodYears || 1),
+        purpose: g.purpose || `목적자금 ${index + 1}`,
+        periodYears: Math.max(1, g.periodYears || 1),
+        memo: g.memo || "간단 입력으로 설정한 목적자금",
+      }))
 
     updateClient({
       incomes: [
-        row("simple-income-total", "총수입", "월 총수입", "", simpleDraft.totalIncome),
+        row("simple-income-salary", "근로소득", "근로", "", simpleDraft.incomeSalary),
+        row("simple-income-business", "사업소득", "사업", "", simpleDraft.incomeBusiness),
+        row("simple-income-interest", "이자소득", "이자", "", simpleDraft.incomeInterest),
+        row("simple-income-dividend", "배당소득", "배당", "", simpleDraft.incomeDividend),
+        row("simple-income-pension", "연금소득", "연금", "", simpleDraft.incomePension),
+        row("simple-income-other", "기타소득", "기타", "", simpleDraft.incomeOther),
+      ],
+      assets: [
+        ...client.assets.filter(a => a.id !== "simple-emergency"),
+        row("simple-emergency", "현금", "비상금(예비비)", "", simpleDraft.emergencyCurrent),
       ],
       expenses: [
-        row("simple-exp-living", "생활비", "생활비(월세·공과금 포함)", "", simpleDraft.livingExpense, 0, 0, "소비지출"),
-        row("simple-exp-insurance", "보장성보험", "보험료", "", simpleDraft.insuranceExpense, 0, 0, "비소비지출"),
-        row("simple-exp-saving", "저축/투자", simpleDraft.savingMethod || "현재 저축", "", simpleDraft.currentSaving, 0, 0, "비소비지출"),
-        ...(otherExpense > 0 ? [row("simple-exp-etc", "기타 소비", "기타 지출", "", otherExpense, 0, 0, "소비지출")] : []),
+        row("simple-exp-living", "생활비", "생활비", "", simpleDraft.expenseLiving, 0, 0, "소비지출"),
+        row("simple-exp-utilities", "공과금/통신", "공과금·통신·구독·렌탈", "", simpleDraft.expenseUtilities, 0, 0, "소비지출"),
+        row("simple-exp-insurance", "보장성보험", "보험료(보장)", "", simpleDraft.expenseInsurance, 0, 0, "비소비지출"),
+        row("simple-save-bank", "저축/투자", "은행 저축", "은행", simpleDraft.savingBank, 0, 0, "비소비지출"),
+        row("simple-save-securities", "저축/투자", "증권 저축", "증권", simpleDraft.savingSecurities, 0, 0, "비소비지출"),
+        row("simple-save-insurance", "저축/투자", "보험 저축", "보험", simpleDraft.savingInsurance, 0, 0, "비소비지출"),
       ],
       proposal: {
         ...client.proposal,
-        monthlyIncome: simpleDraft.totalIncome,
-        totalExpense: simpleDraft.totalExpense,
-        savingsIncrease: simpleDraft.savingCapacity,
-        investmentAdd: simpleDraft.savingCapacity,
-        goals: simpleDraft.goalAmount > 0 ? [goal] : [],
+        monthlyIncome: totals.incomeTotal,
+        totalExpense: totals.proposedExpense,
+        savingsIncrease: Math.max(totals.proposedAvailable - totals.available, 0),
+        insuranceOptimize: Math.max(simpleDraft.expenseInsurance - simpleDraft.proposalInsurance, 0),
+        investmentAdd: totals.proposedAvailable,
+        memo: simpleDraft.advisorOpinion,
+        goals: activeGoals,
       },
     })
   }
@@ -909,7 +1135,8 @@ export default function FinancialPortfolioPage() {
   const exportPdf = async () => {
     setIsExporting(true)
     const today = new Date().toLocaleDateString("ko-KR")
-    const pdf = new jsPDF("p","mm","a4")
+    const isSimple = inputMode === "simple"
+    const pdf = new jsPDF("l","mm","a4")
     const pageW = pdf.internal.pageSize.getWidth()
     const pageH = pdf.internal.pageSize.getHeight()
 
@@ -932,6 +1159,17 @@ export default function FinancialPortfolioPage() {
         pdf.addImage(imgData,"JPEG",0,position,pageW,imgH)
         heightLeft -= pageH
       }
+    }
+
+    if (isSimple && simpleReportRef.current) {
+      simpleReportRef.current.style.display = "block"
+      await new Promise(r=>setTimeout(r,100))
+      const canvas = await renderDiv(simpleReportRef.current)
+      simpleReportRef.current.style.display = "none"
+      addCanvasToPdf(canvas, true)
+      pdf.save(`${client.name || "고객"}_재무설계_간단제안서_${today}.pdf`)
+      setIsExporting(false)
+      return
     }
 
     // 표지 렌더링
@@ -980,6 +1218,9 @@ export default function FinancialPortfolioPage() {
       {/* PDF 전용 표지 (평소엔 숨김) */}
       <div ref={coverRef} style={{ display:"none", position:"fixed", top:0, left:0, width:"210mm", zIndex:-1 }}>
         <PdfCover client={client} today={today} />
+      </div>
+      <div ref={simpleReportRef} style={{ display:"none", position:"fixed", top:0, left:0, width:"297mm", zIndex:-1 }}>
+        <SimpleLandscapeReport client={client} draft={simpleDraft} today={today} />
       </div>
 
       <main className="fp-page">
@@ -1113,76 +1354,177 @@ export default function FinancialPortfolioPage() {
                 <button type="button" onClick={applySimpleInput}>간단 입력 적용</button>
               </div>
 
-              <div className="fp-simple-grid">
-                <div className="fp-simple-field">
-                  <label>목적자금</label>
-                  <input
-                    value={simpleDraft.goalPurpose}
-                    onChange={e => updateSimpleDraft({ goalPurpose: e.target.value })}
-                    placeholder="예: 주택 마련, 자녀 교육, 은퇴자금"
+              <div className="fp-simple-subtitle">
+                <strong>목적자금</strong>
+                <button
+                  type="button"
+                  onClick={() => updateSimpleDraft({ goals: [...simpleGoals, blankGoal(simpleGoals.length)] })}
+                >
+                  + 목적 추가
+                </button>
+              </div>
+              <div className="fp-simple-goals">
+                {simpleGoals.map((goal, index) => (
+                  <div key={goal.id || index} className="fp-simple-goal-row">
+                    <input
+                      value={goal.purpose}
+                      onChange={e => {
+                        const goals = [...simpleGoals]
+                        goals[index] = { ...goal, purpose: e.target.value }
+                        updateSimpleDraft({ goals })
+                      }}
+                      placeholder={`목적자금 ${index + 1}`}
+                    />
+                    <MoneyInput
+                      value={goal.targetAmount}
+                      onChange={v => {
+                        const goals = [...simpleGoals]
+                        goals[index] = { ...goal, targetAmount: v }
+                        updateSimpleDraft({ goals })
+                      }}
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      value={goal.periodYears || ""}
+                      onChange={e => {
+                        const years = Number(e.target.value)
+                        const goals = [...simpleGoals]
+                        goals[index] = { ...goal, periodYears: years, horizon: goalHorizon(years || 1) }
+                        updateSimpleDraft({ goals })
+                      }}
+                      placeholder="기간(년)"
+                    />
+                    {simpleGoals.length > 3 && (
+                      <button
+                        type="button"
+                        className="fp-simple-remove"
+                        onClick={() => updateSimpleDraft({ goals: simpleGoals.filter((_, i) => i !== index) })}
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="fp-simple-block-grid">
+                <SimpleMoneyGroup
+                  title="월 총수입"
+                  total={simpleCalc.incomeTotal}
+                  items={[
+                    ["근로", "incomeSalary"],
+                    ["사업", "incomeBusiness"],
+                    ["이자", "incomeInterest"],
+                    ["배당", "incomeDividend"],
+                    ["연금", "incomePension"],
+                    ["기타", "incomeOther"],
+                  ]}
+                  draft={simpleDraft}
+                  onChange={updateSimpleDraft}
+                />
+                <SimpleMoneyGroup
+                  title="월 총지출"
+                  total={simpleCalc.expenseTotal}
+                  items={[
+                    ["생활비", "expenseLiving"],
+                    ["공과금·통신·구독·렌탈", "expenseUtilities"],
+                    ["보험료(보장)", "expenseInsurance"],
+                  ]}
+                  draft={simpleDraft}
+                  onChange={updateSimpleDraft}
+                />
+                <SimpleMoneyGroup
+                  title="현재 저축"
+                  total={simpleCalc.savingTotal}
+                  items={[
+                    ["은행", "savingBank"],
+                    ["증권", "savingSecurities"],
+                    ["보험", "savingInsurance"],
+                  ]}
+                  draft={simpleDraft}
+                  onChange={updateSimpleDraft}
+                />
+                <SimpleMoneyGroup
+                  title="제안 후 조정"
+                  total={simpleCalc.proposedAvailable}
+                  items={[
+                    ["생활비 조정", "proposalLiving"],
+                    ["공과금 조정", "proposalUtilities"],
+                    ["보장보험 조정", "proposalInsurance"],
+                    ["은행 저축", "proposalBank"],
+                    ["증권 저축", "proposalSecurities"],
+                    ["보험 저축", "proposalInsuranceSaving"],
+                  ]}
+                  draft={simpleDraft}
+                  onChange={updateSimpleDraft}
+                />
+              </div>
+
+              <div className="fp-simple-block-grid two">
+                <div className="fp-simple-card">
+                  <div className="fp-simple-card-head">
+                    <strong>비상금(예비비) 준비율</strong>
+                    <span>{percentValue(pct(simpleDraft.emergencyCurrent, simpleDraft.emergencyTarget))}</span>
+                  </div>
+                  <div className="fp-emergency-row">
+                    <div>
+                      <label>현재 준비</label>
+                      <MoneyInput value={simpleDraft.emergencyCurrent} onChange={v => updateSimpleDraft({ emergencyCurrent: v })} />
+                    </div>
+                    <div>
+                      <label>목표 금액</label>
+                      <MoneyInput value={simpleDraft.emergencyTarget} onChange={v => updateSimpleDraft({ emergencyTarget: v })} />
+                    </div>
+                  </div>
+                  <div className="fp-bar-track">
+                    <span style={{ width: `${Math.min(pct(simpleDraft.emergencyCurrent, simpleDraft.emergencyTarget), 100)}%` }} />
+                  </div>
+                  <p>{manwon(simpleDraft.emergencyCurrent)} / {manwon(simpleDraft.emergencyTarget)}</p>
+                </div>
+                <div className="fp-simple-card">
+                  <div className="fp-simple-card-head">
+                    <strong>작성자 의견</strong>
+                    <span>출력 반영</span>
+                  </div>
+                  <textarea
+                    value={simpleDraft.advisorOpinion}
+                    onChange={e => updateSimpleDraft({ advisorOpinion: e.target.value })}
+                    rows={5}
+                    placeholder="고객에게 설명할 핵심 의견을 입력하세요."
                   />
                 </div>
-                <div className="fp-simple-field">
-                  <label>목표금액</label>
-                  <MoneyInput value={simpleDraft.goalAmount} onChange={v => updateSimpleDraft({ goalAmount: v })} />
-                </div>
-                <div className="fp-simple-field">
-                  <label>준비기간</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={simpleDraft.goalYears || ""}
-                    onChange={e => updateSimpleDraft({ goalYears: Number(e.target.value) })}
-                    placeholder="년"
-                  />
-                </div>
-                <div className="fp-simple-field">
-                  <label>현재 저축하는 방식</label>
-                  <input
-                    value={simpleDraft.savingMethod}
-                    onChange={e => updateSimpleDraft({ savingMethod: e.target.value })}
-                    placeholder="예: 적금, 청약, 연금저축, ETF"
-                  />
-                </div>
-                <div className="fp-simple-field">
-                  <label>현재 월 저축액</label>
-                  <MoneyInput value={simpleDraft.currentSaving} onChange={v => updateSimpleDraft({ currentSaving: v })} />
-                </div>
-                <div className="fp-simple-field">
-                  <label>추가 저축여력</label>
-                  <MoneyInput value={simpleDraft.savingCapacity} onChange={v => updateSimpleDraft({ savingCapacity: v })} />
-                </div>
-                <div className="fp-simple-field">
-                  <label>월 총수입</label>
-                  <MoneyInput value={simpleDraft.totalIncome} onChange={v => updateSimpleDraft({ totalIncome: v })} />
-                </div>
-                <div className="fp-simple-field">
-                  <label>월 총지출</label>
-                  <MoneyInput value={simpleDraft.totalExpense} onChange={v => updateSimpleDraft({ totalExpense: v })} />
-                </div>
-                <div className="fp-simple-field">
-                  <label>고정지출 - 보험료</label>
-                  <MoneyInput value={simpleDraft.insuranceExpense} onChange={v => updateSimpleDraft({ insuranceExpense: v })} />
-                </div>
-                <div className="fp-simple-field">
-                  <label>고정지출 - 생활비</label>
-                  <MoneyInput value={simpleDraft.livingExpense} onChange={v => updateSimpleDraft({ livingExpense: v })} />
-                  <small>월세, 공과금, 식비, 통신비 등 생활비를 합산해서 입력</small>
-                </div>
+              </div>
+
+              <div className="fp-simple-block-grid three">
+                {([
+                  ["금융 활용 방향", "financeMemo"],
+                  ["세금 참고사항", "taxMemo"],
+                  ["보장 개선 포인트", "coverageMemo"],
+                ] as [string, keyof SimpleDraft][]).map(([label, key]) => (
+                  <div key={key} className="fp-simple-field">
+                    <label>{label}</label>
+                    <textarea
+                      value={String(simpleDraft[key] || "")}
+                      onChange={e => updateSimpleDraft({ [key]: e.target.value } as Partial<SimpleDraft>)}
+                      rows={3}
+                    />
+                  </div>
+                ))}
               </div>
 
               <div className="fp-simple-summary">
                 <div>
                   <span>월 현금흐름 예상</span>
-                  <strong>{krw(simpleDraft.totalIncome - simpleDraft.totalExpense)}</strong>
-                </div>
-                <div>
-                  <span>목표 달성 필요 월저축</span>
-                  <strong>{krw(calcMonthlyPmt(simpleDraft.goalAmount, Math.max(simpleDraft.goalYears || 1, 1), 0.04))}</strong>
+                  <strong>{krw(simpleCalc.incomeTotal - simpleCalc.expenseTotal)}</strong>
                 </div>
                 <div>
                   <span>현재 준비 가능액</span>
-                  <strong>{krw(simpleDraft.currentSaving + simpleDraft.savingCapacity)}</strong>
+                  <strong>{krw(simpleCalc.available)}</strong>
+                </div>
+                <div>
+                  <span>제안 후 준비 가능액</span>
+                  <strong>{krw(simpleCalc.proposedAvailable)}</strong>
                 </div>
               </div>
             </div>
@@ -1196,6 +1538,28 @@ export default function FinancialPortfolioPage() {
         </section>
 
         {/* ── 본문 보고서 ── */}
+        {inputMode === "detail" && (
+          <section className="fp-detail-inputs">
+            <div className="fp-detail-input-head">
+              <div>
+                <strong>상세 입력</strong>
+                <span>자산, 부채, 수입, 지출을 먼저 조정한 뒤 아래 보고서에서 전후 변화를 확인합니다.</span>
+              </div>
+            </div>
+            <DataSection title="자산 입력" section="assets" total={totals.totalAssets} rows={client.assets} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
+            <DataSection title="부채 입력" section="liabilities" total={totals.totalLiabilities} rows={client.liabilities} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
+            <DataSection title="수입 입력" section="incomes" total={totals.totalIncome} rows={client.incomes} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
+            <DataSection title="지출 입력" section="expenses" total={totals.totalExpense} rows={client.expenses} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry}
+              extraHeader={
+                <div style={{ display:"flex",gap:12,alignItems:"center" }}>
+                  <span style={{ fontSize:12,fontWeight:800,color:"#b45309",background:"#fff7ed",padding:"3px 10px",borderRadius:999 }}>소비지출 {krw(totals.consumptionTotal)}</span>
+                  <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8",background:"#eff6ff",padding:"3px 10px",borderRadius:999 }}>비소비지출 {krw(totals.nonConsumptionTotal)}</span>
+                </div>
+              }
+            />
+          </section>
+        )}
+
         <div ref={reportRef} className="fp-report">
           {/* 고객 기본정보 */}
           <section className="fp-profile">
@@ -1419,22 +1783,6 @@ export default function FinancialPortfolioPage() {
           </Panel>
         </div>
 
-        {/* ── 데이터 입력 섹션 ── */}
-        {inputMode === "detail" && (
-          <>
-            <DataSection title="자산 입력" section="assets" total={totals.totalAssets} rows={client.assets} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
-            <DataSection title="부채 입력" section="liabilities" total={totals.totalLiabilities} rows={client.liabilities} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
-            <DataSection title="수입 입력" section="incomes" total={totals.totalIncome} rows={client.incomes} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
-            <DataSection title="지출 입력" section="expenses" total={totals.totalExpense} rows={client.expenses} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry}
-              extraHeader={
-                <div style={{ display:"flex",gap:12,alignItems:"center" }}>
-                  <span style={{ fontSize:12,fontWeight:800,color:"#b45309",background:"#fff7ed",padding:"3px 10px",borderRadius:999 }}>소비지출 {krw(totals.consumptionTotal)}</span>
-                  <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8",background:"#eff6ff",padding:"3px 10px",borderRadius:999 }}>비소비지출 {krw(totals.nonConsumptionTotal)}</span>
-                </div>
-              }
-            />
-          </>
-        )}
       </main>
     </Shell>
   )
@@ -1473,13 +1821,41 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-simple-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
         .fp-simple-field{display:grid;gap:6px;min-width:0}
         .fp-simple-field label{font-size:12px;font-weight:950;color:#64748b}
-        .fp-simple-field input{width:100%;height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0;min-width:0}
+        .fp-simple-field input,.fp-simple-field textarea{width:100%;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0;min-width:0;font-family:inherit}
+        .fp-simple-field input{height:42px}
+        .fp-simple-field textarea{min-height:78px;padding:10px 11px;resize:vertical}
         .fp-simple-field small{color:#94a3b8;font-size:10px;font-weight:800;line-height:1.35}
+        .fp-simple-subtitle{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e2e8f0;padding-top:14px}
+        .fp-simple-subtitle strong{font-size:14px;font-weight:950;color:#10233e}
+        .fp-simple-subtitle button,.fp-simple-remove{height:32px;border:1px solid #10233e;border-radius:8px;background:#10233e;color:#fff;padding:0 10px;font-size:12px;font-weight:950;cursor:pointer}
+        .fp-simple-remove{border-color:#fecaca;background:#fff1f2;color:#be123c}
+        .fp-simple-goals{display:grid;gap:8px}
+        .fp-simple-goal-row{display:grid;grid-template-columns:minmax(180px,1fr) 180px 90px auto;gap:8px;align-items:start}
+        .fp-simple-goal-row>input{height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0}
+        .fp-simple-block-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+        .fp-simple-block-grid.two{grid-template-columns:1fr 1fr}
+        .fp-simple-block-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+        .fp-simple-card{border:1px solid #dce4ef;border-radius:10px;background:#fff;padding:12px;min-width:0}
+        .fp-simple-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+        .fp-simple-card-head strong{font-size:13px;font-weight:950;color:#10233e}
+        .fp-simple-card-head span{font-size:12px;font-weight:950;color:#1E5FA8}
+        .fp-simple-money-list{display:grid;gap:8px}
+        .fp-simple-money-list>div,.fp-emergency-row>div{display:grid;gap:5px}
+        .fp-simple-money-list label,.fp-emergency-row label{font-size:11px;font-weight:950;color:#64748b}
+        .fp-emergency-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .fp-bar-track{height:9px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-top:10px}
+        .fp-bar-track span{display:block;height:100%;border-radius:999px;background:#1E5FA8}
+        .fp-simple-card p{margin:8px 0 0;color:#64748b;font-size:12px;font-weight:850}
+        .fp-simple-card textarea{width:100%;border:1px solid #dce4ef;border-radius:8px;padding:10px 11px;font-size:13px;font-weight:800;color:#172033;outline:0;font-family:inherit;resize:vertical}
         .fp-simple-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
         .fp-simple-summary div{border:1px solid #dbeafe;background:#eff6ff;border-radius:10px;padding:12px}
         .fp-simple-summary span{display:block;color:#1d4ed8;font-size:11px;font-weight:950}
         .fp-simple-summary strong{display:block;margin-top:5px;color:#10233e;font-size:18px;font-weight:950}
         .fp-detail-note{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:10px;padding:14px;color:#64748b;font-size:13px;font-weight:850}
+        .fp-detail-inputs{display:grid;gap:12px;border:1px solid #dce4ef;border-radius:10px;background:#fff;padding:14px}
+        .fp-detail-input-head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding-bottom:12px}
+        .fp-detail-input-head strong{display:block;color:#10233e;font-size:16px;font-weight:950}
+        .fp-detail-input-head span{display:block;margin-top:4px;color:#64748b;font-size:12px;font-weight:800;line-height:1.45}
         .fp-profile{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;background:#fff;border:1px solid #dce4ef;border-radius:8px;padding:14px}
         .fp-profile .span-1{grid-column:span 1}
         .fp-profile .span-2{grid-column:span 2}
@@ -1534,12 +1910,57 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-empty p{margin:0;color:#64748b}
         .fp-consumption-badge-소비지출{background:#fff7ed;color:#b45309;border:1px solid #fed7aa}
         .fp-consumption-badge-비소비지출{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+        .fp-landscape-report{width:297mm;background:#fff;color:#10233e;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif}
+        .fp-landscape-page{width:297mm;height:210mm;box-sizing:border-box;padding:12mm;background:#f4f7fb;page-break-after:always;overflow:hidden;display:flex;flex-direction:column;gap:10px}
+        .fp-landscape-page:last-child{page-break-after:auto}
+        .fp-landscape-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;background:#10233e;color:#fff;border-radius:10px;padding:14px 18px;border-top:5px solid #c9a84c}
+        .fp-landscape-head.compact{padding:12px 18px}
+        .fp-landscape-head p{margin:0 0 4px;color:#9ec5ef;font-size:10px;font-weight:950;letter-spacing:.16em}
+        .fp-landscape-head h1{margin:0;font-size:24px;font-weight:950;letter-spacing:-.3px}
+        .fp-landscape-head span{display:block;margin-top:5px;color:#dbe7f7;font-size:12px;font-weight:800}
+        .fp-landscape-badge{border:1px solid rgba(201,168,76,.55);border-radius:999px;color:#c9a84c;padding:7px 12px;font-size:12px;font-weight:950;white-space:nowrap}
+        .fp-landscape-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+        .fp-report-kpi{border:1px solid #dce4ef;border-top:4px solid #1E5FA8;border-radius:10px;background:#fff;padding:11px}
+        .fp-report-kpi span{display:block;color:#64748b;font-size:11px;font-weight:950}
+        .fp-report-kpi strong{display:block;margin-top:4px;font-size:26px;font-weight:950}
+        .fp-report-kpi em{display:block;margin-top:2px;color:#64748b;font-size:11px;font-style:normal;font-weight:850}
+        .fp-landscape-grid{display:grid;grid-template-columns:1.15fr .75fr .75fr;gap:8px;min-height:0}
+        .fp-landscape-grid.three-col{grid-template-columns:repeat(3,1fr)}
+        .fp-report-card{border:1px solid #dce4ef;border-radius:10px;background:#fff;padding:12px;min-width:0;overflow:hidden}
+        .fp-report-card.span-2{grid-column:span 1}
+        .fp-report-card.wide{grid-column:1/-1}
+        .fp-report-card h2{margin:0 0 9px;color:#10233e;font-size:15px;font-weight:950}
+        .fp-report-card p{margin:0;color:#475569;font-size:13px;font-weight:800;line-height:1.65}
+        .fp-goal-report-list{display:grid;gap:7px}
+        .fp-goal-report-row{display:grid;grid-template-columns:1fr 1.4fr 105px;gap:9px;align-items:center;border:1px solid #eef2f7;border-radius:8px;padding:8px;background:#f8fafc}
+        .fp-goal-report-row strong{display:block;font-size:13px;font-weight:950;color:#10233e}
+        .fp-goal-report-row span{display:block;margin-top:3px;font-size:11px;font-weight:850;color:#64748b}
+        .fp-goal-report-row>b{font-size:12px;font-weight:950;color:#1E5FA8;text-align:right}
+        .fp-goal-bars{display:grid;gap:5px}
+        .fp-report-bar{display:grid;grid-template-columns:34px 1fr 38px;align-items:center;gap:6px}
+        .fp-report-bar span,.fp-report-bar b{font-size:10px;font-weight:950;color:#64748b}
+        .fp-report-bar div{height:7px;border-radius:999px;background:#e2e8f0;overflow:hidden}
+        .fp-report-bar i{display:block;height:100%;border-radius:999px}
+        .fp-mini-bar{display:grid;gap:5px;margin-bottom:8px}
+        .fp-mini-bar div{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:950;color:#64748b}
+        .fp-mini-bar i{height:10px;border-radius:999px;background:#e2e8f0;overflow:hidden}
+        .fp-mini-bar em{display:block;height:100%;border-radius:999px}
+        .fp-report-delta{margin-top:8px;border-radius:8px;background:#ecfdf5;color:#047857;padding:9px;font-size:12px;font-weight:950;text-align:center}
+        .fp-landscape-opinion{margin-top:auto;border:1px solid #dbeafe;background:#eff6ff;border-radius:10px;padding:12px 14px}
+        .fp-landscape-opinion strong{display:block;color:#1E5FA8;font-size:12px;font-weight:950;margin-bottom:5px}
+        .fp-landscape-opinion p{margin:0;color:#10233e;font-size:13px;font-weight:850;line-height:1.55}
+        .fp-before-after-table{display:grid;border:1px solid #dce4ef;border-radius:9px;overflow:hidden}
+        .fp-before-after-table>div{display:grid;grid-template-columns:1fr 1fr 1fr 1fr}
+        .fp-before-after-table>div:first-child{background:#10233e;color:#fff}
+        .fp-before-after-table span,.fp-before-after-table b,.fp-before-after-table em{padding:9px 11px;border-right:1px solid #dce4ef;border-bottom:1px solid #dce4ef;font-size:12px;font-weight:900;font-style:normal}
+        .fp-before-after-table em{color:#0E7E6B}
         @keyframes fp-spin{to{transform:rotate(360deg)}}
-        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}.fp-simple-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics,.fp-simple-summary{grid-template-columns:1fr 1fr}.fp-simple-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid,.fp-simple-grid,.fp-simple-summary{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}.fp-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.fp-simple-head{align-items:stretch;flex-direction:column}.fp-simple-head button{width:100%}}
+        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}.fp-simple-grid,.fp-simple-block-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics,.fp-simple-summary,.fp-simple-block-grid.two,.fp-simple-block-grid.three{grid-template-columns:1fr 1fr}.fp-simple-grid,.fp-simple-block-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-simple-goal-row{grid-template-columns:1fr 160px 80px auto}}
+        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid,.fp-simple-grid,.fp-simple-summary,.fp-simple-block-grid,.fp-simple-block-grid.two,.fp-simple-block-grid.three,.fp-simple-goal-row,.fp-emergency-row{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}.fp-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.fp-simple-head{align-items:stretch;flex-direction:column}.fp-simple-head button{width:100%}}
         @media print{
-  .fp-actions,.fp-clientbar button,.fp-delete{display:none!important}
+  @page{size:A4 landscape;margin:7mm}
+  .fp-actions,.fp-clientbar button,.fp-delete,.fp-mode-panel{display:none!important}
   .fp-page{padding:0}.fp-shell,.fp-report{background:white}
   .fp-panel,.fp-metric,.fp-profile,.fp-clientbar,.fp-hero{break-inside:avoid}
   .fp-proposal-tabs{display:none!important}
@@ -1556,6 +1977,40 @@ function Input({ label, value, onChange, type="text", span }: { label:string; va
     <div className={`fp-input ${span ?? "span-1"}`}>
       <label>{label}</label>
       <input type={type} value={value} onChange={e=>onChange(e.target.value)} />
+    </div>
+  )
+}
+
+function SimpleMoneyGroup({
+  title,
+  total,
+  items,
+  draft,
+  onChange,
+}: {
+  title: string
+  total: number
+  items: [string, keyof SimpleDraft][]
+  draft: SimpleDraft
+  onChange: (patch: Partial<SimpleDraft>) => void
+}) {
+  return (
+    <div className="fp-simple-card">
+      <div className="fp-simple-card-head">
+        <strong>{title}</strong>
+        <span>{krw(total)}</span>
+      </div>
+      <div className="fp-simple-money-list">
+        {items.map(([label, key]) => (
+          <div key={String(key)}>
+            <label>{label}</label>
+            <MoneyInput
+              value={Number(draft[key] || 0)}
+              onChange={value => onChange({ [key]: value } as Partial<SimpleDraft>)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
