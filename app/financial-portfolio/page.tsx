@@ -64,6 +64,11 @@ type SimpleDebtItem = {
 type SimpleDraft = {
   goals: GoalItem[]
   debts: SimpleDebtItem[]
+  consultationPurpose: string
+  interestAreas: string[]
+  financePriorities: string[]
+  readinessScore: number
+  readinessReason: string
   incomeSalary: number
   incomeBusiness: number
   incomeInterest: number
@@ -102,6 +107,8 @@ type ClientPortfolio = {
   foodExpense: number
   memo: string
   advisorName: string
+  advisorCompany: string
+  advisorPhone: string
   assets: Entry[]
   liabilities: Entry[]
   incomes: Entry[]
@@ -180,6 +187,11 @@ function createSimpleDraft(client: ClientPortfolio): SimpleDraft {
   return {
     goals,
     debts,
+    consultationPurpose: "",
+    interestAreas: [],
+    financePriorities: [],
+    readinessScore: 3,
+    readinessReason: "",
     incomeSalary,
     incomeBusiness,
     incomeInterest,
@@ -290,7 +302,7 @@ const defaultProposal: Proposal = {
 
 const starter: ClientPortfolio = {
   id:"sample", name:"샘플 고객", age:33, gender:"남", job:"직장인",
-  creditGrade:3, foodExpense:650000, advisorName:"",
+  creditGrade:3, foodExpense:650000, advisorName:"", advisorCompany:"", advisorPhone:"",
   memo:"재무정보와 현금흐름을 입력하고 진단지표와 제안서를 출력합니다.",
   updatedAt: new Date().toISOString(),
   proposal: defaultProposal,
@@ -912,6 +924,35 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
 
   return (
     <div className="fp-landscape-report">
+      <section className="fp-landscape-cover">
+        <div className="fp-cover-bg" />
+        <div className="fp-cover-mark">FINANCIAL<br />PORTFOLIO</div>
+        <div className="fp-cover-content">
+          <p>METARICH SIGNAL GROUP</p>
+          <h1>재무설계 포트폴리오</h1>
+          <strong>{client.name || "고객"}님을 위한 생활금융 제안서</strong>
+          <span>수입과 지출, 저축여력, 은행·증권·보험 배분을 기준으로 목적자금 달성 방향을 제안합니다.</span>
+        </div>
+        <div className="fp-cover-advisor">
+          <div>
+            <span>제안자</span>
+            <strong>{client.advisorName || "담당 설계사"}</strong>
+          </div>
+          <div>
+            <span>소속</span>
+            <strong>{client.advisorCompany || "소속 미입력"}</strong>
+          </div>
+          <div>
+            <span>연락처</span>
+            <strong>{client.advisorPhone || "연락처 미입력"}</strong>
+          </div>
+          <div>
+            <span>작성일</span>
+            <strong>{today}</strong>
+          </div>
+        </div>
+      </section>
+
       <section className="fp-landscape-page">
         <header className="fp-landscape-head">
           <div>
@@ -919,7 +960,6 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
             <h1>{client.name || "고객"}님 목적자금 달성 제안서</h1>
             <span>{today} · {client.advisorName || "담당 설계사"}</span>
           </div>
-          <div className="fp-landscape-badge">간단 입력 기준</div>
         </header>
 
         <div className="fp-landscape-kpis">
@@ -927,6 +967,13 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
           <ReportKpi label="제안 후 달성률" value={`${Math.round(proposedRate)}%`} sub={`준비 가능 ${krw(totals.proposedAvailable)}/월`} tone="#0E7E6B" />
           <ReportKpi label="비상금 준비율" value={`${Math.round(emergencyRate)}%`} sub={`${manwon(draft.emergencyCurrent)} / ${manwon(draft.emergencyTarget)}`} tone="#1E5FA8" />
           <ReportKpi label="남은 저축여력" value={krw(totals.savingCapacity)} sub="총수입 - 실제지출 - 현재저축" tone="#C9A84C" />
+        </div>
+
+        <div className="fp-consult-summary">
+          <div><span>상담 목적</span><strong>{draft.consultationPurpose || "수입·지출 구조 점검 및 목적자금 준비"}</strong></div>
+          <div><span>관심 분야</span><strong>{draft.interestAreas.length ? draft.interestAreas.join(" · ") : "목돈 마련 · 저축 배분"}</strong></div>
+          <div><span>금융 기준</span><strong>{draft.financePriorities.length ? draft.financePriorities.join(" · ") : "안정성 · 절세"}</strong></div>
+          <div><span>체감 준비도</span><strong>{draft.readinessScore}/5</strong></div>
         </div>
 
         <div className="fp-landscape-grid">
@@ -969,6 +1016,7 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
         <footer className="fp-landscape-opinion">
           <strong>작성자 의견</strong>
           <p>{draft.advisorOpinion || "현재 현금흐름과 저축구조를 목적자금에 맞춰 조정하면 달성 가능성이 높아집니다."}</p>
+          {draft.readinessReason && <p>{draft.readinessReason}</p>}
         </footer>
       </section>
 
@@ -978,7 +1026,6 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
             <p>PROPOSAL DETAILS</p>
             <h1>제안 전후 변화와 실행 방향</h1>
           </div>
-          <div className="fp-landscape-badge">가로 A4 출력</div>
         </header>
 
         <div className="fp-landscape-grid three-col">
@@ -1010,6 +1057,7 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
               </div>
             ))}
           </div>
+          <p style={{ marginTop: 10 }}>현재 제안의 핵심은 상품을 먼저 고르는 것이 아니라, 월 저축 가능액을 은행·증권·보험으로 나누어 목적자금 기간과 금융 기준에 맞추는 것입니다.</p>
         </div>
       </section>
 
@@ -1019,7 +1067,6 @@ function SimpleLandscapeReport({ client, draft, today }: { client: ClientPortfol
             <p>PORTFOLIO OPTIONS</p>
             <h1>안정 · 중립 · 적극형 예시와 세액공제 팁</h1>
           </div>
-          <div className="fp-landscape-badge">상담 설명용</div>
         </header>
 
         <div className="fp-landscape-grid three-col">
@@ -1294,7 +1341,7 @@ export default function FinancialPortfolioPage() {
 
     if (isSimple && simpleReportRef.current) {
       simpleReportRef.current.style.display = "block"
-      await new Promise(r=>setTimeout(r,100))
+      await new Promise(r=>setTimeout(r,400))
       const canvas = await renderDiv(simpleReportRef.current)
       simpleReportRef.current.style.display = "none"
       addCanvasToPdf(canvas, true)
@@ -1377,8 +1424,10 @@ export default function FinancialPortfolioPage() {
           <Input label="성별" value={client.gender} onChange={v=>updateClient({gender:v})} />
           <Input label="직업" value={client.job||""} onChange={v=>updateClient({job:v})} span="span-2" />
           <Input label="신용등급" value={String(client.creditGrade)} type="number" onChange={v=>updateClient({creditGrade:Math.min(7,Math.max(1,Number(v)||1))})} />
-          <Input label="담당 설계사" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} span="span-2" />
-          <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} span="span-3" />
+          <Input label="제안자" value={client.advisorName||""} onChange={v=>updateClient({advisorName:v})} span="span-2" />
+          <Input label="소속" value={client.advisorCompany||""} onChange={v=>updateClient({advisorCompany:v})} span="span-2" />
+          <Input label="전화번호" value={client.advisorPhone||""} onChange={v=>updateClient({advisorPhone:v})} span="span-2" />
+          <Input label="상담 메모" value={client.memo} onChange={v=>updateClient({memo:v})} span="span-2" />
         </section>
 
         <section className="fp-clientbar">
@@ -1493,9 +1542,83 @@ export default function FinancialPortfolioPage() {
               <div className="fp-simple-head">
                 <div>
                   <strong>목적자금 중심 간단 입력</strong>
-                  <span>상담 초반에는 꼭 필요한 항목만 입력하고, 필요하면 상세 입력에서 세부 항목을 조정하세요.</span>
+                  <span>수입·지출·저축여력을 기준으로 은행·증권·보험사의 저축 비율을 조정합니다.</span>
                 </div>
                 <button type="button" onClick={applySimpleInput}>간단 입력 적용</button>
+              </div>
+
+              <div className="fp-simple-consult">
+                <div className="fp-simple-field">
+                  <label>상담 목적</label>
+                  <textarea
+                    value={simpleDraft.consultationPurpose}
+                    onChange={e => updateSimpleDraft({ consultationPurpose: e.target.value })}
+                    rows={3}
+                    placeholder="오늘 상담에서 가장 궁금한 점이나 해결하고 싶은 내용을 입력하세요."
+                  />
+                </div>
+                <div className="fp-simple-choice-card">
+                  <strong>관심 분야</strong>
+                  <div className="fp-chip-list">
+                    {["목돈 마련","자녀 교육비","주거/내 집 마련","노후 준비","보험 점검","대출/부채","투자 기준","세금/연말정산"].map(item => (
+                      <button
+                        key={item}
+                        type="button"
+                        className={simpleDraft.interestAreas.includes(item) ? "active" : ""}
+                        onClick={() => updateSimpleDraft({
+                          interestAreas: simpleDraft.interestAreas.includes(item)
+                            ? simpleDraft.interestAreas.filter(value => value !== item)
+                            : [...simpleDraft.interestAreas, item]
+                        })}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="fp-simple-choice-card">
+                  <strong>금융 기준</strong>
+                  <div className="fp-chip-list">
+                    {["안정성","수익성","유동성","절세","보장","단순함"].map(item => (
+                      <button
+                        key={item}
+                        type="button"
+                        className={simpleDraft.financePriorities.includes(item) ? "active" : ""}
+                        onClick={() => updateSimpleDraft({
+                          financePriorities: simpleDraft.financePriorities.includes(item)
+                            ? simpleDraft.financePriorities.filter(value => value !== item)
+                            : simpleDraft.financePriorities.length >= 2
+                              ? [simpleDraft.financePriorities[1], item]
+                              : [...simpleDraft.financePriorities, item]
+                        })}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                  <small>최대 2개 기준을 중심으로 제안 방향을 잡습니다.</small>
+                </div>
+                <div className="fp-simple-choice-card">
+                  <strong>현재 준비 수준</strong>
+                  <div className="fp-score-list">
+                    {[1,2,3,4,5].map(score => (
+                      <button
+                        key={score}
+                        type="button"
+                        className={simpleDraft.readinessScore === score ? "active" : ""}
+                        onClick={() => updateSimpleDraft({ readinessScore: score })}
+                      >
+                        {score}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={simpleDraft.readinessReason}
+                    onChange={e => updateSimpleDraft({ readinessReason: e.target.value })}
+                    rows={2}
+                    placeholder="준비 수준을 이렇게 생각한 이유"
+                  />
+                </div>
               </div>
 
               <div className="fp-simple-subtitle">
@@ -1564,15 +1687,18 @@ export default function FinancialPortfolioPage() {
               <div className="fp-simple-debts">
                 {simpleDebts.map((debt, index) => (
                   <div key={debt.id || index} className="fp-simple-debt-row">
-                    <input
-                      value={debt.name}
-                      onChange={e => {
-                        const debts = [...simpleDebts]
-                        debts[index] = { ...debt, name: e.target.value }
-                        updateSimpleDraft({ debts })
-                      }}
-                      placeholder="대출명"
-                    />
+                    <div>
+                      <label>대출명</label>
+                      <input
+                        value={debt.name}
+                        onChange={e => {
+                          const debts = [...simpleDebts]
+                          debts[index] = { ...debt, name: e.target.value }
+                          updateSimpleDraft({ debts })
+                        }}
+                        placeholder="주택담보대출"
+                      />
+                    </div>
                     <div>
                       <label>현재 대출잔액</label>
                       <MoneyInput
@@ -1612,7 +1738,7 @@ export default function FinancialPortfolioPage() {
                     {simpleDebts.length > 1 && (
                       <button
                         type="button"
-                        className="fp-simple-remove"
+                        className="fp-simple-remove fp-debt-remove"
                         onClick={() => updateSimpleDraft({ debts: simpleDebts.filter((_, i) => i !== index) })}
                       >
                         삭제
@@ -2040,6 +2166,15 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-simple-head strong{display:block;color:#10233e;font-size:16px;font-weight:950}
         .fp-simple-head span{display:block;margin-top:4px;color:#64748b;font-size:12px;font-weight:800;line-height:1.5}
         .fp-simple-head button{height:40px;border:0;border-radius:10px;background:#0e7e6b;color:#fff;padding:0 16px;font-size:13px;font-weight:950;cursor:pointer;white-space:nowrap}
+        .fp-simple-consult{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:10px}
+        .fp-simple-choice-card{border:1px solid #dce4ef;border-radius:10px;background:#fff;padding:12px;display:grid;gap:9px;align-content:start}
+        .fp-simple-choice-card strong{color:#10233e;font-size:13px;font-weight:950}
+        .fp-simple-choice-card small{color:#64748b;font-size:11px;font-weight:850;line-height:1.45}
+        .fp-chip-list{display:flex;flex-wrap:wrap;gap:6px}
+        .fp-chip-list button,.fp-score-list button{border:1px solid #dce4ef;border-radius:999px;background:#f8fafc;color:#64748b;padding:6px 9px;font-size:11px;font-weight:950;cursor:pointer}
+        .fp-chip-list button.active,.fp-score-list button.active{background:#10233e;color:#fff;border-color:#10233e}
+        .fp-score-list{display:flex;gap:6px}
+        .fp-simple-choice-card textarea{width:100%;border:1px solid #dce4ef;border-radius:8px;padding:9px 10px;font-size:12px;font-weight:800;color:#172033;font-family:inherit;resize:vertical}
         .fp-simple-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
         .fp-simple-field{display:grid;gap:6px;min-width:0}
         .fp-simple-field label{font-size:12px;font-weight:950;color:#64748b}
@@ -2055,9 +2190,10 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-simple-goal-row{display:grid;grid-template-columns:minmax(180px,1fr) 180px 90px auto;gap:8px;align-items:start}
         .fp-simple-goal-row>input{height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0}
         .fp-simple-debts{display:grid;gap:8px}
-        .fp-simple-debt-row{display:grid;grid-template-columns:minmax(170px,1fr) 170px 150px 90px auto;gap:8px;align-items:end}
-        .fp-simple-debt-row>input,.fp-simple-debt-row input{height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0;min-width:0}
+        .fp-simple-debt-row{display:grid;grid-template-columns:1.3fr 1fr .9fr .65fr auto;gap:10px;align-items:end;border:1px solid #e2e8f0;background:#f8fafc;border-radius:10px;padding:10px}
+        .fp-simple-debt-row input{height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0;min-width:0;background:#fff}
         .fp-simple-debt-row label{display:block;margin-bottom:5px;font-size:11px;font-weight:950;color:#64748b}
+        .fp-debt-remove{align-self:center;margin-top:17px}
         .fp-simple-debt-summary{display:flex;gap:8px;flex-wrap:wrap}
         .fp-simple-debt-summary span{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:950}
         .fp-simple-block-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -2146,15 +2282,33 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-consumption-badge-소비지출{background:#fff7ed;color:#b45309;border:1px solid #fed7aa}
         .fp-consumption-badge-비소비지출{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
         .fp-landscape-report{width:297mm;background:#fff;color:#10233e;font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif}
+        .fp-landscape-cover{position:relative;width:297mm;height:210mm;box-sizing:border-box;padding:18mm;background:linear-gradient(135deg,#f7fbff 0%,#eef5fb 55%,#ffffff 100%);page-break-after:always;overflow:hidden}
+        .fp-cover-bg{position:absolute;inset:0;background:
+          linear-gradient(90deg,rgba(255,255,255,.82),rgba(255,255,255,.58)),
+          url('https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1800&q=80') center/cover no-repeat;opacity:.32}
+        .fp-cover-mark{position:absolute;right:18mm;top:20mm;color:rgba(30,95,168,.12);font-size:48px;line-height:1;font-weight:950;letter-spacing:.08em;text-align:right}
+        .fp-cover-content{position:relative;z-index:1;max-width:170mm;margin-top:28mm}
+        .fp-cover-content p{margin:0 0 14px;color:#1E5FA8;font-size:13px;font-weight:950;letter-spacing:.2em}
+        .fp-cover-content h1{margin:0;color:#10233e;font-size:48px;font-weight:950;letter-spacing:-1.4px}
+        .fp-cover-content strong{display:block;margin-top:18px;color:#0e7e6b;font-size:25px;font-weight:950}
+        .fp-cover-content span{display:block;margin-top:18px;color:#475569;font-size:16px;font-weight:850;line-height:1.7;max-width:118mm}
+        .fp-cover-advisor{position:absolute;z-index:1;left:18mm;right:18mm;bottom:18mm;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+        .fp-cover-advisor div{border:1px solid #dce4ef;background:rgba(255,255,255,.78);backdrop-filter:blur(4px);border-radius:10px;padding:12px}
+        .fp-cover-advisor span{display:block;color:#64748b;font-size:11px;font-weight:950}
+        .fp-cover-advisor strong{display:block;margin-top:7px;color:#10233e;font-size:15px;font-weight:950}
         .fp-landscape-page{width:297mm;height:210mm;box-sizing:border-box;padding:12mm;background:#f4f7fb;page-break-after:always;overflow:hidden;display:flex;flex-direction:column;gap:10px}
         .fp-landscape-page:last-child{page-break-after:auto}
-        .fp-landscape-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;background:#10233e;color:#fff;border-radius:10px;padding:14px 18px;border-top:5px solid #c9a84c}
+        .fp-landscape-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;background:linear-gradient(135deg,#ffffff,#eef5fb);color:#10233e;border:1px solid #dce4ef;border-radius:10px;padding:14px 18px;border-top:5px solid #c9a84c}
         .fp-landscape-head.compact{padding:12px 18px}
-        .fp-landscape-head p{margin:0 0 4px;color:#9ec5ef;font-size:10px;font-weight:950;letter-spacing:.16em}
+        .fp-landscape-head p{margin:0 0 4px;color:#1E5FA8;font-size:10px;font-weight:950;letter-spacing:.16em}
         .fp-landscape-head h1{margin:0;font-size:24px;font-weight:950;letter-spacing:-.3px}
-        .fp-landscape-head span{display:block;margin-top:5px;color:#dbe7f7;font-size:12px;font-weight:800}
+        .fp-landscape-head span{display:block;margin-top:5px;color:#64748b;font-size:12px;font-weight:800}
         .fp-landscape-badge{border:1px solid rgba(201,168,76,.55);border-radius:999px;color:#c9a84c;padding:7px 12px;font-size:12px;font-weight:950;white-space:nowrap}
         .fp-landscape-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+        .fp-consult-summary{display:grid;grid-template-columns:1.4fr 1.2fr 1fr .55fr;gap:8px}
+        .fp-consult-summary div{border:1px solid #dce4ef;border-radius:9px;background:#fff;padding:9px 10px}
+        .fp-consult-summary span{display:block;color:#64748b;font-size:10px;font-weight:950}
+        .fp-consult-summary strong{display:block;margin-top:4px;color:#10233e;font-size:12px;font-weight:950;line-height:1.35}
         .fp-report-kpi{border:1px solid #dce4ef;border-top:4px solid #1E5FA8;border-radius:10px;background:#fff;padding:11px}
         .fp-report-kpi span{display:block;color:#64748b;font-size:11px;font-weight:950}
         .fp-report-kpi strong{display:block;margin-top:4px;font-size:26px;font-weight:950}
@@ -2196,9 +2350,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-allocation-compare em{display:block;margin-top:5px;color:#64748b;font-size:11px;font-weight:850;font-style:normal}
         .fp-report-card.scenario{border-top:4px solid #1E5FA8}
         @keyframes fp-spin{to{transform:rotate(360deg)}}
-        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}.fp-simple-grid,.fp-simple-block-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics,.fp-simple-summary,.fp-simple-summary.four,.fp-flow-formula,.fp-simple-block-grid.two,.fp-simple-block-grid.three{grid-template-columns:1fr 1fr}.fp-simple-grid,.fp-simple-block-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-simple-goal-row{grid-template-columns:1fr 160px 80px auto}.fp-simple-debt-row{grid-template-columns:1fr 1fr 1fr}}
-        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid,.fp-simple-grid,.fp-simple-summary,.fp-simple-summary.four,.fp-flow-formula,.fp-simple-block-grid,.fp-simple-block-grid.two,.fp-simple-block-grid.three,.fp-simple-goal-row,.fp-simple-debt-row,.fp-emergency-row{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}.fp-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.fp-simple-head{align-items:stretch;flex-direction:column}.fp-simple-head button{width:100%}}
+        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}.fp-simple-grid,.fp-simple-block-grid,.fp-simple-consult{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics,.fp-simple-summary,.fp-simple-summary.four,.fp-flow-formula,.fp-simple-block-grid.two,.fp-simple-block-grid.three{grid-template-columns:1fr 1fr}.fp-simple-grid,.fp-simple-block-grid,.fp-simple-consult{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-simple-goal-row{grid-template-columns:1fr 160px 80px auto}.fp-simple-debt-row{grid-template-columns:1fr 1fr}}
+        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid,.fp-simple-grid,.fp-simple-summary,.fp-simple-summary.four,.fp-flow-formula,.fp-simple-block-grid,.fp-simple-block-grid.two,.fp-simple-block-grid.three,.fp-simple-consult,.fp-simple-goal-row,.fp-simple-debt-row,.fp-emergency-row{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}.fp-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.fp-simple-head{align-items:stretch;flex-direction:column}.fp-simple-head button{width:100%}}
         @media print{
   @page{size:A4 landscape;margin:7mm}
   .fp-actions,.fp-clientbar button,.fp-delete,.fp-mode-panel{display:none!important}
