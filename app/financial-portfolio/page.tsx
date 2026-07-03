@@ -50,6 +50,21 @@ type Proposal = {
   goals?: GoalItem[]                   // 목적자금 목표 목록
 }
 
+type InputMode = "simple" | "detail"
+
+type SimpleDraft = {
+  goalPurpose: string
+  goalAmount: number
+  goalYears: number
+  savingMethod: string
+  currentSaving: number
+  savingCapacity: number
+  totalIncome: number
+  totalExpense: number
+  insuranceExpense: number
+  livingExpense: number
+}
+
 type ClientPortfolio = {
   id: string
   name: string
@@ -94,6 +109,39 @@ const CREDIT_RATE_TABLE = [
 
 function row(id:string, category:string, name:string, institution:string, amount:number, payment=0, rate=0, consumptionType?: "소비지출"|"비소비지출"): Entry {
   return { id, category, consumptionType, name, institution, amount, payment, rate, memo:"" }
+}
+
+function createSimpleDraft(client: ClientPortfolio): SimpleDraft {
+  const totalIncome = sum(client.incomes)
+  const totalExpense = sum(client.expenses)
+  const insuranceExpense = client.expenses
+    .filter(i => i.consumptionType === "비소비지출" && (i.category.includes("보험") || i.category.includes("보장") || i.category.includes("실손") || i.category.includes("종신") || i.name.includes("보험")))
+    .reduce((a,i)=>a+Number(i.amount||0),0)
+  const currentSavingItems = client.expenses.filter(i => i.consumptionType === "비소비지출" && (i.category.includes("저축") || i.category.includes("투자") || i.category.includes("연금")))
+  const currentSaving = currentSavingItems.reduce((a,i)=>a+Number(i.amount||0),0)
+  const livingExpense = client.expenses
+    .filter(i => i.consumptionType !== "비소비지출")
+    .reduce((a,i)=>a+Number(i.amount||0),0)
+  const firstGoal = client.proposal.goals?.[0]
+
+  return {
+    goalPurpose: firstGoal?.purpose || "",
+    goalAmount: firstGoal?.targetAmount || 0,
+    goalYears: firstGoal?.periodYears || 5,
+    savingMethod: currentSavingItems[0]?.name || currentSavingItems[0]?.memo || "",
+    currentSaving,
+    savingCapacity: Number(client.proposal.investmentAdd || client.proposal.savingsIncrease || Math.max(totalIncome - totalExpense, 0)),
+    totalIncome,
+    totalExpense,
+    insuranceExpense,
+    livingExpense,
+  }
+}
+
+function goalHorizon(years: number): GoalItem["horizon"] {
+  if (years <= 3) return "단기"
+  if (years <= 7) return "중기"
+  return "장기"
 }
 
 const defaultProposal: Proposal = {
@@ -448,7 +496,8 @@ function PortfolioProposalSection({ client, totals }: {
   const totalInsurance = insuranceItems.reduce((s, e) => s + e.amount, 0)
   const optimizedInsurance = Math.round(totalInsurance * (1 - sc.expenseCutRatio * 0.5))
 
-  const freeCapacityAfter = totals.cashFlow + totalCutSaving + (totalInsurance - optimizedInsurance)
+  const statedSavingCapacity = Number(client.proposal.investmentAdd || client.proposal.savingsIncrease || 0)
+  const freeCapacityAfter = Math.max(totals.cashFlow, statedSavingCapacity) + totalCutSaving + (totalInsurance - optimizedInsurance)
 
   return (
     <section className="fp-panel" style={{ pageBreakBefore: 'always', breakInside: 'avoid' }}>
@@ -707,6 +756,8 @@ export default function FinancialPortfolioPage() {
   const [syncStatus, setSyncStatus] = useState<"idle"|"saving"|"saved"|"error">("idle")
   const [uploadStatus, setUploadStatus] = useState<"idle"|"loading"|"ok"|"error">("idle")
   const [uploadMsg, setUploadMsg] = useState("")
+  const [inputMode, setInputMode] = useState<InputMode>("simple")
+  const [simpleDraft, setSimpleDraft] = useState<SimpleDraft>(() => createSimpleDraft(starter))
   const fileInputRef = useRef<HTMLInputElement>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null)
 
@@ -748,6 +799,11 @@ export default function FinancialPortfolioPage() {
   }, [clients, advisorId, allowed])
 
   const client = clients.find(i => i.id === selectedId) || clients[0] || starter
+
+  useEffect(() => {
+    setSimpleDraft(createSimpleDraft(client))
+  }, [client.id])
+
   const totals = useMemo(() => {
     const totalAssets = sum(client.assets)
     const totalLiabilities = sum(client.liabilities)
@@ -798,6 +854,44 @@ export default function FinancialPortfolioPage() {
 
   const removeEntry = (section: SectionKey, id: string) =>
     updateClient({ [section]: client[section].filter(i => i.id !== id) } as Partial<ClientPortfolio>)
+
+  const updateSimpleDraft = (patch: Partial<SimpleDraft>) =>
+    setSimpleDraft(prev => ({ ...prev, ...patch }))
+
+  const applySimpleInput = () => {
+    const otherExpense = Math.max(
+      simpleDraft.totalExpense - simpleDraft.insuranceExpense - simpleDraft.livingExpense - simpleDraft.currentSaving,
+      0
+    )
+    const goal: GoalItem = {
+      id: client.proposal.goals?.[0]?.id || "simple-goal",
+      horizon: goalHorizon(simpleDraft.goalYears || 5),
+      purpose: simpleDraft.goalPurpose || "목적자금 준비",
+      targetAmount: simpleDraft.goalAmount,
+      periodYears: Math.max(1, simpleDraft.goalYears || 1),
+      memo: "간단 입력으로 설정한 목적자금",
+    }
+
+    updateClient({
+      incomes: [
+        row("simple-income-total", "총수입", "월 총수입", "", simpleDraft.totalIncome),
+      ],
+      expenses: [
+        row("simple-exp-living", "생활비", "생활비(월세·공과금 포함)", "", simpleDraft.livingExpense, 0, 0, "소비지출"),
+        row("simple-exp-insurance", "보장성보험", "보험료", "", simpleDraft.insuranceExpense, 0, 0, "비소비지출"),
+        row("simple-exp-saving", "저축/투자", simpleDraft.savingMethod || "현재 저축", "", simpleDraft.currentSaving, 0, 0, "비소비지출"),
+        ...(otherExpense > 0 ? [row("simple-exp-etc", "기타 소비", "기타 지출", "", otherExpense, 0, 0, "소비지출")] : []),
+      ],
+      proposal: {
+        ...client.proposal,
+        monthlyIncome: simpleDraft.totalIncome,
+        totalExpense: simpleDraft.totalExpense,
+        savingsIncrease: simpleDraft.savingCapacity,
+        investmentAdd: simpleDraft.savingCapacity,
+        goals: simpleDraft.goalAmount > 0 ? [goal] : [],
+      },
+    })
+  }
 
   const addClient = () => {
     const id = crypto.randomUUID()
@@ -991,6 +1085,116 @@ export default function FinancialPortfolioPage() {
           />
         </section>
 
+        <section className="fp-mode-panel">
+          <div className="fp-mode-tabs">
+            <button
+              type="button"
+              onClick={() => setInputMode("simple")}
+              className={inputMode === "simple" ? "active" : ""}
+            >
+              간단 입력
+            </button>
+            <button
+              type="button"
+              onClick={() => setInputMode("detail")}
+              className={inputMode === "detail" ? "active" : ""}
+            >
+              상세 입력
+            </button>
+          </div>
+
+          {inputMode === "simple" && (
+            <div className="fp-simple-panel">
+              <div className="fp-simple-head">
+                <div>
+                  <strong>목적자금 중심 간단 입력</strong>
+                  <span>상담 초반에는 꼭 필요한 항목만 입력하고, 필요하면 상세 입력에서 세부 항목을 조정하세요.</span>
+                </div>
+                <button type="button" onClick={applySimpleInput}>간단 입력 적용</button>
+              </div>
+
+              <div className="fp-simple-grid">
+                <div className="fp-simple-field">
+                  <label>목적자금</label>
+                  <input
+                    value={simpleDraft.goalPurpose}
+                    onChange={e => updateSimpleDraft({ goalPurpose: e.target.value })}
+                    placeholder="예: 주택 마련, 자녀 교육, 은퇴자금"
+                  />
+                </div>
+                <div className="fp-simple-field">
+                  <label>목표금액</label>
+                  <MoneyInput value={simpleDraft.goalAmount} onChange={v => updateSimpleDraft({ goalAmount: v })} />
+                </div>
+                <div className="fp-simple-field">
+                  <label>준비기간</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={simpleDraft.goalYears || ""}
+                    onChange={e => updateSimpleDraft({ goalYears: Number(e.target.value) })}
+                    placeholder="년"
+                  />
+                </div>
+                <div className="fp-simple-field">
+                  <label>현재 저축하는 방식</label>
+                  <input
+                    value={simpleDraft.savingMethod}
+                    onChange={e => updateSimpleDraft({ savingMethod: e.target.value })}
+                    placeholder="예: 적금, 청약, 연금저축, ETF"
+                  />
+                </div>
+                <div className="fp-simple-field">
+                  <label>현재 월 저축액</label>
+                  <MoneyInput value={simpleDraft.currentSaving} onChange={v => updateSimpleDraft({ currentSaving: v })} />
+                </div>
+                <div className="fp-simple-field">
+                  <label>추가 저축여력</label>
+                  <MoneyInput value={simpleDraft.savingCapacity} onChange={v => updateSimpleDraft({ savingCapacity: v })} />
+                </div>
+                <div className="fp-simple-field">
+                  <label>월 총수입</label>
+                  <MoneyInput value={simpleDraft.totalIncome} onChange={v => updateSimpleDraft({ totalIncome: v })} />
+                </div>
+                <div className="fp-simple-field">
+                  <label>월 총지출</label>
+                  <MoneyInput value={simpleDraft.totalExpense} onChange={v => updateSimpleDraft({ totalExpense: v })} />
+                </div>
+                <div className="fp-simple-field">
+                  <label>고정지출 - 보험료</label>
+                  <MoneyInput value={simpleDraft.insuranceExpense} onChange={v => updateSimpleDraft({ insuranceExpense: v })} />
+                </div>
+                <div className="fp-simple-field">
+                  <label>고정지출 - 생활비</label>
+                  <MoneyInput value={simpleDraft.livingExpense} onChange={v => updateSimpleDraft({ livingExpense: v })} />
+                  <small>월세, 공과금, 식비, 통신비 등 생활비를 합산해서 입력</small>
+                </div>
+              </div>
+
+              <div className="fp-simple-summary">
+                <div>
+                  <span>월 현금흐름 예상</span>
+                  <strong>{krw(simpleDraft.totalIncome - simpleDraft.totalExpense)}</strong>
+                </div>
+                <div>
+                  <span>목표 달성 필요 월저축</span>
+                  <strong>{krw(calcMonthlyPmt(simpleDraft.goalAmount, Math.max(simpleDraft.goalYears || 1, 1), 0.04))}</strong>
+                </div>
+                <div>
+                  <span>현재 준비 가능액</span>
+                  <strong>{krw(simpleDraft.currentSaving + simpleDraft.savingCapacity)}</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {inputMode === "detail" && (
+            <div className="fp-detail-note">
+              상세 입력에서는 자산, 부채, 수입, 지출 항목을 각각 세분화해서 더 정확한 재무지표를 만들 수 있습니다.
+            </div>
+          )}
+        </section>
+
         {/* ── 본문 보고서 ── */}
         <div ref={reportRef} className="fp-report">
           {/* 고객 기본정보 */}
@@ -1051,6 +1255,7 @@ export default function FinancialPortfolioPage() {
           <PortfolioProposalSection client={client} totals={totals} />
 
           {/* 제안 입력 패널 */}
+          {inputMode === "detail" && (
           <Panel title="제안 계획 입력 (설계사 전용)" icon={<FileText className="h-5 w-5" />}>
             <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12 }}>
               {([
@@ -1143,6 +1348,7 @@ export default function FinancialPortfolioPage() {
               ))}
             </div>
           </Panel>
+          )}
 
           {/* 자산배분전략 */}
           <Panel title="자산배분전략 및 투자성향" icon={<PieChartIcon className="h-5 w-5" />}>
@@ -1214,17 +1420,21 @@ export default function FinancialPortfolioPage() {
         </div>
 
         {/* ── 데이터 입력 섹션 ── */}
-        <DataSection title="자산 입력" section="assets" total={totals.totalAssets} rows={client.assets} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
-        <DataSection title="부채 입력" section="liabilities" total={totals.totalLiabilities} rows={client.liabilities} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
-        <DataSection title="수입 입력" section="incomes" total={totals.totalIncome} rows={client.incomes} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
-        <DataSection title="지출 입력" section="expenses" total={totals.totalExpense} rows={client.expenses} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry}
-          extraHeader={
-            <div style={{ display:"flex",gap:12,alignItems:"center" }}>
-              <span style={{ fontSize:12,fontWeight:800,color:"#b45309",background:"#fff7ed",padding:"3px 10px",borderRadius:999 }}>소비지출 {krw(totals.consumptionTotal)}</span>
-              <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8",background:"#eff6ff",padding:"3px 10px",borderRadius:999 }}>비소비지출 {krw(totals.nonConsumptionTotal)}</span>
-            </div>
-          }
-        />
+        {inputMode === "detail" && (
+          <>
+            <DataSection title="자산 입력" section="assets" total={totals.totalAssets} rows={client.assets} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
+            <DataSection title="부채 입력" section="liabilities" total={totals.totalLiabilities} rows={client.liabilities} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
+            <DataSection title="수입 입력" section="incomes" total={totals.totalIncome} rows={client.incomes} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry} />
+            <DataSection title="지출 입력" section="expenses" total={totals.totalExpense} rows={client.expenses} onAdd={addEntry} onUpdate={updateEntry} onRemove={removeEntry}
+              extraHeader={
+                <div style={{ display:"flex",gap:12,alignItems:"center" }}>
+                  <span style={{ fontSize:12,fontWeight:800,color:"#b45309",background:"#fff7ed",padding:"3px 10px",borderRadius:999 }}>소비지출 {krw(totals.consumptionTotal)}</span>
+                  <span style={{ fontSize:12,fontWeight:800,color:"#1d4ed8",background:"#eff6ff",padding:"3px 10px",borderRadius:999 }}>비소비지출 {krw(totals.nonConsumptionTotal)}</span>
+                </div>
+              }
+            />
+          </>
+        )}
       </main>
     </Shell>
   )
@@ -1251,6 +1461,25 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-clientbar select{width:100%;border:0;background:transparent;outline:0;font-weight:900;color:#172033}
         .fp-clientbar button{background:#10233e;color:#fff;border-color:#10233e}
         .fp-clientbar button:disabled{opacity:.35;cursor:not-allowed}
+        .fp-mode-panel{background:#fff;border:1px solid #dce4ef;border-radius:8px;padding:14px;display:grid;gap:14px}
+        .fp-mode-tabs{display:inline-flex;width:max-content;gap:4px;border:1px solid #dce4ef;border-radius:10px;background:#f8fafc;padding:4px}
+        .fp-mode-tabs button{height:36px;border:0;border-radius:8px;background:transparent;color:#64748b;padding:0 18px;font-size:13px;font-weight:950;cursor:pointer}
+        .fp-mode-tabs button.active{background:#10233e;color:#fff;box-shadow:0 8px 18px rgba(16,35,62,.16)}
+        .fp-simple-panel{display:grid;gap:14px}
+        .fp-simple-head{display:flex;align-items:center;justify-content:space-between;gap:14px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;padding:14px}
+        .fp-simple-head strong{display:block;color:#10233e;font-size:16px;font-weight:950}
+        .fp-simple-head span{display:block;margin-top:4px;color:#64748b;font-size:12px;font-weight:800;line-height:1.5}
+        .fp-simple-head button{height:40px;border:0;border-radius:10px;background:#0e7e6b;color:#fff;padding:0 16px;font-size:13px;font-weight:950;cursor:pointer;white-space:nowrap}
+        .fp-simple-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+        .fp-simple-field{display:grid;gap:6px;min-width:0}
+        .fp-simple-field label{font-size:12px;font-weight:950;color:#64748b}
+        .fp-simple-field input{width:100%;height:42px;border:1px solid #dce4ef;border-radius:8px;padding:0 11px;font-size:14px;font-weight:850;color:#172033;outline:0;min-width:0}
+        .fp-simple-field small{color:#94a3b8;font-size:10px;font-weight:800;line-height:1.35}
+        .fp-simple-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+        .fp-simple-summary div{border:1px solid #dbeafe;background:#eff6ff;border-radius:10px;padding:12px}
+        .fp-simple-summary span{display:block;color:#1d4ed8;font-size:11px;font-weight:950}
+        .fp-simple-summary strong{display:block;margin-top:5px;color:#10233e;font-size:18px;font-weight:950}
+        .fp-detail-note{border:1px dashed #cbd5e1;background:#f8fafc;border-radius:10px;padding:14px;color:#64748b;font-size:13px;font-weight:850}
         .fp-profile{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;background:#fff;border:1px solid #dce4ef;border-radius:8px;padding:14px}
         .fp-profile .span-1{grid-column:span 1}
         .fp-profile .span-2{grid-column:span 2}
@@ -1306,9 +1535,9 @@ function Shell({ children }: { children: React.ReactNode }) {
         .fp-consumption-badge-소비지출{background:#fff7ed;color:#b45309;border:1px solid #fed7aa}
         .fp-consumption-badge-비소비지출{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
         @keyframes fp-spin{to{transform:rotate(360deg)}}
-        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}}
-        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics{grid-template-columns:1fr 1fr}}
-        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}}
+        @media(max-width:1200px){.fp-index-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-profile{grid-template-columns:repeat(6,minmax(0,1fr))}.fp-profile .span-3{grid-column:span 6}.fp-strategy-grid{grid-template-columns:1fr}.fp-simple-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+        @media(max-width:900px){.fp-grid,.fp-chartrow,.fp-metrics,.fp-simple-summary{grid-template-columns:1fr 1fr}.fp-simple-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        @media(max-width:720px){.fp-page{padding:14px}.fp-hero{align-items:flex-start;flex-direction:column}.fp-grid,.fp-chartrow,.fp-profile,.fp-metrics,.fp-index-grid,.fp-simple-grid,.fp-simple-summary{grid-template-columns:1fr}.fp-profile .span-1,.fp-profile .span-2,.fp-profile .span-3{grid-column:span 1}.fp-clientbar label{min-width:100%}.fp-mode-tabs{width:100%;display:grid;grid-template-columns:1fr 1fr}.fp-simple-head{align-items:stretch;flex-direction:column}.fp-simple-head button{width:100%}}
         @media print{
   .fp-actions,.fp-clientbar button,.fp-delete{display:none!important}
   .fp-page{padding:0}.fp-shell,.fp-report{background:white}
