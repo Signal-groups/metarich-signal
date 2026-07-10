@@ -145,9 +145,15 @@ function escHtml(s: string | number | undefined): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
-function isRenewalCoverage(contract: ProContract, coverage?: { name?: string; isRenewal?: boolean }): boolean {
-  const text = `${contract.productName || ''} ${coverage?.name || ''}`.toLowerCase()
-  return Boolean(contract.isRenewal || coverage?.isRenewal || text.includes('갱신') || text.includes('renewal'))
+function hasRenewalText(...values: Array<string | undefined>): boolean {
+  const text = values.join(' ').toLowerCase()
+  if (!text.trim()) return false
+  if (text.includes('비갱신') || text.includes('nonrenewal') || text.includes('non-renewal')) return false
+  return text.includes('갱신') || text.includes('renewal')
+}
+
+function isRenewalContract(contract: ProContract): boolean {
+  return Boolean(contract.isRenewal || hasRenewalText(contract.productName, contract.paymentPeriod))
 }
 
 function isCiCoverage(contract: ProContract, coverage?: { rowKey?: string; name?: string }): boolean {
@@ -163,7 +169,6 @@ function isCiCoverage(contract: ProContract, coverage?: { rowKey?: string; name?
 function coverageBadges(contract: ProContract, coverage?: { rowKey?: string; name?: string; isRenewal?: boolean }): string {
   if (!coverage) return ''
   const badges: string[] = []
-  if (isRenewalCoverage(contract, coverage)) badges.push('<span class="cov-badge renewal">갱신</span>')
   if (isCiCoverage(contract, coverage)) badges.push('<span class="cov-badge ci">CI</span>')
   return badges.length ? `<div class="cov-badges">${badges.join('')}</div>` : ''
 }
@@ -219,11 +224,12 @@ function inferSilsonInfo(contracts: ProContract[]) {
   }
   const parsed = parseContractYearMonth(silson.contractDate)
   if (!parsed) {
-    return { generation: '확인 필요', joinedAt: silson.contractDate || '-', renewalRule: silson.isRenewal ? '갱신형' : '계약일 기준 확인' }
+    return { generation: '확인 필요', joinedAt: silson.contractDate || '-', renewalRule: '계약일 기준 확인' }
   }
   const ym = parsed.year * 100 + parsed.month
   if (ym <= 200909) return { generation: '1세대 실손', joinedAt: parsed.label, renewalRule: '3년 또는 5년 갱신형 중심' }
-  if (ym <= 201703) return { generation: '2세대 실손', joinedAt: parsed.label, renewalRule: '대체로 15년 재가입 구조' }
+  if (ym < 201304) return { generation: '2세대 실손', joinedAt: parsed.label, renewalRule: '갱신형 중심' }
+  if (ym <= 201703) return { generation: '2세대 실손', joinedAt: parsed.label, renewalRule: '재가입' }
   if (ym <= 202106) return { generation: '3세대 실손', joinedAt: parsed.label, renewalRule: '15년 재가입 · 비급여 특약 분리' }
   return { generation: '4세대 실손', joinedAt: parsed.label, renewalRule: '5년 재가입 · 비급여 차등 구조' }
 }
@@ -252,11 +258,11 @@ function gauge(pct: number, color: string, label: string, value: string): string
 function radarChartSvg(contracts: ProContract[], benchmark?: BenchmarkAmounts): string {
   const AXES = [
     { label: '암진단비',  keys: ['cancer_general'],                                          rec: 50_000_000 },
-    { label: '뇌진단비',  keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],      rec: 40_000_000 },
-    { label: '심장(허혈성)', keys: ['heart_ischemic', 'heart_vascular'],                    rec: 40_000_000 },
+    { label: '뇌진단비',  keys: ['brain_vascular'],                                          rec: 40_000_000 },
+    { label: '심장진단비', keys: ['heart_ischemic'],                                         rec: 40_000_000 },
     { label: '수술비',    keys: ['surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type', 'surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type', 'surgery_1_5'], rec:  5_000_000 },
-    { label: '실손',      keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],      rec: 50_000_000 },
-    { label: '사망',      keys: ['death_general', 'death_disease', 'death_injury'],           rec: 100_000_000 },
+    { label: '실손',      keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],      rec: 100_000_000 },
+    { label: '사망',      keys: ['death_general'],                                            rec: 100_000_000 },
   ]
   const N = AXES.length, cx = 140, cy = 140, R = 100
   const ratios = AXES.map(a => Math.min(1, sumAmount(contracts, ...a.keys) / a.rec))
@@ -289,13 +295,13 @@ function radarChartSvg(contracts: ProContract[], benchmark?: BenchmarkAmounts): 
 // ── 추천 제안 ─────────────────────────────────────────────────────────────
 function buildRecommendations(contracts: ProContract[]) {
   const cancer = sumAmount(contracts, 'cancer_general')
-  const brain  = sumAmount(contracts, 'brain_stroke', 'brain_hemorrhage', 'brain_vascular')
-  const heart  = sumAmount(contracts, 'heart_acute_mi', 'heart_ischemic', 'heart_vascular')
-  const death  = sumAmount(contracts, 'death_general', 'death_disease', 'death_injury')
+  const brain  = sumAmount(contracts, 'brain_vascular')
+  const heart  = sumAmount(contracts, 'heart_ischemic')
+  const death  = sumAmount(contracts, 'death_general')
   const recs: Array<{ type: '보장성' | '저축성'; title: string; desc: string; icon: string }> = []
   if (cancer < 30_000_000) recs.push({ type: '보장성', title: '암진단비 보완', desc: `현재 ${formatWon(cancer)}로 3천만원 기준 미달. 진단비 보강 우선 권장.`, icon: '🩺' })
-  if (brain < 40_000_000)  recs.push({ type: '보장성', title: '뇌진단비 보완', desc: `뇌혈관 합산 ${formatWon(brain)} — 4천만원 이상 확보 권장.`, icon: '🧠' })
-  if (heart < 40_000_000)  recs.push({ type: '보장성', title: '심장진단비 보완', desc: `심장 합산 ${formatWon(heart)} — 4천만원 이상 확보 권장.`, icon: '🫀' })
+  if (brain < 40_000_000)  recs.push({ type: '보장성', title: '뇌진단비 보완', desc: `뇌혈관진단비 ${formatWon(brain)} — 4천만원 이상 확보 권장.`, icon: '🧠' })
+  if (heart < 40_000_000)  recs.push({ type: '보장성', title: '심장진단비 보완', desc: `허혈성심장질환진단비 ${formatWon(heart)} — 4천만원 이상 확보 권장.`, icon: '🫀' })
   if (death < 100_000_000) recs.push({ type: '보장성', title: '사망보장 강화', desc: `사망보험금 ${formatWon(death)} — 가족 생활비 기반 최소 1억 확보 검토.`, icon: '🛡️' })
   recs.push({ type: '저축성', title: '노후연금 설계', desc: '은퇴 후 월 200만원 수령 기준 연금보험 가입 시뮬레이션을 권장합니다.', icon: '💰' })
   recs.push({ type: '저축성', title: '변액유니버셜 활용', desc: '중장기 자산 성장과 보장의 병행이 필요한 경우 변액보험 검토를 추천합니다.', icon: '📈' })
@@ -347,7 +353,7 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
   const today = new Date()
 
   function contractBadges(c: ProContract): string {
-    const hasRenewal = Boolean(c.isRenewal) || c.coverages.some((cv) => isRenewalCoverage(c, cv))
+    const hasRenewal = isRenewalContract(c)
     const hasCi = c.coverages.some((cv) => isCiCoverage(c, cv))
     const badges: string[] = []
     if (hasRenewal) badges.push('<span style="font-size:9px;padding:1px 6px;border-radius:999px;background:#fed7aa;color:#9a3412;font-weight:900">갱신</span>')
@@ -435,7 +441,7 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
     const covRowsInner = c.coverages
       .filter(cv => Number(cv.amount) > 0)
       .map(cv => {
-        const rowBg = isCiCoverage(c, cv) ? '#f5f3ff' : isRenewalCoverage(c, cv) ? '#fff7ed' : 'transparent'
+        const rowBg = isCiCoverage(c, cv) ? '#f5f3ff' : 'transparent'
         const badge = coverageBadges(c, cv)
         return (
         '<div style="display:flex;justify-content:space-between;align-items:center;' +
@@ -553,6 +559,7 @@ function buildContactsPage(contracts: ProContract[], addContracts: ProContract[]
 function buildCompareTable(contracts: ProContract[]): string {
   const ALL_ROWS: Array<{ group: string; label: string; rowKey: string }> = [
     { group: '진단비',    label: '암 진단비',           rowKey: 'cancer_general' },
+    { group: '진단비',    label: '고액암 진단비',        rowKey: 'cancer_high_value' },
     { group: '진단비',    label: '유사암 진단비',        rowKey: 'cancer_similar' },
     { group: '진단비',    label: '뇌혈관질환 진단비',   rowKey: 'brain_vascular' },
     { group: '진단비',    label: '뇌졸중 진단비',       rowKey: 'brain_stroke' },
@@ -630,7 +637,7 @@ function buildCompareTable(contracts: ProContract[]): string {
       const cov = c.coverages.find(cv => cv.rowKey === rowKey)
       const amt = cov ? Number(cov.amount) * 10000 : 0
       const classes = [
-        isRenewalCoverage(c, cov) ? 'renewal-cell' : '',
+        '',
         isCiCoverage(c, cov) ? 'ci-cell' : '',
       ].filter(Boolean).join(' ')
       return `<td class="${classes}">${amt ? `<span class="cell-amount">${formatWon(amt)}</span>${coverageBadges(c, cov)}` : '<span class="empty-cell">-</span>'}</td>`
@@ -696,24 +703,25 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   // 게이지
   const RECOMMEND = [
     { keys: ['cancer_general'],                                        rec: 50_000_000, label: '암진단비',   color: '#c9a96e' },
-    { keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],    rec: 40_000_000, label: '뇌진단비',   color: '#3b82f6' },
-    { keys: ['heart_acute_mi', 'heart_ischemic', 'heart_vascular'],   rec: 40_000_000, label: '심장진단비', color: '#ef4444' },
+    { keys: ['brain_vascular'],                                        rec: 40_000_000, label: '뇌진단비',   color: '#3b82f6' },
+    { keys: ['heart_ischemic'],                                        rec: 40_000_000, label: '심장진단비', color: '#ef4444' },
     { keys: ['surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type', 'surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type', 'surgery_1_5'], rec:  5_000_000, label: '수술비', color: '#8b5cf6' },
-    { keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],   rec: 50_000_000, label: '실손의료비', color: '#10b981' },
-    { keys: ['death_general', 'death_disease', 'death_injury'],        rec: 100_000_000,label: '사망보장',   color: '#1a2744' },
+    { keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],   rec: 100_000_000, label: '실손의료비', color: '#10b981', value: '가입' },
+    { keys: ['death_general'],                                         rec: 100_000_000,label: '사망보장',   color: '#1a2744' },
   ]
   const gaugesHtml = RECOMMEND.map(cfg => {
     const amt = sumAmount(contracts, ...cfg.keys)
     const pct = Math.min(100, Math.round(amt / cfg.rec * 100))
-    return gauge(pct, cfg.color, cfg.label, formatWon(amt))
+    const displayValue = 'value' in cfg && typeof cfg.value === 'string' ? cfg.value : formatWon(amt)
+    return gauge(pct, cfg.color, cfg.label, displayValue)
   }).join('')
 
   // 2대주요치료비 파생
   const derived = deriveVascularMajor(contracts)
   const diagnosisItems = [
     { label: '암', current: sumAmount(contracts, 'cancer_general'), target: benchmarkWon(benchmark, 'cancer', 50_000_000) },
-    { label: '뇌', current: sumAmount(contracts, 'brain_stroke', 'brain_hemorrhage', 'brain_vascular'), target: 40_000_000 },
-    { label: '심장', current: sumAmount(contracts, 'heart_acute_mi', 'heart_ischemic', 'heart_vascular'), target: 40_000_000 },
+    { label: '뇌', current: sumAmount(contracts, 'brain_vascular'), target: 40_000_000 },
+    { label: '심장', current: sumAmount(contracts, 'heart_ischemic'), target: 40_000_000 },
   ]
   const treatmentAmount =
     sumAmount(contracts, 'cancer_radiation', 'cancer_hadron', 'cancer_proton', 'cancer_chemo', 'cancer_targeted', 'cancer_cart') +
@@ -811,6 +819,9 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   function tcRow(label: string, amt: number) {
     return `<div class="tc-row"><span>${escHtml(label)}</span><span class="tc-val">${amt ? formatWon(amt) : '<span class="tc-empty">-</span>'}</span></div>`
   }
+  function tcTextRow(label: string, value: string) {
+    return `<div class="tc-row"><span>${escHtml(label)}</span><span class="tc-val">${escHtml(value || '-')}</span></div>`
+  }
   function tcCard(icon: string, title: string, rows: string) {
     return `<div class="tc-card"><div class="tc-head">${icon} ${escHtml(title)}</div>${rows}</div>`
   }
@@ -823,6 +834,8 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     tcRow('항암약물치료비',     sumAmount(contracts, 'cancer_chemo')),
     tcRow('표적항암약물치료비', sumAmount(contracts, 'cancer_targeted')),
     tcRow('카티항암치료비',     sumAmount(contracts, 'cancer_cart')),
+    tcRow('암주요치료비(급여)', sumAmount(contracts, 'cancer_major_benefit')),
+    tcRow('암주요치료비(비급여)', sumAmount(contracts, 'cancer_major_nonbenefit')),
   ].join(''))
 
   // 뇌심장 치료비 (vascular_major 파생 포함)
@@ -831,7 +844,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     tcRow('중환자실치료비',     derived.icu),
     tcRow('뇌심장 수술·시술비', derived.surgery),
     tcRow('뇌혈관질환 진단비',  sumAmount(contracts, 'brain_vascular')),
-    tcRow('심장질환 진단비',    sumAmount(contracts, 'heart_vascular')),
+    tcRow('허혈성심장질환 진단비', sumAmount(contracts, 'heart_ischemic')),
   ].join(''))
 
   // 수술비 (구 생명보험: 상해+질병 통합 계약은 surgery_disease 또는 surgery_injury 둘 다 매핑될 수 있음)
@@ -865,12 +878,15 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   ].join(''))
 
   // 실손
+  const hasSilsonInpatient = sumAmount(contracts, 'silson_disease_inpatient', 'silson_injury_inpatient') > 0
+  const hasSilsonOutpatient = sumAmount(contracts, 'silson_disease_outpatient', 'silson_injury_outpatient') > 0
+  const hasSilson3Major = sumAmount(contracts, 'silson_3major') > 0
   const silsonCard = tcCard('💊', '실손의료비', [
-    tcRow('실손입원(질병)',           sumAmount(contracts, 'silson_disease_inpatient')),
-    tcRow('실손입원(상해)',           sumAmount(contracts, 'silson_injury_inpatient')),
-    tcRow('실손통원(질병)',           sumAmount(contracts, 'silson_disease_outpatient')),
-    tcRow('실손통원(상해)',           sumAmount(contracts, 'silson_injury_outpatient')),
-    tcRow('비급여3대(도수/주사/MRI)', sumAmount(contracts, 'silson_3major')),
+    tcTextRow('실손 입원', hasSilsonInpatient ? '가입' : '-'),
+    tcTextRow('실손 통원', hasSilsonOutpatient ? '가입' : '-'),
+    tcTextRow('비급여3대(도수/주사/MRI)', hasSilson3Major ? '가입' : '-'),
+    tcTextRow('세대', silsonInfo.generation || '-'),
+    tcTextRow('가입연월', silsonInfo.joinedAt || '-'),
   ].join(''))
 
   // 운전자 (full only)
@@ -1354,8 +1370,8 @@ ${hasRemodel ? `
       <div style="font-size:11px;font-weight:900;color:#64748b;letter-spacing:0.1em;text-align:center;margin-bottom:14px">기존 보장</div>
       ${[
         { label:'암 진단비',    keys:['cancer_general','cancer_similar'] },
-        { label:'뇌 진단비',    keys:['brain_stroke','brain_hemorrhage','brain_vascular'] },
-        { label:'심장 진단비',  keys:['heart_acute_mi','heart_ischemic','heart_vascular'] },
+        { label:'뇌 진단비',    keys:['brain_vascular'] },
+        { label:'심장 진단비',  keys:['heart_ischemic'] },
         { label:'간병인 지원',  keys:['nursing_hospital','nursing_care_hospital','nursing_integrated'] },
         { label:'실손의료비',   keys:['silson_disease_inpatient','silson_injury_inpatient','silson_3major'] },
         { label:'운전자보험',   keys:['driver_accident'] },
@@ -1380,8 +1396,8 @@ ${hasRemodel ? `
       <div style="font-size:11px;font-weight:900;color:#059669;letter-spacing:0.1em;text-align:center;margin-bottom:14px">변경 후 보장</div>
       ${[
         { label:'암 진단비',    keys:['cancer_general','cancer_similar'] },
-        { label:'뇌 진단비',    keys:['brain_stroke','brain_hemorrhage','brain_vascular'] },
-        { label:'심장 진단비',  keys:['heart_acute_mi','heart_ischemic','heart_vascular'] },
+        { label:'뇌 진단비',    keys:['brain_vascular'] },
+        { label:'심장 진단비',  keys:['heart_ischemic'] },
         { label:'간병인 지원',  keys:['nursing_hospital','nursing_care_hospital','nursing_integrated'] },
         { label:'실손의료비',   keys:['silson_disease_inpatient','silson_injury_inpatient','silson_3major'] },
         { label:'운전자보험',   keys:['driver_accident'] },
@@ -1422,7 +1438,8 @@ ${hasRemodel ? `
           { label:'항암약물', keys:['cancer_chemo','cancer_targeted'] },
           { label:'항암방사선', keys:['cancer_radiation'] },
           { label:'암수술비', keys:['cancer_surgery'] },
-          { label:'암주요치료비', keys:['cancer_major_benefit','cancer_major_nonbenefit'] },
+          { label:'암주요치료비(급여)', keys:['cancer_major_benefit'] },
+          { label:'암주요치료비(비급여)', keys:['cancer_major_nonbenefit'] },
         ].map(r => {
           const v = sumAmount(beforeContracts, ...r.keys)
           return v > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #fee2e2">
@@ -1443,7 +1460,8 @@ ${hasRemodel ? `
           { label:'항암약물', keys:['cancer_chemo','cancer_targeted'] },
           { label:'항암방사선', keys:['cancer_radiation'] },
           { label:'암수술비', keys:['cancer_surgery'] },
-          { label:'암주요치료비', keys:['cancer_major_benefit','cancer_major_nonbenefit'] },
+          { label:'암주요치료비(급여)', keys:['cancer_major_benefit'] },
+          { label:'암주요치료비(비급여)', keys:['cancer_major_nonbenefit'] },
         ].map(r => {
           const v = sumAmount(afterContracts, ...r.keys)
           return v > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #d1fae5">
@@ -1466,8 +1484,8 @@ ${hasRemodel ? `
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px">
         <div style="font-size:10px;font-weight:900;color:#1e40af;margin-bottom:8px">기존 보장</div>
         ${[
-          { label:'뇌졸중진단', keys:['brain_stroke','brain_vascular','brain_hemorrhage'] },
-          { label:'심장질환진단', keys:['heart_acute_mi','heart_ischemic','heart_vascular'] },
+          { label:'뇌혈관진단', keys:['brain_vascular'] },
+          { label:'허혈성심장진단', keys:['heart_ischemic'] },
           { label:'뇌심장수술', keys:['two_major_surgery'] },
           { label:'중환자실치료', keys:['two_major_icu'] },
           { label:'뇌심주요치료비', keys:['vascular_major'] },
@@ -1480,14 +1498,14 @@ ${hasRemodel ? `
         }).join('')}
         <div style="margin-top:8px;padding-top:6px;border-top:2px solid #93c5fd;display:flex;justify-content:space-between">
           <span style="font-size:12px;font-weight:900;color:#1e40af">합계</span>
-          <span style="font-size:14px;font-weight:900;color:#1e40af">${formatWon(sumAmount(beforeContracts,'brain_stroke','brain_vascular','brain_hemorrhage','heart_acute_mi','heart_ischemic','heart_vascular','two_major_surgery','two_major_icu','vascular_major'))}</span>
+          <span style="font-size:14px;font-weight:900;color:#1e40af">${formatWon(sumAmount(beforeContracts,'brain_vascular','heart_ischemic','two_major_surgery','two_major_icu','vascular_major'))}</span>
         </div>
       </div>
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px">
         <div style="font-size:10px;font-weight:900;color:#059669;margin-bottom:8px">변경 후 보장</div>
         ${[
-          { label:'뇌졸중진단', keys:['brain_stroke','brain_vascular','brain_hemorrhage'] },
-          { label:'심장질환진단', keys:['heart_acute_mi','heart_ischemic','heart_vascular'] },
+          { label:'뇌혈관진단', keys:['brain_vascular'] },
+          { label:'허혈성심장진단', keys:['heart_ischemic'] },
           { label:'뇌심장수술', keys:['two_major_surgery'] },
           { label:'중환자실치료', keys:['two_major_icu'] },
           { label:'뇌심주요치료비', keys:['vascular_major'] },
@@ -1500,7 +1518,7 @@ ${hasRemodel ? `
         }).join('')}
         <div style="margin-top:8px;padding-top:6px;border-top:2px solid #6ee7b7;display:flex;justify-content:space-between">
           <span style="font-size:12px;font-weight:900;color:#059669">합계</span>
-          <span style="font-size:14px;font-weight:900;color:#059669">${formatWon(sumAmount(afterContracts,'brain_stroke','brain_vascular','brain_hemorrhage','heart_acute_mi','heart_ischemic','heart_vascular','two_major_surgery','two_major_icu','vascular_major'))}</span>
+          <span style="font-size:14px;font-weight:900;color:#059669">${formatWon(sumAmount(afterContracts,'brain_vascular','heart_ischemic','two_major_surgery','two_major_icu','vascular_major'))}</span>
         </div>
       </div>
     </div>

@@ -46,6 +46,13 @@ type CoverageRow = {
   note?: string
 }
 
+function isRenewalText(...values: Array<string | undefined>): boolean {
+  const text = values.join(' ').toLowerCase()
+  if (!text.trim()) return false
+  if (text.includes('비갱신') || text.includes('nonrenewal') || text.includes('non-renewal')) return false
+  return text.includes('갱신') || text.includes('renewal')
+}
+
 export default function CustomerSelector({
   selectedCustomer,
   requestedCustomerId,
@@ -183,7 +190,7 @@ function mapCrmRowsToContracts(customer: CustomerRow, policies: PolicyRow[], cov
       name,
       amount: Number(coverage.amount || 0),
       expiryDate: coverage.end_date || coverage.expiry_date || coverage.maturity || '',
-      isRenewal: String(coverage.renewal_type || coverage.note || '').includes('갱신'),
+      isRenewal: isRenewalText(coverage.renewal_type, coverage.note),
     }
     const list = coverageByPolicy.get(policyId) || []
     list.push(item)
@@ -202,7 +209,7 @@ function mapCrmRowsToContracts(customer: CustomerRow, policies: PolicyRow[], cov
       contractDate: policy.start_date || policy.contract_date || '',
       paymentPeriod: policy.payment_period || policy.payment_term || '',
       monthlyPremium: Number(policy.monthly_premium || policy.premium || 0),
-      isRenewal: String(policy.renewal_type || '').includes('갱신'),
+      isRenewal: isRenewalText(policy.renewal_type),
       status: (policy.status || policy.policy_status || 'active') as 'active' | 'lapsed' | 'expired',
       coverages: coverageByPolicy.get(id) || [],
     }

@@ -47,7 +47,7 @@ const QUICK_OPTIONS: Array<{ label: string; rowKey: string }> = [
   { label: '변호사선임', rowKey: 'driver_lawyer' },
   { label: '골절진단', rowKey: 'fracture_diagnosis' },
   { label: '화상진단', rowKey: 'burn_diagnosis' },
-  { label: '암주요치료비', rowKey: 'cancer_major_benefit' },
+  { label: '암주요치료비', rowKey: 'cancer_major_nonbenefit' },
   { label: '뇌심주요치료비', rowKey: 'vascular_major' },
   { label: '배상책임', rowKey: 'other_liability' },
 ]

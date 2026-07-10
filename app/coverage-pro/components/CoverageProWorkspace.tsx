@@ -392,12 +392,14 @@ function normalizeCoverageRows(
 
 const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   cancer: 'cancer_general',
+  high_value_cancer: 'cancer_high_value',
   similar_cancer: 'cancer_similar',
   cancer_chemo: 'cancer_chemo',
   cancer_targeted: 'cancer_targeted',
-  cancer_major: 'cancer_major_benefit',
+  cancer_major: 'cancer_major_nonbenefit',
   cancer_major_benefit: 'cancer_major_benefit',
   cancer_major_nonbenefit: 'cancer_major_nonbenefit',
+  cancer_major_treatment: 'cancer_major_nonbenefit',
   brain_vascular: 'brain_vascular',
   brain_stroke: 'brain_stroke',
   brain_hemorrhage: 'brain_hemorrhage',
@@ -438,9 +440,13 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   disaster_death: 'death_injury',
   실손의료비: 'silson_disease_inpatient',
   암진단비: 'cancer_general',
+  고액암진단비: 'cancer_high_value',
   유사암진단비: 'cancer_similar',
   항암치료비: 'cancer_chemo',
   고액항암치료비: 'cancer_chemo',
+  암주요치료비: 'cancer_major_nonbenefit',
+  암주요치료비급여: 'cancer_major_benefit',
+  암주요치료비비급여: 'cancer_major_nonbenefit',
   암수술비: 'cancer_surgery',
   뇌혈관질환진단비: 'brain_vascular',
   뇌졸중진단비: 'brain_stroke',
@@ -1041,7 +1047,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                     <textarea
                       className="coverage-pro-textarea"
                       style={{ minHeight: 160, fontFamily: 'monospace', fontSize: 12 }}
-                      placeholder={'GPTs에서 복사한 JSON을 붙여넣으세요.\n\n▶ v5 형식 (insurance_analysis_v5):\n{\n  "version": "insurance_analysis_v5",\n  "policies": [\n    {\n      "company": "삼성화재",\n      "product_name": "실손보험",\n      "monthly_premium": 3.5,\n      "payment_period": "20년납",\n      "coverage_period": "100세만기",\n      "renewal_type": "갱신형",\n      "coverages": [\n        { "coverage_name": "질병입원의료비", "amount": null, "category": "실손", "coverage_type": "갱신형", "coverage_period": "100세만기" },\n        { "coverage_name": "중대한질병(CI)진단비", "amount": 3000, "category": "CI", "coverage_type": "비갱신형", "coverage_period": "80세만기" }\n      ]\n    }\n  ]\n}'}
+                      placeholder={'GPTs에서 복사한 JSON을 붙여넣으세요.\n\n▶ v5 형식 (insurance_analysis_v5):\n{\n  "version": "insurance_analysis_v5",\n  "policies": [\n    {\n      "company": "삼성화재",\n      "product_name": "실손보험",\n      "monthly_premium": 3.5,\n      "payment_period": "20년납",\n      "coverage_period": "15년 재가입",\n      "renewal_type": "갱신형",\n      "coverages": [\n        { "coverage_name": "질병입원의료비", "amount": null, "category": "실손", "coverage_type": "갱신형", "coverage_period": "15년 재가입" },\n        { "coverage_name": "중대한질병(CI)진단비", "amount": 3000, "category": "CI", "coverage_type": "확인필요", "coverage_period": "80세만기" }\n      ]\n    }\n  ]\n}'}
                       value={jsonText}
                       onChange={(e) => { setJsonText(e.target.value); setJsonError('') }}
                     />

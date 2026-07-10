@@ -36,6 +36,7 @@ const CATEGORY_GROUPS = [
     key: 'cancer', label: '암 진단 / 치료', color: '#8b5cf6',
     items: [
       { rowKey: 'cancer_general',          label: '일반암 진단비' },
+      { rowKey: 'cancer_high_value',       label: '고액암 진단비' },
       { rowKey: 'cancer_similar',          label: '유사암 진단비' },
       { rowKey: 'cancer_chemo',            label: '항암약물 치료비' },
       { rowKey: 'cancer_radiation',        label: '방사선 치료비' },
@@ -170,7 +171,7 @@ function coverageFlagsByRowKey(contracts: ProContract[]): Record<string, { renew
       if (!cov.rowKey || cov.rowKey === 'unknown') continue
       const current = flags[cov.rowKey] ?? { renewal: false, ci: false }
       const text = `${contract.productName || ''} ${cov.name || ''}`.toLowerCase()
-      current.renewal = current.renewal || Boolean(contract.isRenewal || cov.isRenewal || text.includes('갱신') || text.includes('renewal'))
+      current.renewal = false
       current.ci = current.ci || Boolean(cov.rowKey === 'ci_diagnosis' || text.includes('ci') || text.includes('중대질병') || text.includes('중대한'))
       flags[cov.rowKey] = current
     }

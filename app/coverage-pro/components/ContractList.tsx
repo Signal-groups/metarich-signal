@@ -32,7 +32,7 @@ function isRenewalContract(contract: ProContract): boolean {
 }
 
 function isRenewalCoverage(contract: ProContract, coverage: ProCoverage): boolean {
-  return Boolean(coverage.isRenewal || isRenewalContract(contract) || isRenewalText(coverage.name))
+  return false
 }
 
 function isCiCoverage(contract: ProContract, coverage: ProCoverage): boolean {

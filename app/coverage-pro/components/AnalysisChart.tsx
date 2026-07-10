@@ -5,10 +5,10 @@ import type { ProContract } from '../../../lib/coverageAnalysis/types'
 import { BENCHMARK_UPDATED_EVENT, loadBenchmark, type BenchmarkAmounts } from './BenchmarkSettings'
 
 const RADAR_GROUPS = [
-  { key: 'death',    label: '사망',        match: ['death_'],                        bmKey: 'death' as const },
+  { key: 'death',    label: '사망',        match: ['death_general'],                  bmKey: 'death' as const },
   { key: 'cancer',   label: '암진단',      match: ['cancer_general'],                bmKey: 'cancer' as const },
-  { key: 'brain',    label: '뇌질환',      match: ['brain_stroke', 'brain_vascular', 'vascular_major'], bmKey: 'brain' as const },
-  { key: 'heart',    label: '심장(허혈성)', match: ['heart_ischemic', 'vascular_major'], bmKey: 'heart_ischemic' as const },
+  { key: 'brain',    label: '뇌진단',      match: ['brain_vascular'],                 bmKey: 'brain' as const },
+  { key: 'heart',    label: '심장진단',    match: ['heart_ischemic'],                 bmKey: 'heart_ischemic' as const },
   { key: 'surgery',  label: '수술비',      match: ['surgery_'],                      bmKey: 'surgery' as const },
   { key: 'hospital', label: '입원/간병',   match: ['hospital_disease_daily', 'hospital_injury_daily', 'nursing_hospital'], bmKey: 'nursing' as const },
 ]

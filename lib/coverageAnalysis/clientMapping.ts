@@ -45,6 +45,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '실손상해통원', '상해통원실손', '상해통원', '실손의료비', '의료실비', '실비', '실손'], rowKey: 'silson_injury_outpatient' },
 
   // ── 암 — 고액·표적 먼저 (일반 "암진단"보다 구체적) ───────────────────
+  { patterns: ['고액암진단비', '고액암진단', '고액암'], rowKey: 'cancer_high_value' },
   { patterns: ['고액항암치료비', '고액항암', '표적항암', '중입자항암'], rowKey: 'cancer_targeted' },
   { patterns: ['항암중입자', '중입자치료', '중입자방사선', '중입자'], rowKey: 'cancer_hadron' },
   { patterns: ['양성자방사선', '양성자치료', '양성자'], rowKey: 'cancer_proton' },
@@ -113,7 +114,8 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
 
   // ── 주요치료비 — 비급여 먼저 체크 (급여 패턴이 비급여도 매핑하는 것 방지) ──
   { patterns: ['암주요치료비(비급여)', '암주요치료비비급여', '암비급여주요치료', '비급여암주요', '암일반비급여', '암비급여'], rowKey: 'cancer_major_nonbenefit' },
-  { patterns: ['암주요치료비(급여)', '암주요치료비급여', '급여암주요치료', '암일반주요치료', '암일반급여', '암주요치료비'], rowKey: 'cancer_major_benefit' },
+  { patterns: ['암주요치료비(급여)', '암주요치료비급여', '급여암주요치료', '암일반급여'], rowKey: 'cancer_major_benefit' },
+  { patterns: ['암주요치료비'], rowKey: 'cancer_major_nonbenefit' },
   { patterns: ['2대주요치료비', '2대질병주요치료비', '뇌심주요치료비', '순환계주요치료비', '순환계치료', '뇌혈관주요치료비', '심혈관주요치료비', '뇌심장주요치료비', '뇌/심장주요치료비', '뇌심장치료', '순환계주요', '뇌심주요', '주요치료비'], rowKey: 'vascular_major' },
 
   // ── 기타 ─────────────────────────────────────────────────────────────
@@ -190,6 +192,7 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   silson_injury_outpatient:  '실비 — 상해통원의료비',
   silson_3major:             '실비 — 3대비급여 의료비',
   cancer_general:            '암 — 암진단',
+  cancer_high_value:         '암 — 고액암진단',
   cancer_similar:            '암 — 유사암진단',
   cancer_metastasis:         '암 — 전이암진단',
   cancer_surgery:            '암 — 암수술',
