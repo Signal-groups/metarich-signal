@@ -59,7 +59,13 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
     'two_major_icu',         // 행37 중환자실치료
     // 수술비
     'surgery_disease',       // 행45 질병 수술비
+    'surgery_disease_advanced',
+    'surgery_disease_comprehensive',
+    'surgery_disease_type',
     'surgery_injury',        // 행46 상해 수술비
+    'surgery_injury_advanced',
+    'surgery_injury_comprehensive',
+    'surgery_injury_type',
     'surgery_1_5',           // 행47 1-5종 수술비
     'surgery_n_major',       // 행48 111대질병 수술비
   ],
@@ -68,7 +74,9 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
   // 입원일당(51-52)
   입원: [
     'hospital_disease_daily', // 행51 질병 입원일당
+    'hospital_disease_single_room',
     'hospital_injury_daily',  // 행52 상해 입원일당
+    'hospital_injury_single_room',
   ],
 
   // ── 간병 ─────────────────────────────────────────────────────────────────

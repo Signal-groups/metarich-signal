@@ -7,6 +7,8 @@ import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 // 최대값으로 집계할 rowKey (실손·수술비·간병인 등 중복 합산 불가, 최고 계약 기준)
 const MAX_ROW_KEYS = new Set([
   'surgery_1_5', 'surgery_n_major', 'surgery_advanced', 'surgery_comprehensive',
+  'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type',
+  'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type',
   'silson_disease_inpatient', 'silson_injury_inpatient',
   'silson_disease_outpatient', 'silson_injury_outpatient',
   'silson_3major',
@@ -70,15 +72,19 @@ const CATEGORY_GROUPS = [
   {
     key: 'surgery', label: '수술비 / 입원일당', color: '#f59e0b',
     items: [
-      { rowKey: 'surgery_disease',        label: '질병 수술비 (일반)' },
-      { rowKey: 'surgery_injury',         label: '상해 수술비 (일반)' },
-      { rowKey: 'surgery_advanced',       label: '상급 수술비' },
-      { rowKey: 'surgery_comprehensive',  label: '종합 수술비' },
-      { rowKey: 'surgery_1_5',            label: '종수술비 (1~5종 최고)' },
-      { rowKey: 'surgery_n_major',        label: 'N대 수술비 (최고액)' },
-      { rowKey: 'hospital_disease_daily', label: '질병 입원일당' },
-      { rowKey: 'hospital_injury_daily',  label: '상해 입원일당' },
-      { rowKey: 'hospital_premium_room',  label: '상급병원/1인실 입원일당' },
+      { rowKey: 'surgery_disease_advanced',      label: '질병 상급 수술비' },
+      { rowKey: 'surgery_disease_comprehensive', label: '질병 종합 수술비' },
+      { rowKey: 'surgery_disease',               label: '질병 일반 수술비' },
+      { rowKey: 'surgery_disease_type',          label: '질병 종수술비' },
+      { rowKey: 'surgery_n_major',               label: '질병 N대 수술비' },
+      { rowKey: 'surgery_injury_advanced',       label: '상해 상급 수술비' },
+      { rowKey: 'surgery_injury_comprehensive',  label: '상해 종합 수술비' },
+      { rowKey: 'surgery_injury',                label: '상해 일반 수술비' },
+      { rowKey: 'surgery_injury_type',           label: '상해 종수술비' },
+      { rowKey: 'hospital_disease_daily',        label: '질병 입원일당' },
+      { rowKey: 'hospital_disease_single_room',  label: '질병 1인실 입원' },
+      { rowKey: 'hospital_injury_daily',         label: '상해 입원일당' },
+      { rowKey: 'hospital_injury_single_room',   label: '상해 1인실 입원' },
     ],
   },
   {
@@ -152,12 +158,27 @@ function countByRowKey(contracts: ProContract[]): Record<string, number> {
   return counts
 }
 
+function coverageFlagsByRowKey(contracts: ProContract[]): Record<string, { renewal: boolean; ci: boolean }> {
+  const flags: Record<string, { renewal: boolean; ci: boolean }> = {}
+  for (const contract of contracts) {
+    for (const cov of contract.coverages) {
+      if (!cov.rowKey || cov.rowKey === 'unknown') continue
+      const current = flags[cov.rowKey] ?? { renewal: false, ci: false }
+      const text = `${contract.productName || ''} ${cov.name || ''}`.toLowerCase()
+      current.renewal = current.renewal || Boolean(contract.isRenewal || cov.isRenewal || text.includes('갱신') || text.includes('renewal'))
+      current.ci = current.ci || Boolean(cov.rowKey === 'ci_diagnosis' || text.includes('ci') || text.includes('중대질병') || text.includes('중대한'))
+      flags[cov.rowKey] = current
+    }
+  }
+  return flags
+}
+
 // rowKey === 'unknown'인 담보를 계약별로 그룹핑
 function unknownCoveragesByContract(contracts: ProContract[]): Array<{
   contractId: string
   company: string
   productName: string
-  coverages: Array<{ name: string; amount: number }>
+  coverages: Array<{ id: string; name: string; amount: number }>
 }> {
   return contracts
     .filter((c) => c.id !== MANUAL_CONTRACT_ID)
@@ -167,7 +188,7 @@ function unknownCoveragesByContract(contracts: ProContract[]): Array<{
       productName: c.productName || '상품명 미입력',
       coverages: c.coverages
         .filter((cov) => !cov.rowKey || cov.rowKey === 'unknown')
-        .map((cov) => ({ name: cov.name || '담보명 없음', amount: Number(cov.amount || 0) })),
+        .map((cov) => ({ id: cov.id, name: cov.name || '담보명 없음', amount: Number(cov.amount || 0) })),
     }))
     .filter((g) => g.coverages.length > 0)
 }
@@ -209,9 +230,9 @@ function ensureManualContract(contracts: ProContract[]): ProContract[] {
 
 // 편집 폼 모달
 function EditModal({
-  rowKey, label, currentAmount, onSave, onClose,
+  label, currentAmount, onSave, onClose,
 }: {
-  rowKey: string; label: string; currentAmount: number
+  label: string; currentAmount: number
   onSave: (amount: number) => void; onClose: () => void
 }) {
   const [val, setVal] = useState(currentAmount > 0 ? String(currentAmount) : '')
@@ -307,6 +328,7 @@ export default function CoverageGrid({
   const [editTarget, setEditTarget] = useState<{ rowKey: string; label: string; currentAmount: number } | null>(null)
   const amounts = aggregateByRowKey(contracts)
   const counts = countByRowKey(contracts)
+  const rowFlags = coverageFlagsByRowKey(contracts)
   const unknownGroups = unknownCoveragesByContract(contracts)
 
   const allItems = CATEGORY_GROUPS.flatMap((g) => g.items)
@@ -354,6 +376,17 @@ export default function CoverageGrid({
       return { ...c, coverages }
     })
     onUpdate(updated)
+  }
+
+  function handleExcludeCoverage(contractId: string, coverageId: string) {
+    if (!onUpdate) return
+    onUpdate(contracts.map((contract) => {
+      if (contract.id !== contractId) return contract
+      return {
+        ...contract,
+        coverages: contract.coverages.filter((coverage) => coverage.id !== coverageId),
+      }
+    }))
   }
 
   const canEdit = !!onUpdate
@@ -435,12 +468,14 @@ export default function CoverageGrid({
               {groupItems.map((item, idx) => {
                 const hasIt = item.amount > 0
                 const isMaxKey = MAX_ROW_KEYS.has(item.rowKey)
+                const flags = rowFlags[item.rowKey] ?? { renewal: false, ci: false }
                 return (
                   <div key={item.rowKey} style={{
                     padding: '10px 16px',
                     borderRight: (idx + 1) % 2 === 1 ? '1px solid #f1f5f9' : undefined,
                     borderBottom: '1px solid #f1f5f9',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                    background: flags.renewal && flags.ci ? 'linear-gradient(135deg,#fff7ed 0%,#f5f3ff 100%)' : flags.renewal ? '#fff7ed' : flags.ci ? '#f5f3ff' : undefined,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <div style={{
@@ -453,12 +488,30 @@ export default function CoverageGrid({
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       {hasIt ? (
-                        <span style={{ fontSize: 12, fontWeight: 900, color: group.color, whiteSpace: 'nowrap' }}>
-                          {fmtAmt(item.amount)}
-                          {isMaxKey ? ' (최고)' : ''}
-                          {COUNT_ROW_KEYS.has(item.rowKey) && (counts[item.rowKey] ?? 0) > 1
-                            ? ` (${counts[item.rowKey]}개)` : ''}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <span style={{ fontSize: 12, fontWeight: 900, color: group.color, whiteSpace: 'nowrap' }}>
+                            {fmtAmt(item.amount)}
+                            {isMaxKey ? ' (최고)' : ''}
+                            {COUNT_ROW_KEYS.has(item.rowKey) && (counts[item.rowKey] ?? 0) > 1
+                              ? ` (${counts[item.rowKey]}개)` : ''}
+                          </span>
+                          {flags.renewal && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 900, color: '#9a3412',
+                              background: '#fed7aa', borderRadius: 9999, padding: '1px 6px',
+                            }}>
+                              갱신
+                            </span>
+                          )}
+                          {flags.ci && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 900, color: '#5b21b6',
+                              background: '#ddd6fe', borderRadius: 9999, padding: '1px 6px',
+                            }}>
+                              CI
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span style={{
                           fontSize: 10, fontWeight: 900,
@@ -504,7 +557,7 @@ export default function CoverageGrid({
             <div style={{ width: 4, height: 20, borderRadius: 2, background: '#64748b' }} />
             <span style={{ fontSize: 14, fontWeight: 900, color: '#1a2744' }}>기타 보장</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 0 }}>
             {extraRows.map(([rk, amt], idx) => (
               <div key={rk} style={{
                 padding: '10px 16px',
@@ -536,7 +589,7 @@ export default function CoverageGrid({
               <div style={{ width: 4, height: 20, borderRadius: 2, background: '#94a3b8' }} />
               <span style={{ fontSize: 14, fontWeight: 900, color: '#1a2744' }}>기타 보장</span>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>자동 매핑 불가 — 가입 현황만 확인</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>자동 매핑 불가 — 따로 확인 또는 제외</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {unknownGroups.map((group, gi) => (
@@ -556,15 +609,35 @@ export default function CoverageGrid({
                     {group.productName}
                   </span>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {group.coverages.map((cov, ci) => (
-                    <span key={ci} style={{
+                    <span key={cov.id || ci} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
                       fontSize: 11, fontWeight: 600,
-                      padding: '2px 10px', borderRadius: 9999,
+                      padding: '2px 4px 2px 10px', borderRadius: 9999,
                       border: '1px solid #e2e8f0', background: '#f8fafc',
                       color: '#64748b', whiteSpace: 'nowrap',
                     }}>
                       {cov.name}{cov.amount > 0 ? ` ${fmtAmt(cov.amount)}` : ''}
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => handleExcludeCoverage(group.contractId, cov.id)}
+                          title="분석에서 제외"
+                          style={{
+                            border: '1px solid #fecaca',
+                            background: '#fff',
+                            color: '#ef4444',
+                            borderRadius: 9999,
+                            fontSize: 10,
+                            fontWeight: 900,
+                            padding: '1px 7px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          제외
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -581,7 +654,6 @@ export default function CoverageGrid({
       )}
       {editTarget && (
         <EditModal
-          rowKey={editTarget.rowKey}
           label={editTarget.label}
           currentAmount={editTarget.currentAmount}
           onClose={() => setEditTarget(null)}

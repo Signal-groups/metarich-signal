@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <rect width="1600" height="1000" fill="#fafaf8"/>
+  <rect x="70" y="64" width="1460" height="872" rx="36" fill="#ffffff" stroke="#d9e2ef" stroke-width="3"/>
+  <text x="120" y="135" font-family="Pretendard, Arial, sans-serif" font-size="42" font-weight="900" fill="#1a2744">갱신형과 비갱신형 비교</text>
+  <text x="120" y="180" font-family="Pretendard, Arial, sans-serif" font-size="22" font-weight="700" fill="#64748b">초기 보험료와 장기 유지 비용은 다르게 움직입니다.</text>
+
+  <g transform="translate(120 245)">
+    <rect width="650" height="540" rx="28" fill="#fff7ed" stroke="#f59e0b" stroke-width="3"/>
+    <text x="54" y="70" font-family="Pretendard, Arial, sans-serif" font-size="34" font-weight="900" fill="#9a3412">갱신형</text>
+    <text x="54" y="112" font-family="Pretendard, Arial, sans-serif" font-size="22" font-weight="700" fill="#64748b">초기 부담은 낮지만 보험료 변동 가능</text>
+    <polyline points="72,410 190,370 308,315 426,245 544,160" fill="none" stroke="#f59e0b" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="72" cy="410" r="14" fill="#f59e0b"/>
+    <circle cx="190" cy="370" r="14" fill="#f59e0b"/>
+    <circle cx="308" cy="315" r="14" fill="#f59e0b"/>
+    <circle cx="426" cy="245" r="14" fill="#f59e0b"/>
+    <circle cx="544" cy="160" r="14" fill="#f59e0b"/>
+    <text x="65" y="463" font-family="Pretendard, Arial, sans-serif" font-size="20" font-weight="800" fill="#9a3412">나이 증가·손해율에 따라 보험료가 오를 수 있음</text>
+    <rect x="54" y="488" width="540" height="38" rx="13" fill="#ffffff"/>
+    <text x="78" y="514" font-family="Pretendard, Arial, sans-serif" font-size="18" font-weight="900" fill="#f59e0b">확인: 갱신주기, 최대 갱신나이, 향후 보험료 예상</text>
+  </g>
+
+  <g transform="translate(830 245)">
+    <rect width="650" height="540" rx="28" fill="#eff6ff" stroke="#2563eb" stroke-width="3"/>
+    <text x="54" y="70" font-family="Pretendard, Arial, sans-serif" font-size="34" font-weight="900" fill="#1e3a8a">비갱신형</text>
+    <text x="54" y="112" font-family="Pretendard, Arial, sans-serif" font-size="22" font-weight="700" fill="#64748b">납입기간 동안 보험료가 고정되는 구조</text>
+    <line x1="72" y1="315" x2="544" y2="315" stroke="#2563eb" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="72" cy="315" r="14" fill="#2563eb"/>
+    <circle cx="190" cy="315" r="14" fill="#2563eb"/>
+    <circle cx="308" cy="315" r="14" fill="#2563eb"/>
+    <circle cx="426" cy="315" r="14" fill="#2563eb"/>
+    <circle cx="544" cy="315" r="14" fill="#2563eb"/>
+    <text x="65" y="463" font-family="Pretendard, Arial, sans-serif" font-size="20" font-weight="800" fill="#1e3a8a">초기 보험료는 높을 수 있으나 장기 예측이 쉬움</text>
+    <rect x="54" y="488" width="540" height="38" rx="13" fill="#ffffff"/>
+    <text x="78" y="514" font-family="Pretendard, Arial, sans-serif" font-size="18" font-weight="900" fill="#2563eb">확인: 납입기간, 만기, 납입면제, 해지환급 구조</text>
+  </g>
+
+  <g transform="translate(120 835)">
+    <rect width="1360" height="48" rx="16" fill="#f8fafc" stroke="#d9e2ef" stroke-width="2"/>
+    <text x="36" y="32" font-family="Pretendard, Arial, sans-serif" font-size="21" font-weight="900" fill="#1a2744">상담 기준</text>
+    <text x="160" y="32" font-family="Pretendard, Arial, sans-serif" font-size="21" font-weight="800" fill="#475569">현재 보험료만 보지 말고, 10년·20년 뒤 유지 가능한 보험료인지 함께 비교합니다.</text>
+  </g>
+</svg>

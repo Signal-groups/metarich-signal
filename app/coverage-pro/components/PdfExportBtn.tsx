@@ -3,11 +3,20 @@
 import { useState } from 'react'
 import type { OutputConfig, ProContract, RemodelProposal } from '../../../lib/coverageAnalysis/types'
 import { loadBenchmark } from './BenchmarkSettings'
+import { contractsForOutput } from '../../../lib/coverageAnalysis/outputContracts'
 
 type ImageItem = { path: string; label: string }
 type ImageCategory = { category: string; items: ImageItem[] }
 
 const IMAGE_CATALOG: ImageCategory[] = [
+  {
+    category: '상품 구조',
+    items: [
+      { path: '/coverage-stats/ci-gi-insurance-compare.svg',          label: 'CI·GI 보험 비교' },
+      { path: '/coverage-stats/renewal-vs-nonrenewal-compare.svg',    label: '갱신형·비갱신형 비교' },
+      { path: '/coverage-stats/health-insurance-actual-expense-enrollment.png', label: '실손 가입 현황' },
+    ],
+  },
   {
     category: '뇌·심장',
     items: [
@@ -75,12 +84,21 @@ const IMAGE_CATALOG: ImageCategory[] = [
   },
 ]
 
+
 // 레이더(방사형) 차트 SVG
 const RADAR_AXES = [
   { label: '암진단비',  keys: ['cancer_general'],                                               rec: 50_000_000 },
   { label: '뇌진단비',  keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],          rec: 40_000_000 },
   { label: '심장(허혈성)',  keys: ['heart_ischemic'],                                        rec: 40_000_000 },
-  { label: '수술비',        keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],            rec:  5_000_000 },
+  {
+    label: '수술비',
+    keys: [
+      'surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type',
+      'surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type',
+      'surgery_1_5', 'surgery_n_major',
+    ],
+    rec: 5_000_000,
+  },
   { label: '실손의료',  keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],        rec: 50_000_000 },
   { label: '사망보장',  keys: ['death_general', 'death_disease', 'death_injury'],             rec: 100_000_000 },
 ]
@@ -91,6 +109,7 @@ function sumAmountClient(contracts: ProContract[], ...keys: string[]): number {
     .filter((cov) => keys.includes(cov.rowKey))
     .reduce((sum, cov) => sum + Number(cov.amount || 0) * 10000, 0)
 }
+
 
 function RadarChart({ contracts }: { contracts: ProContract[] }) {
   const N = RADAR_AXES.length
@@ -319,10 +338,11 @@ export default function PdfExportBtn({
     try {
       const type = outputType === 'key_pdf' ? 'key' : 'full'
       const benchmark = loadBenchmark()
+      const outputContracts = contractsForOutput(contracts)
       const res = await fetch('/api/coverage-pro/pdf-export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerName, contracts, type, selectedImages: images, proposal, advisorInfo, benchmark }),
+        body: JSON.stringify({ customerName, contracts: outputContracts, type, selectedImages: images, proposal, advisorInfo, benchmark }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: '알 수 없는 오류' }))

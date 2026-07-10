@@ -84,6 +84,8 @@ export async function POST(req: NextRequest) {
 // 실손·수술비 특수종목: 중복 합산 금지, 계약 중 최대값 사용
 const MAX_ROW_KEYS = new Set([
   'surgery_1_5', 'surgery_n_major',
+  'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type',
+  'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type',
   'silson_disease_inpatient', 'silson_injury_inpatient',
   'silson_disease_outpatient', 'silson_injury_outpatient',
   'silson_3major',
@@ -143,9 +145,33 @@ function escHtml(s: string | number | undefined): string {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
+function isRenewalCoverage(contract: ProContract, coverage?: { name?: string; isRenewal?: boolean }): boolean {
+  const text = `${contract.productName || ''} ${coverage?.name || ''}`.toLowerCase()
+  return Boolean(contract.isRenewal || coverage?.isRenewal || text.includes('갱신') || text.includes('renewal'))
+}
+
+function isCiCoverage(contract: ProContract, coverage?: { rowKey?: string; name?: string }): boolean {
+  const text = `${contract.productName || ''} ${coverage?.name || ''}`.toLowerCase()
+  return Boolean(
+    coverage?.rowKey === 'ci_diagnosis' ||
+    text.includes('ci') ||
+    text.includes('중대질병') ||
+    text.includes('중대한')
+  )
+}
+
+function coverageBadges(contract: ProContract, coverage?: { rowKey?: string; name?: string; isRenewal?: boolean }): string {
+  if (!coverage) return ''
+  const badges: string[] = []
+  if (isRenewalCoverage(contract, coverage)) badges.push('<span class="cov-badge renewal">갱신</span>')
+  if (isCiCoverage(contract, coverage)) badges.push('<span class="cov-badge ci">CI</span>')
+  return badges.length ? `<div class="cov-badges">${badges.join('')}</div>` : ''
+}
+
 function imageMime(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase()
   if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg'
+  if (ext === '.svg') return 'image/svg+xml'
   if (ext === '.webp') return 'image/webp'
   if (ext === '.gif') return 'image/gif'
   return 'image/png'
@@ -228,7 +254,7 @@ function radarChartSvg(contracts: ProContract[], benchmark?: BenchmarkAmounts): 
     { label: '암진단비',  keys: ['cancer_general'],                                          rec: 50_000_000 },
     { label: '뇌진단비',  keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],      rec: 40_000_000 },
     { label: '심장(허혈성)', keys: ['heart_ischemic', 'heart_vascular'],                    rec: 40_000_000 },
-    { label: '수술비',    keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],         rec:  5_000_000 },
+    { label: '수술비',    keys: ['surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type', 'surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type', 'surgery_1_5'], rec:  5_000_000 },
     { label: '실손',      keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],      rec: 50_000_000 },
     { label: '사망',      keys: ['death_general', 'death_disease', 'death_injury'],           rec: 100_000_000 },
   ]
@@ -518,16 +544,23 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '뇌심장치료', label: '중환자실치료비',     rowKey: 'two_major_icu' },
     { group: '뇌심장치료', label: '뇌심장 수술·시술비', rowKey: 'two_major_surgery' },
     { group: '뇌심장치료', label: '2대주요치료비(통합)', rowKey: 'vascular_major' },
-    { group: '수술비',    label: '수술비(질병)',         rowKey: 'surgery_disease' },
-    { group: '수술비',    label: '수술비(상해)',         rowKey: 'surgery_injury' },
-    { group: '수술비',    label: '1~5종 수술비',        rowKey: 'surgery_1_5' },
-    { group: '수술비',    label: 'N대 수술비',          rowKey: 'surgery_n_major' },
+    { group: '수술비',    label: '질병 일반 수술비',     rowKey: 'surgery_disease' },
+    { group: '수술비',    label: '질병 상급 수술비',     rowKey: 'surgery_disease_advanced' },
+    { group: '수술비',    label: '질병 종합 수술비',     rowKey: 'surgery_disease_comprehensive' },
+    { group: '수술비',    label: '질병 종수술비',        rowKey: 'surgery_disease_type' },
+    { group: '수술비',    label: '질병 N대 수술비',      rowKey: 'surgery_n_major' },
+    { group: '수술비',    label: '상해 일반 수술비',     rowKey: 'surgery_injury' },
+    { group: '수술비',    label: '상해 상급 수술비',     rowKey: 'surgery_injury_advanced' },
+    { group: '수술비',    label: '상해 종합 수술비',     rowKey: 'surgery_injury_comprehensive' },
+    { group: '수술비',    label: '상해 종수술비',        rowKey: 'surgery_injury_type' },
     { group: '간병',      label: '간병인(질병/일반)',    rowKey: 'nursing_hospital' },
     { group: '간병',      label: '간병인(상해)',         rowKey: 'nursing_injury' },
     { group: '간병',      label: '요양병원 간병인',      rowKey: 'nursing_care_hospital' },
     { group: '간병',      label: '간호간병통합',         rowKey: 'nursing_integrated' },
-    { group: '입원일당',  label: '입원일당(질병)',       rowKey: 'hospital_disease_daily' },
-    { group: '입원일당',  label: '입원일당(상해)',       rowKey: 'hospital_injury_daily' },
+    { group: '입원일당',  label: '질병 입원일당',        rowKey: 'hospital_disease_daily' },
+    { group: '입원일당',  label: '질병 1인실 입원',      rowKey: 'hospital_disease_single_room' },
+    { group: '입원일당',  label: '상해 입원일당',        rowKey: 'hospital_injury_daily' },
+    { group: '입원일당',  label: '상해 1인실 입원',      rowKey: 'hospital_injury_single_room' },
     { group: '실손',      label: '실손입원(질병)',       rowKey: 'silson_disease_inpatient' },
     { group: '실손',      label: '실손입원(상해)',       rowKey: 'silson_injury_inpatient' },
     { group: '실손',      label: '실손통원(질병)',       rowKey: 'silson_disease_outpatient' },
@@ -570,7 +603,11 @@ function buildCompareTable(contracts: ProContract[]): string {
     const cells = contracts.map(c => {
       const cov = c.coverages.find(cv => cv.rowKey === rowKey)
       const amt = cov ? Number(cov.amount) * 10000 : 0
-      return `<td>${amt ? formatWon(amt) : '<span class="empty-cell">-</span>'}</td>`
+      const classes = [
+        isRenewalCoverage(c, cov) ? 'renewal-cell' : '',
+        isCiCoverage(c, cov) ? 'ci-cell' : '',
+      ].filter(Boolean).join(' ')
+      return `<td class="${classes}">${amt ? `<span class="cell-amount">${formatWon(amt)}</span>${coverageBadges(c, cov)}` : '<span class="empty-cell">-</span>'}</td>`
     }).join('')
     const total = contracts.reduce((s, c) => {
       const cov = c.coverages.find(cv => cv.rowKey === rowKey)
@@ -635,7 +672,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     { keys: ['cancer_general'],                                        rec: 50_000_000, label: '암진단비',   color: '#c9a96e' },
     { keys: ['brain_stroke', 'brain_hemorrhage', 'brain_vascular'],    rec: 40_000_000, label: '뇌진단비',   color: '#3b82f6' },
     { keys: ['heart_acute_mi', 'heart_ischemic', 'heart_vascular'],   rec: 40_000_000, label: '심장진단비', color: '#ef4444' },
-    { keys: ['surgery_disease', 'surgery_injury', 'surgery_1_5'],      rec:  5_000_000, label: '수술비',     color: '#8b5cf6' },
+    { keys: ['surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type', 'surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type', 'surgery_1_5'], rec:  5_000_000, label: '수술비', color: '#8b5cf6' },
     { keys: ['silson_disease_inpatient', 'silson_injury_inpatient'],   rec: 50_000_000, label: '실손의료비', color: '#10b981' },
     { keys: ['death_general', 'death_disease', 'death_injury'],        rec: 100_000_000,label: '사망보장',   color: '#1a2744' },
   ]
@@ -657,7 +694,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     derived.thrombolysis + derived.icu + derived.surgery
   const shortageItems = [
     { label: '주요 진단비', current: diagnosisItems.reduce((sum, item) => sum + item.current, 0), target: 130_000_000 },
-    { label: '수술비', current: sumAmount(contracts, 'surgery_disease', 'surgery_injury', 'surgery_1_5', 'surgery_n_major'), target: 5_000_000 },
+    { label: '수술비', current: sumAmount(contracts, 'surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type', 'surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type', 'surgery_1_5', 'surgery_n_major'), target: 5_000_000 },
     { label: '치료비', current: treatmentAmount, target: 20_000_000 },
     { label: '간병', current: sumAmount(contracts, 'nursing_hospital', 'nursing_injury', 'nursing_care_hospital', 'nursing_integrated'), target: 150_000 },
   ]
@@ -778,10 +815,15 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     ? '<div style="font-size:9px;color:#94a3b8;padding:3px 6px">※ 구 생명보험 통합수술비는 상해 기준 표기</div>'
     : ''
   const surgeryCard = tcCard('🏥', '수술비', [
-    tcRow('수술비(질병)',  surgeryDiseaseAmt),
-    tcRow('수술비(상해)',  surgeryInjuryAmt),
-    tcRow('1~5종 수술비', sumAmount(contracts, 'surgery_1_5')),
-    tcRow('N대 수술비',   sumAmount(contracts, 'surgery_n_major')),
+    tcRow('질병 일반',  surgeryDiseaseAmt),
+    tcRow('질병 상급',  sumAmount(contracts, 'surgery_disease_advanced')),
+    tcRow('질병 종합',  sumAmount(contracts, 'surgery_disease_comprehensive')),
+    tcRow('질병 종수술', sumAmount(contracts, 'surgery_disease_type', 'surgery_1_5')),
+    tcRow('질병 N대',   sumAmount(contracts, 'surgery_n_major')),
+    tcRow('상해 일반',  surgeryInjuryAmt),
+    tcRow('상해 상급',  sumAmount(contracts, 'surgery_injury_advanced')),
+    tcRow('상해 종합',  sumAmount(contracts, 'surgery_injury_comprehensive')),
+    tcRow('상해 종수술', sumAmount(contracts, 'surgery_injury_type')),
   ].join('') + surgeryNote)
 
   // 간병 4분류
@@ -791,7 +833,9 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     tcRow('간병인 지원(요양병원)', sumAmount(contracts, 'nursing_care_hospital')),
     tcRow('간병인 지원(통합)',   sumAmount(contracts, 'nursing_integrated')),
     tcRow('입원일당(질병)',      sumAmount(contracts, 'hospital_disease_daily')),
+    tcRow('1인실 입원(질병)',    sumAmount(contracts, 'hospital_disease_single_room')),
     tcRow('입원일당(상해)',      sumAmount(contracts, 'hospital_injury_daily')),
+    tcRow('1인실 입원(상해)',    sumAmount(contracts, 'hospital_injury_single_room')),
   ].join(''))
 
   // 실손
@@ -949,6 +993,15 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     .row-total{background:#eff6ff;font-weight:700;color:#1a2744;text-align:right;white-space:nowrap}
     .empty-cell{color:#94a3b8}
     .compare-table td{text-align:right;white-space:nowrap}
+    .cell-amount{display:block;font-weight:800}
+    .renewal-cell{background:#fff7ed!important;color:#9a3412!important}
+    .ci-cell{background:#f5f3ff!important;color:#5b21b6!important}
+    .renewal-cell.ci-cell{background:linear-gradient(135deg,#fff7ed 0%,#f5f3ff 100%)!important}
+    .cov-badges{display:flex;justify-content:flex-end;gap:3px;margin-top:2px}
+    .cov-badge{display:inline-flex;align-items:center;border-radius:999px;padding:1px 5px;
+      font-size:7px;font-weight:900;line-height:1.2}
+    .cov-badge.renewal{background:#fed7aa;color:#9a3412}
+    .cov-badge.ci{background:#ddd6fe;color:#5b21b6}
 
     .img-fullpage{background:#fff;display:flex;align-items:center;justify-content:center;
       min-height:180mm;break-after:page;page-break-after:always}
@@ -1281,7 +1334,7 @@ ${hasRemodel ? `
         { label:'실손의료비',   keys:['silson_disease_inpatient','silson_injury_inpatient','silson_3major'] },
         { label:'운전자보험',   keys:['driver_accident'] },
         { label:'암 치료비합계',keys:['cancer_chemo','cancer_radiation','cancer_targeted','cancer_hadron'] },
-        { label:'수술비 합계',  keys:['surgery_disease','surgery_injury','surgery_1_5','surgery_n_major'] },
+        { label:'수술비 합계',  keys:['surgery_disease','surgery_disease_advanced','surgery_disease_comprehensive','surgery_disease_type','surgery_injury','surgery_injury_advanced','surgery_injury_comprehensive','surgery_injury_type','surgery_1_5','surgery_n_major'] },
       ].map(row => {
         const before = sumAmount(beforeContracts, ...row.keys)
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #e2e8f0">
@@ -1307,7 +1360,7 @@ ${hasRemodel ? `
         { label:'실손의료비',   keys:['silson_disease_inpatient','silson_injury_inpatient','silson_3major'] },
         { label:'운전자보험',   keys:['driver_accident'] },
         { label:'암 치료비합계',keys:['cancer_chemo','cancer_radiation','cancer_targeted','cancer_hadron'] },
-        { label:'수술비 합계',  keys:['surgery_disease','surgery_injury','surgery_1_5','surgery_n_major'] },
+        { label:'수술비 합계',  keys:['surgery_disease','surgery_disease_advanced','surgery_disease_comprehensive','surgery_disease_type','surgery_injury','surgery_injury_advanced','surgery_injury_comprehensive','surgery_injury_type','surgery_1_5','surgery_n_major'] },
       ].map(row => {
         const before = sumAmount(beforeContracts, ...row.keys)
         const after  = sumAmount(afterContracts,  ...row.keys)

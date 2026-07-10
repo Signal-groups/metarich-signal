@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
-import type { ProContract, ProCoverage } from '../../../lib/coverageAnalysis/types'
+import type { ProContract } from '../../../lib/coverageAnalysis/types'
 
 // rowKey 선택지 — 자주 쓰이는 것 + 전체 목록 접근
 const QUICK_OPTIONS: Array<{ label: string; rowKey: string }> = [
@@ -17,13 +17,22 @@ const QUICK_OPTIONS: Array<{ label: string; rowKey: string }> = [
   { label: '중대질병(CI)', rowKey: 'ci_diagnosis' },
   { label: '치매진단', rowKey: 'dementia_diagnosis' },
   { label: '장기요양', rowKey: 'ltc_grade' },
-  { label: '질병수술비', rowKey: 'surgery_disease' },
-  { label: '상해수술비', rowKey: 'surgery_injury' },
+  { label: '질병 일반수술', rowKey: 'surgery_disease' },
+  { label: '질병 상급수술', rowKey: 'surgery_disease_advanced' },
+  { label: '질병 종합수술', rowKey: 'surgery_disease_comprehensive' },
+  { label: '질병 종수술', rowKey: 'surgery_disease_type' },
+  { label: '질병 N대수술', rowKey: 'surgery_n_major' },
+  { label: '상해 일반수술', rowKey: 'surgery_injury' },
+  { label: '상해 상급수술', rowKey: 'surgery_injury_advanced' },
+  { label: '상해 종합수술', rowKey: 'surgery_injury_comprehensive' },
+  { label: '상해 종수술', rowKey: 'surgery_injury_type' },
   { label: '실비(상해통원)', rowKey: 'silson_injury_outpatient' },
   { label: '실비(질병통원)', rowKey: 'silson_disease_outpatient' },
   { label: '3대비급여', rowKey: 'silson_3major' },
   { label: '질병입원일당', rowKey: 'hospital_disease_daily' },
+  { label: '질병 1인실입원', rowKey: 'hospital_disease_single_room' },
   { label: '상해입원일당', rowKey: 'hospital_injury_daily' },
+  { label: '상해 1인실입원', rowKey: 'hospital_injury_single_room' },
   { label: '간병인(병원)', rowKey: 'nursing_hospital' },
   { label: '요양병원', rowKey: 'nursing_care_hospital' },
   { label: '상해후유장해', rowKey: 'disability_injury' },
@@ -103,6 +112,18 @@ export default function UnmappedPanel({
     setApplied((prev) => new Set([...prev, item.coverageId]))
   }
 
+  function handleExclude(item: UnmappedItem) {
+    const updated = contracts.map((c) => {
+      if (c.id !== item.contractId) return c
+      return {
+        ...c,
+        coverages: c.coverages.filter((cov) => cov.id !== item.coverageId),
+      }
+    })
+    onUpdate(updated)
+    setApplied((prev) => new Set([...prev, item.coverageId]))
+  }
+
   function handleApplyAll() {
     let updated = [...contracts]
     const newApplied = new Set(applied)
@@ -153,7 +174,7 @@ export default function UnmappedPanel({
               미매핑 담보 {pending.length}개 — 분석에서 제외됨
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
-              담보명을 인식하지 못해 차트·벤치마크에서 제외됩니다. 아래에서 직접 지정하세요.
+              담보명을 인식하지 못한 항목입니다. 필요한 담보로 지정하거나 분석에서 제외하세요.
             </div>
           </div>
         </div>
@@ -266,6 +287,21 @@ export default function UnmappedPanel({
                         }}
                       >
                         적용
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleExclude(item)}
+                        style={{
+                          padding: '6px 12px', fontSize: 12, fontWeight: 900,
+                          background: '#fff',
+                          color: '#ef4444',
+                          border: '1px solid #fecaca',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        제외
                       </button>
                     </div>
                   )}

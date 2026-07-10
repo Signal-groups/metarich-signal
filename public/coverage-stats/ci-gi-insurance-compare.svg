@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <rect width="1600" height="1000" fill="#fafaf8"/>
+  <rect x="70" y="64" width="1460" height="872" rx="36" fill="#ffffff" stroke="#d9e2ef" stroke-width="3"/>
+  <text x="120" y="135" font-family="Pretendard, Arial, sans-serif" font-size="42" font-weight="900" fill="#1a2744">CI 보험과 GI 보험의 차이</text>
+  <text x="120" y="180" font-family="Pretendard, Arial, sans-serif" font-size="22" font-weight="700" fill="#64748b">진단명보다 지급 조건과 보장 범위를 함께 확인해야 합니다.</text>
+
+  <g transform="translate(120 245)">
+    <rect width="650" height="520" rx="28" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="3"/>
+    <circle cx="78" cy="78" r="42" fill="#8b5cf6"/>
+    <text x="78" y="91" text-anchor="middle" font-family="Pretendard, Arial, sans-serif" font-size="34" font-weight="900" fill="#ffffff">CI</text>
+    <text x="145" y="72" font-family="Pretendard, Arial, sans-serif" font-size="34" font-weight="900" fill="#1a2744">중대한 질병 중심</text>
+    <text x="145" y="112" font-family="Pretendard, Arial, sans-serif" font-size="20" font-weight="700" fill="#64748b">Critical Illness</text>
+    <line x1="48" y1="150" x2="602" y2="150" stroke="#ddd6fe" stroke-width="3"/>
+    <text x="58" y="210" font-family="Pretendard, Arial, sans-serif" font-size="26" font-weight="900" fill="#4c1d95">확인 포인트</text>
+    <text x="58" y="262" font-family="Pretendard, Arial, sans-serif" font-size="24" font-weight="700" fill="#1a2744">1. 약관상 '중대한' 상태에 해당해야 지급</text>
+    <text x="58" y="314" font-family="Pretendard, Arial, sans-serif" font-size="24" font-weight="700" fill="#1a2744">2. 수술·장해·영구 손상 조건이 붙을 수 있음</text>
+    <text x="58" y="366" font-family="Pretendard, Arial, sans-serif" font-size="24" font-weight="700" fill="#1a2744">3. 일반 진단비보다 지급 문턱 확인이 중요</text>
+    <rect x="58" y="418" width="535" height="62" rx="18" fill="#ffffff"/>
+    <text x="84" y="457" font-family="Pretendard, Arial, sans-serif" font-size="22" font-weight="900" fill="#8b5cf6">상담 기준: 가입금액보다 지급 조건을 먼저 확인</text>
+  </g>
+
+  <g transform="translate(830 245)">
+    <rect width="650" height="520" rx="28" fill="#ecfdf5" stroke="#10b981" stroke-width="3"/>
+    <circle cx="78" cy="78" r="42" fill="#10b981"/>
+    <text x="78" y="91" text-anchor="middle" font-family="Pretendard, Arial, sans-serif" font-size="34" font-weight="900" fill="#ffffff">GI</text>
+    <text x="145" y="72" font-family="Pretendard, Arial, sans-serif" font-size="34" font-weight="900" fill="#1a2744">일반적 진단 기준 중심</text>
+    <text x="145" y="112" font-family="Pretendard, Arial, sans-serif" font-size="20" font-weight="700" fill="#64748b">General Illness</text>
+    <line x1="48" y1="150" x2="602" y2="150" stroke="#bbf7d0" stroke-width="3"/>
+    <text x="58" y="210" font-family="Pretendard, Arial, sans-serif" font-size="26" font-weight="900" fill="#047857">확인 포인트</text>
+    <text x="58" y="262" font-family="Pretendard, Arial, sans-serif" font-size="24" font-weight="700" fill="#1a2744">1. 질병 진단 자체를 기준으로 보는 구조가 많음</text>
+    <text x="58" y="314" font-family="Pretendard, Arial, sans-serif" font-size="24" font-weight="700" fill="#1a2744">2. 보장 범위가 CI보다 넓게 설계될 수 있음</text>
+    <text x="58" y="366" font-family="Pretendard, Arial, sans-serif" font-size="24" font-weight="700" fill="#1a2744">3. 보험료와 갱신 여부를 함께 비교해야 함</text>
+    <rect x="58" y="418" width="535" height="62" rx="18" fill="#ffffff"/>
+    <text x="84" y="457" font-family="Pretendard, Arial, sans-serif" font-size="22" font-weight="900" fill="#059669">상담 기준: 같은 진단비라도 지급 범위 차이 확인</text>
+  </g>
+
+  <g transform="translate(120 815)">
+    <rect width="1360" height="68" rx="20" fill="#1a2744"/>
+    <text x="42" y="43" font-family="Pretendard, Arial, sans-serif" font-size="24" font-weight="900" fill="#c9a96e">비교 결론</text>
+    <text x="185" y="43" font-family="Pretendard, Arial, sans-serif" font-size="23" font-weight="800" fill="#ffffff">CI/GI는 이름보다 약관상 지급 조건, 보장 범위, 갱신 여부를 함께 놓고 비교해야 합니다.</text>
+  </g>
+</svg>

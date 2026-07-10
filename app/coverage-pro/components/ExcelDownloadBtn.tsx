@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { proContractsToExcelInputClient } from '../../../lib/coverageAnalysis/clientMapping'
+import { contractsForOutput } from '../../../lib/coverageAnalysis/outputContracts'
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
 
 export default function ExcelDownloadBtn({
@@ -17,7 +18,7 @@ export default function ExcelDownloadBtn({
     if (loading) return
     setLoading(true)
     try {
-      const input = proContractsToExcelInputClient(customerName || '고객', contracts)
+      const input = proContractsToExcelInputClient(customerName || '고객', contractsForOutput(contracts))
       const response = await fetch('/api/coverage-pro/excel-export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,7 +29,7 @@ export default function ExcelDownloadBtn({
         try {
           const body = await response.json()
           if (body?.error) msg += '\n' + body.error
-        } catch (_e) { /* ignore */ }
+        } catch { /* ignore */ }
         alert(msg)
         return
       }
