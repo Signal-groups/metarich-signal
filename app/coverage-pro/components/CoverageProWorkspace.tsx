@@ -121,6 +121,9 @@ const ROW_TO_PROPOSAL_METRIC: Record<string, string> = {
   driver_accident: 'trafficSupport',
   driver_lawyer: 'lawyer',
   driver_fine: 'finePerson',
+  death_general: 'deathBenefit',
+  death_disease: 'deathBenefit',
+  death_injury: 'deathBenefit',
 }
 
 function inferProposalCategory(contracts: ProContract[]): 'driver' | 'health' {
@@ -404,6 +407,11 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   death_general: 'death_general',
   death_disease: 'death_disease',
   death_injury: 'death_injury',
+  general_death: 'death_general',
+  disease_death: 'death_disease',
+  injury_death: 'death_injury',
+  accident_death: 'death_injury',
+  disaster_death: 'death_injury',
   실손의료비: 'silson_disease_inpatient',
   암진단비: 'cancer_general',
   유사암진단비: 'cancer_similar',
@@ -434,7 +442,13 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   가족일상생활배상책임: 'other_liability',
   일상생활배상책임: 'other_liability',
   상해사망: 'death_injury',
+  재해사망: 'death_injury',
+  사고사망: 'death_injury',
+  교통재해사망: 'death_injury',
   질병사망: 'death_disease',
+  암사망: 'death_disease',
+  일반사망: 'death_general',
+  사망보험금: 'death_general',
 }
 
 function parsePolicyType(val: unknown): 'protection' | 'savings' {

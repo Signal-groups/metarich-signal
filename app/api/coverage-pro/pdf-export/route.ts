@@ -567,7 +567,7 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '실손',      label: '실손통원(상해)',       rowKey: 'silson_injury_outpatient' },
     { group: '실손',      label: '비급여3대(도수/주사/MRI)', rowKey: 'silson_3major' },
     { group: '사망',      label: '일반사망',             rowKey: 'death_general' },
-    { group: '사망',      label: '재해사망',             rowKey: 'death_injury' },
+    { group: '사망',      label: '상해(재해)사망',       rowKey: 'death_injury' },
     { group: '사망',      label: '질병사망',             rowKey: 'death_disease' },
     { group: '운전자',    label: '교통사고처리지원금',   rowKey: 'driver_accident' },
     { group: '운전자',    label: '자동차사고 변호사비용', rowKey: 'driver_lawyer' },

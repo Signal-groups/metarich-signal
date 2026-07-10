@@ -83,10 +83,9 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['고도장해', '영구장해', '완전장해', '고도후유', '최고도장해'], rowKey: 'disability_injury_80' },
 
   // ── 사망 ─────────────────────────────────────────────────────────────
-  { patterns: ['암사망'], rowKey: 'death_disease' },               // 암사망 → 질병사망
-  { patterns: ['질병사망'], rowKey: 'death_disease' },
-  { patterns: ['재해사망', '상해사망', '일반사망재해'], rowKey: 'death_injury' },
-  { patterns: ['일반사망', '사망보험금', '사망급여금', '사망보장'], rowKey: 'death_general' },
+  { patterns: ['암사망', '질병사망보험금', '질병사망급여금', '질병사망', '질병 사망'], rowKey: 'death_disease' },
+  { patterns: ['교통재해사망', '대중교통재해사망', '재해사망보험금', '재해사망급여금', '상해사망보험금', '상해사망급여금', '재해사망', '상해사망', '일반사망재해', '사고사망'], rowKey: 'death_injury' },
+  { patterns: ['일반사망보험금', '일반사망급여금', '일반사망', '종신사망', '정기사망', '사망보험금', '사망급여금', '사망보장'], rowKey: 'death_general' },
 
   // ── 수술비 — 1-5종/111대 먼저 (질병수술비보다 구체적) ─────────────────
   { patterns: ['질병상급수술비', '질병상급수술', '질병1종수술', '질병2종수술'], rowKey: 'surgery_disease_advanced' },
@@ -218,7 +217,7 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   disability_injury:         '후유장해 — 상해 3%~80%',
   death_general:             '사망 — 일반',
   death_disease:             '사망 — 질병',
-  death_injury:              '사망 — 상해',
+  death_injury:              '사망 — 상해(재해)',
   surgery_disease:           '수술비 — 질병 일반',
   surgery_injury:            '수술비 — 상해 일반',
   surgery_advanced:          '수술비 — 상급',

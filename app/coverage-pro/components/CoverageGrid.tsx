@@ -60,13 +60,18 @@ const CATEGORY_GROUPS = [
     ],
   },
   {
-    key: 'disability', label: '후유장해 / 사망', color: '#1a2744',
+    key: 'disability', label: '후유장해', color: '#1a2744',
     items: [
       { rowKey: 'disability_injury',   label: '상해 후유장해 3~100%' },
       { rowKey: 'disability_disease',  label: '질병 후유장해 3~100%' },
+    ],
+  },
+  {
+    key: 'death', label: '사망 보장', color: '#334155',
+    items: [
       { rowKey: 'death_general',       label: '일반 사망' },
       { rowKey: 'death_disease',       label: '질병 사망' },
-      { rowKey: 'death_injury',        label: '상해 사망' },
+      { rowKey: 'death_injury',        label: '상해(재해) 사망' },
     ],
   },
   {

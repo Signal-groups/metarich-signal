@@ -225,9 +225,9 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['상해후유장해80', '상해80%', '재해80%'], rowKey: 'disability_injury_80' },
   { patterns: ['상해후유장해', '재해후유장해', '상해 후유'], rowKey: 'disability_injury' },
   // 사망
-  { patterns: ['일반사망', '사망보험금', '사망급여금'], rowKey: 'death_general' },
-  { patterns: ['질병사망'], rowKey: 'death_disease' },
-  { patterns: ['재해사망', '상해사망'], rowKey: 'death_injury' },
+  { patterns: ['암사망', '질병사망보험금', '질병사망급여금', '질병사망', '질병 사망'], rowKey: 'death_disease' },
+  { patterns: ['교통재해사망', '대중교통재해사망', '재해사망보험금', '재해사망급여금', '상해사망보험금', '상해사망급여금', '재해사망', '상해사망', '사고사망'], rowKey: 'death_injury' },
+  { patterns: ['일반사망보험금', '일반사망급여금', '일반사망', '종신사망', '정기사망', '사망보험금', '사망급여금'], rowKey: 'death_general' },
   // 수술비
   { patterns: ['질병수술비', '질병 수술'], rowKey: 'surgery_disease' },
   { patterns: ['상해수술비', '상해 수술'], rowKey: 'surgery_injury' },
