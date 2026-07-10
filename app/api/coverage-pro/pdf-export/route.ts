@@ -438,23 +438,45 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
   // 2열 그리드 — 카드 2개씩 행으로 묶어 페이지 경계에서 카드가 잘리지 않게 처리
   const cardArr = activeContracts.map((c, i) => {
     const premium = Number(c.monthlyPremium || 0)
+    // 종수술비: 상해·질병 둘 다 있으면 큰 금액 하나만 "종수술비"로 표시
+    const SURG_TYPE_PAIR = ['surgery_injury_type', 'surgery_disease_type']
+    const surgTypeCovs = c.coverages.filter(cv => SURG_TYPE_PAIR.includes(cv.rowKey || '') && Number(cv.amount) > 0)
+    const surgTypeMerge = surgTypeCovs.length >= 2
+    const surgTypeMaxCv = surgTypeMerge
+      ? surgTypeCovs.reduce((a, b) => Number(a.amount) >= Number(b.amount) ? a : b)
+      : null
+
     const covRowsInner = c.coverages
       .filter(cv => Number(cv.amount) > 0)
-      .map(cv => {
+      .reduce<string[]>((acc, cv) => {
+        if (SURG_TYPE_PAIR.includes(cv.rowKey || '') && surgTypeMerge) {
+          if (cv.rowKey !== surgTypeMaxCv!.rowKey) return acc  // 작은 쪽 건너뜀
+          // 큰 쪽: "종수술비" 레이블로 통합 표시
+          acc.push(
+            '<div style="display:flex;justify-content:space-between;align-items:center;' +
+            'padding:3px 4px;border-bottom:1px solid #f1f5f9;font-size:10px;background:transparent">' +
+            '<span style="color:#374151;flex:1;padding-right:6px"><span>종수술비</span></span>' +
+            '<span style="color:#1a2744;font-weight:700;white-space:nowrap">' + fmtWonB(Number(cv.amount)) + '</span>' +
+            '</div>'
+          )
+          return acc
+        }
         const rowBg = isCiCoverage(c, cv) ? '#f5f3ff' : 'transparent'
         const badge = coverageBadges(c, cv)
-        return (
-        '<div style="display:flex;justify-content:space-between;align-items:center;' +
-        'padding:3px 4px;border-bottom:1px solid #f1f5f9;font-size:10px;background:' + rowBg + '">' +
-        '<span style="color:#374151;flex:1;padding-right:6px">' +
-          '<span>' + escHtml(cv.name || cv.rowKey) + '</span>' +
-          (cv.expiryDate ? '<span style="display:block;font-size:8px;color:#94a3b8;margin-top:1px">만기 ' + escHtml(cv.expiryDate) + '</span>' : '') +
-          badge +
-        '</span>' +
-        '<span style="color:#1a2744;font-weight:700;white-space:nowrap">' + fmtWonB(Number(cv.amount)) + '</span>' +
-        '</div>'
+        acc.push(
+          '<div style="display:flex;justify-content:space-between;align-items:center;' +
+          'padding:3px 4px;border-bottom:1px solid #f1f5f9;font-size:10px;background:' + rowBg + '">' +
+          '<span style="color:#374151;flex:1;padding-right:6px">' +
+            '<span>' + escHtml(cv.name || cv.rowKey) + '</span>' +
+            (cv.expiryDate ? '<span style="display:block;font-size:8px;color:#94a3b8;margin-top:1px">만기 ' + escHtml(cv.expiryDate) + '</span>' : '') +
+            badge +
+          '</span>' +
+          '<span style="color:#1a2744;font-weight:700;white-space:nowrap">' + fmtWonB(Number(cv.amount)) + '</span>' +
+          '</div>'
         )
-      }).join('')
+        return acc
+      }, [])
+      .join('')
     const covEmptyInner = c.coverages.filter(cv => Number(cv.amount) > 0).length === 0
     const typeLabel = c.policyType === 'savings' ? '저축성' : '보장성'
     const startDate = parseContractDate(c.contractDate)
