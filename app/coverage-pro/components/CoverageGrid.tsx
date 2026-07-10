@@ -322,20 +322,24 @@ export default function CoverageGrid({
   function handleSave(rowKey: string, newAmount: number) {
     if (!onUpdate) return
     let updated = [...contracts]
-    // 수동 계약 찾기 or 생성
     updated = ensureManualContract(updated)
     updated = updated.map((c) => {
       if (c.id !== MANUAL_CONTRACT_ID) return c
       const existing = c.coverages.find((cv) => cv.rowKey === rowKey)
       let coverages: ProCoverage[]
-      if (newAmount === 0) {
-        // 삭제: 수동 계약에서만 제거
-        coverages = c.coverages.filter((cv) => cv.rowKey !== rowKey)
-      } else if (existing) {
-        coverages = c.coverages.map((cv) =>
-          cv.rowKey === rowKey ? { ...cv, amount: newAmount } : cv
-        )
+      if (existing) {
+        if (newAmount === 0) {
+          // 0 마커로 유지 — 원본 계약 값이 다시 보이지 않도록 override 유지
+          coverages = c.coverages.map((cv) =>
+            cv.rowKey === rowKey ? { ...cv, amount: 0 } : cv
+          )
+        } else {
+          coverages = c.coverages.map((cv) =>
+            cv.rowKey === rowKey ? { ...cv, amount: newAmount } : cv
+          )
+        }
       } else {
+        // 새 항목 추가 (newAmount === 0이어도 원본 삭제 마커로 추가)
         coverages = [
           ...c.coverages,
           {
@@ -349,10 +353,6 @@ export default function CoverageGrid({
       }
       return { ...c, coverages }
     })
-    // 수동 계약 담보가 0개면 제거
-    updated = updated.filter(
-      (c) => c.id !== MANUAL_CONTRACT_ID || c.coverages.length > 0
-    )
     onUpdate(updated)
   }
 
@@ -589,7 +589,7 @@ export default function CoverageGrid({
             handleSave(editTarget.rowKey, amount)
             setEditTarget(null)
           }}
-        />
+                />
       )}
     </div>
   )

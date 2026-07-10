@@ -557,18 +557,11 @@ export default function DashboardPage() {
               )}
             </button>
             <button
-              onClick={() => window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
+              onClick={() => window.open("/guide.html", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
               className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#1b54ad] shadow-sm hover:border-[#1b54ad]"
             >
               <BookOpen className="h-3.5 w-3.5" />
-              일반가이드
-            </button>
-            <button
-              onClick={() => window.open("/guide.html?tab=pro", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no")}
-              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[#dce6f1] bg-white px-3 text-[12px] font-black text-[#10203a] shadow-sm hover:border-[#0a3268]"
-            >
-              <Star className="h-3.5 w-3.5 fill-[#f6c342] text-[#f6c342]" />
-              프로가이드
+              사용가이드
             </button>
             {/* 시그널그룹 홈페이지 */}
             <button

@@ -1,0 +1,132 @@
+{
+  "series_id": "branding-01",
+  "series_title": "브랜딩 시리즈",
+  "output_dir": "branding",
+  "cards": [
+    {
+      "id": 1,
+      "layout": "cover",
+      "label": "PREMIUM CONSULTING",
+      "headline": "보험을\n판매하지 않습니다.",
+      "subheadline": "기준을 제안합니다.",
+      "body": null,
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 2,
+      "layout": "question",
+      "label": "Q. 이런 경험 있으신가요?",
+      "headline": "보험이 여러 개인데\n왜 불안할까요?",
+      "subheadline": null,
+      "body": "보험증권은 있는데\n어디에 무엇이 얼마나 들어있는지\n모르는 경우가 대부분입니다.",
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 3,
+      "layout": "statement",
+      "label": "문제",
+      "headline": "보험은 가입할 때보다\n관리할 때 빛납니다.",
+      "subheadline": null,
+      "body": "가입 후 방치된 보험은\n필요할 때 제 역할을 못 하는 경우가 많습니다.\n지금 내 보험, 제대로 작동하고 있을까요?",
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 4,
+      "layout": "profile",
+      "label": "재무설계사 소개",
+      "headline": "배진우\nAFPK 재무설계사",
+      "subheadline": "MetaRich Signal Group",
+      "body": "보험을 팔기 전에\n기준부터 정해드립니다.",
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 5,
+      "layout": "list",
+      "label": "제공 서비스",
+      "headline": "이런 서비스를\n드립니다.",
+      "subheadline": null,
+      "items": [
+        "현재 보험 전체 점검",
+        "보험금 청구 대행 지원",
+        "재무 설계 및 연금 설계",
+        "절세 구조 제안",
+        "보험료 최적화 관리",
+        "지속적 사후 관리"
+      ],
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 6,
+      "layout": "comparison",
+      "label": "일반 설계사 vs 저의 차이",
+      "headline": "판매 vs 기준",
+      "subheadline": null,
+      "left": {
+        "title": "일반 설계사",
+        "items": ["상품 중심 상담", "신규 가입 권유", "판매 후 관리 약함"]
+      },
+      "right": {
+        "title": "배진우 설계사",
+        "items": ["기준 중심 상담", "유지·조정·보완 제안", "지속적 사후 관리"]
+      },
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 7,
+      "layout": "process",
+      "label": "상담 프로세스",
+      "headline": "상담은\n이렇게 진행됩니다.",
+      "subheadline": null,
+      "steps": [
+        { "num": "01", "title": "증권 확인", "desc": "현재 보험 목록 파악" },
+        { "num": "02", "title": "보장 분석", "desc": "보장 현황 시각화" },
+        { "num": "03", "title": "우선순위", "desc": "필요 순서 도출" },
+        { "num": "04", "title": "실행안", "desc": "유지·조정·보완 제안" },
+        { "num": "05", "title": "사후 관리", "desc": "지속적 모니터링" }
+      ],
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 8,
+      "layout": "result",
+      "label": "상담 후 받는 것",
+      "headline": "상담 한 번으로\n이걸 받아가십니다.",
+      "subheadline": null,
+      "items": [
+        "보장분석 리포트",
+        "보험료 점검표",
+        "우선순위 로드맵",
+        "유지·조정·보완 제안서"
+      ],
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 9,
+      "layout": "statement",
+      "label": "핵심 메시지",
+      "headline": "보험은\n상품보다\n기준이 먼저입니다.",
+      "subheadline": null,
+      "body": "올바른 기준 위에\n세워진 보험이\n진짜 보험입니다.",
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 10,
+      "layout": "cta",
+      "label": "무료 보장 점검",
+      "headline": "지금 내 보험,\n한 번만 확인해보세요.",
+      "subheadline": "무료 보장 점검 상담 신청",
+      "body": "20분으로 현재 보험의\n공백과 우선순위를 파악합니다.",
+      "cta": "jinwoo8506@gmail.com",
+      "accent": "cta"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "series_id": "concept-01",
+  "series_title": "보험 개념 시리즈 #1",
+  "output_dir": "renewal",
+  "cards": [
+    {
+      "id": 1,
+      "layout": "cover",
+      "label": "보험 개념 시리즈 #1",
+      "headline": "10년 후\n보험료가 3배?",
+      "subheadline": "갱신형의 함정",
+      "body": null,
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 2,
+      "layout": "question",
+      "label": "Q. 알고 계셨나요?",
+      "headline": "같은 보장인데\n보험료가 매년 오릅니다.",
+      "subheadline": null,
+      "body": "갱신형 보험은 일정 주기(1년·3년·5년)마다\n보험료가 재산정됩니다.\n가입 시엔 저렴하지만, 나이가 들수록 급등합니다.",
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 3,
+      "layout": "statement",
+      "label": "갱신형이란?",
+      "headline": "갱신형 보험",
+      "subheadline": null,
+      "body": "일정 주기마다 보험료가 새로 책정되는 구조.\n초기 보험료가 저렴한 대신\n나이가 들수록 보험료 부담이 커집니다.\n최악의 경우, 노후에 보험을 유지하지 못하고 해지하는 상황이 생깁니다.",
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 4,
+      "layout": "statement",
+      "label": "비갱신형이란?",
+      "headline": "비갱신형 보험",
+      "subheadline": null,
+      "body": "가입 시 확정된 보험료가\n만기까지 그대로 유지되는 구조.\n초기 보험료는 갱신형보다 높지만\n노후에도 보험료 걱정이 없습니다.",
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 5,
+      "layout": "comparison",
+      "label": "한눈에 비교",
+      "headline": "갱신형 vs 비갱신형",
+      "subheadline": null,
+      "left": {
+        "title": "갱신형",
+        "items": ["초기 보험료 저렴", "일정 주기마다 인상", "노후 부담 증가", "보장 단절 위험"]
+      },
+      "right": {
+        "title": "비갱신형",
+        "items": ["초기 보험료 높음", "평생 보험료 고정", "노후 부담 없음", "안정적 보장 유지"]
+      },
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 6,
+      "layout": "list",
+      "label": "갱신형이 유리한 경우",
+      "headline": "갱신형이\n나을 때는?",
+      "subheadline": null,
+      "items": [
+        "단기간만 보장이 필요한 경우",
+        "지금 보험료 여력이 부족한 경우",
+        "일시적으로 보장 공백을 메울 때",
+        "갱신 시점에 상품을 바꿀 계획이 있을 때"
+      ],
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 7,
+      "layout": "list",
+      "label": "비갱신형이 유리한 경우",
+      "headline": "비갱신형이\n나을 때는?",
+      "subheadline": null,
+      "items": [
+        "장기 보장이 필요한 경우 (암·뇌·심장 등)",
+        "노후까지 보험료를 고정하고 싶을 때",
+        "소득이 안정적이고 여유가 있는 경우",
+        "지금 건강할 때 가입 가능한 경우"
+      ],
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 8,
+      "layout": "statement",
+      "label": "체크 방법",
+      "headline": "내 보험증권에서\n확인하는 법",
+      "subheadline": null,
+      "body": "보험증권 첫 페이지 또는\n'보험기간·갱신기간' 항목을 확인하세요.\n\n'갱신형' 또는 '00년 갱신'이라고\n명시되어 있다면 갱신형입니다.",
+      "cta": null,
+      "accent": "navy"
+    },
+    {
+      "id": 9,
+      "layout": "statement",
+      "label": "핵심 정리",
+      "headline": "정답은\n사람마다 다릅니다.",
+      "subheadline": null,
+      "body": "나이, 소득, 건강상태, 목표에 따라\n갱신형과 비갱신형의 최적 조합이 다릅니다.\n\n중요한 건 내 상황에 맞는 기준을\n먼저 세우는 것입니다.",
+      "cta": null,
+      "accent": "gold"
+    },
+    {
+      "id": 10,
+      "layout": "cta",
+      "label": "무료 보장 점검",
+      "headline": "내 보험에\n갱신형이 얼마나 될까요?",
+      "subheadline": "무료 보장 점검 상담 신청",
+      "body": "현재 보험에서 갱신형 비율과\n노후 부담을 분석해 드립니다.",
+      "cta": "jinwoo8506@gmail.com",
+      "accent": "cta"
+    }
+  ]
+}

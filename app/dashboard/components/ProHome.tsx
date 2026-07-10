@@ -91,13 +91,8 @@ export default function ProHome({
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           <TopBtn icon={<Bell size={13} />} label="공지" count={noticeCount} onClick={onNoticeClick} />
           <TopBtn icon={<Megaphone size={13} />} label="업데이트" count={updateCount} countColor="#0f6e56" onClick={onUpdateClick} />
-          <TopBtn icon={<BookOpen size={13} />} label="일반가이드" accent="#1b54ad"
-            onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')} />
-          <TopBtn
-            icon={<Star size={13} style={{ fill: '#f6c342', color: '#f6c342' }} />}
-            label="프로가이드"
-            onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
-          />
+          <TopBtn icon={<BookOpen size={13} />} label="사용가이드" accent="#1b54ad"
+            onClick={() => window.open('/guide.html', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')} />
           <TopBtn icon={<ShieldCheck size={13} />} label="시그널그룹 홈페이지" filled
             onClick={() => window.open('https://signalgroup-sigma.vercel.app/index.html', '_blank')} />
           <TopBtn

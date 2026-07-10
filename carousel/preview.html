@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>MetaRich 캐러셀 미리보기</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#1C1C1E; font-family:-apple-system,sans-serif; padding:40px 20px; }
+    h1 { color:#C9A14A; font-size:22px; text-align:center; margin-bottom:8px; letter-spacing:2px; }
+    .subtitle { color:#888; font-size:13px; text-align:center; margin-bottom:40px; }
+    .series { margin-bottom:60px; }
+    .series-title { color:#FFFFFF; font-size:16px; font-weight:700; margin-bottom:20px;
+      padding:10px 20px; background:#2C2C2E; border-radius:8px; border-left:3px solid #C9A14A; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+    .card-wrap { position:relative; border-radius:12px; overflow:hidden;
+      box-shadow:0 4px 20px rgba(0,0,0,0.5); transition:transform 0.2s; }
+    .card-wrap:hover { transform:scale(1.02); }
+    .card-wrap iframe { width:1080px; height:1080px; border:none; display:block;
+      transform:scale(0.204); transform-origin:0 0; pointer-events:none; }
+    .card-num { position:absolute; bottom:8px; right:10px; background:rgba(0,0,0,0.6);
+      color:#fff; font-size:11px; padding:2px 7px; border-radius:10px; }
+    .card-link { display:block; position:absolute; inset:0; cursor:pointer; }
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+      z-index:100; align-items:center; justify-content:center; }
+    .modal-bg.open { display:flex; }
+    .modal-inner { width:540px; height:540px; border-radius:16px; overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,0.8); position:relative; }
+    .modal-inner iframe { width:1080px; height:1080px; border:none;
+      transform:scale(0.5); transform-origin:0 0; }
+    .modal-close { position:absolute; top:-36px; right:0; color:#fff; font-size:28px;
+      cursor:pointer; background:none; border:none; line-height:1; }
+    .modal-nav { position:absolute; top:50%; transform:translateY(-50%);
+      background:rgba(255,255,255,0.15); color:#fff; border:none; cursor:pointer;
+      font-size:24px; padding:12px 16px; border-radius:8px; }
+    .modal-nav.prev { left:-60px; }
+    .modal-nav.next { right:-60px; }
+  </style>
+</head>
+<body>
+  <h1>◎ MetaRich Signal Group</h1>
+  <div class="subtitle">인스타그램 캐러셀 미리보기 — 카드를 클릭하면 크게 볼 수 있습니다</div>
+
+  <div class="series">
+    <div class="series-title">📌 브랜딩/신뢰 구축 시리즈 (10장)</div>
+    <div class="grid" id="grid-branding"></div>
+  </div>
+
+  <div class="series">
+    <div class="series-title">📌 보험 개념 시리즈 #1 — 갱신형 vs 비갱신형 (10장)</div>
+    <div class="grid" id="grid-renewal"></div>
+  </div>
+
+  <!-- 모달 -->
+  <div class="modal-bg" id="modal">
+    <button class="modal-nav prev" id="modal-prev">‹</button>
+    <div style="position:relative;">
+      <button class="modal-close" id="modal-close">×</button>
+      <div class="modal-inner">
+        <iframe id="modal-frame" src=""></iframe>
+      </div>
+    </div>
+    <button class="modal-nav next" id="modal-next">›</button>
+  </div>
+
+  <script>
+    const series = [
+      { id:'branding', files: Array.from({length:10},(_,i)=>`output/branding/card-${String(i+1).padStart(2,'0')}.html`) },
+      { id:'renewal',  files: Array.from({length:10},(_,i)=>`output/renewal/card-${String(i+1).padStart(2,'0')}.html`) }
+    ];
+
+    let allCards = [];
+    let currentIdx = 0;
+
+    series.forEach(s => {
+      const grid = document.getElementById('grid-'+s.id);
+      s.files.forEach((src, i) => {
+        const globalIdx = allCards.length;
+        allCards.push(src);
+        const wrap = document.createElement('div');
+        wrap.className = 'card-wrap';
+        wrap.style.height = '220px';
+        wrap.innerHTML = `
+          <iframe src="${src}" loading="lazy" scrolling="no"></iframe>
+          <div class="card-num">${String(i+1).padStart(2,'0')}</div>
+          <div class="card-link" data-idx="${globalIdx}"></div>`;
+        grid.appendChild(wrap);
+      });
+    });
+
+    document.querySelectorAll('.card-link').forEach(el => {
+      el.addEventListener('click', () => openModal(+el.dataset.idx));
+    });
+
+    const modal = document.getElementById('modal');
+    const frame = document.getElementById('modal-frame');
+
+    function openModal(idx) {
+      currentIdx = idx;
+      frame.src = allCards[idx];
+      modal.classList.add('open');
+    }
+    document.getElementById('modal-close').onclick = () => {
+      modal.classList.remove('open'); frame.src='';
+    };
+    document.getElementById('modal-prev').onclick = () =>
+      openModal((currentIdx - 1 + allCards.length) % allCards.length);
+    document.getElementById('modal-next').onclick = () =>
+      openModal((currentIdx + 1) % allCards.length);
+    modal.addEventListener('click', e => { if(e.target===modal){modal.classList.remove('open');frame.src='';} });
+    document.addEventListener('keydown', e => {
+      if (!modal.classList.contains('open')) return;
+      if (e.key==='ArrowLeft')  document.getElementById('modal-prev').click();
+      if (e.key==='ArrowRight') document.getElementById('modal-next').click();
+      if (e.key==='Escape')     document.getElementById('modal-close').click();
+    });
+  </script>
+</body>
+</html>

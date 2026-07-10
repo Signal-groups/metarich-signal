@@ -82,13 +82,9 @@ export default function GeneralHome({
           <TopBtn icon={<Bell size={14} />} label="공지" count={noticeCount} onClick={onNoticeClick} />
           <TopBtn icon={<Megaphone size={14} />} label="업데이트" count={updateCount} onClick={onUpdateClick} countColor="#0f6e56" />
           <TopBtn
-            icon={<BookOpen size={14} />} label="일반가이드"
-            onClick={() => window.open('/guide.html?tab=basic', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
+            icon={<BookOpen size={14} />} label="사용가이드"
+            onClick={() => window.open('/guide.html', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
             accent="#1b54ad"
-          />
-          <TopBtn
-            icon={<Star size={14} style={{ fill: '#f6c342', color: '#f6c342' }} />} label="프로가이드"
-            onClick={() => window.open('/guide.html?tab=pro', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
           />
           <TopBtn
             icon={<ShieldCheck size={14} />} label="시그널그룹 홈페이지"

@@ -424,10 +424,10 @@ export default function Sidebar({
                 <NavItem
                   icon="가이드"
                   iconNode={<BookOpen className="h-5 w-5 opacity-80" />}
-                  label="일반가이드"
+                  label="사용가이드"
                   active={false}
                   onClick={() => {
-                    window.open("/guide.html?tab=basic", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no");
+                    window.open("/guide.html", "_blank", "width=1100,height=800,menubar=no,toolbar=no,location=no");
                     setIsOpen(false);
                   }}
                 />
