@@ -21,6 +21,36 @@ function formatWon(v: number): string {
   return `${Math.round(v).toLocaleString()}원`
 }
 
+function isRenewalText(...values: Array<string | undefined>): boolean {
+  const text = values.join(' ').toLowerCase()
+  if (text.includes('비갱신') || text.includes('nonrenewal') || text.includes('non-renewal')) return false
+  return text.includes('갱신') || text.includes('renewal')
+}
+
+function isRenewalContract(contract: ProContract): boolean {
+  return Boolean(contract.isRenewal || isRenewalText(contract.productName, contract.paymentPeriod))
+}
+
+function isRenewalCoverage(contract: ProContract, coverage: ProCoverage): boolean {
+  return Boolean(coverage.isRenewal || isRenewalContract(contract) || isRenewalText(coverage.name))
+}
+
+function isCiCoverage(contract: ProContract, coverage: ProCoverage): boolean {
+  const text = `${contract.productName || ''} ${coverage.name || ''}`.toLowerCase()
+  return coverage.rowKey === 'ci_diagnosis' || text.includes('ci') || text.includes('중대질병') || text.includes('중대한')
+}
+
+function contractHasCi(contract: ProContract): boolean {
+  return contract.coverages.some((coverage) => isCiCoverage(contract, coverage))
+}
+
+function expirySummary(contract: ProContract): string {
+  const expiries = [...new Set(contract.coverages.map((coverage) => coverage.expiryDate).filter(Boolean))]
+  if (expiries.length === 0) return contract.paymentPeriod || '-'
+  const first = expiries.slice(0, 2).join(', ')
+  return `${contract.paymentPeriod || '만기'} / 담보만기 ${first}${expiries.length > 2 ? ` 외 ${expiries.length - 2}` : ''}`
+}
+
 const inputStyle: React.CSSProperties = {
   fontSize: 12, padding: '4px 8px', borderRadius: 6,
   border: '1px solid #d1d5db', width: '100%',
@@ -269,20 +299,22 @@ export default function ContractList({ contracts, onUpdate }: Props) {
                         {editBuf.coverages.length > 0 && (
                           <>
                             <div style={{
-                              display: 'grid', gridTemplateColumns: '1fr 140px 28px',
+                              display: 'grid', gridTemplateColumns: '1fr 110px 120px 52px 28px',
                               padding: '6px 12px', background: '#f8fafc',
                               borderBottom: '1px solid #e2e8f0',
                             }}>
                               <span style={{ fontSize: 10, fontWeight: 900, color: '#94a3b8' }}>담보명</span>
                               <span style={{ fontSize: 10, fontWeight: 900, color: '#94a3b8' }}>가입금액 (만원)</span>
+                              <span style={{ fontSize: 10, fontWeight: 900, color: '#94a3b8' }}>만기</span>
+                              <span style={{ fontSize: 10, fontWeight: 900, color: '#94a3b8' }}>갱신</span>
                               <span />
                             </div>
                             {displayCovs.map((cov, ci) => (
                               <div key={cov.id} style={{
-                                display: 'grid', gridTemplateColumns: '1fr 140px 28px',
+                                display: 'grid', gridTemplateColumns: '1fr 110px 120px 52px 28px',
                                 padding: '6px 12px', alignItems: 'center',
                                 borderBottom: ci < displayCovs.length - 1 ? '1px solid #f1f5f9' : undefined,
-                                background: ci % 2 === 0 ? '#fff' : '#fafaf8',
+                                background: isCiCoverage(contract, cov) ? '#f5f3ff' : isRenewalCoverage(contract, cov) ? '#fff7ed' : ci % 2 === 0 ? '#fff' : '#fafaf8',
                               }}>
                                 <div style={{ minWidth: 0 }}>
                                   <div style={{ fontSize: 12, fontWeight: 600, color: '#1a2744', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -310,6 +342,34 @@ export default function ContractList({ contracts, onUpdate }: Props) {
                                     color: cov.amount > 0 ? '#1a2744' : '#94a3b8',
                                   }}
                                 />
+                                <input
+                                  value={cov.expiryDate ?? ''}
+                                  onChange={(e) => setEditBuf({
+                                    ...editBuf,
+                                    coverages: editBuf.coverages.map((item) =>
+                                      item.id === cov.id ? { ...item, expiryDate: e.target.value } : item
+                                    ),
+                                  })}
+                                  placeholder="예: 100세"
+                                  style={{
+                                    fontSize: 11, padding: '4px 7px', borderRadius: 6,
+                                    border: '1px solid #d1d5db', width: '100%', fontFamily: 'inherit',
+                                    color: '#475569',
+                                  }}
+                                />
+                                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, fontSize: 10, color: '#9a3412', fontWeight: 800 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(cov.isRenewal)}
+                                    onChange={(e) => setEditBuf({
+                                      ...editBuf,
+                                      coverages: editBuf.coverages.map((item) =>
+                                        item.id === cov.id ? { ...item, isRenewal: e.target.checked } : item
+                                      ),
+                                    })}
+                                  />
+                                  갱신
+                                </label>
                                 <button
                                   type="button"
                                   onClick={() => deleteCoverage(cov.id)}
@@ -405,6 +465,8 @@ export default function ContractList({ contracts, onUpdate }: Props) {
 
               const premiumRatio = totalPremium > 0 ? (Number(contract.monthlyPremium || 0) / totalPremium) * 100 : 0
               const isSavings = contract.policyType === 'savings'
+              const hasRenewal = isRenewalContract(contract) || contract.coverages.some((coverage) => isRenewalCoverage(contract, coverage))
+              const hasCi = contractHasCi(contract)
 
               return (
                 <div key={contract.id} style={{
@@ -414,6 +476,7 @@ export default function ContractList({ contracts, onUpdate }: Props) {
                   alignItems: 'center',
                   borderBottom: '1px solid #f1f5f9',
                   transition: 'background 0.15s',
+                  background: hasRenewal && hasCi ? 'linear-gradient(135deg,#fff7ed 0%,#f5f3ff 100%)' : hasRenewal ? '#fff7ed' : hasCi ? '#f5f3ff' : undefined,
                 }}>
                   <div style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0 }} />
                   <span style={{ fontSize: 13, fontWeight: 900, color: '#1a2744', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -422,17 +485,21 @@ export default function ContractList({ contracts, onUpdate }: Props) {
                   <span style={{ fontSize: 12, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {contract.productName || '—'}
                   </span>
-                  <span style={{
-                    display: 'inline-block', padding: '3px 8px', borderRadius: 9999,
-                    fontSize: 11, fontWeight: 900,
-                    background: isSavings ? '#fef3c7' : '#dbeafe',
-                    color: isSavings ? '#92400e' : '#1e40af',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {isSavings ? '저축성' : '보장성'}
-                  </span>
+                  <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                    <span style={{
+                      display: 'inline-block', padding: '3px 8px', borderRadius: 9999,
+                      fontSize: 11, fontWeight: 900,
+                      background: isSavings ? '#fef3c7' : '#dbeafe',
+                      color: isSavings ? '#92400e' : '#1e40af',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {isSavings ? '저축성' : '보장성'}
+                    </span>
+                    {hasRenewal && <span style={{ fontSize: 10, fontWeight: 900, color: '#9a3412', background: '#fed7aa', borderRadius: 9999, padding: '3px 7px' }}>갱신</span>}
+                    {hasCi && <span style={{ fontSize: 10, fontWeight: 900, color: '#5b21b6', background: '#ddd6fe', borderRadius: 9999, padding: '3px 7px' }}>CI</span>}
+                  </div>
                   <span style={{ fontSize: 11, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {contract.paymentPeriod || '-'}
+                    {expirySummary(contract)}
                   </span>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 900, color: '#1a2744', marginBottom: 3 }}>

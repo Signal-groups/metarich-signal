@@ -346,6 +346,21 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
 
   const today = new Date()
 
+  function contractBadges(c: ProContract): string {
+    const hasRenewal = Boolean(c.isRenewal) || c.coverages.some((cv) => isRenewalCoverage(c, cv))
+    const hasCi = c.coverages.some((cv) => isCiCoverage(c, cv))
+    const badges: string[] = []
+    if (hasRenewal) badges.push('<span style="font-size:9px;padding:1px 6px;border-radius:999px;background:#fed7aa;color:#9a3412;font-weight:900">갱신</span>')
+    if (hasCi) badges.push('<span style="font-size:9px;padding:1px 6px;border-radius:999px;background:#ddd6fe;color:#5b21b6;font-weight:900">CI</span>')
+    return badges.join('')
+  }
+
+  function coverageExpirySummary(c: ProContract): string {
+    const expiries = [...new Set(c.coverages.map((cv) => cv.expiryDate).filter(Boolean))]
+    if (expiries.length === 0) return ''
+    return '담보만기 ' + expiries.slice(0, 2).join(', ') + (expiries.length > 2 ? ' 외 ' + (expiries.length - 2) : '')
+  }
+
   const activeContracts = contracts.filter(c => c.status !== 'lapsed' && c.status !== 'expired')
   const cards = activeContracts.map(c => {
     const premium = Number(c.monthlyPremium || 0)
@@ -419,18 +434,27 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
     const premium = Number(c.monthlyPremium || 0)
     const covRowsInner = c.coverages
       .filter(cv => Number(cv.amount) > 0)
-      .map(cv =>
+      .map(cv => {
+        const rowBg = isCiCoverage(c, cv) ? '#f5f3ff' : isRenewalCoverage(c, cv) ? '#fff7ed' : 'transparent'
+        const badge = coverageBadges(c, cv)
+        return (
         '<div style="display:flex;justify-content:space-between;align-items:center;' +
-        'padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:10px">' +
-        '<span style="color:#374151;flex:1;padding-right:6px">' + escHtml(cv.name || cv.rowKey) + '</span>' +
+        'padding:3px 4px;border-bottom:1px solid #f1f5f9;font-size:10px;background:' + rowBg + '">' +
+        '<span style="color:#374151;flex:1;padding-right:6px">' +
+          '<span>' + escHtml(cv.name || cv.rowKey) + '</span>' +
+          (cv.expiryDate ? '<span style="display:block;font-size:8px;color:#94a3b8;margin-top:1px">만기 ' + escHtml(cv.expiryDate) + '</span>' : '') +
+          badge +
+        '</span>' +
         '<span style="color:#1a2744;font-weight:700;white-space:nowrap">' + fmtWonB(Number(cv.amount)) + '</span>' +
         '</div>'
-      ).join('')
+        )
+      }).join('')
     const covEmptyInner = c.coverages.filter(cv => Number(cv.amount) > 0).length === 0
     const typeLabel = c.policyType === 'savings' ? '저축성' : '보장성'
     const startDate = parseContractDate(c.contractDate)
     const payYears = parsePaymentYears(c.paymentPeriod)
     const maturity = parseMaturity(c.paymentPeriod)
+    const expiryLine = coverageExpirySummary(c)
     let periodLine = ''
     let payCountLine = ''
     if (startDate && payYears) {
@@ -455,15 +479,17 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
           '<div style="text-align:right">' +
             '<div style="font-size:13px;font-weight:900;color:#c9a96e">' + (premium ? premium.toLocaleString() + '원/월' : '-') + '</div>' +
             '<span style="font-size:9px;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.8);font-weight:700">' + typeLabel + '</span>' +
+            '<div style="display:flex;gap:3px;justify-content:flex-end;margin-top:3px">' + contractBadges(c) + '</div>' +
           '</div>' +
         '</div>' +
-        (periodLine || payCountLine || maturity ? (
+        (periodLine || payCountLine || maturity || expiryLine ? (
           '<div style="margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.12);' +
           'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">' +
             (periodLine ? '<span style="font-size:9px;color:rgba(255,255,255,0.6)">📅 ' + escHtml(periodLine) + '</span>' : '') +
             '<div style="display:flex;gap:8px;margin-left:auto">' +
               (payCountLine ? '<span style="font-size:9px;color:#c9a96e;font-weight:700">' + escHtml(payCountLine) + '</span>' : '') +
               (maturity ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + escHtml(maturity) + '</span>' : '') +
+              (expiryLine ? '<span style="font-size:9px;color:rgba(255,255,255,0.5)">' + escHtml(expiryLine) + '</span>' : '') +
             '</div>' +
           '</div>'
         ) : '') +

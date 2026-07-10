@@ -19,7 +19,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['장기요양등급', '노인장기요양', '장기요양보험', '장기요양', '요양등급'], rowKey: 'ltc_grade' },
 
   // ── 중대질병(CI) — 암/뇌/심장 패턴보다 앞에 ─────────────────────────
-  { patterns: ['중대질병진단', '중대질병', '특정중대질병', 'ci진단', 'ci보험금'], rowKey: 'ci_diagnosis' },
+  { patterns: ['중대질병(ci)진단비', '중대질병ci진단비', '중대한질병진단', '중대질병진단', '중대질병', '특정중대질병', 'ci진단', 'ci보험금'], rowKey: 'ci_diagnosis' },
 
   // ── 간병인·재가 (입원일당/실비 패턴보다 반드시 앞에) ─────────────────
   { patterns: ['간병인사용', '간병인질병', '질병간병인', '질병간병지원금', '질병간병', '병원사용간병', '병원간병', '간병인서비스'], rowKey: 'nursing_hospital' },
@@ -88,12 +88,13 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['일반사망보험금', '일반사망급여금', '일반사망', '종신사망', '정기사망', '사망보험금', '사망급여금', '사망보장'], rowKey: 'death_general' },
 
   // ── 수술비 — 1-5종/111대 먼저 (질병수술비보다 구체적) ─────────────────
-  { patterns: ['질병상급수술비', '질병상급수술', '질병1종수술', '질병2종수술'], rowKey: 'surgery_disease_advanced' },
-  { patterns: ['질병종합수술비', '질병종합수술', '질병3종수술', '질병4종수술', '질병5종수술'], rowKey: 'surgery_disease_comprehensive' },
-  { patterns: ['질병1-5종', '질병1~5종', '질병종수술비', '질병종수술'], rowKey: 'surgery_disease_type' },
-  { patterns: ['상해상급수술비', '상해상급수술', '상해1종수술', '상해2종수술'], rowKey: 'surgery_injury_advanced' },
-  { patterns: ['상해종합수술비', '상해종합수술', '상해3종수술', '상해4종수술', '상해5종수술'], rowKey: 'surgery_injury_comprehensive' },
-  { patterns: ['상해1-5종', '상해1~5종', '상해종수술비', '상해종수술'], rowKey: 'surgery_injury_type' },
+  { patterns: ['질병상급수술비', '질병 상급 수술비', '질병상급수술', '질병1종수술', '질병2종수술'], rowKey: 'surgery_disease_advanced' },
+  { patterns: ['질병종합수술비', '질병 종합 수술비', '질병종합수술', '질병3종수술', '질병4종수술', '질병5종수술'], rowKey: 'surgery_disease_comprehensive' },
+  { patterns: ['질병n대수술비', '질병n대 수술비', '질병 111대 수술비', '질병111대수술비', '질병119대수술비'], rowKey: 'surgery_n_major' },
+  { patterns: ['질병1-5종', '질병1~5종', '질병종수술비', '질병 종수술비', '질병종수술'], rowKey: 'surgery_disease_type' },
+  { patterns: ['상해상급수술비', '상해 상급 수술비', '상해상급수술', '상해1종수술', '상해2종수술'], rowKey: 'surgery_injury_advanced' },
+  { patterns: ['상해종합수술비', '상해 종합 수술비', '상해종합수술', '상해3종수술', '상해4종수술', '상해5종수술'], rowKey: 'surgery_injury_comprehensive' },
+  { patterns: ['상해1-5종', '상해1~5종', '상해종수술비', '상해 종수술비', '상해종수술'], rowKey: 'surgery_injury_type' },
   { patterns: ['111대', '100대', '64대', '32대', 'n대수술'], rowKey: 'surgery_n_major' },
   { patterns: ['1-5종', '1~5종', '종수술비'], rowKey: 'surgery_1_5' },
   { patterns: ['상급수술비', '상급수술', '1종수술', '2종수술비', '2종수술'], rowKey: 'surgery_advanced' },

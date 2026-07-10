@@ -318,6 +318,30 @@ function parsePremiumToWon(val: unknown): number {
   return num >= 1000 ? Math.round(num) : Math.round(num * 10000)
 }
 
+function parseRenewalFlag(...values: unknown[]): boolean {
+  const text = values.map((value) => String(value ?? '')).join(' ').toLowerCase()
+  if (!text.trim()) return false
+  if (text.includes('비갱신') || text.includes('nonrenewal') || text.includes('non-renewal')) return false
+  return text.includes('갱신') || text.includes('renewal')
+}
+
+function buildPaymentPeriod(item: Record<string, unknown>): string {
+  const payment = String(item.payment_period ?? item.paymentPeriod ?? item['납입기간'] ?? '').trim()
+  const coverage = String(
+    item.coverage_period ??
+    item.coveragePeriod ??
+    item.expiry_date ??
+    item.expiryDate ??
+    item.end_date ??
+    item.endDate ??
+    item['보장기간'] ??
+    item['만기'] ??
+    ''
+  ).trim()
+  if (payment && coverage && !payment.includes(coverage)) return `${payment}/${coverage}`
+  return payment || coverage
+}
+
 function normalizeCoverageRows(
   cov: Record<string, unknown>,
   idx: number,
@@ -326,8 +350,8 @@ function normalizeCoverageRows(
   const name = String(cov.coverage_name ?? cov.name ?? cov['담보명'] ?? '')
   const explicitRowKey = String(cov.row_key ?? cov.rowKey ?? '')
   const amount = parseAmountToMan(cov.amount ?? cov['가입금액'] ?? 0)
-  const expiryDate = String(cov.end_date ?? cov.expiryDate ?? cov['만기'] ?? '')
-  const isRenewal = String(cov.coverage_type ?? '').includes('갱신') || Boolean(cov.isRenewal ?? false)
+  const expiryDate = String(cov.end_date ?? cov.endDate ?? cov.expiry_date ?? cov.expiryDate ?? cov.coverage_period ?? cov.coveragePeriod ?? cov['만기'] ?? cov['보장기간'] ?? '')
+  const isRenewal = Boolean(cov.isRenewal ?? false) || parseRenewalFlag(cov.coverage_type, cov.renewal_type, cov.renewalType, cov['갱신여부'])
   const normalizedName = name.replace(/\s+/g, '').toLowerCase()
   const isGenericSilson =
     !explicitRowKey &&
@@ -428,6 +452,7 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   질병상급수술비: 'surgery_disease_advanced',
   질병종합수술비: 'surgery_disease_comprehensive',
   질병종수술비: 'surgery_disease_type',
+  질병N대수술비: 'surgery_n_major',
   상해상급수술비: 'surgery_injury_advanced',
   상해종합수술비: 'surgery_injury_comprehensive',
   상해종수술비: 'surgery_injury_type',
@@ -449,6 +474,12 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   암사망: 'death_disease',
   일반사망: 'death_general',
   사망보험금: 'death_general',
+  일반사망보험금: 'death_general',
+  질병사망보험금: 'death_disease',
+  상해사망보험금: 'death_injury',
+  재해사망보험금: 'death_injury',
+  중대질병CI진단비: 'ci_diagnosis',
+  '중대질병(CI)진단비': 'ci_diagnosis',
 }
 
 function parsePolicyType(val: unknown): 'protection' | 'savings' {
@@ -496,16 +527,16 @@ function parseGptsJson(raw: string): ProContract[] | null {
         const coverages = Array.isArray(item.coverages)
           ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci))
           : []
-        const renewalText = String(item.renewal_type ?? item.renewalType ?? '')
+        const isRenewal = Boolean(item.isRenewal ?? false) || parseRenewalFlag(item.renewal_type, item.renewalType, item.policy_type, item.policyType, item['갱신여부'])
         return {
           id: `json-${idx}-${Date.now()}`,
           company: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
           productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
           policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
           contractDate: String(item.policy_date ?? item.start_date ?? item.contractDate ?? item['계약일'] ?? ''),
-          paymentPeriod: String(item.payment_period ?? item.paymentPeriod ?? item['납입기간'] ?? ''),
+          paymentPeriod: buildPaymentPeriod(item),
           monthlyPremium: parsePremiumToWon(item.premium ?? item.monthly_premium ?? item.monthlyPremium ?? item['월보험료'] ?? 0),
-          isRenewal: renewalText.includes('갱신') || Boolean(item.isRenewal ?? false),
+          isRenewal,
           status: (['active','lapsed','expired'].includes(String(item.policy_status)) ? item.policy_status : 'active') as 'active' | 'lapsed' | 'expired',
           policyType: parsePolicyType(item.policy_type ?? item.policyType),
           coverages,
@@ -554,9 +585,9 @@ function parseGptsJson(raw: string): ProContract[] | null {
         productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
         policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
         contractDate: String(item.policy_date ?? item.contractDate ?? item['계약일'] ?? ''),
-        paymentPeriod: String(item.paymentPeriod ?? item['납입기간'] ?? ''),
+        paymentPeriod: buildPaymentPeriod(item),
         monthlyPremium: parsePremiumToWon(item.premium ?? item.monthly_premium ?? item.monthlyPremium ?? item['월보험료'] ?? 0),
-        isRenewal: Boolean(item.isRenewal ?? false),
+        isRenewal: Boolean(item.isRenewal ?? false) || parseRenewalFlag(item.renewal_type, item.renewalType, item.policy_type, item.policyType, item['갱신여부']),
         status: 'active' as const,
         policyType: parsePolicyType(item.policy_type ?? item.policyType),
         coverages,
@@ -1010,7 +1041,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                     <textarea
                       className="coverage-pro-textarea"
                       style={{ minHeight: 160, fontFamily: 'monospace', fontSize: 12 }}
-                      placeholder={'GPTs에서 복사한 JSON을 붙여넣으세요.\n\n▶ v5 형식 (insurance_analysis_v5):\n{\n  "version": "insurance_analysis_v5",\n  "policies": [\n    {\n      "company": "삼성화재",\n      "product_name": "실손보험",\n      "monthly_premium": 3.5,\n      "payment_period": "20년납100세만기",\n      "coverages": [\n        { "coverage_name": "질병입원의료비", "amount": null, "category": "실손", "coverage_type": "갱신형" }\n      ]\n    }\n  ]\n}'}
+                      placeholder={'GPTs에서 복사한 JSON을 붙여넣으세요.\n\n▶ v5 형식 (insurance_analysis_v5):\n{\n  "version": "insurance_analysis_v5",\n  "policies": [\n    {\n      "company": "삼성화재",\n      "product_name": "실손보험",\n      "monthly_premium": 3.5,\n      "payment_period": "20년납",\n      "coverage_period": "100세만기",\n      "renewal_type": "갱신형",\n      "coverages": [\n        { "coverage_name": "질병입원의료비", "amount": null, "category": "실손", "coverage_type": "갱신형", "coverage_period": "100세만기" },\n        { "coverage_name": "중대한질병(CI)진단비", "amount": 3000, "category": "CI", "coverage_type": "비갱신형", "coverage_period": "80세만기" }\n      ]\n    }\n  ]\n}'}
                       value={jsonText}
                       onChange={(e) => { setJsonText(e.target.value); setJsonError('') }}
                     />
