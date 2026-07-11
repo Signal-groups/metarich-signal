@@ -17,10 +17,16 @@ function getBearerToken(req: NextRequest) {
   return token
 }
 
+const MASTER_EMAIL = "qodbtjq@naver.com"
+
 function isMaster(profile: Record<string, unknown> | null) {
-  return [profile?.rank, profile?.role, profile?.role_level]
+  if (!profile) return false
+  const fields = [profile.rank, profile.role, profile.role_level]
     .map((value) => String(value || "").toLowerCase().trim())
-    .includes("master")
+  if (fields.includes("master")) return true
+  // 이메일 기반 마스터 확인 (normalizeRole과 동일 로직)
+  const email = String(profile.email || "").toLowerCase().trim()
+  return email.includes(MASTER_EMAIL)
 }
 
 function profileFromAuthUser(user: any) {
@@ -69,12 +75,14 @@ export async function GET(req: NextRequest) {
 
   const { data: requester, error: requesterError } = await serviceSupabase
     .from("users")
-    .select("rank, role, role_level")
+    .select("rank, role, role_level, email")
     .eq("id", authUser.user.id)
     .maybeSingle()
 
   if (requesterError) return NextResponse.json({ error: requesterError.message }, { status: 500 })
-  if (!isMaster(requester)) return NextResponse.json({ error: "마스터만 직원 목록을 조회할 수 있습니다." }, { status: 403 })
+  // users 테이블에 email이 없으면 auth 토큰 이메일로 보완
+  const requesterWithEmail = { ...requester, email: requester?.email || authUser.user.email }
+  if (!isMaster(requesterWithEmail)) return NextResponse.json({ error: "마스터만 직원 목록을 조회할 수 있습니다." }, { status: 403 })
 
   const { data: existing, error: usersError } = await serviceSupabase
     .from("users")

@@ -21,10 +21,15 @@ function getBearerToken(req: NextRequest) {
   return token
 }
 
+const MASTER_EMAIL = "qodbtjq@naver.com"
+
 function isMaster(profile: Record<string, unknown> | null) {
-  return [profile?.rank, profile?.role, profile?.role_level]
+  if (!profile) return false
+  const fields = [profile.rank, profile.role, profile.role_level]
     .map((value) => String(value || "").toLowerCase().trim())
-    .includes("master")
+  if (fields.includes("master")) return true
+  const email = String(profile.email || "").toLowerCase().trim()
+  return email.includes(MASTER_EMAIL)
 }
 
 export async function GET(req: NextRequest) {
@@ -43,12 +48,13 @@ export async function GET(req: NextRequest) {
 
   const { data: requester, error: requesterError } = await serviceSupabase
     .from("users")
-    .select("rank, role, role_level")
+    .select("rank, role, role_level, email")
     .eq("id", authUser.user.id)
     .maybeSingle()
 
   if (requesterError) return NextResponse.json({ error: requesterError.message }, { status: 500 })
-  if (!isMaster(requester)) return NextResponse.json({ error: "마스터만 사용량을 조회할 수 있습니다." }, { status: 403 })
+  const requesterWithEmail = { ...requester, email: requester?.email || authUser.user.email }
+  if (!isMaster(requesterWithEmail)) return NextResponse.json({ error: "마스터만 사용량을 조회할 수 있습니다." }, { status: 403 })
 
   const period = (req.nextUrl.searchParams.get("period") || "30d") as PeriodKey
   const days = PERIOD_DAYS[period] || PERIOD_DAYS["30d"]
