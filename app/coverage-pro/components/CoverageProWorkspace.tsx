@@ -626,6 +626,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
   const [proposal,     setProposal]     = useState<RemodelProposal>(() => draft?.proposal || defaultProposal)
   const [outputConfig, setOutputConfig] = useState<OutputConfig>(() => draft?.outputConfig || defaultOutputConfig)
   const [saveStatus,   setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [crmSyncStatus, setCrmSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle')
   const [advisorInfo, setAdvisorInfo]   = useState<{ name: string; phone: string; userId: string }>({ name: '', phone: '', userId: '' })
 
   // ── 기준금액 설정 모달 ──────────────────────────────────────────────
@@ -1310,6 +1311,61 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                   />
                 </div>
               </div>
+
+              {/* ── 고객관리 CRM 저장 ─────────────────────────────────── */}
+              <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e0e7ef', padding: '24px 32px', boxShadow: '0 2px 12px rgba(16,32,58,0.05)' }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#10203a', marginBottom: 6 }}>고객관리 CRM 저장</div>
+                <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+                  분석 결과를 고객관리 CRM에 저장하면 보장현황 카드, PDF 리포트에 자동으로 반영됩니다.
+                </div>
+                {!customer?.id ? (
+                  <div style={{ fontSize: 13, color: '#94a3b8', background: '#f8fafc', borderRadius: 10, padding: '12px 16px' }}>
+                    ⚠️ 고객이 선택되지 않았습니다. 1단계에서 CRM 고객을 선택하거나 신규 등록하세요.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={async () => {
+                        if (!customer?.id || contracts.length === 0) return
+                        setCrmSyncStatus('syncing')
+                        try {
+                          await syncProToCRM(customer.id, contracts)
+                          setCrmSyncStatus('done')
+                        } catch {
+                          setCrmSyncStatus('error')
+                        }
+                      }}
+                      disabled={crmSyncStatus === 'syncing' || contracts.length === 0}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '11px 22px',
+                        background: crmSyncStatus === 'done' ? '#10b981' : crmSyncStatus === 'error' ? '#ef4444' : '#1a2744',
+                        color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14,
+                        cursor: crmSyncStatus === 'syncing' ? 'not-allowed' : 'pointer',
+                        opacity: crmSyncStatus === 'syncing' ? 0.7 : 1,
+                      }}
+                    >
+                      {crmSyncStatus === 'syncing' && (
+                        <span style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+                      )}
+                      {crmSyncStatus === 'done' ? '✓ CRM 저장 완료' : crmSyncStatus === 'error' ? '⚠️ 저장 실패' : '📂 고객관리 CRM에 저장'}
+                    </button>
+                    {crmSyncStatus === 'done' && customer?.id && (
+                      <button
+                        onClick={() => window.open(`/crm/customers/${customer.id}`, '_blank', 'noopener,noreferrer')}
+                        style={{ padding: '11px 18px', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                      >
+                        CRM에서 확인 ↗
+                      </button>
+                    )}
+                    {crmSyncStatus === 'idle' && (
+                      <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                        {customer.name}님 · 계약 {contracts.length}건 저장 준비됨
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <BenchmarkSummary contracts={contracts} />
             </div>
           )}

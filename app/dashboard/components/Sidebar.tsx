@@ -305,7 +305,7 @@ export default function Sidebar({
   };
 
   const openCrm = () => {
-    router.push("/crm");
+    window.open("/crm", "_blank", "noopener,noreferrer");
     setIsOpen(false);
   };
 

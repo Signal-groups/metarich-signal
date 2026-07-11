@@ -136,7 +136,31 @@ export default function CustomerDetailPage() {
     setEditForm(cust)
     setPolicies(policyData || [])
     setCoverages(coverageData || [])
-    setFamilies(familyData || [])
+
+    // 가족 구성원 중 등록된 고객 찾기 (연락처 기반 매칭)
+    const familyList = familyData || []
+    if (familyList.length > 0) {
+      const phones = familyList.map((f: any) => f.phone).filter(Boolean)
+      if (phones.length > 0) {
+        const { data: linkedCustomers } = await supabase
+          .from('customers')
+          .select('id, name, phone')
+          .in('phone', phones)
+          .eq('advisor_id', session.user.id)
+          .is('deleted_at', null)
+        const phoneToId: Record<string, string> = {}
+        ;(linkedCustomers || []).forEach((c: any) => { if (c.phone) phoneToId[c.phone] = c.id })
+        setFamilies(familyList.map((f: any) => ({
+          ...f,
+          linked_customer_id: f.phone ? phoneToId[f.phone] || null : null,
+        })))
+      } else {
+        setFamilies(familyList)
+      }
+    } else {
+      setFamilies(familyList)
+    }
+
     setAlerts(alertData || [])
 
     const totals: Record<string, number> = {}
@@ -428,13 +452,14 @@ export default function CustomerDetailPage() {
               </>
             ) : (
               <>
-                <Link
-                  href={`/coverage-pro?customerId=${id}&customerName=${encodeURIComponent(customer.name || '')}`}
+                <button
                   className="btn btn-primary"
-                  style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+                  style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}
+                  onClick={() => window.open(`/coverage-pro?customerId=${id}&customerName=${encodeURIComponent(customer.name || '')}`, '_blank', 'noopener,noreferrer')}
                 >
                   보장분석 PRO
-                </Link>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </button>
                 <button className="btn btn-secondary" onClick={() => setEditing(true)}>수정</button>
                 <button className="btn" style={{ background: '#fef2f2', color: '#dc2626' }} onClick={deleteCustomer}>삭제</button>
               </>
@@ -511,13 +536,42 @@ export default function CustomerDetailPage() {
               </div>
             )}
             {families.map((member) => (
-              <div key={member.id} className="family-card">
-                <div className="family-avatar" style={{ background: '#eff6ff', color: '#2563eb' }}>{member.name?.slice(0, 1)}</div>
+              <div key={member.id} className="family-card" style={{ cursor: member.linked_customer_id ? 'pointer' : 'default' }}
+                onClick={() => member.linked_customer_id && router.push(`/crm/customers/${member.linked_customer_id}`)}
+              >
+                <div className="family-avatar" style={{ background: member.linked_customer_id ? '#eff6ff' : '#f1f5f9', color: member.linked_customer_id ? '#2563eb' : '#64748b' }}>
+                  {member.name?.slice(0, 1)}
+                </div>
                 <div style={{ flex: 1 }}>
-                  <div className="fw-700">{member.name}</div>
+                  <div className="fw-700" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {member.name}
+                    {member.linked_customer_id && (
+                      <span style={{ fontSize: 10, background: '#dbeafe', color: '#1d4ed8', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>고객 등록됨</span>
+                    )}
+                  </div>
                   <div className="text-muted" style={{ fontSize: 12 }}>{relationLabel[member.relation] || member.relation} · {member.birth_date || '-'}</div>
                 </div>
-                <div className="text-muted" style={{ fontSize: 12 }}>{member.phone || '-'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="text-muted" style={{ fontSize: 12 }}>{member.phone || '-'}</div>
+                  {member.linked_customer_id ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); router.push(`/crm/customers/${member.linked_customer_id}`) }}
+                      style={{ background: '#1a2744', color: '#fff', border: 'none', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      상세보기 →
+                    </button>
+                  ) : member.phone ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(`/coverage-pro?customerName=${encodeURIComponent(member.name || '')}&customerPhone=${encodeURIComponent(member.phone || '')}`, '_blank', 'noopener,noreferrer')
+                      }}
+                      style={{ background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      PRO 분석 ↗
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ))}
             {families.length === 0 && <Empty text="등록된 가족 구성원이 없습니다." />}

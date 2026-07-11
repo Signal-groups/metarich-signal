@@ -265,7 +265,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
           </a>
         ))}
         {canUseCrm && (
-          <a href="/crm" style={{ padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 500, color: "#0f6e56", background: "#e1f5ee", border: "0.5px solid #9fe1cb", textDecoration: "none", whiteSpace: "nowrap" }}>고객관리</a>
+          <a href="/crm" target="_blank" rel="noopener noreferrer" style={{ padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 500, color: "#0f6e56", background: "#e1f5ee", border: "0.5px solid #9fe1cb", textDecoration: "none", whiteSpace: "nowrap" }}>고객관리 ↗</a>
         )}
         <div style={{ position: "relative", marginLeft: "auto" }}>
           <button
