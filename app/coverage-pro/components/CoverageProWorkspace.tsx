@@ -644,13 +644,27 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
       if (!session) return
       const savedId = typeof window !== 'undefined' ? localStorage.getItem(SESSION_ID_KEY) : null
       if (savedId) {
-        const now = new Date().toISOString()
-        sessionRef.current = {
-          id: savedId, advisorId: session.user.id,
-          customerId: draft?.customer?.id, customerSnapshot: draft?.customer,
-          contracts: draft?.contracts || [], currentStep: initialStep,
-          stepStatus: draft?.stepStatus || {}, remodelProposal: draft?.proposal,
-          outputConfig: draft?.outputConfig, version: 1, createdAt: now, updatedAt: now,
+        // DB에서 세션 유효성 확인 (stale localStorage ID 방지)
+        const { data: existingRow } = await supabase
+          .from('coverage_pro_sessions')
+          .select('id')
+          .eq('id', savedId)
+          .eq('advisor_id', session.user.id)
+          .maybeSingle()
+        if (existingRow) {
+          const now = new Date().toISOString()
+          sessionRef.current = {
+            id: savedId, advisorId: session.user.id,
+            customerId: draft?.customer?.id, customerSnapshot: draft?.customer,
+            contracts: draft?.contracts || [], currentStep: initialStep,
+            stepStatus: draft?.stepStatus || {}, remodelProposal: draft?.proposal,
+            outputConfig: draft?.outputConfig, version: 1, createdAt: now, updatedAt: now,
+          }
+        } else {
+          // 스탈 세션 ID → 제거 후 새로 생성
+          localStorage.removeItem(SESSION_ID_KEY)
+          const newFromStale = await createProSession(session.user.id, draft?.customer?.id)
+          if (newFromStale) { sessionRef.current = newFromStale; localStorage.setItem(SESSION_ID_KEY, newFromStale.id) }
         }
         // 설계사 프로필 로드 (savedId 분기)
         const { data: profile2 } = await supabase.from('users').select('name,phone').eq('id', session.user.id).maybeSingle()
@@ -774,13 +788,52 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
       setStepStatus((prev) => ({ ...prev, 1: 'done', 2: 'pending' }))
       setNewCust({ name: '', phone: '', birth: '', gender: 'M' })
       setShowNewCustomer(false)
-    } catch (err) {
-      console.error(err)
-      alert('고객 등록에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    } catch (err: unknown) {
+      console.error('[handleSaveNewCustomer]', err)
+      const msg = (err instanceof Error ? err.message : '') || (typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: unknown }).message) : '')
+      alert('고객 등록에 실패했습니다.' + (msg ? `\n(${msg})` : ' 잠시 후 다시 시도해주세요.'))
     } finally {
       setNewCustSaving(false)
     }
   }
+
+  // ── 세션 초기화 (새 분석 시작) ──────────────────────────────────────
+  const handleReset = useCallback(async () => {
+    const confirmed = window.confirm('현재 분석 내용이 모두 초기화됩니다.\n새 분석을 시작하시겠습니까?')
+    if (!confirmed) return
+
+    // localStorage 클리어
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(SESSION_ID_KEY)
+
+    // 상태 초기화
+    setCustomer(undefined)
+    setContracts([])
+    setStepStatus({ 1: 'pending' })
+    setProposal(defaultProposal)
+    setOutputConfig(defaultOutputConfig)
+    setSaveStatus('idle')
+    setShowNewCustomer(false)
+    setShowJsonPaste(false)
+    setJsonText('')
+    setJsonError('')
+    setBatchPhase('idle')
+    sessionRef.current = null
+
+    // Supabase에 새 세션 생성
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      const newSession = await createProSession(session.user.id, undefined)
+      if (newSession) {
+        sessionRef.current = newSession
+        localStorage.setItem(SESSION_ID_KEY, newSession.id)
+      }
+    }
+
+    // Step 1으로 이동
+    setCurrentStep(1)
+    window.history.replaceState(null, '', '/coverage-pro')
+  }, [])
 
   // ── JSON 붙여넣기 처리 ──────────────────────────────────────────────
   const GPTS_URL = 'https://chatgpt.com/g/g-6a0c10ad0478819192a11b8ffc28c760-boheomyi-gijun-bojangbunseog-ai'
@@ -868,6 +921,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
         stepStatus={stepStatus}
         onMove={moveStep}
         onSettingsClick={() => setShowBenchmark(true)}
+        onReset={handleReset}
       />
       <main className="coverage-pro-main">
         <div className="coverage-pro-inner">
