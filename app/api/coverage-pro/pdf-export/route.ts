@@ -588,7 +588,7 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '진단비',    label: '뇌출혈 진단비',       rowKey: 'brain_hemorrhage' },
     { group: '진단비',    label: '허혈성심장질환 진단비', rowKey: 'heart_ischemic' },
     { group: '진단비',    label: '급성심근경색 진단비',  rowKey: 'heart_acute_mi' },
-    { group: '진단비',    label: '심장질환 진단비',      rowKey: 'heart_vascular' },
+    { group: '진단비',    label: '심장질환(부정맥 등)',  rowKey: 'heart_vascular' },
     { group: '암치료비',  label: '항암방사선치료비',     rowKey: 'cancer_radiation' },
     { group: '암치료비',  label: '중입자방사선치료비',   rowKey: 'cancer_hadron' },
     { group: '암치료비',  label: '양성자방사선치료비',   rowKey: 'cancer_proton' },
@@ -631,6 +631,7 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '기타',      label: '치매진단비',           rowKey: 'dementia_diagnosis' },
     { group: '기타',      label: '중대질병(CI)',          rowKey: 'ci_diagnosis' },
     { group: '기타',      label: '장기요양등급',         rowKey: 'ltc_grade' },
+    { group: '기타',      label: '양성종양 담보',        rowKey: 'benign_tumor' },
   ]
 
   // 데이터 있는 행만
@@ -818,7 +819,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
       { label: '뇌출혈',        key: 'brain_hemorrhage', color: '#ef4444' },
       { label: '허혈성심장',    key: 'heart_ischemic',   color: '#3b82f6' },
       { label: '급성심근경색',  key: 'heart_acute_mi',   color: '#ef4444' },
-      { label: '기타심장',      key: 'heart_vascular',   color: '#60a5fa' },
+      { label: '심장질환(부정맥 등)', key: 'heart_vascular', color: '#60a5fa' },
     ]
     const rows = DETAIL.map(d => {
       const amt = sumAmount(contracts, d.key)

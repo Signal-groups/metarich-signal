@@ -393,17 +393,55 @@ export default function CustomerReportPage() {
       const { data: ud } = await supabase.from('users').select('name,phone').eq('id', session.user.id).single()
       setAdvisorName(ud?.name || '')
       setAdvisorPhone(ud?.phone || '')
-      const [{ data: cust }, { data: pols }, { data: covs }, { data: analysisRows }] = await Promise.all([
+      const [{ data: cust }, { data: pols }, { data: covs }, { data: analysisRows }, { data: proSessionRows }] = await Promise.all([
         supabase.from('customers').select('*').eq('id', id).single(),
         supabase.from('policies').select('*').eq('customer_id', id).order('start_date', { ascending: false }),
         supabase.from('coverages').select('*').eq('customer_id', id),
         supabase.from('upload_analyses').select('*').eq('customer_id', id).order('created_at', { ascending: false }).limit(1),
+        supabase.from('coverage_pro_sessions').select('id,session_data,updated_at').eq('customer_id', id).eq('advisor_id', session.user.id).order('updated_at', { ascending: false }).limit(1),
       ])
       setCustomer(cust || null)
-      if ((pols && pols.length > 0) || (covs && covs.length > 0)) {
+
+      // ── 우선순위 1: 보장분석 PRO 세션 ────────────────────────────────
+      if (proSessionRows && proSessionRows.length > 0) {
+        const sessionData = (proSessionRows[0].session_data || {}) as Record<string, unknown>
+        const proContracts = Array.isArray(sessionData.contracts) ? sessionData.contracts as Record<string, unknown>[] : []
+        const proSyntheticPolicies: PolicyRow[] = proContracts.map((c, i) => ({
+          id: `pro-${i}`,
+          company: String(c.company || ''),
+          product_name: String(c.productName || c.product_name || ''),
+          start_date: String(c.contractDate || c.start_date || ''),
+          payment_period: String(c.paymentPeriod || c.payment_period || ''),
+          // PRO stores monthlyPremium in 만원 → convert to 원
+          monthly_premium: Math.round(Number(c.monthlyPremium || c.monthly_premium || 0) * 10000),
+          status: String(c.status || 'active'),
+        }))
+        const proSyntheticCoverages: CoverageRow[] = []
+        proContracts.forEach((c, ci) => {
+          const covList = Array.isArray(c.coverages) ? c.coverages as Record<string, unknown>[] : []
+          covList.forEach((cov) => {
+            proSyntheticCoverages.push({
+              id: `pro-cov-${proSyntheticCoverages.length}`,
+              policy_id: `pro-${ci}`,
+              company: String(c.company || ''),
+              product_name: String(c.productName || c.product_name || ''),
+              name: String(cov.name || cov.coverage_name || ''),
+              // PRO stores amount in 만원 → convert to 원 for report functions
+              amount: Math.round(Number(cov.amount || 0) * 10000),
+              category: '',
+            })
+          })
+        })
+        setPolicies(proSyntheticPolicies)
+        setCoverages(proSyntheticCoverages)
+      }
+      // ── 우선순위 2: CRM policies + coverages 테이블 ──────────────────
+      else if ((pols && pols.length > 0) || (covs && covs.length > 0)) {
         setPolicies((pols || []) as PolicyRow[])
         setCoverages((covs || []) as CoverageRow[])
-      } else if (analysisRows && analysisRows.length > 0) {
+      }
+      // ── 우선순위 3: 업로드 분석 데이터 ──────────────────────────────
+      else if (analysisRows && analysisRows.length > 0) {
         const structured = analysisRows[0]?.structured_json || {}
         const rawPolicies = Array.isArray(structured.policies) ? structured.policies
           : Array.isArray(structured.contracts) ? structured.contracts : []

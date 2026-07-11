@@ -53,6 +53,7 @@ const tabs = [
   { id: 'basic', label: '기본정보' },
   { id: 'family', label: '가족' },
   { id: 'policies', label: '보험계약' },
+  { id: 'covercard', label: '보장현황' },
   { id: 'coverage', label: '보장그래프' },
   { id: 'simulator', label: '보장계산' },
   { id: 'alerts', label: '알림' },
@@ -620,6 +621,210 @@ export default function CustomerDetailPage() {
           </>
         )}
 
+        {/* ══════════════ 보장현황 카드 탭 ══════════════ */}
+        {tab === 'covercard' && (() => {
+          // 보험사별 보장 내역 그룹화
+          const companyMap = new Map<string, { policy: any; coverageList: any[] }>()
+          policies.forEach((p: any) => {
+            const key = `${p.company}_${p.id}`
+            if (!companyMap.has(key)) companyMap.set(key, { policy: p, coverageList: [] })
+          })
+          coverages.forEach((cov: any) => {
+            const policy = policies.find((p: any) => p.id === cov.policy_id)
+            const company = policy?.company || cov.company || '기타'
+            const key = policy ? `${policy.company}_${policy.id}` : `${company}_unknown`
+            if (!companyMap.has(key)) {
+              companyMap.set(key, {
+                policy: { company, product_name: cov.product_name || '미확인', monthly_premium: 0 },
+                coverageList: []
+              })
+            }
+            const entry = companyMap.get(key)!
+            const amountRaw = Number(cov.amount || 0)
+            const amountManwon = amountRaw >= 100000 ? Math.round(amountRaw / 10000) : amountRaw
+            if (amountManwon > 0) {
+              entry.coverageList.push({ name: cov.name || cov.coverage_name || '미확인', amount: amountManwon })
+            }
+          })
+
+          // 보장 있는 회사만 추려서 배열로
+          const companyCards = Array.from(companyMap.values()).filter(c => c.coverageList.length > 0)
+
+          const totalPremium = policies.reduce((s: number, p: any) => s + Number(p.monthly_premium || 0), 0)
+
+          const COMPANY_COLORS = ['#1a2744','#1e3a5f','#1d4b78','#15527a','#0e4a6e','#0d3b5e','#162e4d','#1a3850']
+
+          const handlePrintCard = () => {
+            const win = window.open('', '_blank', 'width=800,height=900')
+            if (!win) return
+            const birth = customer?.birth_date || ''
+            const age = birth ? `(${new Date().getFullYear() - new Date(birth).getFullYear()}세)` : ''
+            const cardHtml = `<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><title>보장현황카드</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+  body{font-family:'Pretendard Variable',sans-serif;margin:0;padding:24px;background:#fff;color:#111}
+  h1{font-size:18px;font-weight:900;color:#1a2744;margin:0 0 4px}
+  .sub{font-size:12px;color:#64748b;margin-bottom:20px}
+  .card{border:1px solid #e2e8f0;border-radius:12px;margin-bottom:14px;overflow:hidden;break-inside:avoid}
+  .card-head{background:#1a2744;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center}
+  .card-head .co{font-size:14px;font-weight:700}
+  .card-head .prd{font-size:11px;color:#93c5fd}
+  .card-head .prem{font-size:12px;color:#fbbf24;font-weight:700}
+  .cov-list{padding:12px 16px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px 20px}
+  .cov-item{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f1f5f9}
+  .cov-name{color:#374151}
+  .cov-amt{font-weight:700;color:#1a2744}
+  .pay-row{font-size:11px;color:#64748b;padding:8px 16px;background:#f8fafc;border-top:1px solid #f1f5f9;display:flex;gap:16px}
+  .total{background:#f8fafc;padding:12px 16px;font-size:13px;font-weight:700;color:#1a2744;border-top:1px solid #e2e8f0}
+  @media print{body{padding:0}.no-print{display:none}}
+</style></head><body>
+<h1>🛡️ ${customer?.name || '고객'} 보장현황카드</h1>
+<div class="sub">${birth ? `생년월일: ${birth} ${age} · ` : ''}연락처: ${customer?.phone || '-'} · 작성일: ${new Date().toLocaleDateString('ko-KR')}</div>
+${companyCards.map(({ policy, coverageList }) => `
+<div class="card">
+  <div class="card-head">
+    <div><div class="co">${policy.company}</div><div class="prd">${policy.product_name || ''}</div></div>
+    ${policy.monthly_premium ? `<div class="prem">월 ${Number(policy.monthly_premium).toLocaleString()}원</div>` : ''}
+  </div>
+  <div class="cov-list">
+    ${coverageList.map(c => `<div class="cov-item"><span class="cov-name">${c.name}</span><span class="cov-amt">${c.amount.toLocaleString()}만원</span></div>`).join('')}
+  </div>
+  ${(policy.payment_institution || policy.payment_day || policy.payment_type) ? `<div class="pay-row">${policy.payment_institution ? `<span>💳 ${policy.payment_institution}</span>` : ''}${policy.payment_day ? `<span>📅 ${policy.payment_day}일 이체</span>` : ''}${policy.payment_type ? `<span>${policy.payment_type}</span>` : ''}</div>` : ''}
+</div>`).join('')}
+<div class="total">총 월납 보험료: ${totalPremium.toLocaleString()}원 · 계약 ${policies.length}건</div>
+<script>window.onload=()=>{window.print();}</script>
+</body></html>`
+            win.document.write(cardHtml)
+            win.document.close()
+          }
+
+          return (
+            <div>
+              {/* 헤더 */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div>
+                  <div className="card-title" style={{ marginBottom: 4 }}>🛡️ 보장현황 카드</div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>병원·사고 시 어떤 보험사에 어떤 보장이 있는지 바로 확인</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => router.push(`/coverage-pro?customerId=${id}`)}
+                    style={{ background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 10, padding: '8px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    ✏️ 보장분석 PRO에서 수정
+                  </button>
+                  <button
+                    onClick={handlePrintCard}
+                    style={{ background: '#1a2744', color: '#fff', border: 'none', borderRadius: 10, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    🖨️ 카드 인쇄
+                  </button>
+                </div>
+              </div>
+
+              {/* 고객 인적사항 배너 */}
+              <div style={{ background: 'linear-gradient(135deg,#1a2744,#2d4a8a)', borderRadius: 14, padding: '16px 20px', marginBottom: 20, color: '#fff' }}>
+                <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#93c5fd', marginBottom: 2 }}>성명</div>
+                    <div style={{ fontSize: 18, fontWeight: 900 }}>{customer?.name || '-'}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#93c5fd', marginBottom: 2 }}>생년월일</div>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>
+                      {customer?.birth_date || '-'}
+                      {customer?.birth_date && (
+                        <span style={{ fontSize: 12, color: '#93c5fd', marginLeft: 6 }}>
+                          ({new Date().getFullYear() - new Date(customer.birth_date).getFullYear()}세)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: '#93c5fd', marginBottom: 2 }}>연락처</div>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{customer?.phone || '-'}</div>
+                  </div>
+                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, color: '#93c5fd', marginBottom: 2 }}>총 월납 보험료</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: '#fbbf24' }}>{totalPremium.toLocaleString()}원</div>
+                    <div style={{ fontSize: 11, color: '#93c5fd' }}>{policies.length}건 계약</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 보험사별 카드 */}
+              {companyCards.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 24px', color: '#94a3b8' }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>보장 데이터가 없습니다</div>
+                  <div style={{ fontSize: 13, marginBottom: 20 }}>보장분석 PRO에서 이 고객의 보험계약을 분석하면 자동으로 여기에 표시됩니다.</div>
+                  <button
+                    onClick={() => router.push(`/coverage-pro?customerId=${id}`)}
+                    style={{ background: '#1a2744', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    ✏️ 보장분석 PRO 열기
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+                  {companyCards.map(({ policy, coverageList }, idx) => (
+                    <div key={idx} style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                      {/* 회사 헤더 */}
+                      <div style={{ background: COMPANY_COLORS[idx % COMPANY_COLORS.length], padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ color: '#fff', fontSize: 15, fontWeight: 800 }}>{policy.company}</div>
+                          <div style={{ color: '#93c5fd', fontSize: 11, marginTop: 2 }}>{policy.product_name}</div>
+                        </div>
+                        {policy.monthly_premium > 0 && (
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ color: '#fbbf24', fontSize: 13, fontWeight: 700 }}>{Number(policy.monthly_premium).toLocaleString()}원</div>
+                            <div style={{ color: '#93c5fd', fontSize: 10 }}>월납</div>
+                          </div>
+                        )}
+                      </div>
+                      {/* 보장 목록 */}
+                      <div style={{ padding: '10px 16px 0', background: '#fff' }}>
+                        {coverageList.map((cov, ci) => (
+                          <div key={ci} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: ci < coverageList.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                            <span style={{ fontSize: 13, color: '#374151' }}>{cov.name}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#1a2744' }}>{cov.amount.toLocaleString()}만원</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* 결제 정보 */}
+                      {(policy.payment_institution || policy.payment_day || policy.payment_type) && (
+                        <div style={{ padding: '8px 16px 10px', background: '#f8fafc', borderTop: '1px solid #f1f5f9', display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+                          {policy.payment_institution && (
+                            <span style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span>💳</span> {policy.payment_institution}
+                            </span>
+                          )}
+                          {policy.payment_day && (
+                            <span style={{ fontSize: 11, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span>📅</span> 매월 {policy.payment_day}일
+                            </span>
+                          )}
+                          {policy.payment_type && (
+                            <span style={{ fontSize: 11, color: '#64748b' }}>{policy.payment_type}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 면책 안내 */}
+              {companyCards.length > 0 && (
+                <div style={{ marginTop: 20, padding: '12px 16px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
+                  ⚠️ 본 현황은 설계사가 입력한 분석 자료 기준이며, 실제 보장 내용은 보험증권 및 약관을 반드시 확인하시기 바랍니다.
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
         {tab === 'coverage' && (() => {
           if (coverages.length === 0) {
             return (
@@ -941,7 +1146,7 @@ export default function CustomerDetailPage() {
         )}
 
         {tab === 'alerts' && (
-          <AlertsTab customer={customer} alerts={alerts} onRefresh={load} />
+          <AlertsTab customer={customer} alerts={alerts} policies={policies} onRefresh={load} />
         )}
 
         {tab === 'dm' && (
@@ -1202,85 +1407,145 @@ const ALERT_BADGE: Record<string, string> = {
   consulting: 'badge-green',
 }
 
-function AlertsTab({ customer, alerts, onRefresh }: { customer: any; alerts: any[]; onRefresh: () => void }) {
+function AlertsTab({ customer, alerts, policies, onRefresh }: { customer: any; alerts: any[]; policies: any[]; onRefresh: () => void }) {
+  const today = new Date()
+  const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [generating, setGenerating] = useState(false)
-  const [toggling, setToggling] = useState<string | null>(null)
   const [localAlerts, setLocalAlerts] = useState(alerts)
+  const [toggling, setToggling] = useState<string | null>(null)
 
   useEffect(() => { setLocalAlerts(alerts) }, [alerts])
+
+  const viewYear = viewDate.getFullYear()
+  const viewMonth = viewDate.getMonth()
+
+  const calcDday = (year: number, month: number, day: number): number => {
+    const eventDate = new Date(year, month, day)
+    return Math.round((eventDate.getTime() - todayZero.getTime()) / (1000 * 60 * 60 * 24))
+  }
+
+  type CalEvent = { type: string; label: string; detail: string; dday: number; alertId?: string; isDone?: boolean }
+  const eventsMap = new Map<number, CalEvent[]>()
+  const addEvent = (day: number, event: CalEvent) => {
+    const maxDay = new Date(viewYear, viewMonth + 1, 0).getDate()
+    if (day < 1 || day > maxDay) return
+    const list = eventsMap.get(day) || []
+    list.push(event)
+    eventsMap.set(day, list)
+  }
+
+  // 생일 (매년 반복)
+  if (customer.birth_date) {
+    const birth = new Date(customer.birth_date)
+    if (birth.getMonth() === viewMonth) {
+      const d = birth.getDate()
+      addEvent(d, { type: 'birthday', label: `🎂 ${customer.name}님 생일`, detail: `생년월일: ${customer.birth_date}`, dday: calcDday(viewYear, viewMonth, d) })
+    }
+  }
+
+  // 자동차보험 갱신 (exact date)
+  if (customer.car_insurance_renewal_date) {
+    const renewal = new Date(customer.car_insurance_renewal_date)
+    if (renewal.getFullYear() === viewYear && renewal.getMonth() === viewMonth) {
+      const d = renewal.getDate()
+      addEvent(d, { type: 'car_renewal', label: `🚗 ${customer.name}님 자동차갱신`, detail: `자동차보험 갱신일: ${customer.car_insurance_renewal_date}`, dday: calcDday(viewYear, viewMonth, d) })
+    }
+  }
+
+  // 보험 계약 가입일 기념일 (매년 반복)
+  policies.forEach((policy: any) => {
+    const startDate = policy.start_date || policy.contract_date
+    if (!startDate) return
+    const start = new Date(startDate)
+    if (start.getMonth() === viewMonth) {
+      const d = start.getDate()
+      const years = viewYear - start.getFullYear()
+      addEvent(d, {
+        type: 'policy_anniversary',
+        label: `📋 ${policy.company} 가입기념일`,
+        detail: `${policy.company} ${policy.product_name || ''} 가입일 (${years > 0 ? `${years}주년` : '가입 당해년도'})`,
+        dday: calcDday(viewYear, viewMonth, d),
+      })
+    }
+  })
+
+  // DB 알림
+  localAlerts.forEach((alert: any) => {
+    if (!alert.due_date) return
+    const d = new Date(alert.due_date)
+    if (d.getFullYear() === viewYear && d.getMonth() === viewMonth) {
+      addEvent(d.getDate(), {
+        type: 'notification',
+        label: `🔔 ${ALERT_TYPE_LABELS[alert.type] || alert.type}`,
+        detail: alert.message || alert.type,
+        dday: calcDday(viewYear, viewMonth, d.getDate()),
+        alertId: alert.id,
+        isDone: alert.is_done,
+      })
+    }
+  })
+
+  // 달력 격자 계산
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay()
+  const weeks: (number | null)[][] = []
+  let dayCount = 1
+  for (let w = 0; w < 6; w++) {
+    const row: (number | null)[] = []
+    for (let d = 0; d < 7; d++) {
+      const idx = w * 7 + d
+      row.push(idx < firstDow || dayCount > daysInMonth ? null : dayCount++)
+    }
+    weeks.push(row)
+    if (dayCount > daysInMonth) break
+  }
+
+  const MONTH_NAMES = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월']
+  const DAY_NAMES = ['일','월','화','수','목','금','토']
+
+  const formatDday = (dday: number): string => {
+    if (dday === 0) return 'D-0'
+    if (dday > 0) return `D-${dday}`
+    return `D+${Math.abs(dday)}`
+  }
+
+  const eventTypeColor: Record<string, { bg: string; text: string }> = {
+    birthday: { bg: '#fce7f3', text: '#9d174d' },
+    car_renewal: { bg: '#ede9fe', text: '#5b21b6' },
+    policy_anniversary: { bg: '#dbeafe', text: '#1d4ed8' },
+    notification: { bg: '#dcfce7', text: '#166534' },
+  }
 
   const generateNotifications = async () => {
     setGenerating(true)
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { setGenerating(false); return }
-
-    const today = new Date()
     const toIso = (d: Date) => d.toISOString().slice(0, 10)
     const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r }
-
     const toInsert: any[] = []
-
-    // 생일 알림 (다음 생일 기준)
     if (customer.birth_date) {
       const birth = new Date(customer.birth_date)
-      const nextBirthday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
-      if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1)
-      toInsert.push({
-        customer_id: customer.id,
-        customer_name: customer.name,
-        type: 'birthday',
-        message: `${customer.name} 고객님 생일`,
-        due_date: toIso(nextBirthday),
-        is_done: false,
-        is_read: false,
-      })
+      const nextBday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
+      if (nextBday < today) nextBday.setFullYear(today.getFullYear() + 1)
+      toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'birthday', message: `${customer.name} 고객님 생일`, due_date: toIso(nextBday), is_done: false, is_read: false })
     }
-
-    // 자동차보험 갱신 알림
     if (customer.car_insurance_renewal_date) {
       const renewal = new Date(customer.car_insurance_renewal_date)
       if (renewal > today) {
-        toInsert.push({
-          customer_id: customer.id,
-          customer_name: customer.name,
-          type: 'car_renewal_d60',
-          message: `자동차보험 갱신 D-60 (${customer.car_insurance_renewal_date})`,
-          due_date: toIso(addDays(renewal, -60)),
-          is_done: false, is_read: false,
-        })
-        toInsert.push({
-          customer_id: customer.id,
-          customer_name: customer.name,
-          type: 'car_renewal_d30',
-          message: `자동차보험 갱신 D-30 (${customer.car_insurance_renewal_date})`,
-          due_date: toIso(addDays(renewal, -30)),
-          is_done: false, is_read: false,
-        })
+        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d60', message: `자동차보험 갱신 D-60`, due_date: toIso(addDays(renewal, -60)), is_done: false, is_read: false })
+        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d30', message: `자동차보험 갱신 D-30`, due_date: toIso(addDays(renewal, -30)), is_done: false, is_read: false })
       }
     }
-
-    // 가입 30/90/180/365일 알림
     if (customer.join_date) {
       const joinDate = new Date(customer.join_date)
       for (const days of [30, 90, 180, 365]) {
         const alertDate = addDays(joinDate, days)
-        if (alertDate > today) {
-          toInsert.push({
-            customer_id: customer.id,
-            customer_name: customer.name,
-            type: `join_${days}`,
-            message: `계약 후 ${days}일 — 계약 안착 관리 연락`,
-            due_date: toIso(alertDate),
-            is_done: false, is_read: false,
-          })
-        }
+        if (alertDate > today) toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: `join_${days}`, message: `계약 후 ${days}일 — 안착 관리 연락`, due_date: toIso(alertDate), is_done: false, is_read: false })
       }
     }
-
-    if (toInsert.length > 0) {
-      await supabase.from('notifications').insert(toInsert)
-    }
-
+    if (toInsert.length > 0) await supabase.from('notifications').insert(toInsert)
     setGenerating(false)
     onRefresh()
   }
@@ -1289,85 +1554,166 @@ function AlertsTab({ customer, alerts, onRefresh }: { customer: any; alerts: any
     setToggling(alert.id)
     const next = !alert.is_done
     await supabase.from('notifications').update({ is_done: next, is_read: true }).eq('id', alert.id)
-    setLocalAlerts((prev) => prev.map((a) => a.id === alert.id ? { ...a, is_done: next, is_read: true } : a))
+    setLocalAlerts((prev: any[]) => prev.map((a) => a.id === alert.id ? { ...a, is_done: next, is_read: true } : a))
     setToggling(null)
   }
 
-  const pending = localAlerts.filter((a) => !a.is_done)
-  const done = localAlerts.filter((a) => a.is_done)
+  const selectedEvents = selectedDay ? (eventsMap.get(selectedDay) || []) : []
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-16">
-        <div>
-          <div className="card-title" style={{ marginBottom: 2 }}>알림 관리</div>
-          <div className="text-muted" style={{ fontSize: 12 }}>미완료 {pending.length}건 · 완료 {done.length}건</div>
-        </div>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={generateNotifications}
-          disabled={generating}
-        >
+    <div>
+      {/* 헤더 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div className="card-title" style={{ marginBottom: 0 }}>알림 달력</div>
+        <button className="btn btn-primary btn-sm" onClick={generateNotifications} disabled={generating}>
           {generating ? '생성 중...' : '🔔 알림 자동 생성'}
         </button>
       </div>
 
-      {localAlerts.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8' }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🔔</div>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>등록된 알림이 없습니다</div>
-          <div style={{ fontSize: 12 }}>생일·자동차갱신·계약관리 알림을 자동으로 생성할 수 있습니다.</div>
+      {/* 월 네비게이션 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 16 }}>
+        <button
+          onClick={() => { setViewDate(new Date(viewYear, viewMonth - 1, 1)); setSelectedDay(null) }}
+          style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 15, cursor: 'pointer', fontWeight: 700, color: '#475569' }}
+        >◀</button>
+        <div style={{ fontSize: 17, fontWeight: 800, color: '#1a2744', minWidth: 120, textAlign: 'center' }}>
+          {viewYear}년 {MONTH_NAMES[viewMonth]}
         </div>
-      )}
+        <button
+          onClick={() => { setViewDate(new Date(viewYear, viewMonth + 1, 1)); setSelectedDay(null) }}
+          style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 15, cursor: 'pointer', fontWeight: 700, color: '#475569' }}
+        >▶</button>
+      </div>
 
-      {pending.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 8 }}>미완료</div>
-          {pending.map((alert) => (
-            <div key={alert.id} className={`alert-item ${!alert.is_read ? 'unread' : ''}`} style={{ marginLeft: -20, marginRight: -20, display: 'flex', alignItems: 'center', gap: 10 }}>
-              {!alert.is_read && <div className="alert-unread-dot" />}
-              <span className={`badge ${ALERT_BADGE[alert.type] || 'badge-gray'}`} style={{ whiteSpace: 'nowrap' }}>
-                {ALERT_TYPE_LABELS[alert.type] || alert.type}
-              </span>
-              <div className="alert-info" style={{ flex: 1 }}>
-                <div className="alert-msg">{alert.message || alert.type}</div>
-                {alert.due_date && <div className="alert-date">{alert.due_date}</div>}
-              </div>
-              <button
-                onClick={() => toggleDone(alert)}
-                disabled={toggling === alert.id}
-                style={{ border: 'none', background: '#dcfce7', color: '#166534', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-              >
-                완료
-              </button>
+      {/* 달력 그리드 */}
+      <div style={{ borderRadius: 14, border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: 16 }}>
+        {/* 요일 헤더 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', background: '#1a2744' }}>
+          {DAY_NAMES.map((d, i) => (
+            <div key={i} style={{ textAlign: 'center', padding: '9px 0', fontSize: 12, fontWeight: 700, color: i === 0 ? '#fca5a5' : i === 6 ? '#93c5fd' : '#e2e8f0' }}>
+              {d}
             </div>
           ))}
         </div>
-      )}
+        {/* 날짜 셀 */}
+        {weeks.map((week, wi) => (
+          <div key={wi} style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', borderBottom: wi < weeks.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+            {week.map((day, di) => {
+              const isToday = day !== null && viewYear === today.getFullYear() && viewMonth === today.getMonth() && day === today.getDate()
+              const isSelected = day === selectedDay
+              const events = day ? (eventsMap.get(day) || []) : []
+              return (
+                <div
+                  key={di}
+                  onClick={() => day && setSelectedDay(isSelected ? null : day)}
+                  style={{
+                    minHeight: 72, padding: '5px 4px 4px', cursor: day ? 'pointer' : 'default',
+                    background: isSelected ? '#eff6ff' : '#fff',
+                    borderRight: di < 6 ? '1px solid #f1f5f9' : 'none',
+                    transition: 'background 0.1s',
+                  }}
+                >
+                  {day && (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: isToday ? 900 : 500, marginBottom: 3, color: di === 0 ? '#ef4444' : di === 6 ? '#3b82f6' : '#374151' }}>
+                        {isToday ? (
+                          <span style={{ background: '#1a2744', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>{day}</span>
+                        ) : day}
+                      </div>
+                      {events.slice(0, 2).map((ev, ei) => {
+                        const color = eventTypeColor[ev.type] || { bg: '#f1f5f9', text: '#374151' }
+                        return (
+                          <div key={ei} style={{ fontSize: 9, marginBottom: 2, background: color.bg, color: color.text, borderRadius: 4, padding: '1px 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                            {ev.label}
+                          </div>
+                        )
+                      })}
+                      {events.length > 2 && <div style={{ fontSize: 9, color: '#94a3b8', paddingLeft: 2 }}>+{events.length - 2}개</div>}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
 
-      {done.length > 0 && (
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8', marginBottom: 8 }}>완료</div>
-          {done.map((alert) => (
-            <div key={alert.id} className="alert-item" style={{ marginLeft: -20, marginRight: -20, opacity: 0.55 }}>
-              <span className="badge badge-gray" style={{ whiteSpace: 'nowrap' }}>
-                {ALERT_TYPE_LABELS[alert.type] || alert.type}
-              </span>
-              <div className="alert-info" style={{ flex: 1 }}>
-                <div className="alert-msg" style={{ textDecoration: 'line-through' }}>{alert.message || alert.type}</div>
-              </div>
-              <div className="alert-date">{alert.due_date}</div>
-              <button
-                onClick={() => toggleDone(alert)}
-                style={{ border: 'none', background: '#f1f5f9', color: '#64748b', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-              >
-                취소
-              </button>
-            </div>
-          ))}
+      {/* 날짜 상세 패널 */}
+      {selectedDay && (
+        <div style={{ borderRadius: 14, border: '1px solid #e2e8f0', padding: '16px 20px', marginBottom: 16, background: '#f8fafc' }}>
+          <div style={{ fontWeight: 800, fontSize: 14, color: '#1a2744', marginBottom: 12 }}>
+            {viewYear}년 {viewMonth + 1}월 {selectedDay}일 일정
+          </div>
+          {selectedEvents.length === 0 ? (
+            <div style={{ color: '#94a3b8', fontSize: 13 }}>이 날의 일정이 없습니다.</div>
+          ) : (
+            selectedEvents.map((ev, i) => {
+              const color = eventTypeColor[ev.type] || { bg: '#f1f5f9', text: '#374151' }
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>{ev.label}</div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>{ev.detail}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    <span style={{ background: color.bg, color: color.text, padding: '3px 10px', borderRadius: 20, fontWeight: 800, fontSize: 12 }}>
+                      {formatDday(ev.dday)}
+                    </span>
+                    {ev.alertId && (
+                      <button
+                        onClick={() => toggleDone({ id: ev.alertId, is_done: ev.isDone })}
+                        disabled={toggling === ev.alertId}
+                        style={{ border: 'none', background: ev.isDone ? '#f1f5f9' : '#dcfce7', color: ev.isDone ? '#64748b' : '#166534', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        {ev.isDone ? '취소' : '완료'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
       )}
-    </>
+
+      {/* 이번 달 전체 일정 목록 (D-day 순서) */}
+      {(() => {
+        const allEvents: { day: number; event: CalEvent }[] = []
+        eventsMap.forEach((evs, day) => evs.forEach((ev) => allEvents.push({ day, event: ev })))
+        allEvents.sort((a, b) => a.event.dday - b.event.dday)
+        const upcomingEvents = allEvents.filter(({ event }) => event.dday >= -7)
+        if (upcomingEvents.length === 0) return (
+          <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 13 }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>📅</div>
+            이달 예정된 일정이 없습니다.<br />
+            <span style={{ fontSize: 12 }}>알림 자동 생성 버튼으로 생일·갱신 알림을 만드세요.</span>
+          </div>
+        )
+        return (
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#475569', marginBottom: 10 }}>{MONTH_NAMES[viewMonth]} 전체 일정</div>
+            {upcomingEvents.map(({ day, event }, i) => {
+              const color = eventTypeColor[event.type] || { bg: '#f1f5f9', text: '#374151' }
+              return (
+                <div key={i} onClick={() => setSelectedDay(day)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 6, cursor: 'pointer' }}>
+                  <div style={{ width: 32, textAlign: 'center', flexShrink: 0 }}>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{viewMonth + 1}월</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#1a2744' }}>{day}</div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{event.label}</div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>{event.detail}</div>
+                  </div>
+                  <span style={{ background: color.bg, color: color.text, padding: '3px 10px', borderRadius: 20, fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+                    {formatDday(event.dday)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
+    </div>
   )
 }
 

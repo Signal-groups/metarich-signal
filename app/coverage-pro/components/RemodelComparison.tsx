@@ -114,6 +114,7 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
   // 배상책임(59)
   기타: [
     'other_liability',        // 행59 일상생활배상책임
+    'benign_tumor',           // 양성종양
   ],
 
   // ── 주요치료비 ───────────────────────────────────────────────────────────

@@ -56,6 +56,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
   { patterns: ['암수술'], rowKey: 'cancer_surgery' },
   { patterns: ['전이암'], rowKey: 'cancer_metastasis' },
+  { patterns: ['양성종양진단비', '양성종양진단', '양성종양', '양성신생물', '양성뇌종양'], rowKey: 'benign_tumor' },
   // 유사암 — "소액암", "유사암" 포함 담보 (일반암보다 먼저)
   { patterns: ['유사암진단', '소액암진단', '소액암', '유사암', '갑상선암', '경계성암'], rowKey: 'cancer_similar' },
   // 일반암 — 가장 넓은 패턴을 마지막에
@@ -67,7 +68,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['뇌출혈'], rowKey: 'brain_hemorrhage' },
   { patterns: ['허혈성심장'], rowKey: 'heart_ischemic' },            // 심장질환보다 먼저!
   { patterns: ['급성심근경색', '심근경색'], rowKey: 'heart_acute_mi' },
-  { patterns: ['심장질환진단', '심혈관질환'], rowKey: 'heart_vascular' },
+  { patterns: ['심장질환진단', '심혈관질환', '부정맥', '심방세동', '빈맥', '서맥'], rowKey: 'heart_vascular' },
   { patterns: ['뇌수술비', '뇌혈관수술비', '뇌관련수술'], rowKey: 'brain_surgery' },     // 뇌 수술비 (two_major_surgery보다 먼저)
   { patterns: ['심장수술비', '심혈관수술비', '심관련수술'], rowKey: 'heart_surgery' },   // 심장 수술비
   { patterns: ['수술/시술비', '뇌심수술', '심뇌수술', '뇌혈관수술', '심혈관수술'], rowKey: 'two_major_surgery' },
@@ -204,10 +205,11 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   cancer_chemo:              '암 — 항암약물',
   cancer_targeted:           '암 — 표적항암약물',
   cancer_cart:               '암 — 카티항암약물',
+  benign_tumor:              '기타 — 양성종양',
   brain_vascular:            '2대질병 — 뇌혈관진단',
   brain_stroke:              '2대질병 — 뇌졸증진단',
   brain_hemorrhage:          '2대질병 — 뇌출혈진단',
-  heart_vascular:            '2대질병 — 심장질환진단',
+  heart_vascular:            '2대질병 — 심장질환(부정맥 등)',
   heart_ischemic:            '2대질병 — 허혈성심장진단',
   heart_acute_mi:            '2대질병 — 급성심근경색진단',
   brain_surgery:             '2대질병 — 뇌 수술비',

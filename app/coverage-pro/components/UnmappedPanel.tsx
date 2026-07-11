@@ -14,6 +14,8 @@ const QUICK_OPTIONS: Array<{ label: string; rowKey: string }> = [
   { label: '뇌출혈', rowKey: 'brain_hemorrhage' },
   { label: '허혈성심장', rowKey: 'heart_ischemic' },
   { label: '급성심근경색', rowKey: 'heart_acute_mi' },
+  { label: '심장질환(부정맥 등)', rowKey: 'heart_vascular' },
+  { label: '양성종양', rowKey: 'benign_tumor' },
   { label: '중대질병(CI)', rowKey: 'ci_diagnosis' },
   { label: '치매진단', rowKey: 'dementia_diagnosis' },
   { label: '장기요양', rowKey: 'ltc_grade' },

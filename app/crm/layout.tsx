@@ -14,6 +14,7 @@ type NavItem = {
   label: string
   exact: boolean
   icon: React.ReactNode
+  external?: boolean
 }
 
 const NAV: NavItem[] = [
@@ -28,10 +29,6 @@ const NAV: NavItem[] = [
   {
     href: '/crm/family', label: '가족관리', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/></svg>
-  },
-  {
-    href: '/crm/upload', label: '업로드 분석', exact: false,
-    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 16V4m0 0L7 9m5-5l5 5"/><path strokeWidth="2" d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
   },
   {
     href: '/crm/alerts', label: '알림관리', exact: false,
@@ -49,9 +46,9 @@ const NAV: NavItem[] = [
     href: '/crm/settings', label: '설정', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path strokeWidth="2" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06A1.65 1.65 0 0015 19.4a1.65 1.65 0 00-1 .6 1.65 1.65 0 00-.4 1.08V21a2 2 0 01-4 0v-.09A1.65 1.65 0 008.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-.6-1 1.65 1.65 0 00-1.08-.4H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-.6A1.65 1.65 0 0010.4 2.9V3a2 2 0 014 0v-.09A1.65 1.65 0 0015 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.22.38.6.6 1 .6H21a2 2 0 010 4h-.09A1.65 1.65 0 0019.4 15z"/></svg>
   },
-  // ── 보장분석 PRO (신규) ───────────────────────────────────────────────
+  // ── 보장분석 PRO (새창 열기) ─────────────────────────────────────────
   {
-    href: '/coverage-pro', label: '보장분석 PRO', exact: false,
+    href: '/coverage-pro', label: '보장분석 PRO', exact: false, external: true,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
   },
 ]
@@ -204,6 +201,23 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
         <nav className="crm-nav">
           {NAV.map(item => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+            if (item.external) {
+              return (
+                <button
+                  key={item.href}
+                  className="nav-item"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 0 }}
+                  onClick={() => {
+                    window.open(item.href, '_blank', 'noopener,noreferrer')
+                    setSidebarOpen(false)
+                  }}
+                >
+                  {item.icon}
+                  {item.label}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 4, opacity: 0.6 }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </button>
+              )
+            }
             return (
               <Link
                 key={item.href}

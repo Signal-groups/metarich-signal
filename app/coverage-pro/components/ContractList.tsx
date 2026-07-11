@@ -84,7 +84,7 @@ const COV_OPTIONS: { group: string; entries: [string, string][] }[] = [
   { group: '간병인', entries: Object.entries(ROW_KEY_LABEL).filter(([k]) => k.startsWith('nursing')) },
   { group: '운전자', entries: Object.entries(ROW_KEY_LABEL).filter(([k]) => k.startsWith('driver') || k.startsWith('other')) },
   { group: '상해진단', entries: Object.entries(ROW_KEY_LABEL).filter(([k]) => k.startsWith('fracture') || k.startsWith('burn')) },
-  { group: '주요치료비·기타', entries: Object.entries(ROW_KEY_LABEL).filter(([k]) => k.startsWith('cancer_major') || k.startsWith('vascular_major') || k.startsWith('ci') || k.startsWith('dementia') || k.startsWith('ltc')) },
+  { group: '주요치료비·기타', entries: Object.entries(ROW_KEY_LABEL).filter(([k]) => k.startsWith('cancer_major') || k.startsWith('vascular_major') || k.startsWith('ci') || k.startsWith('dementia') || k.startsWith('ltc') || k === 'benign_tumor') },
 ]
 
 export default function ContractList({ contracts, onUpdate }: Props) {
