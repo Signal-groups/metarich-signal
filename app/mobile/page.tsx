@@ -12,6 +12,7 @@ const SYMPTOM_CHIPS = [
   { id: 'surgery',         icon: '⚕️', label: '수술',      kw: ['수술','시술','로봇수술'] },
   { id: 'hospitalization', icon: '🏥', label: '입원·실손',  kw: ['입원','실손','실비','의료비','통원'] },
   { id: 'nursing',         icon: '🤲', label: '간병·요양',  kw: ['간병','요양','간호','재가'] },
+  { id: 'dementia',        icon: '🧩', label: '치매·장기요양', kw: ['치매','장기요양','인지','중대질병'] },
   { id: 'driver',          icon: '🚗', label: '교통사고',   kw: ['교통','자동차','운전자','벌금','변호사','부상치료'] },
   { id: 'death',           icon: '🕊️', label: '사망',      kw: ['사망','종신'] },
   { id: 'disability',      icon: '♿', label: '장해·후유',  kw: ['장해','후유','장애'] },
@@ -37,9 +38,10 @@ function calcAge(birthDate?: string): number | null {
 
 // ── 보장 카테고리 매칭 ────────────────────────────────────────────────────────
 function coverageMatchesFilter(
-  cov: { category?: string; name?: string },
+  cov: { category?: string; name?: string; condition?: string },
   selectedChips: string[],
-  customKw: string
+  customKw: string,
+  policy?: { company?: string; product_name?: string }
 ): boolean {
   // 칩 카테고리 직접 매칭
   if (selectedChips.includes(cov.category || '')) return true
@@ -49,7 +51,8 @@ function coverageMatchesFilter(
     if (chip && chip.kw.some(w => (cov.name || '').includes(w))) return true
   }
   // 직접 입력 키워드 매칭
-  if (customKw.trim() && (cov.name || '').toLowerCase().includes(customKw.toLowerCase())) return true
+  const searchable = `${cov.name || ''} ${cov.category || ''} ${cov.condition || ''} ${policy?.company || ''} ${policy?.product_name || ''}`.toLowerCase()
+  if (customKw.trim() && searchable.includes(customKw.toLowerCase())) return true
   return false
 }
 
@@ -73,7 +76,7 @@ export default function MobileCoverageLookup() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push('/login'); return }
-      supabase.from('advisors').select('name').eq('id', session.user.id).single()
+      supabase.from('users').select('name').eq('id', session.user.id).maybeSingle()
         .then(({ data }) => { if (data?.name) setAdvisorName(data.name) })
     })
   }, [router])
@@ -128,7 +131,7 @@ export default function MobileCoverageLookup() {
   const results = policies.map(policy => {
     const covs = coverages.filter(c => c.policy_id === policy.id && Number(c.amount) > 0)
     const matched = hasFilter
-      ? covs.filter(c => coverageMatchesFilter(c, selectedChips, customKeyword))
+      ? covs.filter(c => coverageMatchesFilter(c, selectedChips, customKeyword, policy))
       : covs
     return { policy, covs: matched }
   }).filter(r => r.covs.length > 0)

@@ -349,7 +349,8 @@ export default function CustomerDetailPage() {
 
     const matched = coverages.filter((cov: any) => {
       if (scenario) {
-        const rowKey: string = cov.row_key || ''
+        const rowKeyMatch = String(cov.condition || '').match(/rowKey:([^;\s]+)/)
+        const rowKey: string = cov.row_key || rowKeyMatch?.[1] || ''
         const inCategory = scenario.categories.includes(cov.category || '')
         const inRowKey = scenario.rowKeyPrefixes.some((pfx: string) => rowKey.startsWith(pfx))
         const inKeyword = scenario.keywords.length === 0 || scenario.keywords.some((kw: string) => (cov.name || '').includes(kw))
@@ -1583,23 +1584,25 @@ function AlertsTab({ customer, alerts, policies, onRefresh }: { customer: any; a
       const birth = new Date(customer.birth_date)
       const nextBday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
       if (nextBday < today) nextBday.setFullYear(today.getFullYear() + 1)
-      toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'birthday', message: `${customer.name} 고객님 생일`, due_date: toIso(nextBday), is_done: false, is_read: false })
+      toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'birthday', title: '고객 생일', message: `${customer.name} 고객님 생일`, due_date: toIso(nextBday), is_done: false, is_read: false })
     }
     if (customer.car_insurance_renewal_date) {
       const renewal = new Date(customer.car_insurance_renewal_date)
       if (renewal > today) {
-        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d60', message: `자동차보험 갱신 D-60`, due_date: toIso(addDays(renewal, -60)), is_done: false, is_read: false })
-        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d30', message: `자동차보험 갱신 D-30`, due_date: toIso(addDays(renewal, -30)), is_done: false, is_read: false })
+        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d60', title: '자동차보험 갱신 D-60', message: `자동차보험 갱신 D-60`, due_date: toIso(addDays(renewal, -60)), is_done: false, is_read: false })
+        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d30', title: '자동차보험 갱신 D-30', message: `자동차보험 갱신 D-30`, due_date: toIso(addDays(renewal, -30)), is_done: false, is_read: false })
       }
     }
     if (customer.join_date) {
       const joinDate = new Date(customer.join_date)
       for (const days of [30, 90, 180, 365]) {
         const alertDate = addDays(joinDate, days)
-        if (alertDate > today) toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: `join_${days}`, message: `계약 후 ${days}일 — 안착 관리 연락`, due_date: toIso(alertDate), is_done: false, is_read: false })
+        if (alertDate > today) toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: `join_${days}`, title: `계약 후 ${days}일 점검`, message: `계약 후 ${days}일 — 안착 관리 연락`, due_date: toIso(alertDate), is_done: false, is_read: false })
       }
     }
-    if (toInsert.length > 0) await supabase.from('notifications').insert(toInsert)
+    const existingKeys = new Set(localAlerts.map((alert: any) => `${alert.type}|${alert.due_date}`))
+    const uniqueRows = toInsert.filter((row) => !existingKeys.has(`${row.type}|${row.due_date}`))
+    if (uniqueRows.length > 0) await supabase.from('notifications').insert(uniqueRows)
     setGenerating(false)
     onRefresh()
   }

@@ -9,6 +9,7 @@ import type {
 import { createProSession, saveProSession } from '../../../lib/coverageAnalysis/session'
 import { supabase } from '../../../lib/supabase'
 import { inferClientRowKey } from '../../../lib/coverageAnalysis/clientMapping'
+import { contractsForOutput } from '../../../lib/coverageAnalysis/outputContracts'
 import ProSidebar from './ProSidebar'
 import StepIndicator from './StepIndicator'
 import CustomerSelector from './CustomerSelector'
@@ -34,7 +35,7 @@ function rowKeyToCrmCategory(rowKey: string): string {
   if (rowKey.startsWith('brain') || rowKey.startsWith('vascular')) return 'brain'
   if (rowKey.startsWith('heart')) return 'heart'
   if (rowKey.startsWith('surgery')) return 'surgery'
-  if (rowKey.startsWith('indemnity') || rowKey.startsWith('hospital')) return 'hospitalization'
+  if (rowKey.startsWith('silson') || rowKey.startsWith('indemnity') || rowKey.startsWith('hospital')) return 'hospitalization'
   if (rowKey.startsWith('nursing') || rowKey.startsWith('care')) return 'nursing'
   if (rowKey.startsWith('driver') || rowKey.startsWith('traffic')) return 'driver'
   if (rowKey.startsWith('death')) return 'death'
@@ -55,57 +56,171 @@ function parseContractDate(raw?: string): string {
   return today
 }
 
-async function syncProToCRM(customerId: string, contracts: ProContract[]) {
-  // 기존 PRO 출처 policies 조회 및 삭제
-  const { data: existing } = await supabase
-    .from('policies').select('id').eq('customer_id', customerId).eq('source_type', 'coverage_pro')
-  if (existing?.length) {
-    const ids = existing.map((p: { id: string }) => p.id)
-    await supabase.from('coverages').delete().in('policy_id', ids)
-    await supabase.from('policies').delete().in('id', ids)
-  }
+function nextAnniversary(dateText: string): string {
+  const start = new Date(dateText)
+  const today = new Date()
+  if (Number.isNaN(start.getTime())) return today.toISOString().slice(0, 10)
+  const next = new Date(today.getFullYear(), start.getMonth(), start.getDate())
+  if (next < new Date(today.getFullYear(), today.getMonth(), today.getDate())) next.setFullYear(next.getFullYear() + 1)
+  return next.toISOString().slice(0, 10)
+}
 
-  const syncErrors: string[] = []
+function maturityAge(paymentPeriod?: string): number | null {
+  const match = String(paymentPeriod || '').match(/(\d{2,3})세\s*만기/)
+  return match ? Number(match[1]) : null
+}
 
-  // 새 policies + coverages 삽입
-  for (const contract of contracts) {
-    if (!contract.company && !contract.productName) continue
-    const { data: policy, error: policyErr } = await supabase.from('policies').insert({
-      customer_id: customerId,
-      company: contract.company,
-      product_name: contract.productName,
-      monthly_premium: Math.round(contract.monthlyPremium || 0),
-      source_type: 'coverage_pro',
-      policy_type: 'pro_synced',
-      status: contract.status || 'active',
-      start_date: parseContractDate(contract.contractDate), // NOT NULL 필수
-    }).select('id').single()
+async function syncProToCRM(customer: ProCustomer, contracts: ProContract[], createSavedNotification = false) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user.id) throw new Error('로그인 정보를 확인할 수 없습니다.')
 
-    if (policyErr) {
-      syncErrors.push(`[${contract.productName || contract.company}] ${policyErr.message}`)
-      continue
-    }
+  const advisorId = session.user.id
+  const effectiveContracts = contractsForOutput(contracts)
+    .filter((contract) => contract.company || contract.productName)
+  if (effectiveContracts.length === 0) throw new Error('CRM에 저장할 계약이 없습니다.')
 
-    if (policy?.id && contract.coverages.length > 0) {
-      const covRows = contract.coverages
-        .filter(cov => cov.amount > 0)
-        .map(cov => ({
-          customer_id: customerId,
-          policy_id: policy.id,
-          name: cov.name,
-          amount: Math.round(cov.amount * 10000),
-          category: rowKeyToCrmCategory(cov.rowKey),
-          // row_key 컬럼은 coverages 테이블에 없으므로 제외
-        }))
-      if (covRows.length > 0) {
-        const { error: covErr } = await supabase.from('coverages').insert(covRows)
-        if (covErr) syncErrors.push(`[${contract.productName || contract.company} 보장] ${covErr.message}`)
+  const { data: existing, error: existingError } = await supabase
+    .from('policies')
+    .select('id')
+    .eq('advisor_id', advisorId)
+    .eq('customer_id', customer.id)
+    .eq('source_type', 'coverage_pro')
+  if (existingError) throw new Error(`기존 CRM 계약 조회 실패: ${existingError.message}`)
+
+  const oldPolicyIds = (existing || []).map((policy: { id: string }) => policy.id)
+  const newPolicyIds: string[] = []
+  const warnings: string[] = []
+  let newDatasetComplete = false
+
+  try {
+    for (const contract of effectiveContracts) {
+      const isRenewal = Boolean(contract.isRenewal || contract.coverages.some((coverage) => coverage.isRenewal))
+      const { data: policy, error: policyError } = await supabase.from('policies').insert({
+        advisor_id: advisorId,
+        customer_id: customer.id,
+        company: contract.company || '보험사 미확인',
+        product_name: contract.productName || '상품명 미확인',
+        monthly_premium: Math.round(contract.monthlyPremium || 0),
+        source_type: 'coverage_pro',
+        policy_type: contract.policyType || 'protection',
+        policy_status: contract.status || 'active',
+        start_date: parseContractDate(contract.contractDate),
+        payment_period: contract.paymentPeriod || null,
+        maturity_age: maturityAge(contract.paymentPeriod),
+        is_renewable: isRenewal,
+      }).select('id').single()
+
+      if (policyError || !policy?.id) {
+        throw new Error(`[${contract.productName || contract.company}] 계약 저장 실패: ${policyError?.message || '계약 ID 없음'}`)
+      }
+      newPolicyIds.push(policy.id)
+
+      const coverageRows = contract.coverages
+        .filter((coverage) => Number(coverage.amount || 0) > 0)
+        .map((coverage) => {
+          const renewal = Boolean(coverage.isRenewal || contract.isRenewal)
+          const condition = [
+            coverage.rowKey && coverage.rowKey !== 'unknown' ? `rowKey:${coverage.rowKey}` : '',
+            coverage.expiryDate ? `만기:${coverage.expiryDate}` : '',
+          ].filter(Boolean).join('; ')
+          return {
+            advisor_id: advisorId,
+            customer_id: customer.id,
+            policy_id: policy.id,
+            source_type: 'coverage_pro',
+            company: contract.company || '보험사 미확인',
+            product_name: contract.productName || '상품명 미확인',
+            name: coverage.name || '담보명 미확인',
+            amount: Math.round(Number(coverage.amount || 0) * 10000),
+            category: rowKeyToCrmCategory(coverage.rowKey),
+            condition,
+            coverage_type: renewal ? '갱신형' : '확인필요',
+            renewal_type: renewal ? '갱신형' : '확인필요',
+          }
+        })
+
+      if (coverageRows.length > 0) {
+        const { error: coverageError } = await supabase.from('coverages').insert(coverageRows)
+        if (coverageError) throw new Error(`[${contract.productName || contract.company}] 담보 저장 실패: ${coverageError.message}`)
       }
     }
-  }
 
-  // 에러가 있으면 throw → 호출부 catch에서 crmSyncStatus='error' 처리
-  if (syncErrors.length > 0) throw new Error(syncErrors.join('\n'))
+    newDatasetComplete = true
+
+    // 새 데이터가 모두 저장된 뒤에만 이전 PRO 데이터를 제거한다.
+    if (oldPolicyIds.length > 0) {
+      const { error: oldCoverageError } = await supabase.from('coverages').delete().in('policy_id', oldPolicyIds)
+      if (oldCoverageError) throw new Error(`이전 담보 정리 실패: ${oldCoverageError.message}`)
+      const { error: oldPolicyError } = await supabase.from('policies').delete().in('id', oldPolicyIds)
+      if (oldPolicyError) throw new Error(`이전 계약 정리 실패: ${oldPolicyError.message}`)
+    }
+
+    const actualContracts = contracts.filter((contract) => contract.id !== '__manual__')
+    const monthlyPremium = actualContracts.reduce((sum, contract) => sum + Number(contract.monthlyPremium || 0), 0)
+    const { error: customerError } = await supabase.from('customers').update({
+      monthly_premium: Math.round(monthlyPremium),
+      policy_count: actualContracts.length,
+      updated_at: new Date().toISOString(),
+    }).eq('id', customer.id).eq('advisor_id', advisorId)
+    if (customerError) warnings.push(`고객 요약 갱신 실패: ${customerError.message}`)
+
+    // PRO가 만든 갱신 알림만 새 계약 기준으로 교체한다.
+    const { error: renewalDeleteError } = await supabase.from('notifications').delete().eq('customer_id', customer.id).eq('type', 'coverage_pro_renewal')
+    if (renewalDeleteError) warnings.push(`기존 갱신 알림 정리 실패: ${renewalDeleteError.message}`)
+    const renewalNotifications = effectiveContracts
+      .filter((contract) => contract.isRenewal || contract.coverages.some((coverage) => coverage.isRenewal))
+      .map((contract) => ({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        type: 'coverage_pro_renewal',
+        title: '갱신형 보험 점검',
+        message: `${contract.company} ${contract.productName} 갱신 조건과 보험료 변동을 확인하세요.`,
+        due_date: nextAnniversary(parseContractDate(contract.contractDate)),
+        is_done: false,
+        is_read: false,
+      }))
+    if (renewalNotifications.length > 0) {
+      const { error: renewalError } = await supabase.from('notifications').insert(renewalNotifications)
+      if (renewalError) warnings.push(`갱신 알림 저장 실패: ${renewalError.message}`)
+    }
+
+    if (createSavedNotification) {
+      const today = new Date().toISOString().slice(0, 10)
+      const { data: savedToday, error: savedLookupError } = await supabase.from('notifications')
+        .select('id')
+        .eq('customer_id', customer.id)
+        .eq('type', 'coverage_pro_saved')
+        .eq('due_date', today)
+        .limit(1)
+      if (savedLookupError) warnings.push(`저장 완료 알림 조회 실패: ${savedLookupError.message}`)
+      if (!savedToday?.length) {
+        const { error: savedError } = await supabase.from('notifications').insert({
+          customer_id: customer.id,
+          customer_name: customer.name,
+          type: 'coverage_pro_saved',
+          title: '보장분석 저장 완료',
+          message: `${customer.name} 고객의 보장분석 ${actualContracts.length}건이 CRM에 저장되었습니다.`,
+          due_date: today,
+          is_done: false,
+          is_read: false,
+        })
+        if (savedError) warnings.push(`저장 완료 알림 생성 실패: ${savedError.message}`)
+      }
+    }
+
+    return {
+      policyCount: effectiveContracts.length,
+      coverageCount: effectiveContracts.reduce((sum, contract) => sum + contract.coverages.filter((coverage) => coverage.amount > 0).length, 0),
+      warnings,
+    }
+  } catch (error) {
+    // 새 삽입분만 되돌려 기존 CRM 데이터는 보존한다.
+    if (!newDatasetComplete && newPolicyIds.length > 0) {
+      await supabase.from('coverages').delete().in('policy_id', newPolicyIds)
+      await supabase.from('policies').delete().in('id', newPolicyIds)
+    }
+    throw error
+  }
 }
 
 const defaultProposal: RemodelProposal      = { addContracts: [], removeContractIds: [], memo: '' }
@@ -769,6 +884,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
   const [outputConfig, setOutputConfig] = useState<OutputConfig>(() => draft?.outputConfig || defaultOutputConfig)
   const [saveStatus,   setSaveStatus]   = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [crmSyncStatus, setCrmSyncStatus] = useState<'idle' | 'syncing' | 'done' | 'error'>('idle')
+  const [crmSyncMessage, setCrmSyncMessage] = useState('')
   const [advisorInfo, setAdvisorInfo]   = useState<{ name: string; phone: string; userId: string }>({ name: '', phone: '', userId: '' })
 
   // ── 기준금액 설정 모달 ──────────────────────────────────────────────
@@ -859,8 +975,11 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
       if (ok) {
         setTimeout(() => setSaveStatus('idle'), 2000)
         // PRO → CRM 자동 동기화
-        if (updated.customerId && nextContracts.length > 0) {
-          void syncProToCRM(updated.customerId, nextContracts)
+        if (updated.customerSnapshot?.id && nextContracts.length > 0 && nextCurrentStep === 7) {
+          void syncProToCRM(updated.customerSnapshot, nextContracts).catch((error) => {
+            setCrmSyncStatus('error')
+            setCrmSyncMessage(error instanceof Error ? error.message : 'CRM 자동 저장에 실패했습니다.')
+          })
         }
       }
     }, DEBOUNCE_MS)
@@ -1502,11 +1621,17 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                       onClick={async () => {
                         if (!customer?.id || contracts.length === 0) return
                         setCrmSyncStatus('syncing')
+                        setCrmSyncMessage('')
                         try {
-                          await syncProToCRM(customer.id, contracts)
+                          const result = await syncProToCRM(customer, contracts, true)
                           setCrmSyncStatus('done')
-                        } catch {
+                          setCrmSyncMessage([
+                            `계약 ${result.policyCount}건 · 담보 ${result.coverageCount}건 CRM 저장 완료`,
+                            result.warnings.length > 0 ? `주의: ${result.warnings.join(' / ')}` : '갱신 알림 연결 완료',
+                          ].join('\n'))
+                        } catch (error) {
                           setCrmSyncStatus('error')
+                          setCrmSyncMessage(error instanceof Error ? error.message : 'CRM 저장에 실패했습니다.')
                         }
                       }}
                       disabled={crmSyncStatus === 'syncing' || contracts.length === 0}
@@ -1535,6 +1660,11 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                       <span style={{ fontSize: 12, color: '#94a3b8' }}>
                         {customer.name}님 · 계약 {contracts.length}건 저장 준비됨
                       </span>
+                    )}
+                    {crmSyncMessage && (
+                      <div style={{ width: '100%', fontSize: 12, color: crmSyncStatus === 'error' ? '#b91c1c' : '#047857', background: crmSyncStatus === 'error' ? '#fef2f2' : '#ecfdf5', borderRadius: 8, padding: '9px 12px', whiteSpace: 'pre-wrap' }}>
+                        {crmSyncMessage}
+                      </div>
                     )}
                   </div>
                 )}

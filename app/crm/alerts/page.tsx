@@ -105,7 +105,7 @@ export default function AlertsPage() {
 
     const [{ data: notifData }, { data: policyData }] = await Promise.all([
       supabase.from('notifications').select('*').in('customer_id', customerIds).order('due_date', { ascending: true }),
-      supabase.from('policies').select('id, customer_id, start_date, insurance_company, insurance_type').in('customer_id', customerIds).not('start_date', 'is', null),
+      supabase.from('policies').select('id, customer_id, start_date, company, product_name, policy_type').in('customer_id', customerIds).not('start_date', 'is', null),
     ])
 
     setNotifications(notifData || [])
@@ -201,7 +201,7 @@ export default function AlertsPage() {
               events.push({
                 type: 'policy_anniversary',
                 label: `${p.customer_name}님 가입기념일`,
-                detail: `${p.insurance_company || '보험'} 가입 ${elapsed}주년`,
+                detail: `${p.company || '보험'} ${p.product_name || ''} 가입 ${elapsed}주년`,
                 dday: calcDday(year, month, d),
                 customerId: p.customer_id,
                 customerName: p.customer_name,
