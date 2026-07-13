@@ -465,13 +465,38 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   양성신생물: 'benign_tumor',
   질병수술비: 'surgery_disease',
   상해수술비: 'surgery_injury',
+  질병일반수술비: 'surgery_disease',
+  상해일반수술비: 'surgery_injury',
   질병상급수술비: 'surgery_disease_advanced',
+  질병상급수술: 'surgery_disease_advanced',
   질병종합수술비: 'surgery_disease_comprehensive',
+  질병종합수술: 'surgery_disease_comprehensive',
   질병종수술비: 'surgery_disease_type',
+  질병1종수술비: 'surgery_disease_advanced',
+  질병2종수술비: 'surgery_disease_advanced',
+  질병3종수술비: 'surgery_disease_comprehensive',
+  질병4종수술비: 'surgery_disease_comprehensive',
+  질병5종수술비: 'surgery_disease_comprehensive',
+  질병1_5종수술비: 'surgery_disease_type',
+  '질병1~5종수술비': 'surgery_disease_type',
+  '질병1-5종수술비': 'surgery_disease_type',
   질병N대수술비: 'surgery_n_major',
+  질병111대수술비: 'surgery_n_major',
+  질병119대수술비: 'surgery_n_major',
+  질병64대수술비: 'surgery_n_major',
   상해상급수술비: 'surgery_injury_advanced',
+  상해상급수술: 'surgery_injury_advanced',
   상해종합수술비: 'surgery_injury_comprehensive',
+  상해종합수술: 'surgery_injury_comprehensive',
   상해종수술비: 'surgery_injury_type',
+  상해1종수술비: 'surgery_injury_advanced',
+  상해2종수술비: 'surgery_injury_advanced',
+  상해3종수술비: 'surgery_injury_comprehensive',
+  상해4종수술비: 'surgery_injury_comprehensive',
+  상해5종수술비: 'surgery_injury_comprehensive',
+  상해1_5종수술비: 'surgery_injury_type',
+  '상해1~5종수술비': 'surgery_injury_type',
+  '상해1-5종수술비': 'surgery_injury_type',
   질병입원일당: 'hospital_disease_daily',
   상해입원일당: 'hospital_injury_daily',
   질병1인실입원일당: 'hospital_disease_single_room',
@@ -498,6 +523,35 @@ const SUMMARY_KEY_TO_ROW: Record<string, string> = {
   '중대질병(CI)진단비': 'ci_diagnosis',
 }
 
+function normalizeSummaryKey(key: string): string {
+  return key.replace(/[\s/_()·,.-]/g, '').toLowerCase()
+}
+
+function summaryKeyToRowKey(key: string): string | undefined {
+  if (SUMMARY_KEY_TO_ROW[key]) return SUMMARY_KEY_TO_ROW[key]
+  const compact = normalizeSummaryKey(key)
+  const entry = Object.entries(SUMMARY_KEY_TO_ROW).find(([summaryKey]) => normalizeSummaryKey(summaryKey) === compact)
+  return entry?.[1] || inferClientRowKey(key)
+}
+
+function buildSummaryCoverages(summary: Record<string, unknown>, idPrefix = 'sum'): ProCoverage[] {
+  const coverages: ProCoverage[] = []
+  Object.entries(summary).forEach(([key, value], ci) => {
+    const rowKey = summaryKeyToRowKey(key)
+    const amount = parseAmountToMan(value)
+    if (!rowKey || amount <= 0) return
+    coverages.push({
+      id: `${idPrefix}-cov-${ci}`,
+      contractId: idPrefix,
+      rowKey,
+      name: key,
+      amount,
+      isRenewal: false,
+    })
+  })
+  return coverages
+}
+
 function parsePolicyType(val: unknown): 'protection' | 'savings' {
   const s = String(val ?? '').toLowerCase()
   return s === 'savings' || s.includes('savings') || s.includes('저축') ? 'savings' : 'protection'
@@ -518,11 +572,67 @@ function extractJson(raw: string): string {
   return last !== -1 ? raw.slice(start, last + 1) : raw
 }
 
+function sanitizeGptsJsonText(raw: string): string {
+  return raw
+    .replace(/\\_/g, '_')
+    .replace(/\\\*/g, '*')
+}
+
+function parseJsonObject(raw: string): any {
+  const cleaned = sanitizeGptsJsonText(extractJson(raw.trim()))
+  return JSON.parse(cleaned)
+}
+
+// ── GPTs 데이터 품질 검사 ─────────────────────────────────────────────────
+// coverage_summary(GPTs 요약)와 policies[].coverages 합계를 비교해 누락 경고 생성
+function analyzeGptsDataQuality(raw: string, contracts: ProContract[]): string[] {
+  const warnings: string[] = []
+  try {
+    const parsed = parseJsonObject(raw)
+    const summary = parsed.coverage_summary as Record<string, unknown> | undefined
+    if (!summary || typeof summary !== 'object') return []
+
+    // policies[].coverages에서 담보명별 합계 계산
+    const computed: Record<string, number> = {}
+    for (const contract of contracts) {
+      for (const cov of contract.coverages) {
+        if (!cov.name || !cov.amount) continue
+        computed[cov.name] = (computed[cov.name] || 0) + Number(cov.amount)
+      }
+    }
+
+    // coverage_summary vs 실제 합계 비교 (100만원 초과 차이만 경고)
+    for (const [key, rawVal] of Object.entries(summary)) {
+      const summaryAmt = parseAmountToMan(rawVal)
+      if (summaryAmt <= 0) continue
+      const computedAmt = computed[key] || 0
+      const diff = summaryAmt - computedAmt
+      if (diff > 100) {
+        warnings.push(
+          `${key}: 계약 합계 ${computedAmt.toLocaleString()}만 / GPTs 요약 ${summaryAmt.toLocaleString()}만 → ${diff.toLocaleString()}만 누락 가능`
+        )
+      }
+    }
+
+    // 담보가 극히 적은 계약 감지 (운전자·정기보험·간편보험 제외)
+    for (const contract of contracts) {
+      const pn = contract.productName
+      const isDriverOrTerm = /운전자|차도리|정기보험|ECO/.test(pn)
+      const isSimple = /간편/.test(pn)
+      if (!isDriverOrTerm && !isSimple && contract.coverages.length <= 2) {
+        warnings.push(
+          `"${contract.company} ${contract.productName}" 담보 ${contract.coverages.length}개만 추출됨 — 누락 가능성 높음`
+        )
+      }
+    }
+  } catch { /* ignore */ }
+  return warnings
+}
+
 // ── 배치 출력 파트 감지 (output_part: "1/2" | "2/2") ──────────────────────
 function detectBatchPart(raw: string): '1/2' | '2/2' | null {
   try {
-    const cleaned = extractJson(raw.trim())
-    const parsed = JSON.parse(cleaned)
+    const parsed = parseJsonObject(raw)
     const part = String(parsed.output_part ?? '')
     if (part === '1/2') return '1/2'
     if (part === '2/2') return '2/2'
@@ -532,14 +642,13 @@ function detectBatchPart(raw: string): '1/2' | '2/2' | null {
 
 function parseGptsJson(raw: string): ProContract[] | null {
   try {
-    const cleaned = extractJson(raw.trim())
-    const parsed = JSON.parse(cleaned)
+    const parsed = parseJsonObject(raw)
 
     // ── v5 포맷 또는 policies 배열 감지 ─────────────────────────────────
     const isV5 = parsed.version === 'insurance_analysis_v5' || parsed.version?.startsWith('insurance_analysis')
     if ((isV5 || Array.isArray(parsed.policies)) && Array.isArray(parsed.policies)) {
       if (parsed.policies.length === 0) return null
-      return parsed.policies.map((item: Record<string, unknown>, idx: number) => {
+      const contracts: ProContract[] = parsed.policies.map((item: Record<string, unknown>, idx: number) => {
         const coverages = Array.isArray(item.coverages)
           ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci))
           : []
@@ -558,6 +667,24 @@ function parseGptsJson(raw: string): ProContract[] | null {
           coverages,
         }
       })
+      const coverageCount = contracts.reduce((sum: number, contract: ProContract) => sum + contract.coverages.length, 0)
+      const summary = parsed.coverage_summary as Record<string, unknown> | undefined
+      if (coverageCount === 0 && summary && typeof summary === 'object') {
+        const summaryCoverages = buildSummaryCoverages(summary, 'summary-fallback')
+        if (summaryCoverages.length > 0) {
+          contracts.push({
+            id: `summary-fallback-${Date.now()}`,
+            company: '요약',
+            productName: '통합 보장 요약',
+            policyHolder: String(parsed.customer?.name ?? ''),
+            monthlyPremium: 0,
+            status: 'active' as const,
+            policyType: 'protection' as const,
+            coverages: summaryCoverages,
+          })
+        }
+      }
+      return contracts
     }
 
     // ── coverage_summary 포맷: 단일 계약 요약 ────────────────────────────
@@ -566,16 +693,7 @@ function parseGptsJson(raw: string): ProContract[] | null {
       const company = String(parsed.insurer ?? parsed.company ?? parsed['보험사'] ?? '')
       const productName = String(parsed.product_name ?? parsed.productName ?? parsed['상품명'] ?? '')
       const premium = parsePremiumToWon(parsed.premium ?? parsed.monthly_premium ?? parsed.monthlyPremium ?? 0)
-      const coverages = Object.entries(summary)
-        .filter(([k]) => (SUMMARY_KEY_TO_ROW[k] || inferClientRowKey(k)) && Number(summary[k]) > 0)
-        .map(([k, v], ci) => ({
-          id: `sum-cov-${ci}`,
-          contractId: 'summary',
-          rowKey: SUMMARY_KEY_TO_ROW[k] || inferClientRowKey(k) || 'unknown',
-          name: k,
-          amount: parseAmountToMan(v),
-          isRenewal: false,
-        }))
+      const coverages = buildSummaryCoverages(summary, 'summary')
       if (coverages.length === 0) return null
       return [{
         id: `sum-${Date.now()}`,
@@ -642,6 +760,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
   const [jsonText, setJsonText] = useState('')
   const [jsonError, setJsonError] = useState('')
   const [batchPhase, setBatchPhase] = useState<'idle' | 'waiting_2nd'>('idle')
+  const [jsonWarnings, setJsonWarnings] = useState<string[]>([])
 
   const sessionRef   = useRef<ProSession | null>(null)
   const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -851,10 +970,15 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
 
   const handleJsonApply = (append = false) => {
     setJsonError('')
+    setJsonWarnings([])
     const batchPart = detectBatchPart(jsonText)
     const parsed = parseGptsJson(jsonText)
     if (!parsed) { setJsonError('JSON 형식이 올바르지 않습니다. GPTs 출력 형식을 확인해주세요.'); return }
     if (parsed.length === 0) { setJsonError('계약 데이터가 없습니다.'); return }
+
+    // ── GPTs 데이터 품질 검사 ────────────────────────────────────────────
+    const qualityWarnings = analyzeGptsDataQuality(jsonText, parsed)
+    if (qualityWarnings.length > 0) setJsonWarnings(qualityWarnings)
 
     if (batchPart === '1/2') {
       // 1차 배치: 계약 세팅 후 패널 유지 → 2차 대기
@@ -1119,6 +1243,19 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                     {jsonError && (
                       <div style={{ color: '#ef4444', fontSize: 13 }}>{jsonError}</div>
                     )}
+                    {jsonWarnings.length > 0 && (
+                      <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8, padding: '12px 16px', marginTop: 10 }}>
+                        <div style={{ fontWeight: 700, color: '#856404', marginBottom: 8, fontSize: 13 }}>
+                          ⚠️ GPTs 데이터 불일치 감지 ({jsonWarnings.length}개 항목) — 담보가 누락됐을 수 있습니다
+                        </div>
+                        {jsonWarnings.map((w, i) => (
+                          <div key={i} style={{ fontSize: 12, color: '#6c5700', marginTop: 4 }}>• {w}</div>
+                        ))}
+                        <div style={{ fontSize: 11, color: '#856404', marginTop: 8 }}>
+                          → GPTs에서 PDF를 다시 분석하거나, Step 4에서 직접 수정해 주세요.
+                        </div>
+                      </div>
+                    )}
                     <div className="coverage-pro-actions">
                       {batchPhase === 'waiting_2nd' ? (
                         <>
@@ -1239,6 +1376,19 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                     onChange={(e) => { setJsonText(e.target.value); setJsonError('') }}
                   />
                   {jsonError && <div style={{ color: '#ef4444', fontSize: 13 }}>{jsonError}</div>}
+                  {jsonWarnings.length > 0 && (
+                    <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 8, padding: '12px 16px', marginTop: 10 }}>
+                      <div style={{ fontWeight: 700, color: '#856404', marginBottom: 8, fontSize: 13 }}>
+                        ⚠️ GPTs 데이터 불일치 감지 ({jsonWarnings.length}개 항목) — 담보가 누락됐을 수 있습니다
+                      </div>
+                      {jsonWarnings.map((w, i) => (
+                        <div key={i} style={{ fontSize: 12, color: '#6c5700', marginTop: 4 }}>• {w}</div>
+                      ))}
+                      <div style={{ fontSize: 11, color: '#856404', marginTop: 8 }}>
+                        → GPTs에서 PDF를 다시 분석하거나, Step 4에서 직접 수정해 주세요.
+                      </div>
+                    </div>
+                  )}
                   <div className="coverage-pro-actions" style={{ marginTop: 10 }}>
                     {batchPhase === 'waiting_2nd' ? (
                       <>
