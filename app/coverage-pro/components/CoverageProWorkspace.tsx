@@ -43,45 +43,69 @@ function rowKeyToCrmCategory(rowKey: string): string {
 }
 
 // ── PRO → CRM 동기화 (source_type='coverage_pro' 행만 교체) ─────────────────
+// contractDate를 DB용 YYYY-MM-DD 형식으로 정규화
+function parseContractDate(raw?: string): string {
+  const today = new Date().toISOString().slice(0, 10)
+  if (!raw) return today
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  const m2 = raw.match(/^(\d{2})\.(\d{2})\.(\d{2})$/)
+  if (m2) return `20${m2[1]}-${m2[2]}-${m2[3]}`
+  const m4 = raw.match(/^(\d{4})\.(\d{2})\.(\d{2})$/)
+  if (m4) return `${m4[1]}-${m4[2]}-${m4[3]}`
+  return today
+}
+
 async function syncProToCRM(customerId: string, contracts: ProContract[]) {
-  try {
-    // 기존 PRO 출처 policies 조회
-    const { data: existing } = await supabase
-      .from('policies').select('id').eq('customer_id', customerId).eq('source_type', 'coverage_pro')
-    if (existing?.length) {
-      const ids = existing.map((p: { id: string }) => p.id)
-      await supabase.from('coverages').delete().in('policy_id', ids)
-      await supabase.from('policies').delete().in('id', ids)
+  // 기존 PRO 출처 policies 조회 및 삭제
+  const { data: existing } = await supabase
+    .from('policies').select('id').eq('customer_id', customerId).eq('source_type', 'coverage_pro')
+  if (existing?.length) {
+    const ids = existing.map((p: { id: string }) => p.id)
+    await supabase.from('coverages').delete().in('policy_id', ids)
+    await supabase.from('policies').delete().in('id', ids)
+  }
+
+  const syncErrors: string[] = []
+
+  // 새 policies + coverages 삽입
+  for (const contract of contracts) {
+    if (!contract.company && !contract.productName) continue
+    const { data: policy, error: policyErr } = await supabase.from('policies').insert({
+      customer_id: customerId,
+      company: contract.company,
+      product_name: contract.productName,
+      monthly_premium: Math.round(contract.monthlyPremium || 0),
+      source_type: 'coverage_pro',
+      policy_type: 'pro_synced',
+      status: contract.status || 'active',
+      start_date: parseContractDate(contract.contractDate), // NOT NULL 필수
+    }).select('id').single()
+
+    if (policyErr) {
+      syncErrors.push(`[${contract.productName || contract.company}] ${policyErr.message}`)
+      continue
     }
-    // 새 policies + coverages 삽입
-    for (const contract of contracts) {
-      if (!contract.company && !contract.productName) continue
-      const { data: policy } = await supabase.from('policies').insert({
-        customer_id: customerId,
-        company: contract.company,
-        product_name: contract.productName,
-        monthly_premium: Math.round(contract.monthlyPremium || 0),
-        source_type: 'coverage_pro',
-        policy_type: 'pro_synced',
-        status: contract.status || 'active',
-      }).select('id').single()
-      if (policy?.id && contract.coverages.length > 0) {
-        const covRows = contract.coverages
-          .filter(cov => cov.amount > 0)
-          .map(cov => ({
-            customer_id: customerId,
-            policy_id: policy.id,
-            name: cov.name,
-            amount: Math.round(cov.amount * 10000),
-            row_key: cov.rowKey,
-            category: rowKeyToCrmCategory(cov.rowKey),
-          }))
-        if (covRows.length > 0) await supabase.from('coverages').insert(covRows)
+
+    if (policy?.id && contract.coverages.length > 0) {
+      const covRows = contract.coverages
+        .filter(cov => cov.amount > 0)
+        .map(cov => ({
+          customer_id: customerId,
+          policy_id: policy.id,
+          name: cov.name,
+          amount: Math.round(cov.amount * 10000),
+          category: rowKeyToCrmCategory(cov.rowKey),
+          // row_key 컬럼은 coverages 테이블에 없으므로 제외
+        }))
+      if (covRows.length > 0) {
+        const { error: covErr } = await supabase.from('coverages').insert(covRows)
+        if (covErr) syncErrors.push(`[${contract.productName || contract.company} 보장] ${covErr.message}`)
       }
     }
-  } catch (_e) {
-    // 동기화 실패해도 PRO 저장은 정상 완료된 것으로 처리
   }
+
+  // 에러가 있으면 throw → 호출부 catch에서 crmSyncStatus='error' 처리
+  if (syncErrors.length > 0) throw new Error(syncErrors.join('\n'))
 }
 
 const defaultProposal: RemodelProposal      = { addContracts: [], removeContractIds: [], memo: '' }
