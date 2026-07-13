@@ -11,8 +11,8 @@
  *   행  6 : 보장기간
  *   행  7 : 비고/갱신종류
  *   행  8 : 월 보험료
- *   행 12~59 : 담보별 금액
- *   T열(20): 합산 수식 — 절대 수정 금지
+ *   행 12~64 : 담보별 금액(운전자 민사소송 행은 출력 시 동적 추가)
+ *   T열(20): 담보별 합산 수식
  *
  * 슬롯 → 열 번호: slot N → col 2N+3  (C=3, E=5, G=7 ... O=15)
  */
@@ -121,15 +121,16 @@ export const COVERAGE_ROW_MAP: Record<string, number> = {
   // ── 운전자 ────────────────────────────────────────────────────────────
   driver_fine:               56,  // 벌금
   driver_lawyer:             57,  // 변호사선임비용
-  driver_accident:           58,  // 교통사고처리지원금
+  driver_civil_litigation:   58,  // 민사소송법률비용
+  driver_accident:           59,  // 교통사고처리지원금
 
   // ── 기타 ─────────────────────────────────────────────────────────────
-  other_liability:           59,  // 일상생활배상책임
+  other_liability:           60,  // 일상생활배상책임
 
   // ── 주요치료비 ────────────────────────────────────────────────────────
-  cancer_major_benefit:      61,  // 암주요치료비(급여)
-  cancer_major_nonbenefit:   62,  // 암주요치료비(비급여)
-  vascular_major:            63,  // 뇌심(순환계)주요치료비
+  cancer_major_benefit:      62,  // 암주요치료비(급여)
+  cancer_major_nonbenefit:   63,  // 암주요치료비(비급여)
+  vascular_major:            64,  // 뇌심(순환계)주요치료비
 }
 
 // ── rowKey → 한국어 담보명 (UI 표시용) ──────────────────────────────────
@@ -153,6 +154,10 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   cancer_targeted:           '암 — 표적항암약물',
   cancer_cart:               '암 — 카티항암약물',
   benign_tumor:              '기타 — 양성종양',
+  benign_brain_tumor:        '진단비 — 양성뇌종양',
+  brain_special_case:        '2대질병 — 뇌혈관 산정특례',
+  heart_special_case:        '2대질병 — 심장 산정특례',
+  cancer_special_case:       '암 — 산정특례',
   brain_vascular:            '2대질병 — 뇌혈관진단',
   brain_stroke:              '2대질병 — 뇌졸증진단',
   brain_hemorrhage:          '2대질병 — 뇌출혈진단',
@@ -182,6 +187,8 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   nursing_integrated:        '간병인 — 간호간병통합',
   driver_fine:               '운전자 — 벌금',
   driver_lawyer:             '운전자 — 변호사선임',
+  driver_civil_litigation:   '운전자 — 민사소송법률비용',
+  driver_injury_14:          '운전자 — 자동차사고부상치료비(14급)',
   driver_accident:           '운전자 — 교통사고처리지원',
   other_liability:           '기타 — 일상생활배상책임',
   // 주요치료비
@@ -205,7 +212,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['전이암'], rowKey: 'cancer_metastasis' },
   { patterns: ['암수술'], rowKey: 'cancer_surgery' },
   { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
-  { patterns: ['양성종양진단비', '양성종양진단', '양성종양', '양성신생물', '양성뇌종양'], rowKey: 'benign_tumor' },
+  { patterns: ['양성뇌종양진단비', '양성뇌종양진단', '양성뇌종양'], rowKey: 'benign_brain_tumor' },
+  { patterns: ['양성종양진단비', '양성종양진단', '양성종양', '양성신생물'], rowKey: 'benign_tumor' },
+  { patterns: ['뇌혈관산정특례대상', '뇌혈관산정특례', '뇌산정특례'], rowKey: 'brain_special_case' },
+  { patterns: ['심장산정특례대상', '심장산정특례'], rowKey: 'heart_special_case' },
+  { patterns: ['암산정특례대상', '암산정특례'], rowKey: 'cancer_special_case' },
   { patterns: ['항암방사선', '방사선치료'], rowKey: 'cancer_radiation' },
   { patterns: ['중입자'], rowKey: 'cancer_hadron' },
   { patterns: ['양성자'], rowKey: 'cancer_proton' },
@@ -249,7 +260,9 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
   // 운전자
   { patterns: ['벌금'], rowKey: 'driver_fine' },
+  { patterns: ['민사소송법률비용', '민사소송법률', '민사소송비용', '소송법률비용', '소송법률'], rowKey: 'driver_civil_litigation' },
   { patterns: ['변호사선임'], rowKey: 'driver_lawyer' },
+  { patterns: ['자동차사고부상치료비14급', '자동차사고부상14급', '자부상14급', '자동차사고부상치료비', '자동차사고부상', '자부상'], rowKey: 'driver_injury_14' },
   { patterns: ['교통사고처리지원', '교통사고처리', '대물대인'], rowKey: 'driver_accident' },
   // 주요치료비 — 비급여 먼저
   { patterns: ['암주요치료비(비급여)', '암주요치료비비급여', '비급여암주요치료', '비급여주요치료'], rowKey: 'cancer_major_nonbenefit' },
@@ -294,6 +307,32 @@ export async function fillCoverageTemplate(input: ExcelExportInput): Promise<Buf
     .map((s) => s.name)
   for (const name of sheetsToRemove) {
     wb.removeWorksheet(wb.getWorksheet(name)!.id)
+  }
+
+  // 원본 템플릿의 운전자 영역은 3행뿐이므로 변호사선임과 민사소송법률비용을
+  // 섞지 않도록 58행에 별도 행을 추가한다. 병합 셀은 spliceRows가 자동으로
+  // 이동시키지 않으므로 해제 후 새 위치에 다시 구성한다.
+  for (const range of ['A56:A58', 'R56:R58', 'A59:B59', 'R59:S59', 'A64:B64', 'C64:D64', 'E64:F64', 'G64:H64', 'I64:J64', 'K64:L64', 'M64:N64', 'O64:P64', 'R64:S64']) {
+    ws.unMergeCells(range)
+  }
+  ws.spliceRows(58, 0, [])
+
+  const sourceRow = ws.getRow(57)
+  const civilRow = ws.getRow(58)
+  civilRow.height = sourceRow.height
+  for (let col = 1; col <= 20; col += 1) {
+    civilRow.getCell(col).style = { ...sourceRow.getCell(col).style }
+  }
+
+  ws.mergeCells('A56:A59')
+  ws.mergeCells('R56:R59')
+  ws.mergeCells('A60:B60')
+  ws.mergeCells('R60:S60')
+
+  ws.getCell('B58').value = '민사소송법률비용'
+  ws.getCell('S58').value = '민사소송법률비용'
+  for (let row = 56; row <= 60; row += 1) {
+    ws.getCell(`T${row}`).value = { formula: `C${row}+E${row}+G${row}+I${row}+K${row}+M${row}+O${row}` }
   }
 
   // 고객명: A1 셀

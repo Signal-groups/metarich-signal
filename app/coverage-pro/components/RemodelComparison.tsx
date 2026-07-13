@@ -10,7 +10,7 @@ type CoverageTab = '진단' | '수술' | '입원' | '간병' | '재가' | '기�
 // ── 엑셀 COVERAGE_ROW_MAP 행 순서 기준으로 정확히 매핑 ─────────────────
 // 실손(12-16) / 암진단·치료(17-28) / 2대질병(29-37) / 후유장해(38-41) /
 // 사망(42-44) / 수술비(45-48) / 상해진단(49-50) / 입원(51-52) /
-// 간병(53) / 재가(54-55) / 운전자(56-58) / 기타(59)
+// 간병(53-55) / 운전자(56-59) / 기타(60)
 const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
   // ── 진단 ─────────────────────────────────────────────────────────────────
   // 암진단(17-19) + 2대질병진단(29-34) + 후유장해(38-41) + 사망(42-44) + 상해진단(49-50)
@@ -26,6 +26,9 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
     'heart_vascular',        // 행32 심장질환진단
     'heart_ischemic',        // 행33 허혈성심장진단
     'heart_acute_mi',        // 행34 급성심근경색진단
+    'brain_special_case',
+    'heart_special_case',
+    'cancer_special_case',
     // 후유장해
     'disability_disease_80', // 행38 질병 80% 이상
     'disability_disease',    // 행39 질병 3%~80%
@@ -93,11 +96,13 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
   ],
 
   // ── 운전자 ───────────────────────────────────────────────────────────────
-  // 운전자 특약(56-58)
+  // 운전자 특약(56-59)
   운전자: [
     'driver_fine',            // 행56 벌금
     'driver_lawyer',          // 행57 변호사선임비용
-    'driver_accident',        // 행58 교통사고처리지원금
+    'driver_civil_litigation', // 민사소송법률비용(별도 담보)
+    'driver_injury_14',      // 자동차사고부상치료비 14급 기준
+    'driver_accident',        // 행59 교통사고처리지원금
   ],
 
   // ── 실손 ─────────────────────────────────────────────────────────────────
@@ -115,6 +120,7 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
   기타: [
     'other_liability',        // 행59 일상생활배상책임
     'benign_tumor',           // 양성종양
+    'benign_brain_tumor',     // 양성뇌종양
   ],
 
   // ── 주요치료비 ───────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { ProContract, ProCoverage } from '../../../lib/coverageAnalysis/types'
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 
-// 최대값으로 집계할 rowKey (실손·수술비·간병인 등 중복 합산 불가, 최고 계약 기준)
+// 최대값으로 집계할 rowKey (실손·수술비·간병인 등 지급구조상 최고 한도 표시 항목)
 const MAX_ROW_KEYS = new Set([
   'surgery_1_5', 'surgery_n_major', 'surgery_advanced', 'surgery_comprehensive',
   'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type',
@@ -12,12 +12,11 @@ const MAX_ROW_KEYS = new Set([
   'silson_disease_inpatient', 'silson_injury_inpatient',
   'silson_disease_outpatient', 'silson_injury_outpatient',
   'silson_3major',
-  'cancer_general',   // 통합암진단비 — 최고 계약 기준 (중복가입 각각 최고액)
   'nursing_hospital', // 간병인 질병 — 최고 계약 기준
   'nursing_injury',   // 간병인 상해 — 최고 계약 기준
 ])
 
-// 개수 집계할 rowKey (최고값 + 계약 개수 함께 표시)
+// 개수 집계할 rowKey (전체 합계 + 가입 담보 개수 함께 표시)
 const COUNT_ROW_KEYS = new Set(['cancer_general'])
 
 // 주요 보장 항목 — 카테고리별 정의
@@ -38,6 +37,9 @@ const CATEGORY_GROUPS = [
       { rowKey: 'cancer_general',          label: '일반암 진단비' },
       { rowKey: 'cancer_high_value',       label: '고액암 진단비' },
       { rowKey: 'cancer_similar',          label: '유사암 진단비' },
+      { rowKey: 'benign_brain_tumor',      label: '양성뇌종양 진단비' },
+      { rowKey: 'benign_tumor',            label: '양성종양 진단비' },
+      { rowKey: 'cancer_special_case',     label: '암 산정특례' },
       { rowKey: 'cancer_chemo',            label: '항암약물 치료비' },
       { rowKey: 'cancer_radiation',        label: '방사선 치료비' },
       { rowKey: 'cancer_targeted',         label: '표적항암 치료비' },
@@ -55,6 +57,8 @@ const CATEGORY_GROUPS = [
       { rowKey: 'heart_ischemic',   label: '허혈성심장 진단비' },
       { rowKey: 'heart_acute_mi',   label: '급성심근경색 진단비' },
       { rowKey: 'heart_vascular',   label: '심장질환(부정맥 등)' },
+      { rowKey: 'brain_special_case', label: '뇌혈관 산정특례' },
+      { rowKey: 'heart_special_case', label: '심장 산정특례' },
       { rowKey: 'brain_surgery',    label: '뇌 수술비' },
       { rowKey: 'heart_surgery',    label: '심장 수술비' },
       { rowKey: 'vascular_major',   label: '2대 주요치료비' },
@@ -107,6 +111,8 @@ const CATEGORY_GROUPS = [
     items: [
       { rowKey: 'driver_fine',     label: '교통사고 벌금' },
       { rowKey: 'driver_lawyer',   label: '변호사 선임비용' },
+      { rowKey: 'driver_civil_litigation', label: '민사소송 법률비용' },
+      { rowKey: 'driver_injury_14', label: '자동차사고부상치료비(14급)' },
       { rowKey: 'driver_accident', label: '교통사고 처리지원금' },
       { rowKey: 'other_liability', label: '일상생활배상책임' },
     ],
@@ -117,7 +123,6 @@ const CATEGORY_GROUPS = [
       { rowKey: 'ci_diagnosis',        label: '중대질병(CI) 진단비' },
       { rowKey: 'dementia_diagnosis',  label: '치매 진단비' },
       { rowKey: 'ltc_grade',           label: '장기요양등급' },
-      { rowKey: 'benign_tumor',        label: '양성종양 담보' },
       { rowKey: 'fracture_diagnosis',  label: '골절 진단비' },
       { rowKey: 'burn_diagnosis',      label: '화상 진단비' },
     ],
@@ -172,7 +177,7 @@ function coverageFlagsByRowKey(contracts: ProContract[]): Record<string, { renew
       if (!cov.rowKey || cov.rowKey === 'unknown') continue
       const current = flags[cov.rowKey] ?? { renewal: false, ci: false }
       const text = `${contract.productName || ''} ${cov.name || ''}`.toLowerCase()
-      current.renewal = false
+      current.renewal = current.renewal || Boolean(cov.isRenewal || contract.isRenewal)
       current.ci = current.ci || Boolean(cov.rowKey === 'ci_diagnosis' || text.includes('ci') || text.includes('중대질병') || text.includes('중대한'))
       flags[cov.rowKey] = current
     }

@@ -13,7 +13,22 @@ export function contractsForOutput(contracts: ProContract[]): ProContract[] {
   )
   if (manualRows.size === 0) return contracts.filter((contract) => contract.id !== MANUAL_CONTRACT_ID)
 
-  const manualPositiveCoverages = Array.from(manualRows.values()).filter((coverage) => Number(coverage.amount || 0) > 0)
+  const sourceContracts = contracts.filter((contract) => contract.id !== MANUAL_CONTRACT_ID)
+  const manualPositiveCoverages = Array.from(manualRows.values())
+    .filter((coverage) => Number(coverage.amount || 0) > 0)
+    .map((coverage) => {
+      const sources = sourceContracts.flatMap((contract) =>
+        contract.coverages
+          .filter((source) => source.rowKey === coverage.rowKey)
+          .map((source) => ({ contract, source }))
+      )
+      const expiries = [...new Set(sources.map(({ source }) => source.expiryDate).filter(Boolean))]
+      return {
+        ...coverage,
+        isRenewal: coverage.isRenewal ?? sources.some(({ contract, source }) => Boolean(source.isRenewal || contract.isRenewal)),
+        expiryDate: coverage.expiryDate || (expiries.length === 1 ? expiries[0] : undefined),
+      }
+    })
   const withoutOverriddenRows = contracts
     .filter((contract) => contract.id !== MANUAL_CONTRACT_ID)
     .map((contract) => ({

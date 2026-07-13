@@ -93,17 +93,26 @@ const MAX_ROW_KEYS = new Set([
 
 function sumAmount(contracts: ProContract[], ...rowKeys: string[]): number {
   let total = 0
+  const seenSharedGroups = new Set<string>()
   for (const key of rowKeys) {
     if (MAX_ROW_KEYS.has(key)) {
       let max = 0
       for (const c of contracts)
         for (const cov of c.coverages)
-          if (cov.rowKey === key) max = Math.max(max, Number(cov.amount || 0) * 10000)
+          if (cov.rowKey === key) {
+            if (cov.sharedGroup && seenSharedGroups.has(cov.sharedGroup)) continue
+            max = Math.max(max, Number(cov.amount || 0) * 10000)
+            if (cov.sharedGroup) seenSharedGroups.add(cov.sharedGroup)
+          }
       total += max
     } else {
       for (const c of contracts)
         for (const cov of c.coverages)
-          if (cov.rowKey === key) total += Number(cov.amount || 0) * 10000
+          if (cov.rowKey === key) {
+            if (cov.sharedGroup && seenSharedGroups.has(cov.sharedGroup)) continue
+            total += Number(cov.amount || 0) * 10000
+            if (cov.sharedGroup) seenSharedGroups.add(cov.sharedGroup)
+          }
     }
   }
   return total
@@ -125,7 +134,10 @@ function deriveVascularMajor(contracts: ProContract[]) {
 
 function formatWon(v: number): string {
   if (!v) return '-'
-  if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(0)}억`
+  if (v >= 100_000_000) {
+    const eok = v / 100_000_000
+    return `${Number.isInteger(eok) ? eok.toFixed(0) : eok.toFixed(1)}억`
+  }
   if (v >= 10_000)      return `${Math.round(v / 10_000).toLocaleString()}만원`
   return `${v.toLocaleString()}원`
 }
@@ -169,6 +181,7 @@ function isCiCoverage(contract: ProContract, coverage?: { rowKey?: string; name?
 function coverageBadges(contract: ProContract, coverage?: { rowKey?: string; name?: string; isRenewal?: boolean }): string {
   if (!coverage) return ''
   const badges: string[] = []
+  if (coverage.isRenewal || isRenewalContract(contract)) badges.push('<span class="cov-badge renewal">갱신</span>')
   if (isCiCoverage(contract, coverage)) badges.push('<span class="cov-badge ci">CI</span>')
   return badges.length ? `<div class="cov-badges">${badges.join('')}</div>` : ''
 }
@@ -626,12 +639,18 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '사망',      label: '질병사망',             rowKey: 'death_disease' },
     { group: '운전자',    label: '교통사고처리지원금',   rowKey: 'driver_accident' },
     { group: '운전자',    label: '자동차사고 변호사비용', rowKey: 'driver_lawyer' },
+    { group: '운전자',    label: '민사소송 법률비용',    rowKey: 'driver_civil_litigation' },
+    { group: '운전자',    label: '자동차사고부상치료비(14급)', rowKey: 'driver_injury_14' },
     { group: '운전자',    label: '벌금',                 rowKey: 'driver_fine' },
     { group: '기타',      label: '일상배상책임',         rowKey: 'other_liability' },
     { group: '기타',      label: '치매진단비',           rowKey: 'dementia_diagnosis' },
     { group: '기타',      label: '중대질병(CI)',          rowKey: 'ci_diagnosis' },
     { group: '기타',      label: '장기요양등급',         rowKey: 'ltc_grade' },
-    { group: '기타',      label: '양성종양 담보',        rowKey: 'benign_tumor' },
+    { group: '진단비',    label: '양성뇌종양 진단비',    rowKey: 'benign_brain_tumor' },
+    { group: '진단비',    label: '양성종양 진단비',      rowKey: 'benign_tumor' },
+    { group: '진단비',    label: '암 산정특례',          rowKey: 'cancer_special_case' },
+    { group: '2대질병',   label: '뇌혈관 산정특례',      rowKey: 'brain_special_case' },
+    { group: '2대질병',   label: '심장 산정특례',        rowKey: 'heart_special_case' },
   ]
 
   // 데이터 있는 행만
@@ -916,6 +935,8 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   const driverCard = tcCard('🚗', '운전자보험', [
     tcRow('교통사고처리지원금',     sumAmount(contracts, 'driver_accident')),
     tcRow('자동차사고 변호사비용',  sumAmount(contracts, 'driver_lawyer')),
+    tcRow('민사소송 법률비용',      sumAmount(contracts, 'driver_civil_litigation')),
+    tcRow('자동차사고부상치료비(14급)', sumAmount(contracts, 'driver_injury_14')),
     tcRow('벌금',                   sumAmount(contracts, 'driver_fine')),
   ].join(''))
 
@@ -1395,7 +1416,7 @@ ${hasRemodel ? `
         { label:'암 진단비',    keys:['cancer_general','cancer_similar'] },
         { label:'뇌 진단비',    keys:['brain_vascular'] },
         { label:'심장 진단비',  keys:['heart_ischemic'] },
-        { label:'간병인 지원',  keys:['nursing_hospital','nursing_care_hospital','nursing_integrated'] },
+        { label:'간병인 지원',  keys:['nursing_hospital','nursing_injury','nursing_care_hospital','nursing_integrated'] },
         { label:'실손의료비',   keys:['silson_disease_inpatient','silson_injury_inpatient','silson_3major'] },
         { label:'운전자보험',   keys:['driver_accident'] },
         { label:'암 치료비합계',keys:['cancer_chemo','cancer_radiation','cancer_targeted','cancer_hadron'] },
@@ -1421,7 +1442,7 @@ ${hasRemodel ? `
         { label:'암 진단비',    keys:['cancer_general','cancer_similar'] },
         { label:'뇌 진단비',    keys:['brain_vascular'] },
         { label:'심장 진단비',  keys:['heart_ischemic'] },
-        { label:'간병인 지원',  keys:['nursing_hospital','nursing_care_hospital','nursing_integrated'] },
+        { label:'간병인 지원',  keys:['nursing_hospital','nursing_injury','nursing_care_hospital','nursing_integrated'] },
         { label:'실손의료비',   keys:['silson_disease_inpatient','silson_injury_inpatient','silson_3major'] },
         { label:'운전자보험',   keys:['driver_accident'] },
         { label:'암 치료비합계',keys:['cancer_chemo','cancer_radiation','cancer_targeted','cancer_hadron'] },
@@ -1554,7 +1575,8 @@ ${hasRemodel ? `
       <div style="background:#fafaf8;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px">
         <div style="font-size:10px;font-weight:900;color:#475569;margin-bottom:8px">기존 보장</div>
         ${[
-          { label:'병원 간병인', keys:['nursing_hospital'] },
+          { label:'간병인(질병)', keys:['nursing_hospital'] },
+          { label:'간병인(상해)', keys:['nursing_injury'] },
           { label:'요양병원 간병', keys:['nursing_care_hospital'] },
           { label:'간호간병통합', keys:['nursing_integrated'] },
           { label:'질병 입원 실손', keys:['silson_disease_inpatient'] },
@@ -1571,7 +1593,8 @@ ${hasRemodel ? `
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px">
         <div style="font-size:10px;font-weight:900;color:#059669;margin-bottom:8px">변경 후 보장</div>
         ${[
-          { label:'병원 간병인', keys:['nursing_hospital'] },
+          { label:'간병인(질병)', keys:['nursing_hospital'] },
+          { label:'간병인(상해)', keys:['nursing_injury'] },
           { label:'요양병원 간병', keys:['nursing_care_hospital'] },
           { label:'간호간병통합', keys:['nursing_integrated'] },
           { label:'질병 입원 실손', keys:['silson_disease_inpatient'] },

@@ -4,7 +4,7 @@
  * 보장분석시트.xlsx 기준으로 동기화됨.
  */
 
-import type { ExcelExportInput, ProContract } from './types'
+import type { ExcelExportInput, ProContract, ProCoverage } from './types'
 
 const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   // ──────────────────────────────────────────────────────────────────────
@@ -22,10 +22,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['중대질병(ci)진단비', '중대질병ci진단비', '중대한질병진단', '중대질병진단', '중대질병', '특정중대질병', 'ci진단', 'ci보험금'], rowKey: 'ci_diagnosis' },
 
   // ── 간병인·재가 (입원일당/실비 패턴보다 반드시 앞에) ─────────────────
-  { patterns: ['간병인사용', '간병인질병', '질병간병인', '질병간병지원금', '질병간병', '병원사용간병', '병원간병', '간병인서비스'], rowKey: 'nursing_hospital' },
-  { patterns: ['간병인상해', '상해간병인', '상해간병지원금', '상해간병', '간병인간호'], rowKey: 'nursing_injury' },
   { patterns: ['요양병원간병', '요양병원입원', '요양병원재가', '요양간병', '요양병원'], rowKey: 'nursing_care_hospital' },
   { patterns: ['간호간병통합', '간병통합'], rowKey: 'nursing_integrated' },
+  { patterns: ['간병인사용입원일당(상해)', '상해간병인사용입원일당', '간병인상해', '상해간병인', '상해간병지원금', '상해간병', '간병인간호'], rowKey: 'nursing_injury' },
+  { patterns: ['간병인사용입원일당(질병)', '질병간병인사용입원일당', '간병인질병', '질병간병인', '질병간병지원금', '질병간병', '병원사용간병', '병원간병', '간병인서비스'], rowKey: 'nursing_hospital' },
+  { patterns: ['간병인사용'], rowKey: 'nursing_hospital' },
   { patterns: ['간병인'], rowKey: 'nursing_hospital' },
 
   // ── 입원일당 (실비 "입원" 패턴보다 앞에 위치해야 함) ─────────────────
@@ -39,9 +40,9 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['3대비급여', '비급여도수치료', '도수치료', '비급여주사치료', '프롤로주사', '비급여mri', '비급여초음파', '응급실내원비', '응급실내원', '상급병실차액', '상급병실료'], rowKey: 'silson_3major' },
 
   // ── 실비 (간병인·입원일당·3대비급여 다음) ────────────────────────────
-  { patterns: ['질병입원의료비', '질병+상해입원', '상해+질병입원', '실손질병입원', '질병입원실손'], rowKey: 'silson_disease_inpatient' },
+  { patterns: ['질병입원의료비', '질병+상해입원', '상해+질병입원', '실손질병입원', '질병입원실손', '질병입원'], rowKey: 'silson_disease_inpatient' },
   { patterns: ['질병통원의료비', '질병외래의료비', '질병처방조제료', '질병통원실손', '실손질병통원', '질병통원'], rowKey: 'silson_disease_outpatient' },
-  { patterns: ['상해입원의료비', '해외진료입원', '실손상해입원', '상해입원실손'], rowKey: 'silson_injury_inpatient' },
+  { patterns: ['상해입원의료비', '해외진료입원', '실손상해입원', '상해입원실손', '상해입원'], rowKey: 'silson_injury_inpatient' },
   { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '실손상해통원', '상해통원실손', '상해통원', '실손의료비', '의료실비', '실비', '실손'], rowKey: 'silson_injury_outpatient' },
 
   // ── 암 — 고액·표적 먼저 (일반 "암진단"보다 구체적) ───────────────────
@@ -56,7 +57,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['다빈치'], rowKey: 'cancer_davinci' },
   { patterns: ['암수술'], rowKey: 'cancer_surgery' },
   { patterns: ['전이암'], rowKey: 'cancer_metastasis' },
-  { patterns: ['양성종양진단비', '양성종양진단', '양성종양', '양성신생물', '양성뇌종양'], rowKey: 'benign_tumor' },
+  { patterns: ['양성뇌종양진단비', '양성뇌종양진단', '양성뇌종양'], rowKey: 'benign_brain_tumor' },
+  { patterns: ['양성종양진단비', '양성종양진단', '양성종양', '양성신생물'], rowKey: 'benign_tumor' },
+  { patterns: ['뇌혈관산정특례대상', '뇌혈관산정특례', '뇌산정특례'], rowKey: 'brain_special_case' },
+  { patterns: ['심장산정특례대상', '심장산정특례'], rowKey: 'heart_special_case' },
+  { patterns: ['암산정특례대상', '암산정특례'], rowKey: 'cancer_special_case' },
   // 유사암 — "소액암", "유사암" 포함 담보 (일반암보다 먼저)
   { patterns: ['유사암진단', '소액암진단', '소액암', '유사암', '갑상선암', '경계성암'], rowKey: 'cancer_similar' },
   // 일반암 — 가장 넓은 패턴을 마지막에
@@ -109,9 +114,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['화상진단', '화상'], rowKey: 'burn_diagnosis' },
 
   // ── 운전자 ───────────────────────────────────────────────────────────
-  { patterns: ['교통사고처리지원금', '교통사고처리지원', '교통사고처리', '자동차사고피해', '자동차사고', '대물대인'], rowKey: 'driver_accident' },
+  { patterns: ['민사소송법률비용', '민사소송법률', '민사소송비용', '소송법률비용', '소송법률'], rowKey: 'driver_civil_litigation' },
+  { patterns: ['자동차사고변호사선임', '변호사선임비용', '변호사선임'], rowKey: 'driver_lawyer' },
+  { patterns: ['자동차사고부상치료비14급', '자동차사고부상14급', '자부상14급', '자동차사고부상치료비', '자동차사고부상', '자부상'], rowKey: 'driver_injury_14' },
   { patterns: ['운전자벌금', '벌금'], rowKey: 'driver_fine' },
-  { patterns: ['변호사선임', '법률비용', '소송법률'], rowKey: 'driver_lawyer' },
+  { patterns: ['교통사고처리지원금', '교통사고처리지원', '교통사고처리', '자동차사고피해', '대물대인'], rowKey: 'driver_accident' },
 
   // ── 주요치료비 — 비급여 먼저 체크 (급여 패턴이 비급여도 매핑하는 것 방지) ──
   { patterns: ['암주요치료비(비급여)', '암주요치료비비급여', '암비급여주요치료', '비급여암주요', '암일반비급여', '암비급여'], rowKey: 'cancer_major_nonbenefit' },
@@ -159,10 +166,54 @@ export function proContractsToExcelInputClient(
   contracts: ProContract[],
   sheetIndex: 1 | 2 = 1
 ): ExcelExportInput {
+  const excelMaxRowKeys = new Set([
+    'surgery_1_5', 'surgery_n_major',
+    'surgery_disease_advanced', 'surgery_disease_comprehensive', 'surgery_disease_type',
+    'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type',
+    'silson_disease_inpatient', 'silson_injury_inpatient',
+    'silson_disease_outpatient', 'silson_injury_outpatient', 'silson_3major',
+  ])
+
+  const excelContracts: ProContract[] = contracts.length <= 7
+    ? contracts
+    : [
+        ...contracts.slice(0, 6),
+        (() => {
+          const remaining = contracts.slice(6)
+          const byRowKey = new Map<string, ProCoverage>()
+          for (const contract of remaining) {
+            for (const coverage of contract.coverages) {
+              if (!coverage.rowKey || coverage.rowKey === 'unknown') continue
+              const previous = byRowKey.get(coverage.rowKey)
+              const amount = excelMaxRowKeys.has(coverage.rowKey)
+                ? Math.max(Number(previous?.amount || 0), Number(coverage.amount || 0))
+                : Number(previous?.amount || 0) + Number(coverage.amount || 0)
+              byRowKey.set(coverage.rowKey, {
+                ...coverage,
+                id: `excel-summary-${coverage.rowKey}`,
+                contractId: '__excel_summary__',
+                amount,
+                isRenewal: Boolean(previous?.isRenewal || coverage.isRenewal || contract.isRenewal),
+              })
+            }
+          }
+          return {
+            id: '__excel_summary__',
+            company: '기타·수동조정',
+            productName: `잔여 ${remaining.length}건 합산`,
+            paymentPeriod: '7건 초과 계약 합산',
+            monthlyPremium: remaining.reduce((sum, contract) => sum + Number(contract.monthlyPremium || 0), 0),
+            status: 'active' as const,
+            policyType: 'protection' as const,
+            coverages: Array.from(byRowKey.values()),
+          }
+        })(),
+      ]
+
   return {
     customerName,
     sheetIndex,
-    contracts: contracts.slice(0, 7).map((contract, slot) => {
+    contracts: excelContracts.map((contract, slot) => {
       const coverages: Record<string, number> = {}
       contract.coverages.forEach((coverage) => {
         if (coverage.rowKey && coverage.rowKey !== 'unknown') {
@@ -206,6 +257,10 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   cancer_targeted:           '암 — 표적항암약물',
   cancer_cart:               '암 — 카티항암약물',
   benign_tumor:              '기타 — 양성종양',
+  benign_brain_tumor:        '진단비 — 양성뇌종양',
+  brain_special_case:        '2대질병 — 뇌혈관 산정특례',
+  heart_special_case:        '2대질병 — 심장 산정특례',
+  cancer_special_case:       '암 — 산정특례',
   brain_vascular:            '2대질병 — 뇌혈관진단',
   brain_stroke:              '2대질병 — 뇌졸증진단',
   brain_hemorrhage:          '2대질병 — 뇌출혈진단',
@@ -249,6 +304,8 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   nursing_integrated:        '간병인 — 간호간병통합',
   driver_fine:               '운전자 — 벌금',
   driver_lawyer:             '운전자 — 변호사선임',
+  driver_civil_litigation:   '운전자 — 민사소송법률비용',
+  driver_injury_14:          '운전자 — 자동차사고부상치료비(14급)',
   driver_accident:           '운전자 — 교통사고처리지원',
   other_liability:           '기타 — 일상생활배상책임',
   // 주요치료비

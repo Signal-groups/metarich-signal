@@ -10,6 +10,7 @@ import {
   type BenchmarkKey,
 } from './BenchmarkSettings'
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
+import { contractsForOutput } from '../../../lib/coverageAnalysis/outputContracts'
 
 function calcActuals(contracts: ProContract[]): Record<string, number> {
   const result: Record<string, number> = {}
@@ -152,7 +153,7 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
 
   if (!benchmark) return null
 
-  const actuals = calcActuals(contracts)
+  const actuals = calcActuals(contractsForOutput(contracts))
   const groups = ['사망', '암', '2대질병', '주요치료비', '기타']
   const grouped = groups.map((g) => ({ group: g, items: BENCHMARK_ITEMS.filter((i) => i.group === g) }))
 

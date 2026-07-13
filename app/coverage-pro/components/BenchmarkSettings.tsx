@@ -49,6 +49,8 @@ export const ROW_KEY_TO_BENCHMARK: Record<string, BenchmarkKey> = {
   driver_accident:           'driver',
   driver_fine:               'driver',
   driver_lawyer:             'driver',
+  driver_civil_litigation:   'driver',
+  driver_injury_14:          'driver',
   silson_disease_inpatient:  'silson',
   silson_injury_inpatient:   'silson',
   silson_disease_outpatient: 'silson',

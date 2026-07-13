@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { ProContract } from '../../../lib/coverageAnalysis/types'
+import { contractsForOutput } from '../../../lib/coverageAnalysis/outputContracts'
 import { BENCHMARK_UPDATED_EVENT, loadBenchmark, type BenchmarkAmounts } from './BenchmarkSettings'
 
 const RADAR_GROUPS = [
@@ -29,6 +30,7 @@ function getPremiumRows(contracts: ProContract[]): PremiumRow[] {
   }
   return Array.from(map.entries())
     .map(([company, monthlyPremium]) => ({ company, monthlyPremium }))
+    .filter((row) => row.monthlyPremium > 0)
     .sort((a, b) => b.monthlyPremium - a.monthlyPremium)
 }
 
@@ -46,7 +48,10 @@ function getRadarData(contracts: ProContract[], bm: BenchmarkAmounts) {
 
 function fmtAmt(value: number): string {
   if (!value) return '없음'
-  if (value >= 100_000_000) return `${(value / 100_000_000).toFixed(0)}억`
+  if (value >= 100_000_000) {
+    const eok = value / 100_000_000
+    return `${Number.isInteger(eok) ? eok.toFixed(0) : eok.toFixed(1)}억`
+  }
   if (value >= 10_000) return `${Math.round(value / 10_000).toLocaleString()}만`
   return `${value.toLocaleString()}원`
 }
@@ -132,10 +137,11 @@ export default function AnalysisChart({ contracts }: { contracts: ProContract[] 
     }
   }, [])
 
-  const premiumRows = getPremiumRows(contracts)
+  const effectiveContracts = contractsForOutput(contracts)
+  const premiumRows = getPremiumRows(effectiveContracts)
   const premiumTotal = premiumRows.reduce((sum, r) => sum + r.monthlyPremium, 0)
   const premiumMax = Math.max(...premiumRows.map((r) => r.monthlyPremium), 1)
-  const radarData = getRadarData(contracts, benchmark)
+  const radarData = getRadarData(effectiveContracts, benchmark)
   const okCount = radarData.filter((d) => d.amount >= d.recommend).length
   const warnCount = radarData.filter((d) => d.amount > 0 && d.amount < d.recommend).length
   const missCount = radarData.filter((d) => d.amount === 0).length

@@ -41,6 +41,8 @@ export interface ProCoverage {
   amount: number          // 가입금액 (만원 단위)
   expiryDate?: string
   isRenewal?: boolean
+  /** 하나의 결합 담보를 여러 보장확인 항목에 표시할 때 중복 합산을 막는 원본 그룹 */
+  sharedGroup?: string
 }
 
 // ── 분석 세션 ──────────────────────────────────────────────────────────────
