@@ -10,7 +10,7 @@ import {
 } from "recharts"
 import {
   BarChart3, Download, FileText, Lock, PieChart as PieChartIcon,
-  Plus, Printer, Save, Trash2, UserRound,
+  Plus, Printer, Save, Search, Trash2, UserRound, X,
 } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { isApprovedUser, normalizeRole } from "../../lib/roles"
@@ -1123,6 +1123,45 @@ export default function FinancialPortfolioPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null)
 
+  // ── CRM 고객 불러오기 상태 ────────────────────────────────────────────────
+  const [crmImportOpen, setCrmImportOpen] = useState(false)
+  const [crmQuery, setCrmQuery] = useState("")
+  const [crmResults, setCrmResults] = useState<{ id: string; name: string; birth_date: string | null; gender: string | null; phone: string | null }[]>([])
+  const [crmSearching, setCrmSearching] = useState(false)
+
+  const searchCrmCustomers = async (q: string) => {
+    if (!advisorId || q.trim().length < 1) { setCrmResults([]); return }
+    setCrmSearching(true)
+    const { data } = await supabase
+      .from("customers")
+      .select("id, name, birth_date, gender, phone")
+      .eq("advisor_id", advisorId)
+      .ilike("name", `%${q.trim()}%`)
+      .order("name")
+      .limit(20)
+    setCrmResults(data || [])
+    setCrmSearching(false)
+  }
+
+  const applyCrmCustomer = (c: { id: string; name: string; birth_date: string | null; gender: string | null }) => {
+    const age = c.birth_date ? (() => {
+      const birth = new Date(c.birth_date)
+      const today = new Date()
+      let a = today.getFullYear() - birth.getFullYear()
+      const m = today.getMonth() - birth.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) a--
+      return a
+    })() : client.age
+    updateClient({
+      name: c.name,
+      age,
+      gender: c.gender === "female" || c.gender === "여성" || c.gender === "여" ? "여" : c.gender === "male" || c.gender === "남성" || c.gender === "남" ? "남" : c.gender || client.gender,
+    })
+    setCrmImportOpen(false)
+    setCrmQuery("")
+    setCrmResults([])
+  }
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -1401,6 +1440,82 @@ export default function FinancialPortfolioPage() {
         <SimpleLandscapeReport client={client} draft={simpleDraft} today={today} />
       </div>
 
+      {/* ── CRM 고객 불러오기 모달 ── */}
+      {crmImportOpen && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(10,16,30,0.72)", zIndex:9000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:"#fff", borderRadius:16, width:"100%", maxWidth:480, boxShadow:"0 24px 64px rgba(0,0,0,0.28)", overflow:"hidden" }}>
+            {/* 헤더 */}
+            <div style={{ background:"#1A2744", padding:"18px 22px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div>
+                <p style={{ margin:0, fontSize:11, color:"#c9a96e", fontWeight:800, letterSpacing:"0.1em" }}>METARICH CRM</p>
+                <h2 style={{ margin:0, fontSize:17, color:"#fff", fontWeight:900 }}>고객 불러오기</h2>
+              </div>
+              <button onClick={()=>setCrmImportOpen(false)} style={{ background:"transparent", border:"none", cursor:"pointer", color:"#9ec5ef", display:"flex", alignItems:"center" }}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {/* 검색창 */}
+            <div style={{ padding:"16px 22px 12px", borderBottom:"1px solid #eef2f7" }}>
+              <div style={{ position:"relative" }}>
+                <Search style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#9ca3af", width:16, height:16 }} />
+                <input
+                  autoFocus
+                  value={crmQuery}
+                  onChange={e=>{ setCrmQuery(e.target.value); searchCrmCustomers(e.target.value) }}
+                  placeholder="고객 이름 검색..."
+                  style={{ width:"100%", height:42, border:"1.5px solid #dce4ef", borderRadius:10, paddingLeft:38, paddingRight:12, fontSize:14, fontWeight:700, outline:"none", boxSizing:"border-box", color:"#111" }}
+                />
+              </div>
+            </div>
+            {/* 결과 목록 */}
+            <div style={{ maxHeight:320, overflowY:"auto", padding:"8px 0" }}>
+              {crmSearching && (
+                <div style={{ padding:"24px 0", textAlign:"center", color:"#9ca3af", fontSize:13, fontWeight:700 }}>검색 중...</div>
+              )}
+              {!crmSearching && crmQuery.length > 0 && crmResults.length === 0 && (
+                <div style={{ padding:"24px 0", textAlign:"center", color:"#9ca3af", fontSize:13, fontWeight:700 }}>검색 결과가 없습니다</div>
+              )}
+              {!crmSearching && crmQuery.length === 0 && (
+                <div style={{ padding:"24px 0", textAlign:"center", color:"#9ca3af", fontSize:13, fontWeight:700 }}>이름을 입력하면 CRM 고객 목록이 표시됩니다</div>
+              )}
+              {crmResults.map(c => {
+                const age = c.birth_date ? (() => {
+                  const birth = new Date(c.birth_date)
+                  const today = new Date()
+                  let a = today.getFullYear() - birth.getFullYear()
+                  const m = today.getMonth() - birth.getMonth()
+                  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) a--
+                  return a
+                })() : null
+                const genderLabel = c.gender === "female" || c.gender === "여성" || c.gender === "여" ? "여" : c.gender === "male" || c.gender === "남성" || c.gender === "남" ? "남" : c.gender || ""
+                return (
+                  <button key={c.id} onClick={()=>applyCrmCustomer(c)} style={{ width:"100%", background:"transparent", border:"none", cursor:"pointer", padding:"11px 22px", display:"flex", alignItems:"center", gap:12, textAlign:"left", borderBottom:"1px solid #f1f5f9" }}
+                    onMouseEnter={e=>(e.currentTarget.style.background="#f0f7ff")}
+                    onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                    <div style={{ width:36, height:36, borderRadius:"50%", background:"#e8f0ff", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <UserRound style={{ width:18, height:18, color:"#2D4A8A" }} />
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <p style={{ margin:0, fontSize:14, fontWeight:900, color:"#111" }}>{c.name}</p>
+                      <p style={{ margin:0, fontSize:12, color:"#64748b", fontWeight:700 }}>
+                        {[age ? `${age}세` : null, genderLabel, c.phone].filter(Boolean).join("  ·  ")}
+                      </p>
+                    </div>
+                    <span style={{ fontSize:11, color:"#2D4A8A", fontWeight:800, background:"#e8f0ff", borderRadius:6, padding:"3px 8px" }}>선택</span>
+                  </button>
+                )
+              })}
+            </div>
+            {/* 안내 */}
+            <div style={{ padding:"12px 22px 18px", background:"#fafaf8", borderTop:"1px solid #eef2f7" }}>
+              <p style={{ margin:0, fontSize:11, color:"#9ca3af", fontWeight:700 }}>
+                CRM에서 불러온 고객 정보(이름·나이·성별)가 현재 고객 카드에 자동으로 입력됩니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="fp-page">
         <header className="fp-hero">
           <div>
@@ -1428,6 +1543,16 @@ export default function FinancialPortfolioPage() {
           <button onClick={addClient} disabled={clients.length>=MAX_CLIENTS}><Plus className="h-4 w-4" /> 고객 추가 ({clients.length}/{MAX_CLIENTS})</button>
           <button onClick={deleteClient} disabled={clients.length<=1}><Trash2 className="h-4 w-4" /> 삭제</button>
           <button onClick={()=>updateClient({ updatedAt:new Date().toISOString() })}><Save className="h-4 w-4" /> 저장</button>
+
+          {/* ── CRM 고객 불러오기 ── */}
+          <button
+            onClick={()=>{ setCrmImportOpen(true); setCrmQuery(""); setCrmResults([]) }}
+            style={{ background:"#2D4A8A", color:"#fff", border:"none", borderRadius:8,
+              padding:"0 14px", height:38, fontWeight:700, fontSize:13, cursor:"pointer",
+              display:"flex", alignItems:"center", gap:6 }}
+          >
+            <Search className="h-4 w-4" /> CRM 고객 불러오기
+          </button>
 
           {/* ── 엑셀 업로드 버튼 ── */}
           <button

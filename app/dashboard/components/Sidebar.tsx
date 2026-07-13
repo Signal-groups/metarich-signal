@@ -496,6 +496,15 @@ export default function Sidebar({
                 />
               )}
 
+              {isApproved && (
+                <NavItem
+                  icon="📦"
+                  label="이달의 상품전략"
+                  active={false}
+                  onClick={() => window.open(`${window.location.origin}/product-strategy`, "_blank", "noopener,noreferrer")}
+                />
+              )}
+
               {canUseBranding && (
                 <NavItem
                   icon="🎨"
