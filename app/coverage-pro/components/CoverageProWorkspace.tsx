@@ -8,7 +8,13 @@ import type {
 } from '../../../lib/coverageAnalysis/types'
 import { createProSession, saveProSession } from '../../../lib/coverageAnalysis/session'
 import { supabase } from '../../../lib/supabase'
-import { inferClientRowKey } from '../../../lib/coverageAnalysis/clientMapping'
+import {
+  inferClientRowKey,
+  isCiProduct,
+  isLifeInsCompany,
+  silsonDefaultAmounts,
+  CI_TRIGGER_ROW_KEYS,
+} from '../../../lib/coverageAnalysis/clientMapping'
 import { contractsForOutput } from '../../../lib/coverageAnalysis/outputContracts'
 import ProSidebar from './ProSidebar'
 import StepIndicator from './StepIndicator'
@@ -481,10 +487,17 @@ function buildPaymentPeriod(item: Record<string, unknown>): string {
   return payment || coverage
 }
 
+interface NormCtx {
+  productName: string
+  insurer: string
+  policyDate: string
+}
+
 function normalizeCoverageRows(
   cov: Record<string, unknown>,
   idx: number,
   ci: number,
+  ctx?: NormCtx,
 ): ProCoverage[] {
   const name = String(cov.coverage_name ?? cov.name ?? cov['담보명'] ?? '')
   const explicitRowKey = String(cov.row_key ?? cov.rowKey ?? '')
@@ -492,6 +505,8 @@ function normalizeCoverageRows(
   const expiryDate = String(cov.end_date ?? cov.endDate ?? cov.expiry_date ?? cov.expiryDate ?? cov.coverage_period ?? cov.coveragePeriod ?? cov['만기'] ?? cov['보장기간'] ?? '')
   const isRenewal = Boolean(cov.isRenewal ?? false) || parseRenewalFlag(cov.coverage_type, cov.renewal_type, cov.renewalType, cov['갱신여부'])
   const normalizedName = name.replace(/\s+/g, '').toLowerCase()
+
+  // ── 실손의료비 통합명 → 4개 silson rowKey 분리 ─────────────────────────
   const isGenericSilson =
     !explicitRowKey &&
     (normalizedName === '실손의료비' ||
@@ -500,8 +515,12 @@ function normalizeCoverageRows(
       normalizedName.includes('실손의료비'))
 
   if (isGenericSilson) {
-    const inpatientAmount = amount || 5000
-    const outpatientAmount = Number(cov.outpatient_amount ?? cov.outpatientAmount ?? 0) || 25
+    // 세대별 기본값 계산 (계약일 + 보험사 기준)
+    const defaults = ctx
+      ? silsonDefaultAmounts(ctx.policyDate, ctx.insurer)
+      : { inpatient: 5000, outpatient: 25 }
+    const inpatientAmount = amount || defaults.inpatient
+    const outpatientAmount = Number(cov.outpatient_amount ?? cov.outpatientAmount ?? 0) || defaults.outpatient
     return [
       ['silson_disease_inpatient', `${name || '실손의료비'}(질병 입원)`, inpatientAmount],
       ['silson_disease_outpatient', `${name || '실손의료비'}(질병 통원)`, outpatientAmount],
@@ -518,10 +537,22 @@ function normalizeCoverageRows(
     }))
   }
 
+  // ── 일반 담보 rowKey 추론 ─────────────────────────────────────────────
+  let rowKey = (explicitRowKey && explicitRowKey !== 'unknown')
+    ? explicitRowKey
+    : (inferClientRowKey(name) ?? 'unknown')
+
+  // ── CI 보험 컨텍스트: 암/뇌/심장 진단비 → ci_diagnosis 로 리매핑 ────
+  // CI 보험(교보큰사랑플러스CI 등)의 주요 트리거 담보는
+  // 일반 진단비 집계에서 분리해 CI 보험금으로 별도 표시
+  if (ctx && isCiProduct(ctx.productName) && CI_TRIGGER_ROW_KEYS.has(rowKey)) {
+    rowKey = 'ci_diagnosis'
+  }
+
   return [{
     id: `json-cov-${idx}-${ci}`,
     contractId: '',
-    rowKey: (explicitRowKey && explicitRowKey !== 'unknown') ? explicitRowKey : (inferClientRowKey(name) ?? 'unknown'),
+    rowKey,
     name,
     amount,
     expiryDate,
@@ -788,8 +819,13 @@ function parseGptsJson(raw: string): ProContract[] | null {
     if ((isV5 || Array.isArray(parsed.policies)) && Array.isArray(parsed.policies)) {
       if (parsed.policies.length === 0) return null
       const contracts: ProContract[] = parsed.policies.map((item: Record<string, unknown>, idx: number) => {
+        const normCtx: NormCtx = {
+          productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
+          insurer: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
+          policyDate: String(item.policy_date ?? item.start_date ?? item.contractDate ?? item['계약일'] ?? ''),
+        }
         const coverages = Array.isArray(item.coverages)
-          ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci))
+          ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci, normCtx))
           : []
         const isRenewal = Boolean(item.isRenewal ?? false) || parseRenewalFlag(item.renewal_type, item.renewalType, item.policy_type, item.policyType, item['갱신여부'])
         return {
@@ -849,8 +885,13 @@ function parseGptsJson(raw: string): ProContract[] | null {
     const arr = Array.isArray(parsed) ? parsed : parsed.contracts ?? parsed.data ?? []
     if (!Array.isArray(arr) || arr.length === 0) return null
     return arr.map((item: Record<string, unknown>, idx: number) => {
+      const normCtx: NormCtx = {
+        productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
+        insurer: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
+        policyDate: String(item.policy_date ?? item.contractDate ?? item['계약일'] ?? ''),
+      }
       const coverages = Array.isArray(item.coverages)
-        ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci))
+        ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci, normCtx))
         : []
       return {
         id: `json-${idx}-${Date.now()}`,

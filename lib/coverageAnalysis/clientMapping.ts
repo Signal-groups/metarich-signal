@@ -339,3 +339,67 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   dementia_diagnosis:        '기타 — 치매진단',
   ltc_grade:                 '기타 — 장기요양등급',
 }
+
+// ── CI 보험 / 생보 감지 유틸 ─────────────────────────────────────────────
+/**
+ * CI(중대질병) 보험 상품 여부 판단
+ * "CI보험", "CI형", "중대질병보험" 등을 CI 보험으로 분류
+ */
+export function isCiProduct(productName: string): boolean {
+  const n = (productName || '').replace(/\s/g, '').toUpperCase()
+  return n.includes('CI보험') || n.includes('CI형') || n.includes('중대질병보험') ||
+    // 한글 외 영문 사용 패턴: "ＣＩ", "Ｃ Ｉ" 전각 등 → 유니코드 정규화
+    /[ＣC][ＩI]/.test(n)
+}
+
+/**
+ * 생명보험사 여부 판단 (회사명 기준)
+ * 손보사: "화재", "손해", "해상" 포함
+ * 생보사: "생명", "라이프" 포함
+ */
+export function isLifeInsCompany(company: string): boolean {
+  const c = (company || '').replace(/\s/g, '')
+  if (/화재|손해|해상/i.test(c)) return false
+  return /생명|라이프|life/i.test(c)
+}
+
+/**
+ * 계약일(YYYY-MM-DD 또는 YYYY.MM.DD 형식) → ym 숫자 반환
+ * 예: '2009-01-29' → 200901
+ */
+export function policyDateToYm(dateStr: string): number {
+  if (!dateStr) return 0
+  const m = dateStr.match(/(\d{4})[^\d](\d{1,2})/)
+  if (!m) return 0
+  return Number(m[1]) * 100 + Number(m[2])
+}
+
+/**
+ * 실손의료비 세대 기반 기본 가입금액 반환 (만원 단위)
+ * 계약일+보험사 유형으로 세대를 판별해 적정 기본값 제공
+ */
+export function silsonDefaultAmounts(policyDate: string, insurer: string): { inpatient: number; outpatient: number } {
+  const ym = policyDateToYm(policyDate)
+  const isLife = isLifeInsCompany(insurer)
+
+  if (ym > 0 && ym < 200910 && isLife) {
+    // 표준화 이전 생보: 입원 3천만, 통원 10만
+    return { inpatient: 3000, outpatient: 10 }
+  }
+  if (ym > 0 && ym < 200910) {
+    // 표준화 이전 손보: 입원 5천만(중간값), 통원 30만
+    return { inpatient: 5000, outpatient: 30 }
+  }
+  // 2세대 이후 표준: 입원 5천만, 통원 25만
+  return { inpatient: 5000, outpatient: 25 }
+}
+
+/**
+ * CI 보험에서 ci_diagnosis로 리매핑할 rowKey 집합
+ * (암진단비, 뇌혈관/뇌졸중/뇌출혈, 심장질환/심근경색 등 CI 트리거 담보)
+ */
+export const CI_TRIGGER_ROW_KEYS = new Set([
+  'cancer_general', 'cancer_high_value', 'cancer_similar',
+  'brain_vascular', 'brain_stroke', 'brain_hemorrhage',
+  'heart_vascular', 'heart_ischemic', 'heart_acute_mi',
+])
