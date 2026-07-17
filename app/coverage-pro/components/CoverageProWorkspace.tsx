@@ -37,7 +37,7 @@ const PROPOSAL_IMPORT_KEY = 'metarich_proposal_import_payload'
 
 // ── PRO rowKey → CRM category 변환 ─────────────────────────────────────────
 function rowKeyToCrmCategory(rowKey: string): string {
-  if (rowKey.startsWith('cancer') || rowKey.startsWith('radiation') || rowKey.startsWith('chemo') || rowKey.startsWith('targeted')) return 'cancer'
+  if (rowKey.startsWith('cancer') || rowKey.startsWith('benign') || rowKey.startsWith('radiation') || rowKey.startsWith('chemo') || rowKey.startsWith('targeted')) return 'cancer'
   if (rowKey.startsWith('brain') || rowKey.startsWith('vascular')) return 'brain'
   if (rowKey.startsWith('heart')) return 'heart'
   if (rowKey.startsWith('surgery')) return 'surgery'
@@ -46,6 +46,7 @@ function rowKeyToCrmCategory(rowKey: string): string {
   if (rowKey.startsWith('driver') || rowKey.startsWith('traffic')) return 'driver'
   if (rowKey.startsWith('death')) return 'death'
   if (rowKey.startsWith('disability')) return 'disability'
+  if (rowKey.startsWith('ci') || rowKey.startsWith('dementia') || rowKey.startsWith('ltc')) return 'ci'
   return 'etc'
 }
 

@@ -84,7 +84,7 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['급성심근경색', '심근경색'], rowKey: 'heart_acute_mi' },
   { patterns: ['심장질환진단', '심혈관질환', '부정맥', '심방세동', '빈맥', '서맥'], rowKey: 'heart_vascular' },
   { patterns: ['뇌수술비', '뇌혈관수술비', '뇌관련수술'], rowKey: 'brain_surgery' },     // 뇌 수술비 (two_major_surgery보다 먼저)
-  { patterns: ['심장수술비', '심혈관수술비', '심관련수술'], rowKey: 'heart_surgery' },   // 심장 수술비
+  { patterns: ['허혈심장질환수술비', '허혈성심장수술비', '심장질환수술비', '심장수술비', '심혈관수술비', '심관련수술'], rowKey: 'heart_surgery' },   // 심장 수술비
   { patterns: ['수술/시술비', '뇌심수술', '심뇌수술', '뇌혈관수술', '심혈관수술'], rowKey: 'two_major_surgery' },
   { patterns: ['혈전용해'], rowKey: 'two_major_thrombolysis' },
   { patterns: ['중환자실'], rowKey: 'two_major_icu' },
