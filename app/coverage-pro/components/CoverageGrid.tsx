@@ -19,10 +19,20 @@ const MAX_ROW_KEYS = new Set([
 // 개수 집계할 rowKey (전체 합계 + 가입 담보 개수 함께 표시)
 const COUNT_ROW_KEYS = new Set(['cancer_general'])
 
-// 주요 보장 항목 — 카테고리별 정의
-const CATEGORY_GROUPS = [
+// ── 보장 섹션 구조 ────────────────────────────────────────────────────────
+// sectionTitle: 해당 그룹 앞에 섹션 구분 헤더를 렌더링
+// 5개 섹션: 의료비 | 중증 진단 | 신체 보장 | 수술·입원 | 특별 보장
+const CATEGORY_GROUPS: Array<{
+  key: string
+  label: string
+  color: string
+  sectionTitle?: string   // 이 그룹 앞에 삽입될 대형 섹션 헤더
+  sectionIcon?: string
+  items: Array<{ rowKey: string; label: string }>
+}> = [
   {
     key: 'silson', label: '실손 의료비', color: '#0ea5e9',
+    sectionTitle: '의료비 보장', sectionIcon: '🏥',
     items: [
       { rowKey: 'silson_disease_inpatient',  label: '질병 입원 의료비' },
       { rowKey: 'silson_disease_outpatient', label: '질병 통원 의료비' },
@@ -33,6 +43,7 @@ const CATEGORY_GROUPS = [
   },
   {
     key: 'cancer', label: '암 진단 / 치료', color: '#8b5cf6',
+    sectionTitle: '중증 진단 보장', sectionIcon: '🔬',
     items: [
       { rowKey: 'cancer_general',          label: '일반암 진단비' },
       { rowKey: 'cancer_high_value',       label: '고액암 진단비' },
@@ -51,36 +62,42 @@ const CATEGORY_GROUPS = [
   {
     key: 'vascular', label: '뇌 / 심장 (2대질병)', color: '#ef4444',
     items: [
-      { rowKey: 'brain_vascular',   label: '뇌혈관 진단비' },
-      { rowKey: 'brain_stroke',     label: '뇌졸중 진단비' },
-      { rowKey: 'brain_hemorrhage', label: '뇌출혈 진단비' },
-      { rowKey: 'heart_ischemic',   label: '허혈성심장 진단비' },
-      { rowKey: 'heart_acute_mi',   label: '급성심근경색 진단비' },
-      { rowKey: 'heart_vascular',   label: '심장질환(부정맥 등)' },
+      { rowKey: 'brain_vascular',     label: '뇌혈관 진단비' },
+      { rowKey: 'brain_stroke',       label: '뇌졸중 진단비' },
+      { rowKey: 'brain_hemorrhage',   label: '뇌출혈 진단비' },
+      { rowKey: 'heart_ischemic',     label: '허혈성심장 진단비' },
+      { rowKey: 'heart_acute_mi',     label: '급성심근경색 진단비' },
+      { rowKey: 'heart_vascular',     label: '심장질환(부정맥 등)' },
       { rowKey: 'brain_special_case', label: '뇌혈관 산정특례' },
       { rowKey: 'heart_special_case', label: '심장 산정특례' },
-      { rowKey: 'brain_surgery',    label: '뇌 수술비' },
-      { rowKey: 'heart_surgery',    label: '심장 수술비' },
-      { rowKey: 'vascular_major',   label: '2대 주요치료비' },
+      { rowKey: 'brain_surgery',      label: '뇌 수술비' },
+      { rowKey: 'heart_surgery',      label: '심장 수술비' },
+      { rowKey: 'vascular_major',     label: '2대 주요치료비' },
     ],
   },
   {
     key: 'disability', label: '후유장해', color: '#1a2744',
+    sectionTitle: '신체 보장', sectionIcon: '🛡️',
     items: [
-      { rowKey: 'disability_injury',   label: '상해 후유장해 3~100%' },
-      { rowKey: 'disability_disease',  label: '질병 후유장해 3~100%' },
+      { rowKey: 'disability_injury_80',  label: '상해 후유장해 80%+' },
+      { rowKey: 'disability_injury_50',  label: '상해 후유장해 50%+' },
+      { rowKey: 'disability_injury',     label: '상해 후유장해 3~100%' },
+      { rowKey: 'disability_disease_80', label: '질병 후유장해 80%+' },
+      { rowKey: 'disability_disease_50', label: '질병 후유장해 50%+' },
+      { rowKey: 'disability_disease',    label: '질병 후유장해 3~100%' },
     ],
   },
   {
     key: 'death', label: '사망 보장', color: '#334155',
     items: [
-      { rowKey: 'death_general',       label: '일반 사망' },
-      { rowKey: 'death_disease',       label: '질병 사망' },
-      { rowKey: 'death_injury',        label: '상해(재해) 사망' },
+      { rowKey: 'death_general', label: '일반 사망' },
+      { rowKey: 'death_disease', label: '질병 사망' },
+      { rowKey: 'death_injury',  label: '상해(재해) 사망' },
     ],
   },
   {
     key: 'surgery', label: '수술비 / 입원일당', color: '#f59e0b',
+    sectionTitle: '수술 · 입원', sectionIcon: '🏨',
     items: [
       { rowKey: 'surgery_disease_advanced',      label: '질병 상급 수술비' },
       { rowKey: 'surgery_disease_comprehensive', label: '질병 종합 수술비' },
@@ -99,6 +116,7 @@ const CATEGORY_GROUPS = [
   },
   {
     key: 'care', label: '간병 / 요양', color: '#14b8a6',
+    sectionTitle: '특별 보장', sectionIcon: '⭐',
     items: [
       { rowKey: 'nursing_hospital',      label: '간병인 사용 — 질병' },
       { rowKey: 'nursing_injury',        label: '간병인 사용 — 상해' },
@@ -109,22 +127,22 @@ const CATEGORY_GROUPS = [
   {
     key: 'driver', label: '운전자 특약', color: '#10b981',
     items: [
-      { rowKey: 'driver_fine',     label: '교통사고 벌금' },
-      { rowKey: 'driver_lawyer',   label: '변호사 선임비용' },
-      { rowKey: 'driver_civil_litigation', label: '민사소송 법률비용' },
-      { rowKey: 'driver_injury_14', label: '자동차사고부상치료비(14급)' },
-      { rowKey: 'driver_accident', label: '교통사고 처리지원금' },
-      { rowKey: 'other_liability', label: '일상생활배상책임' },
+      { rowKey: 'driver_fine',            label: '교통사고 벌금' },
+      { rowKey: 'driver_lawyer',          label: '변호사 선임비용' },
+      { rowKey: 'driver_civil_litigation',label: '민사소송 법률비용' },
+      { rowKey: 'driver_injury_14',       label: '자동차사고부상치료비(14급)' },
+      { rowKey: 'driver_accident',        label: '교통사고 처리지원금' },
+      { rowKey: 'other_liability',        label: '일상생활배상책임' },
     ],
   },
   {
     key: 'extra', label: '치매 / CI / 기타', color: '#6366f1',
     items: [
-      { rowKey: 'ci_diagnosis',        label: '중대질병(CI) 진단비' },
-      { rowKey: 'dementia_diagnosis',  label: '치매 진단비' },
-      { rowKey: 'ltc_grade',           label: '장기요양등급' },
-      { rowKey: 'fracture_diagnosis',  label: '골절 진단비' },
-      { rowKey: 'burn_diagnosis',      label: '화상 진단비' },
+      { rowKey: 'ci_diagnosis',       label: '중대질병(CI) 진단비' },
+      { rowKey: 'dementia_diagnosis', label: '치매 진단비' },
+      { rowKey: 'ltc_grade',          label: '장기요양등급' },
+      { rowKey: 'fracture_diagnosis', label: '골절 진단비' },
+      { rowKey: 'burn_diagnosis',     label: '화상 진단비' },
     ],
   },
 ]
@@ -451,7 +469,26 @@ export default function CoverageGrid({
         const groupCovered = groupItems.filter((i) => i.amount > 0).length
 
         return (
-          <div key={group.key} className="coverage-pro-card" style={{ overflow: 'hidden' }}>
+          <div key={group.key}>
+            {/* 섹션 구분 헤더 — sectionTitle이 있는 그룹 앞에만 표시 */}
+            {group.sectionTitle && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                margin: '8px 0 6px',
+              }}>
+                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #1a2744 0%, #e2e8f0 100%)' }} />
+                <span style={{
+                  fontSize: 11, fontWeight: 900, letterSpacing: '0.12em',
+                  color: '#1a2744', whiteSpace: 'nowrap',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}>
+                  {group.sectionIcon && <span style={{ fontSize: 13 }}>{group.sectionIcon}</span>}
+                  {group.sectionTitle.toUpperCase()}
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, #e2e8f0 0%, transparent 100%)' }} />
+              </div>
+            )}
+          <div className="coverage-pro-card" style={{ overflow: 'hidden' }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 18px',
@@ -555,6 +592,7 @@ export default function CoverageGrid({
                 )
               })}
             </div>
+          </div>
           </div>
         )
       })}
