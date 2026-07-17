@@ -4,60 +4,129 @@ import { useState, useEffect } from 'react'
 
 // ── 기준금액 항목 정의 ────────────────────────────────────────────────────
 export type BenchmarkKey =
-  | 'death'                   // 사망
-  | 'cancer'                  // 암진단
-  | 'cancer_similar'          // 유사암/소액암
-  | 'brain'                   // 뇌혈관
-  | 'brain_stroke'            // 뇌졸중
-  | 'brain_hemorrhage'        // 뇌출혈
-  | 'heart'                   // 심장질환(기타)
-  | 'heart_ischemic'          // 허혈성심장
-  | 'heart_mi'                // 급성심근경색
-  | 'surgery'                 // 수술비
-  | 'nursing'                 // 간병
-  | 'driver'                  // 운전자(교통사고처리지원금 기준)
-  | 'silson'                  // 실손
-  | 'fire'                    // 화재
-  | 'cancer_major_benefit'    // 암주요치료비(급여)
-  | 'cancer_major_nonbenefit' // 암주요치료비(비급여)
-  | 'vascular_major'          // 순환계(뇌심)주요치료비
+  // 사망
+  | 'death'
+  // 암 진단비
+  | 'cancer'           | 'cancer_high'     | 'cancer_similar'
+  // 암 치료비
+  | 'cancer_chemo'     | 'cancer_radiation' | 'cancer_surgery'
+  // 암 주요치료비
+  | 'cancer_major_benefit' | 'cancer_major_nonbenefit'
+  // 세부치료비 (표적·중입자·양성자·IMRT)
+  | 'cancer_targeted'  | 'cancer_hadron'   | 'cancer_proton'   | 'cancer_imrt'
+  // 뇌/심장 진단비
+  | 'brain'            | 'brain_stroke'    | 'brain_hemorrhage'
+  | 'heart'            | 'heart_ischemic'  | 'heart_mi'
+  // 뇌/심장 수술·치료
+  | 'brain_surgery'    | 'heart_surgery'
+  | 'vascular_major_comp' | 'vascular_major_adv'
+  // 후유장해 — 상해
+  | 'disability_injury_80' | 'disability_injury_50' | 'disability_injury'
+  // 후유장해 — 질병
+  | 'disability_disease_80' | 'disability_disease_50' | 'disability_disease'
+  // 간병
+  | 'nursing_disease'       | 'nursing_injury'
+  | 'nursing_hospital_care' | 'nursing_integrated'
+  // 수술비
+  | 'surgery'
+  // 실손·운전자
+  | 'silson' | 'driver' | 'driver_injury_14'
+  // 치매·CI
+  | 'ci' | 'dementia'
+  // 산정특례
+  | 'cancer_special' | 'brain_special' | 'heart_special'
+  // 일상보장
+  | 'fracture' | 'burn' | 'liability' | 'fire'
 
 export type BenchmarkAmounts = Record<BenchmarkKey, number>
 
 // ── rowKey → BenchmarkKey 매핑 ───────────────────────────────────────────
 export const ROW_KEY_TO_BENCHMARK: Record<string, BenchmarkKey> = {
-  death_general:             'death',
-  death_disease:             'death',
-  death_injury:              'death',
-  cancer_general:            'cancer',
-  cancer_similar:            'cancer_similar',
-  brain_vascular:            'brain',
-  brain_stroke:              'brain_stroke',
-  brain_hemorrhage:          'brain_hemorrhage',
-  heart_vascular:            'heart',
-  heart_ischemic:            'heart_ischemic',
-  heart_acute_mi:            'heart_mi',
-  surgery_disease:           'surgery',
-  surgery_injury:            'surgery',
-  surgery_1_5:               'surgery',
-  surgery_n_major:           'surgery',
-  two_major_surgery:         'surgery',
-  nursing_hospital:          'nursing',
-  nursing_injury:            'nursing',
-  nursing_care_hospital:     'nursing',
-  nursing_integrated:        'nursing',
-  driver_accident:           'driver',
-  driver_fine:               'driver',
-  driver_lawyer:             'driver',
-  driver_civil_litigation:   'driver',
-  driver_injury_14:          'driver',
-  silson_disease_inpatient:  'silson',
-  silson_injury_inpatient:   'silson',
-  silson_disease_outpatient: 'silson',
-  silson_injury_outpatient:  'silson',
-  cancer_major_benefit:      'cancer_major_benefit',
-  cancer_major_nonbenefit:   'cancer_major_nonbenefit',
-  vascular_major:            'vascular_major',
+  // 사망
+  death_general:              'death',
+  death_disease:              'death',
+  death_injury:               'death',
+  // 암 진단비
+  cancer_general:             'cancer',
+  cancer_high_value:          'cancer_high',
+  cancer_similar:             'cancer_similar',
+  cancer_metastasis:          'cancer_similar',  // 전이암 → 유사암 계열
+  // 암 치료비
+  cancer_chemo:               'cancer_chemo',
+  cancer_radiation:           'cancer_radiation',
+  cancer_surgery:             'cancer_surgery',
+  cancer_davinci:             'cancer_surgery',  // 다빈치 → 암수술
+  // 암 주요치료비
+  cancer_major_benefit:       'cancer_major_benefit',
+  cancer_major_nonbenefit:    'cancer_major_nonbenefit',
+  // 세부치료비
+  cancer_targeted:            'cancer_targeted',
+  cancer_cart:                'cancer_targeted',  // CAR-T → 표적
+  cancer_hadron:              'cancer_hadron',
+  cancer_proton:              'cancer_proton',
+  cancer_imrt:                'cancer_imrt',
+  // 뇌/심장 진단비
+  brain_vascular:             'brain',
+  brain_stroke:               'brain_stroke',
+  brain_hemorrhage:           'brain_hemorrhage',
+  heart_vascular:             'heart',
+  heart_ischemic:             'heart_ischemic',
+  heart_acute_mi:             'heart_mi',
+  // 뇌/심장 수술·치료
+  brain_surgery:              'brain_surgery',
+  heart_surgery:              'heart_surgery',
+  two_major_surgery:          'brain_surgery',   // 뇌심통합수술 → 뇌수술 키에 합산
+  vascular_major:             'vascular_major_comp',
+  two_major_icu:              'vascular_major_adv',
+  two_major_thrombolysis:     'vascular_major_adv',
+  // 후유장해
+  disability_injury_80:       'disability_injury_80',
+  disability_injury_50:       'disability_injury_50',
+  disability_injury:          'disability_injury',
+  disability_disease_80:      'disability_disease_80',
+  disability_disease_50:      'disability_disease_50',
+  disability_disease:         'disability_disease',
+  // 간병
+  nursing_hospital:           'nursing_disease',
+  nursing_injury:             'nursing_injury',
+  nursing_care_hospital:      'nursing_hospital_care',
+  nursing_integrated:         'nursing_integrated',
+  // 수술비
+  surgery_disease:            'surgery',
+  surgery_injury:             'surgery',
+  surgery_1_5:                'surgery',
+  surgery_n_major:            'surgery',
+  surgery_advanced:           'surgery',
+  surgery_comprehensive:      'surgery',
+  surgery_disease_advanced:   'surgery',
+  surgery_disease_comprehensive: 'surgery',
+  surgery_disease_type:       'surgery',
+  surgery_injury_advanced:    'surgery',
+  surgery_injury_comprehensive: 'surgery',
+  surgery_injury_type:        'surgery',
+  // 실손
+  silson_disease_inpatient:   'silson',
+  silson_injury_inpatient:    'silson',
+  silson_disease_outpatient:  'silson',
+  silson_injury_outpatient:   'silson',
+  silson_3major:              'silson',
+  // 운전자
+  driver_accident:            'driver',
+  driver_fine:                'driver',
+  driver_lawyer:              'driver',
+  driver_civil_litigation:    'driver',
+  driver_injury_14:           'driver_injury_14',
+  // 치매·CI
+  ci_diagnosis:               'ci',
+  dementia_diagnosis:         'dementia',
+  // 산정특례
+  cancer_special_case:        'cancer_special',
+  brain_special_case:         'brain_special',
+  heart_special_case:         'heart_special',
+  // 일상보장
+  fracture_diagnosis:         'fracture',
+  burn_diagnosis:             'burn',
+  other_liability:            'liability',
 }
 
 // ── 항목 메타 ────────────────────────────────────────────────────────────
@@ -69,53 +138,145 @@ interface BenchmarkItem {
 }
 
 export const BENCHMARK_ITEMS: BenchmarkItem[] = [
-  { key: 'death',                  label: '사망',                  unit: '만원',    group: '사망' },
-  { key: 'cancer',                 label: '암진단',                unit: '만원',    group: '암' },
-  { key: 'cancer_similar',         label: '유사암 / 소액암',        unit: '만원',    group: '암' },
-  { key: 'brain',                  label: '뇌혈관',                unit: '만원',    group: '2대질병' },
-  { key: 'brain_stroke',           label: '└ 뇌졸중',             unit: '만원',    group: '2대질병' },
-  { key: 'brain_hemorrhage',       label: '└ 뇌출혈',             unit: '만원',    group: '2대질병' },
-  { key: 'heart',                  label: '심장질환(기타)',         unit: '만원',    group: '2대질병' },
-  { key: 'heart_ischemic',         label: '└ 허혈성심장',          unit: '만원',    group: '2대질병' },
-  { key: 'heart_mi',               label: '└ 급성심근경색',        unit: '만원',    group: '2대질병' },
-  { key: 'cancer_major_benefit',   label: '암주요치료비(급여)',     unit: '만원',    group: '주요치료비' },
-  { key: 'cancer_major_nonbenefit',label: '암주요치료비(비급여)',   unit: '만원',    group: '주요치료비' },
-  { key: 'vascular_major',         label: '순환계주요치료비',       unit: '만원',    group: '주요치료비' },
-  { key: 'surgery',                label: '수술비',                unit: '만원',    group: '기타' },
-  { key: 'nursing',                label: '간병인 일당',           unit: '만원/일', group: '기타' },
-  { key: 'driver',                 label: '운전자 (교통사고처리)',  unit: '만원',    group: '기타' },
-  { key: 'silson',                 label: '실손보험',              unit: '여부',    group: '기타' },
-  { key: 'fire',                   label: '화재보험',              unit: '여부',    group: '기타' },
+  // ── 사망 ──────────────────────────────────────────────────────────────
+  { key: 'death',                   label: '사망보험금',               unit: '만원',    group: '사망' },
+
+  // ── 암 진단비 (생활비 기준) ────────────────────────────────────────────
+  { key: 'cancer',                  label: '일반암 진단비',            unit: '만원',    group: '암 진단비' },
+  { key: 'cancer_high',             label: '고액암 진단비',            unit: '만원',    group: '암 진단비' },
+  { key: 'cancer_similar',          label: '유사암 / 소액암',          unit: '만원',    group: '암 진단비' },
+
+  // ── 암 치료비 ─────────────────────────────────────────────────────────
+  { key: 'cancer_chemo',            label: '약물 (항암약물치료비)',     unit: '만원',    group: '암 치료비' },
+  { key: 'cancer_radiation',        label: '방사선 치료비',            unit: '만원',    group: '암 치료비' },
+  { key: 'cancer_surgery',          label: '수술 (암수술비)',          unit: '만원',    group: '암 치료비' },
+
+  // ── 암 주요치료비 ─────────────────────────────────────────────────────
+  { key: 'cancer_major_benefit',    label: '암주요치료비 (급여)',      unit: '만원',    group: '암 주요치료비' },
+  { key: 'cancer_major_nonbenefit', label: '암주요치료비 (비급여)',    unit: '만원',    group: '암 주요치료비' },
+
+  // ── 세부치료비 ────────────────────────────────────────────────────────
+  { key: 'cancer_targeted',         label: '표적항암약물 치료비',      unit: '만원',    group: '세부치료비' },
+  { key: 'cancer_hadron',           label: '중입자 치료비',            unit: '만원',    group: '세부치료비' },
+  { key: 'cancer_proton',           label: '양성자 치료비',            unit: '만원',    group: '세부치료비' },
+  { key: 'cancer_imrt',             label: '표적항암방사선 (IMRT)',    unit: '만원',    group: '세부치료비' },
+
+  // ── 뇌/심장 진단비 ────────────────────────────────────────────────────
+  { key: 'brain',                   label: '뇌혈관 진단비',           unit: '만원',    group: '뇌/심장 진단비' },
+  { key: 'brain_stroke',            label: '└ 뇌졸중 진단비',        unit: '만원',    group: '뇌/심장 진단비' },
+  { key: 'brain_hemorrhage',        label: '└ 뇌출혈 진단비',        unit: '만원',    group: '뇌/심장 진단비' },
+  { key: 'heart',                   label: '심장질환 진단비',         unit: '만원',    group: '뇌/심장 진단비' },
+  { key: 'heart_ischemic',          label: '└ 허혈성심장',           unit: '만원',    group: '뇌/심장 진단비' },
+  { key: 'heart_mi',                label: '└ 급성심근경색',         unit: '만원',    group: '뇌/심장 진단비' },
+
+  // ── 뇌/심장 수술·치료 ─────────────────────────────────────────────────
+  { key: 'brain_surgery',           label: '뇌 수술비',              unit: '만원',    group: '뇌/심장 수술·치료' },
+  { key: 'heart_surgery',           label: '심장 수술비',            unit: '만원',    group: '뇌/심장 수술·치료' },
+  { key: 'vascular_major_comp',     label: '주요치료비 (종합)',       unit: '만원',    group: '뇌/심장 수술·치료' },
+  { key: 'vascular_major_adv',      label: '주요치료비 (상급)',       unit: '만원',    group: '뇌/심장 수술·치료' },
+
+  // ── 후유장해 — 상해 ───────────────────────────────────────────────────
+  { key: 'disability_injury_80',    label: '상해후유장해 80%',       unit: '만원',    group: '후유장해' },
+  { key: 'disability_injury_50',    label: '상해후유장해 50%',       unit: '만원',    group: '후유장해' },
+  { key: 'disability_injury',       label: '상해후유장해 3%~',       unit: '만원',    group: '후유장해' },
+  // 후유장해 — 질병
+  { key: 'disability_disease_80',   label: '질병후유장해 80%',       unit: '만원',    group: '후유장해' },
+  { key: 'disability_disease_50',   label: '질병후유장해 50%',       unit: '만원',    group: '후유장해' },
+  { key: 'disability_disease',      label: '질병후유장해 3%~',       unit: '만원',    group: '후유장해' },
+
+  // ── 간병 ──────────────────────────────────────────────────────────────
+  { key: 'nursing_disease',         label: '질병 간병인 (일당)',      unit: '만원/일', group: '간병' },
+  { key: 'nursing_injury',          label: '상해 간병인 (일당)',      unit: '만원/일', group: '간병' },
+  { key: 'nursing_hospital_care',   label: '요양병원 간병',           unit: '만원/일', group: '간병' },
+  { key: 'nursing_integrated',      label: '간호간병통합 서비스',     unit: '여부',    group: '간병' },
+
+  // ── 수술비 ────────────────────────────────────────────────────────────
+  { key: 'surgery',                 label: '수술비 (종합)',           unit: '만원',    group: '수술비' },
+
+  // ── 실손·운전자 ───────────────────────────────────────────────────────
+  { key: 'silson',                  label: '실손보험',               unit: '여부',    group: '실손·운전자' },
+  { key: 'driver',                  label: '운전자 (교통사고처리)',   unit: '만원',    group: '실손·운전자' },
+  { key: 'driver_injury_14',        label: '자기부상치료비 (14급)',   unit: '만원',    group: '실손·운전자' },
+
+  // ── 치매·CI ───────────────────────────────────────────────────────────
+  { key: 'ci',                      label: 'CI보험 주계약',          unit: '만원',    group: '치매·CI' },
+  { key: 'dementia',                label: '치매 진단비',            unit: '만원',    group: '치매·CI' },
+
+  // ── 산정특례 ──────────────────────────────────────────────────────────
+  { key: 'cancer_special',          label: '암 산정특례 진단비',     unit: '만원',    group: '산정특례' },
+  { key: 'brain_special',           label: '뇌 산정특례 진단비',     unit: '만원',    group: '산정특례' },
+  { key: 'heart_special',           label: '심장 산정특례 진단비',   unit: '만원',    group: '산정특례' },
+
+  // ── 일상보장 ──────────────────────────────────────────────────────────
+  { key: 'fracture',                label: '골절 진단비',            unit: '만원',    group: '일상보장' },
+  { key: 'burn',                    label: '화상 진단비',            unit: '만원',    group: '일상보장' },
+  { key: 'liability',               label: '일상배상책임',           unit: '만원',    group: '일상보장' },
+  { key: 'fire',                    label: '화재 / 벌금',            unit: '여부',    group: '일상보장' },
 ]
 
 // ── 프리셋 정의 ──────────────────────────────────────────────────────────
-// 운전자/실손/화재는 3가지 모두 동일
 const DRIVER = 20000  // 교통사고처리지원금 2억 기준
 
 export const BENCHMARK_PRESETS: Record<'min' | 'standard' | 'comfort', BenchmarkAmounts> = {
   min: {
-    death: 5000, cancer: 2000, cancer_similar: 400,
-    brain: 1000, brain_stroke: 500, brain_hemorrhage: 500,
-    heart: 500,  heart_ischemic: 1000, heart_mi: 500,
-    cancer_major_benefit: 500, cancer_major_nonbenefit: 500, vascular_major: 500,
-    surgery: 300, nursing: 15,
-    driver: DRIVER, silson: 1, fire: 0,
+    death: 5000,
+    cancer: 2000,          cancer_high: 1500,        cancer_similar: 300,
+    cancer_chemo: 200,     cancer_radiation: 200,    cancer_surgery: 300,
+    cancer_major_benefit: 300,  cancer_major_nonbenefit: 500,
+    cancer_targeted: 1000, cancer_hadron: 1000,      cancer_proton: 1000,  cancer_imrt: 500,
+    brain: 1000,           brain_stroke: 500,         brain_hemorrhage: 500,
+    heart: 500,            heart_ischemic: 1000,      heart_mi: 500,
+    brain_surgery: 500,    heart_surgery: 500,
+    vascular_major_comp: 300, vascular_major_adv: 300,
+    disability_injury_80: 0, disability_injury_50: 0, disability_injury: 0,
+    disability_disease_80: 0, disability_disease_50: 0, disability_disease: 0,
+    nursing_disease: 3,    nursing_injury: 3,
+    nursing_hospital_care: 3, nursing_integrated: 0,
+    surgery: 200,
+    silson: 1,             driver: DRIVER,            driver_injury_14: 0,
+    ci: 0,                 dementia: 1000,
+    cancer_special: 0,     brain_special: 0,          heart_special: 0,
+    fracture: 50,          burn: 50,                  liability: 5000,       fire: 0,
   },
   standard: {
-    death: 10000, cancer: 4000, cancer_similar: 800,
-    brain: 2000,  brain_stroke: 1000, brain_hemorrhage: 1000,
-    heart: 1000,  heart_ischemic: 2000, heart_mi: 1000,
-    cancer_major_benefit: 1000, cancer_major_nonbenefit: 1000, vascular_major: 1000,
-    surgery: 500, nursing: 30,
-    driver: DRIVER, silson: 1, fire: 0,
+    death: 10000,
+    cancer: 4000,          cancer_high: 3000,         cancer_similar: 600,
+    cancer_chemo: 500,     cancer_radiation: 500,     cancer_surgery: 500,
+    cancer_major_benefit: 1000, cancer_major_nonbenefit: 1000,
+    cancer_targeted: 3000, cancer_hadron: 3000,       cancer_proton: 2000,  cancer_imrt: 1000,
+    brain: 2000,           brain_stroke: 1000,        brain_hemorrhage: 1000,
+    heart: 1000,           heart_ischemic: 2000,      heart_mi: 1000,
+    brain_surgery: 1000,   heart_surgery: 1000,
+    vascular_major_comp: 1000, vascular_major_adv: 500,
+    disability_injury_80: 0, disability_injury_50: 0, disability_injury: 0,
+    disability_disease_80: 0, disability_disease_50: 0, disability_disease: 0,
+    nursing_disease: 5,    nursing_injury: 5,
+    nursing_hospital_care: 5, nursing_integrated: 0,
+    surgery: 500,
+    silson: 1,             driver: DRIVER,            driver_injury_14: 1500,
+    ci: 0,                 dementia: 2000,
+    cancer_special: 500,   brain_special: 500,        heart_special: 500,
+    fracture: 100,         burn: 100,                 liability: 10000,      fire: 0,
   },
   comfort: {
-    death: 20000, cancer: 8000, cancer_similar: 1600,
-    brain: 4000,  brain_stroke: 2000, brain_hemorrhage: 2000,
-    heart: 2000,  heart_ischemic: 4000, heart_mi: 2000,
-    cancer_major_benefit: 2000, cancer_major_nonbenefit: 2000, vascular_major: 2000,
-    surgery: 1000, nursing: 60,
-    driver: DRIVER, silson: 1, fire: 0,
+    death: 20000,
+    cancer: 8000,          cancer_high: 5000,         cancer_similar: 1000,
+    cancer_chemo: 1000,    cancer_radiation: 1000,    cancer_surgery: 1000,
+    cancer_major_benefit: 2000, cancer_major_nonbenefit: 2000,
+    cancer_targeted: 5000, cancer_hadron: 5000,       cancer_proton: 3000,  cancer_imrt: 2000,
+    brain: 4000,           brain_stroke: 2000,        brain_hemorrhage: 2000,
+    heart: 2000,           heart_ischemic: 4000,      heart_mi: 2000,
+    brain_surgery: 2000,   heart_surgery: 2000,
+    vascular_major_comp: 2000, vascular_major_adv: 1000,
+    disability_injury_80: 0, disability_injury_50: 0, disability_injury: 0,
+    disability_disease_80: 0, disability_disease_50: 0, disability_disease: 0,
+    nursing_disease: 10,   nursing_injury: 10,
+    nursing_hospital_care: 10, nursing_integrated: 1,
+    surgery: 1000,
+    silson: 1,             driver: DRIVER,            driver_injury_14: 3000,
+    ci: 0,                 dementia: 5000,
+    cancer_special: 1000,  brain_special: 1000,       heart_special: 1000,
+    fracture: 200,         burn: 200,                 liability: 20000,      fire: 0,
   },
 }
 
@@ -192,8 +353,26 @@ export default function BenchmarkSettings({ onClose }: { onClose: () => void }) 
     setTimeout(() => { setCustomSaved(false); setSaved(false) }, 2000)
   }
 
-  const groups = ['사망', '암', '2대질병', '주요치료비', '기타']
+  const ALL_GROUPS = [
+    '사망', '암 진단비', '암 치료비', '암 주요치료비', '세부치료비',
+    '뇌/심장 진단비', '뇌/심장 수술·치료', '후유장해', '간병', '수술비',
+    '실손·운전자', '치매·CI', '산정특례', '일상보장',
+  ]
   const PRESET_LABELS = { min: '최소', standard: '표준', comfort: '여유' } as const
+
+  // 그룹 색상
+  const GROUP_COLORS: Record<string, string> = {
+    '사망': '#ef4444',
+    '암 진단비': '#8b5cf6',   '암 치료비': '#7c3aed',  '암 주요치료비': '#6d28d9', '세부치료비': '#5b21b6',
+    '뇌/심장 진단비': '#1d4ed8', '뇌/심장 수술·치료': '#1e40af',
+    '후유장해': '#0369a1',
+    '간병': '#0f766e',
+    '수술비': '#065f46',
+    '실손·운전자': '#92400e',
+    '치매·CI': '#b45309',
+    '산정특례': '#78716c',
+    '일상보장': '#4b5563',
+  }
 
   return (
     <div style={{
@@ -204,7 +383,7 @@ export default function BenchmarkSettings({ onClose }: { onClose: () => void }) 
       <div style={{
         background: '#fff', borderRadius: 16,
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-        width: 540, maxHeight: '90vh',
+        width: 580, maxHeight: '90vh',
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
       }}>
         {/* 헤더 */}
@@ -254,24 +433,28 @@ export default function BenchmarkSettings({ onClose }: { onClose: () => void }) 
 
         {/* 항목 리스트 */}
         <div style={{ overflowY: 'auto', padding: '8px 24px 8px', flex: 1 }}>
-          {groups.map((group) => {
+          {ALL_GROUPS.map((group) => {
             const items = BENCHMARK_ITEMS.filter((i) => i.group === group)
             if (!items.length) return null
+            const color = GROUP_COLORS[group] || '#64748b'
             return (
-              <div key={group} style={{ marginBottom: 12 }}>
+              <div key={group} style={{ marginBottom: 8 }}>
                 <div style={{
-                  fontSize: 11, fontWeight: 700, color: '#94a3b8',
+                  fontSize: 10, fontWeight: 900, color,
                   letterSpacing: '0.05em', textTransform: 'uppercase',
-                  marginBottom: 6, paddingTop: 8, borderTop: '1px solid #f1f5f9',
+                  marginBottom: 4, paddingTop: 10,
+                  borderTop: '1px solid #f1f5f9',
+                  display: 'flex', alignItems: 'center', gap: 6,
                 }}>
+                  <span style={{ width: 3, height: 12, borderRadius: 9999, background: color, display: 'inline-block' }} />
                   {group}
                 </div>
                 {items.map((item) => (
-                  <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0' }}>
+                  <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
                     <span style={{
                       flex: 1, fontSize: 13,
                       color: item.label.startsWith('└') ? '#64748b' : '#1a2744',
-                      paddingLeft: item.label.startsWith('└') ? 8 : 0,
+                      paddingLeft: item.label.startsWith('└') ? 10 : 0,
                     }}>
                       {item.label}
                     </span>
@@ -288,7 +471,7 @@ export default function BenchmarkSettings({ onClose }: { onClose: () => void }) 
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <input
                           type="number" min={0}
-                          step={item.unit === '만원/일' ? 5 : 100}
+                          step={item.unit === '만원/일' ? 1 : 100}
                           value={amounts[item.key]}
                           onChange={(e) => handleChange(item.key, e.target.value)}
                           style={{

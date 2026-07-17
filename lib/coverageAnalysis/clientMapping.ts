@@ -46,7 +46,16 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['상해통원의료비', '상해외래의료비', '상해처방조제료', '실손상해통원', '상해통원실손', '상해통원', '실손의료비', '의료실비', '실비', '실손'], rowKey: 'silson_injury_outpatient' },
 
   // ── 암 — 고액·표적 먼저 (일반 "암진단"보다 구체적) ───────────────────
-  { patterns: ['고액암진단비', '고액암진단', '고액암'], rowKey: 'cancer_high_value' },
+  // ※ "특정암"은 보험사가 고액암(폐·간·췌장·식도·담낭·골수·림프·백혈병 등)을
+  //   지칭하는 가장 흔한 상품명이므로 cancer_high_value로 분류합니다.
+  { patterns: [
+      '고액암진단비', '고액암진단', '10대고액암', '고액암',
+      '특정암진단비', '특정암진단', '특정(고액)암', '특정암',
+      '10대암진단비', '10대암진단', '10대암',
+      '주요암진단비', '주요암진단', '주요암',
+      '5대암진단비', '5대암진단', '5대암',
+      '7대암진단비', '7대암진단', '7대암',
+    ], rowKey: 'cancer_high_value' },
   { patterns: ['고액항암치료비', '고액항암', '표적항암', '중입자항암'], rowKey: 'cancer_targeted' },
   { patterns: ['항암중입자', '중입자치료', '중입자방사선', '중입자'], rowKey: 'cancer_hadron' },
   { patterns: ['양성자방사선', '양성자치료', '양성자'], rowKey: 'cancer_proton' },
@@ -80,11 +89,13 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['혈전용해'], rowKey: 'two_major_thrombolysis' },
   { patterns: ['중환자실'], rowKey: 'two_major_icu' },
 
-  // ── 후유장해 — "80% 이상" 먼저 ──────────────────────────────────────
-  // (주의: 80% 판별은 inferClientRowKey 함수 내 선행 로직으로 처리)
+  // ── 후유장해 — "80% 이상" → "50%" → "3%~" 순서로 배치 ──────────────
+  // (주의: 80% / 50% 판별은 inferClientRowKey 함수 내 선행 로직으로 처리)
   { patterns: ['질병후유장해80', '질병80%', '질병80%이상', '질병80미만후유'], rowKey: 'disability_disease_80' },
+  { patterns: ['질병후유장해50', '질병50%', '질병50%이상', '질병50이상'], rowKey: 'disability_disease_50' },
   { patterns: ['질병후유장해', '질병 후유'], rowKey: 'disability_disease' },
   { patterns: ['상해후유장해80', '상해80%', '재해80%', '상해80%이상', '상해80미만후유'], rowKey: 'disability_injury_80' },
+  { patterns: ['상해후유장해50', '상해50%', '재해50%', '상해50%이상', '상해50이상'], rowKey: 'disability_injury_50' },
   { patterns: ['상해후유장해', '재해후유장해', '상해 후유', '상해후유'], rowKey: 'disability_injury' },
   // 고도장해·영구장해 (후유 선행로직 통과 후 폴스루 케이스)
   { patterns: ['고도장해', '영구장해', '완전장해', '고도후유', '최고도장해'], rowKey: 'disability_injury_80' },
@@ -133,20 +144,30 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
 export function inferClientRowKey(coverageName: string): string | undefined {
   const normalized = coverageName.replace(/\s+/g, '').toLowerCase()
 
-  // ── 후유장해 80% 선행 판별 ──────────────────────────────────────────────
-  // "(80%이상)" 표기가 질병/상해 양쪽에 나타나므로 컨텍스트로 구분
+  // ── 후유장해 80% / 50% 선행 판별 ──────────────────────────────────────
+  // "(80%이상)" "(50%이상)" 표기가 질병/상해 양쪽에 나타나므로 컨텍스트로 구분
   if (normalized.includes('후유장해') || normalized.includes('후유')) {
     const is80 =
       normalized.includes('80%이상') ||
       normalized.includes('80%') ||
       normalized.includes('80이상') ||
       normalized.includes('(80')
+    const is50 =
+      normalized.includes('50%이상') ||
+      normalized.includes('50%') ||
+      normalized.includes('50이상') ||
+      normalized.includes('(50')
     const isInjury = normalized.includes('상해') || normalized.includes('재해')
     const isDisease = normalized.includes('질병')
     if (is80) {
       if (isInjury) return 'disability_injury_80'
       if (isDisease) return 'disability_disease_80'
       return 'disability_disease_80'
+    }
+    if (is50) {
+      if (isInjury) return 'disability_injury_50'
+      if (isDisease) return 'disability_disease_50'
+      return 'disability_disease_50'
     }
     if (isInjury) return 'disability_injury'
     if (isDisease) return 'disability_disease'
@@ -273,9 +294,11 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   two_major_thrombolysis:    '2대질병 — 혈전용해치료',
   two_major_icu:             '2대질병 — 중환자실치료',
   disability_disease_80:     '후유장해 — 질병 80% 이상',
-  disability_disease:        '후유장해 — 질병 3%~80%',
+  disability_disease_50:     '후유장해 — 질병 50%',
+  disability_disease:        '후유장해 — 질병 3%~',
   disability_injury_80:      '후유장해 — 상해 80% 이상',
-  disability_injury:         '후유장해 — 상해 3%~80%',
+  disability_injury_50:      '후유장해 — 상해 50%',
+  disability_injury:         '후유장해 — 상해 3%~',
   death_general:             '사망 — 일반',
   death_disease:             '사망 — 질병',
   death_injury:              '사망 — 상해(재해)',

@@ -11,7 +11,7 @@ const RADAR_GROUPS = [
   { key: 'brain',    label: '뇌진단',      match: ['brain_vascular'],                 bmKey: 'brain' as const },
   { key: 'heart',    label: '심장진단',    match: ['heart_ischemic'],                 bmKey: 'heart_ischemic' as const },
   { key: 'surgery',  label: '수술비',      match: ['surgery_'],                      bmKey: 'surgery' as const },
-  { key: 'hospital', label: '입원/간병',   match: ['hospital_disease_daily', 'hospital_injury_daily', 'nursing_hospital'], bmKey: 'nursing' as const },
+  { key: 'hospital', label: '입원/간병',   match: ['hospital_disease_daily', 'hospital_injury_daily', 'nursing_hospital'], bmKey: 'nursing_disease' as const },
 ]
 
 function getRecommend(bm: BenchmarkAmounts, bmKey: keyof BenchmarkAmounts): number {

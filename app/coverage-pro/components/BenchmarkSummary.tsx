@@ -154,8 +154,12 @@ export default function BenchmarkSummary({ contracts, onOpenSettings }: {
   if (!benchmark) return null
 
   const actuals = calcActuals(contractsForOutput(contracts))
-  const groups = ['사망', '암', '2대질병', '주요치료비', '기타']
-  const grouped = groups.map((g) => ({ group: g, items: BENCHMARK_ITEMS.filter((i) => i.group === g) }))
+  const ALL_GROUPS = [
+    '사망', '암 진단비', '암 치료비', '암 주요치료비', '세부치료비',
+    '뇌/심장 진단비', '뇌/심장 수술·치료', '후유장해', '간병', '수술비',
+    '실손·운전자', '치매·CI', '산정특례', '일상보장',
+  ]
+  const grouped = ALL_GROUPS.map((g) => ({ group: g, items: BENCHMARK_ITEMS.filter((i) => i.group === g) }))
 
   const scored = BENCHMARK_ITEMS.filter((item) => item.unit !== '여부' && benchmark[item.key] > 0)
   let achievedCount = 0, warnCount = 0, missCount = 0, narrowCount = 0

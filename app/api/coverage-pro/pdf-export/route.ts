@@ -380,7 +380,12 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
     return '담보만기 ' + expiries.slice(0, 2).join(', ') + (expiries.length > 2 ? ' 외 ' + (expiries.length - 2) : '')
   }
 
-  const activeContracts = contracts.filter(c => c.status !== 'lapsed' && c.status !== 'expired')
+  // __manual__ 수동조정 계약은 표시하지 않음 (step-3에서 이미 반영된 값)
+  const activeContracts = contracts.filter(c =>
+    c.id !== '__manual__' &&
+    c.status !== 'lapsed' &&
+    c.status !== 'expired'
+  )
   const cards = activeContracts.map(c => {
     const premium = Number(c.monthlyPremium || 0)
     const covRows = c.coverages
@@ -544,17 +549,19 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
     )
   })
 
-  // 2개씩 행으로 묶기 — 행 단위로 break-inside:avoid 적용
-  let rows = ''
-  for (let i = 0; i < cardArr.length; i += 2) {
-    rows +=
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;' +
-      'break-inside:avoid;page-break-inside:avoid;margin-bottom:10px">' +
-      cardArr[i] +
-      (cardArr[i + 1] || '<div></div>') +
+  // CSS column-count 레이아웃 — 순서보다 빈칸 최소화 우선
+  // column-count:2 → 카드가 위→아래로 자연스럽게 채워져 공백 최소화
+  // 카드 수가 3개 이하면 3열로 더 컴팩트하게
+  const colCount = cardArr.length <= 3 ? 3 : 2
+  return (
+    '<div style="column-count:' + colCount + ';column-gap:10px">' +
+    cardArr.map(card =>
+      '<div style="break-inside:avoid;page-break-inside:avoid;margin-bottom:10px">' +
+      card +
       '</div>'
-  }
-  return rows
+    ).join('') +
+    '</div>'
+  )
 }
 
 // ── 담보비교표 (항상 마지막 페이지) ─────────────────────────────────────
