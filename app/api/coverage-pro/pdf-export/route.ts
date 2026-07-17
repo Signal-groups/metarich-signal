@@ -227,24 +227,135 @@ function parseContractYearMonth(value?: string): { year: number; month: number; 
   return { year, month, label: `${year}.${String(month).padStart(2, '0')}` }
 }
 
-function inferSilsonInfo(contracts: ProContract[]) {
+function isLifeIns(company: string): boolean {
+  const c = (company || '').replace(/\s/g, '')
+  // 생명보험사: "생명", "라이프", "Life" 포함 여부로 판단
+  return /생명|라이프|life/i.test(c) && !/손해|화재|해상/i.test(c)
+}
+
+interface SilsonInfo {
+  generation: string       // e.g. '1세대 실손 (표준화 이전·손보)'
+  insType: string          // '생보' | '손보' | '-'
+  joinedAt: string
+  coPayBenefit: string     // 급여 본인부담
+  coPayNonBenefit: string  // 비급여 본인부담
+  coPayMajor3: string      // 3대비급여 본인부담
+  limitNote: string        // 입원 보장한도 등 참고 정보
+  renewalRule: string
+}
+
+function inferSilsonInfo(contracts: ProContract[]): SilsonInfo {
+  const NOTFOUND: SilsonInfo = {
+    generation: '미가입 또는 확인 필요',
+    insType: '-', joinedAt: '-',
+    coPayBenefit: '-', coPayNonBenefit: '-', coPayMajor3: '-',
+    limitNote: '-', renewalRule: '실손 담보 확인 필요',
+  }
+
   const silson = contracts.find((contract) =>
     classifyType(contract) === '실손' ||
     contract.coverages.some((coverage) => coverage.rowKey.startsWith('silson_'))
   )
-  if (!silson) {
-    return { generation: '미가입 또는 확인 필요', joinedAt: '-', renewalRule: '실손 담보 확인 필요' }
-  }
+  if (!silson) return NOTFOUND
+
   const parsed = parseContractYearMonth(silson.contractDate)
   if (!parsed) {
-    return { generation: '확인 필요', joinedAt: silson.contractDate || '-', renewalRule: '계약일 기준 확인' }
+    return { ...NOTFOUND, generation: '확인 필요', joinedAt: silson.contractDate || '-', renewalRule: '계약일 기준 확인' }
   }
+
   const ym = parsed.year * 100 + parsed.month
-  if (ym <= 200909) return { generation: '1세대 실손', joinedAt: parsed.label, renewalRule: '3년 또는 5년 갱신형 중심' }
-  if (ym < 201304) return { generation: '2세대 실손', joinedAt: parsed.label, renewalRule: '갱신형 중심' }
-  if (ym <= 201703) return { generation: '2세대 실손', joinedAt: parsed.label, renewalRule: '재가입' }
-  if (ym <= 202106) return { generation: '3세대 실손', joinedAt: parsed.label, renewalRule: '15년 재가입 · 비급여 특약 분리' }
-  return { generation: '4세대 실손', joinedAt: parsed.label, renewalRule: '5년 재가입 · 비급여 차등 구조' }
+  const isLife = isLifeIns(silson.company)
+  const insType = isLife ? '생보' : '손보'
+
+  // ── 표준화 이전 손보 (2003.10 ~ 2008.4) ─────────────────────────────
+  if (ym < 200805) {
+    return {
+      generation: '1세대 실손 (표준화 이전)',
+      insType: '손보',
+      joinedAt: parsed.label,
+      coPayBenefit: '0%',
+      coPayNonBenefit: '0%',
+      coPayMajor3: '-',
+      limitNote: '입원 3천~1억 / 통원 10~50만',
+      renewalRule: '5년/100세 갱신형',
+    }
+  }
+  // ── 표준화 이전 생보·손보 혼재 (2008.5 ~ 2009.9) ────────────────────
+  if (ym < 200910) {
+    return {
+      generation: '1세대 실손 (표준화 이전)',
+      insType,
+      joinedAt: parsed.label,
+      coPayBenefit: isLife ? '20%' : '0%',
+      coPayNonBenefit: isLife ? '20%' : '0%',
+      coPayMajor3: '-',
+      limitNote: isLife ? '입원 3천만 / 통원 10만' : '입원 3천~1억 / 통원 10~50만',
+      renewalRule: isLife ? '3년/100세 갱신형' : '5년/100세 갱신형',
+    }
+  }
+  // ── 표준화 실손 (2009.10 ~ 2013.3) ──────────────────────────────────
+  if (ym < 201304) {
+    return {
+      generation: '2세대 실손 (표준화)',
+      insType,
+      joinedAt: parsed.label,
+      coPayBenefit: '10~20% (선택형)',
+      coPayNonBenefit: '10~20% (급여·비급여 미분리)',
+      coPayMajor3: '-',
+      limitNote: '입원 5천만 / 통원 25만',
+      renewalRule: '3년/100세 갱신형 + 15년 재가입',
+    }
+  }
+  // ── 2세대 1~3차개정 (2013.4 ~ 2016.12) ──────────────────────────────
+  if (ym < 201701) {
+    return {
+      generation: '2세대 실손 (2013~2016 개정)',
+      insType,
+      joinedAt: parsed.label,
+      coPayBenefit: '10%',
+      coPayNonBenefit: '20%',
+      coPayMajor3: '-',
+      limitNote: '입원 5천만 / 통원 25만',
+      renewalRule: '1년 갱신 / 15년 재가입',
+    }
+  }
+  // ── 3세대 (2017.1 ~ 2021.3) ──────────────────────────────────────────
+  if (ym < 202104) {
+    return {
+      generation: '3세대 실손',
+      insType,
+      joinedAt: parsed.label,
+      coPayBenefit: '10%',
+      coPayNonBenefit: '20%',
+      coPayMajor3: '70%',
+      limitNote: '입원 5천만 / 통원 20만 (3대비급여 별도 특약)',
+      renewalRule: '1년 갱신 / 15년 재가입',
+    }
+  }
+  // ── 4세대 (2021.4 ~ 2026.6) ──────────────────────────────────────────
+  if (ym < 202607) {
+    return {
+      generation: '4세대 실손',
+      insType,
+      joinedAt: parsed.label,
+      coPayBenefit: '20%',
+      coPayNonBenefit: '20%',
+      coPayMajor3: '70%',
+      limitNote: '급여 5천만 / 비급여 한도 내 · 이용량 연동 할인·할증',
+      renewalRule: '1년 갱신 / 5년 재가입',
+    }
+  }
+  // ── 5세대 (2026.7~) ──────────────────────────────────────────────────
+  return {
+    generation: '5세대 실손',
+    insType,
+    joinedAt: parsed.label,
+    coPayBenefit: '중증 산정특례대상 별도 급여 (특약1)',
+    coPayNonBenefit: '입원 50% / 통원 연간 300만원 한도',
+    coPayMajor3: '-',
+    limitNote: '급여 연간 1천만 (기본) / 비급여(특약2) 별도',
+    renewalRule: '1년 갱신 / 5년 재가입',
+  }
 }
 
 // ── 게이지 SVG ────────────────────────────────────────────────────────────
@@ -808,12 +919,17 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     '<span style="font-size:11px;font-weight:900;color:#1a2744">&#128138;&nbsp;실손의료비</span>' +
     '<span style="font-size:10px;font-weight:900;color:' + silsonColor + '">' + silsonLabel + '</span>' +
     '</div>' +
-    '<div style="height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-bottom:4px">' +
+    '<div style="height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-bottom:6px">' +
     '<div style="height:6px;border-radius:999px;background:' + silsonColor + ';width:' + (silsonHasInfo ? '100' : '4') + '%"></div>' +
     '</div>' +
-    '<div style="font-size:9px;color:#64748b;font-weight:700">' +
+    '<div style="font-size:9px;color:#64748b;font-weight:700;line-height:1.8">' +
     '세대&nbsp;<b style="color:#1a2744">' + escHtml(silsonInfo.generation || '-') + '</b>' +
-    '&nbsp;&nbsp;가입연월&nbsp;<b style="color:#1a2744">' + escHtml(silsonInfo.joinedAt || '-') + '</b>' +
+    (silsonInfo.insType !== '-' ? '&nbsp;<b style="color:#2d4a8a;background:#dbeafe;border-radius:3px;padding:0 3px;font-size:8px">' + escHtml(silsonInfo.insType) + '</b>' : '') +
+    '<br>가입연월&nbsp;<b style="color:#1a2744">' + escHtml(silsonInfo.joinedAt || '-') + '</b>' +
+    (silsonHasInfo && silsonInfo.coPayBenefit !== '-'
+      ? '<br>급여 본인부담&nbsp;<b style="color:#1a2744">' + escHtml(silsonInfo.coPayBenefit) + '</b>'
+      + (silsonInfo.coPayNonBenefit !== '-' ? '&nbsp;&nbsp;비급여&nbsp;<b style="color:#dc2626">' + escHtml(silsonInfo.coPayNonBenefit) + '</b>' : '')
+      : '') +
     '</div>' +
     '</div>'
 
@@ -930,13 +1046,40 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   const hasSilsonInpatient = sumAmount(contracts, 'silson_disease_inpatient', 'silson_injury_inpatient') > 0
   const hasSilsonOutpatient = sumAmount(contracts, 'silson_disease_outpatient', 'silson_injury_outpatient') > 0
   const hasSilson3Major = sumAmount(contracts, 'silson_3major') > 0
+
+  // 본인부담금 행 (구분선 + 배경색)
+  function tcPayRow(label: string, value: string, color = '#f59e0b') {
+    return `<div class="tc-row" style="background:#fffbeb">` +
+      `<span style="font-size:9px;color:#64748b">${escHtml(label)}</span>` +
+      `<span class="tc-val" style="color:${color};font-size:10px;font-weight:900">${escHtml(value)}</span></div>`
+  }
+
+  const divider = '<div style="height:1px;background:#f1f5f9;margin:4px 0"></div>'
+
   const silsonCard = tcCard('💊', '실손의료비', [
-    tcTextRow('실손 입원', hasSilsonInpatient ? '가입' : '-'),
-    tcTextRow('실손 통원', hasSilsonOutpatient ? '가입' : '-'),
-    tcTextRow('비급여3대(도수/주사/MRI)', hasSilson3Major ? '가입' : '-'),
-    tcTextRow('세대', silsonInfo.generation || '-'),
+    // 가입현황
+    tcTextRow('입원 의료비', hasSilsonInpatient ? '가입' : '-'),
+    tcTextRow('통원 의료비', hasSilsonOutpatient ? '가입' : '-'),
+    tcTextRow('3대비급여 특약', hasSilson3Major ? '가입' : '-'),
+    divider,
+    // 세대 정보
+    tcTextRow('세대 / 종류', (silsonInfo.generation || '-') + (silsonInfo.insType !== '-' ? ' · ' + silsonInfo.insType : '')),
     tcTextRow('가입연월', silsonInfo.joinedAt || '-'),
-  ].join(''))
+    divider,
+    // 본인부담금
+    '<div style="font-size:9px;font-weight:900;color:#b45309;padding:3px 6px 2px;background:#fffbeb">본인부담금</div>',
+    tcPayRow('급여 항목', silsonInfo.coPayBenefit || '-', '#1a2744'),
+    tcPayRow('비급여 항목', silsonInfo.coPayNonBenefit || '-', '#dc2626'),
+    silsonInfo.coPayMajor3 && silsonInfo.coPayMajor3 !== '-'
+      ? tcPayRow('3대비급여', silsonInfo.coPayMajor3, '#7c3aed')
+      : '',
+    divider,
+    // 갱신 방식
+    tcTextRow('갱신·재가입', silsonInfo.renewalRule || '-'),
+    silsonInfo.limitNote && silsonInfo.limitNote !== '-'
+      ? `<div style="font-size:8.5px;color:#64748b;padding:2px 6px;line-height:1.4">※ ${escHtml(silsonInfo.limitNote)}</div>`
+      : '',
+  ].filter(Boolean).join(''))
 
   // 운전자 (full only)
   const driverCard = tcCard('🚗', '운전자보험', [
