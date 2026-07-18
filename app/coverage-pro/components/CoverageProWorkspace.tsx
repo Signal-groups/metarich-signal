@@ -1632,6 +1632,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                   />
                   <PdfExportBtn
                     customerName={customer?.name || ''}
+                    customerBirth={customer?.birth}
                     contracts={contracts}
                     outputType="key_pdf"
                     proposal={proposal}
@@ -1639,6 +1640,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                   />
                   <PdfExportBtn
                     customerName={customer?.name || ''}
+                    customerBirth={customer?.birth}
                     contracts={contracts}
                     outputType="full_pdf"
                     proposal={proposal}

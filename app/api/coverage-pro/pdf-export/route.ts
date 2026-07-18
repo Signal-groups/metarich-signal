@@ -16,6 +16,7 @@ type BenchmarkAmounts = Record<string, number>
 
 type PdfExportInput = {
   customerName: string
+  customerBirth?: string   // YYYY-MM-DD or similar; 보장기간 타임라인 나이 계산용
   contracts: ProContract[]
   type: 'full' | 'key'
   selectedImages?: string[]
@@ -675,6 +676,317 @@ function buildContractBreakdownPage(contracts: ProContract[]): string {
   )
 }
 
+// ── 보장기간 & 갱신 타임라인 인포그래픽 ──────────────────────────────────
+function buildTimelineInfographicPage(
+  contracts: ProContract[],
+  customerBirth?: string,
+): string {
+  const TODAY_YEAR = new Date().getFullYear()
+
+  // Parse birth year
+  let birthYear: number | null = null
+  if (customerBirth) {
+    const bm = String(customerBirth).match(/(\d{4})/)
+    if (bm) birthYear = parseInt(bm[1])
+  }
+  const useAges = birthYear !== null
+
+  // Active contracts only (exclude manual and lapsed)
+  const active = contracts.filter(c =>
+    c.id !== '__manual__' && c.status !== 'lapsed' && c.status !== 'expired'
+  )
+  if (!active.length) return ''
+
+  // ── helpers ──────────────────────────────────────────────────────────────
+  function parseMat(p?: string): { matAge: number | null; payYears: number | null; isLifetime: boolean } {
+    if (!p) return { matAge: null, payYears: null, isLifetime: false }
+    const isLife = /종신/.test(p)
+    const am = p.match(/(\d+)세만기/)
+    const pm = p.match(/(\d+)년납/)
+    const ym = p.match(/(\d+)년만기/)
+    return {
+      matAge: isLife ? 100 : (am ? parseInt(am[1]) : null),
+      payYears: pm ? parseInt(pm[1]) : (ym ? parseInt(ym[1]) : null),
+      isLifetime: isLife,
+    }
+  }
+
+  function parseRenCycle(c: ProContract): number {
+    const t = `${c.productName || ''} ${c.paymentPeriod || ''}`.toLowerCase()
+    if (t.includes('1년갱신')) return 1
+    if (t.includes('3년갱신')) return 3
+    if (t.includes('5년갱신')) return 5
+    if (t.includes('10년갱신')) return 10
+    if (t.includes('15년갱신')) return 15
+    if (t.includes('20년갱신')) return 20
+    if (isRenewalContract(c)) return 1
+    return 0
+  }
+
+  const PALETTE = [
+    '#1a2744','#2d4a8a','#1e6b50','#7c3aed','#92400e',
+    '#1e40af','#9f1239','#065f46','#344689','#0369a1',
+    '#6d28d9','#0f766e',
+  ]
+
+  // ── Build row data ────────────────────────────────────────────────────────
+  type BarRow = {
+    label1: string; label2: string
+    startVal: number; endVal: number
+    payEndVal: number | null
+    renCycle: number; isLifetime: boolean
+    color: string
+  }
+
+  const rows: BarRow[] = active.map((c, i) => {
+    const parsed = parseContractYearMonth(c.contractDate)
+    const startY = parsed?.year ?? TODAY_YEAR - 3
+    const startMo = parsed?.month ?? 1
+
+    const { matAge, payYears, isLifetime } = parseMat(c.paymentPeriod)
+
+    let startVal: number, endVal: number
+    let payEndVal: number | null = null
+
+    if (useAges && birthYear) {
+      startVal = startY - birthYear + (startMo >= 7 ? 1 : 0)
+      if (matAge) {
+        endVal = matAge
+      } else if (payYears) {
+        endVal = startVal + payYears
+      } else {
+        endVal = startVal + 20
+      }
+      if (payYears) payEndVal = startVal + payYears
+    } else {
+      startVal = startY
+      if (matAge && birthYear) {
+        endVal = birthYear + matAge
+      } else if (payYears) {
+        endVal = startY + payYears
+      } else if (matAge) {
+        endVal = startY + Math.max(20, matAge - 30)
+      } else {
+        endVal = startY + 20
+      }
+      if (payYears) payEndVal = startY + payYears
+    }
+
+    // Clamp
+    startVal = Math.max(startVal, useAges ? 10 : 1990)
+    endVal   = Math.min(endVal,   useAges ? 110 : TODAY_YEAR + 80)
+    if (endVal <= startVal) endVal = startVal + 10
+
+    const comp = c.company.replace(/[\s]*(생명|손해보험|화재보험|보험|화재|라이프그룹|그룹)/g, '').trim()
+    const prod = c.productName.length > 14 ? c.productName.slice(0, 13) + '…' : c.productName
+
+    return {
+      label1: comp, label2: prod,
+      startVal, endVal, payEndVal,
+      renCycle: parseRenCycle(c),
+      isLifetime,
+      color: PALETTE[i % PALETTE.length],
+    }
+  })
+
+  // ── X axis range ──────────────────────────────────────────────────────────
+  const allVals = rows.flatMap(r => [r.startVal, r.endVal])
+  let X_MIN: number, X_MAX: number
+  if (useAges) {
+    X_MIN = Math.max(15, Math.min(20, Math.floor(Math.min(...allVals) / 5) * 5))
+    X_MAX = Math.min(110, Math.max(90, Math.ceil(Math.max(...allVals) / 5) * 5))
+  } else {
+    X_MIN = Math.max(1990, Math.min(TODAY_YEAR - 8, Math.floor(Math.min(...allVals) / 5) * 5))
+    X_MAX = Math.min(TODAY_YEAR + 80, Math.max(TODAY_YEAR + 30, Math.ceil(Math.max(...allVals) / 5) * 5))
+  }
+  const X_RANGE = Math.max(1, X_MAX - X_MIN)
+
+  // ── SVG constants ─────────────────────────────────────────────────────────
+  const LABEL_W = 165
+  const CHART_W = 660
+  const RIGHT_W = 55
+  const SVG_W   = LABEL_W + CHART_W + RIGHT_W
+  const BAR_H   = 15
+  const ROW_H   = 30
+  const HDR_H   = 54
+  const FOOT_H  = 52
+  const N       = rows.length
+  const SVG_H   = HDR_H + N * ROW_H + FOOT_H
+
+  const xSvg = (v: number) => LABEL_W + ((v - X_MIN) / X_RANGE) * CHART_W
+
+  // Tick values
+  const tickStep = X_RANGE <= 25 ? 2 : X_RANGE <= 55 ? 5 : 10
+  const ticks: number[] = []
+  for (let v = Math.ceil(X_MIN / tickStep) * tickStep; v <= X_MAX; v += tickStep) ticks.push(v)
+
+  // ── SVG build ─────────────────────────────────────────────────────────────
+  let s = ''
+
+  // BG
+  s += `<rect width="${SVG_W}" height="${SVG_H}" fill="#fafaf8" rx="10"/>`
+
+  // Title
+  s += `<text x="${SVG_W/2}" y="20" text-anchor="middle" font-family="Pretendard Variable,Pretendard,sans-serif" font-size="13" font-weight="900" fill="#1a2744">보험별 보장기간 &amp; 갱신 시점 한눈에 보기</text>`
+  s += `<text x="${SVG_W/2}" y="37" text-anchor="middle" font-family="Pretendard Variable,Pretendard,sans-serif" font-size="9" fill="#64748b">각 보험의 보장 시작·만기와 갱신 시점, 납입 완료 시점을 확인하세요</text>`
+
+  // X-axis header separator
+  s += `<line x1="${LABEL_W}" y1="${HDR_H - 2}" x2="${LABEL_W + CHART_W}" y2="${HDR_H - 2}" stroke="#e2e8f0" stroke-width="1"/>`
+  // Label | Chart separator
+  s += `<line x1="${LABEL_W}" y1="${HDR_H - 8}" x2="${LABEL_W}" y2="${HDR_H + N * ROW_H}" stroke="#cbd5e1" stroke-width="1.5"/>`
+
+  // Grid + x-axis labels
+  for (const t of ticks) {
+    const x = xSvg(t)
+    s += `<line x1="${x.toFixed(1)}" y1="${HDR_H - 2}" x2="${x.toFixed(1)}" y2="${HDR_H + N * ROW_H}" stroke="#e2e8f0" stroke-width="1"/>`
+    s += `<text x="${x.toFixed(1)}" y="${HDR_H - 5}" text-anchor="middle" font-family="Pretendard Variable,sans-serif" font-size="8" fill="#94a3b8" font-weight="700">${t}${useAges ? '세' : ''}</text>`
+  }
+
+  // Current age/year line (red dashed)
+  const curVal = (useAges && birthYear) ? (TODAY_YEAR - birthYear) : TODAY_YEAR
+  if (curVal >= X_MIN && curVal <= X_MAX) {
+    const cx = xSvg(curVal)
+    s += `<line x1="${cx.toFixed(1)}" y1="${HDR_H - 8}" x2="${cx.toFixed(1)}" y2="${HDR_H + N * ROW_H + 4}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3"/>`
+    s += `<text x="${cx.toFixed(1)}" y="${HDR_H + N * ROW_H + 14}" text-anchor="middle" font-size="8" fill="#ef4444" font-weight="900">현재</text>`
+  }
+
+  // ── Rows ──────────────────────────────────────────────────────────────────
+  rows.forEach((row, i) => {
+    const ry  = HDR_H + i * ROW_H
+    const barY = ry + (ROW_H - BAR_H) / 2
+
+    // Alternating row BG
+    if (i % 2 === 0) {
+      s += `<rect x="0" y="${ry}" width="${SVG_W}" height="${ROW_H}" fill="rgba(255,255,255,0.55)"/>`
+    }
+
+    // Labels (left side)
+    s += `<text x="${LABEL_W - 7}" y="${ry + ROW_H/2 - 3}" text-anchor="end" font-family="Pretendard Variable,sans-serif" font-size="9.5" font-weight="800" fill="#1a2744">${escHtml(row.label1)}</text>`
+    s += `<text x="${LABEL_W - 7}" y="${ry + ROW_H/2 + 8}" text-anchor="end" font-family="Pretendard Variable,sans-serif" font-size="7.5" fill="#64748b">${escHtml(row.label2)}</text>`
+
+    // Bar coordinates (clamped)
+    const bx1 = Math.max(xSvg(row.startVal), LABEL_W)
+    const bx2 = Math.min(xSvg(row.endVal), LABEL_W + CHART_W)
+    const bw  = Math.max(4, bx2 - bx1)
+
+    if (row.renCycle > 0) {
+      // Renewal: light full bar + darker segments
+      s += `<rect x="${bx1.toFixed(1)}" y="${barY}" width="${bw.toFixed(1)}" height="${BAR_H}" rx="4" fill="${row.color}" opacity="0.18"/>`
+      let seg = row.startVal
+      while (seg < row.endVal) {
+        const segEnd = Math.min(seg + row.renCycle, row.endVal)
+        const sx1 = Math.max(xSvg(seg), LABEL_W)
+        const sx2 = Math.min(xSvg(segEnd), LABEL_W + CHART_W)
+        const sw  = Math.max(1, sx2 - sx1 - 1.5)
+        s += `<rect x="${sx1.toFixed(1)}" y="${(barY + 3).toFixed(1)}" width="${sw.toFixed(1)}" height="${BAR_H - 6}" rx="3" fill="${row.color}" opacity="0.82"/>`
+        // Renewal dot (not at segment start of first)
+        if (seg > row.startVal) {
+          const dx = xSvg(seg)
+          if (dx >= LABEL_W && dx <= LABEL_W + CHART_W) {
+            s += `<circle cx="${dx.toFixed(1)}" cy="${(barY + BAR_H/2).toFixed(1)}" r="5" fill="#fff" stroke="${row.color}" stroke-width="2"/>`
+            s += `<text x="${dx.toFixed(1)}" y="${(barY - 3).toFixed(1)}" text-anchor="middle" font-size="7" fill="#dc2626" font-weight="900">↑</text>`
+          }
+        }
+        seg = segEnd
+      }
+    } else {
+      // Non-renewal: solid bar
+      s += `<rect x="${bx1.toFixed(1)}" y="${barY}" width="${bw.toFixed(1)}" height="${BAR_H}" rx="4" fill="${row.color}"/>`
+    }
+
+    // Payment end marker (gold vertical line with triangle)
+    if (row.payEndVal && row.payEndVal > row.startVal && row.payEndVal < row.endVal) {
+      const px = xSvg(row.payEndVal)
+      if (px > LABEL_W && px < LABEL_W + CHART_W) {
+        s += `<line x1="${px.toFixed(1)}" y1="${(barY - 3).toFixed(1)}" x2="${px.toFixed(1)}" y2="${(barY + BAR_H + 3).toFixed(1)}" stroke="#c9a96e" stroke-width="2"/>`
+        s += `<polygon points="${px.toFixed(1)},${(barY - 6).toFixed(1)} ${(px-3).toFixed(1)},${(barY - 1).toFixed(1)} ${(px+3).toFixed(1)},${(barY - 1).toFixed(1)}" fill="#c9a96e"/>`
+      }
+    }
+
+    // Start/end age text inside bar
+    const sLbl = useAges ? `${Math.round(row.startVal)}세` : `${Math.round(row.startVal)}`
+    const eLbl = row.isLifetime ? '종신' : (useAges ? `${Math.round(row.endVal)}세` : `${Math.round(row.endVal)}`)
+    if (bw > 44) {
+      s += `<text x="${(bx1 + 5).toFixed(1)}" y="${(barY + BAR_H/2 + 3.5).toFixed(1)}" font-size="7" fill="rgba(255,255,255,0.95)" font-weight="700" font-family="Pretendard Variable,sans-serif">${sLbl}</text>`
+    }
+    if (bw > 55) {
+      s += `<text x="${(bx2 - 4).toFixed(1)}" y="${(barY + BAR_H/2 + 3.5).toFixed(1)}" text-anchor="end" font-size="7" fill="rgba(255,255,255,0.95)" font-weight="700" font-family="Pretendard Variable,sans-serif">${eLbl}</text>`
+    }
+
+    // Badge right of bar
+    const badgeX = Math.min(bx2 + 3, LABEL_W + CHART_W + 3)
+    if (row.renCycle === 0) {
+      s += `<rect x="${badgeX.toFixed(1)}" y="${(barY + 2).toFixed(1)}" width="28" height="11" rx="5" fill="#d1fae5"/>`
+      s += `<text x="${(badgeX + 14).toFixed(1)}" y="${(barY + 10.5).toFixed(1)}" text-anchor="middle" font-size="6" fill="#065f46" font-weight="900">비갱신</text>`
+    } else {
+      const rl = row.renCycle === 1 ? '1년갱' : `${row.renCycle}년갱`
+      s += `<rect x="${badgeX.toFixed(1)}" y="${(barY + 2).toFixed(1)}" width="26" height="11" rx="5" fill="#fed7aa"/>`
+      s += `<text x="${(badgeX + 13).toFixed(1)}" y="${(barY + 10.5).toFixed(1)}" text-anchor="middle" font-size="6" fill="#9a3412" font-weight="900">${rl}</text>`
+    }
+  })
+
+  // Bottom chart border
+  s += `<line x1="${LABEL_W}" y1="${HDR_H + N * ROW_H}" x2="${LABEL_W + CHART_W}" y2="${HDR_H + N * ROW_H}" stroke="#e2e8f0" stroke-width="1"/>`
+
+  // ── Legend ────────────────────────────────────────────────────────────────
+  const legY = HDR_H + N * ROW_H + 8
+  s += `<rect x="0" y="${legY}" width="${SVG_W}" height="${FOOT_H - 4}" fill="#f1f5f9" rx="0 0 8 8"/>`
+  const legItems = [
+    { type: 'solid', color: '#1a2744', label: '보장기간 (비갱신)' },
+    { type: 'seg',   color: '#1a2744', label: '보장기간 (갱신형)' },
+    { type: 'dot',   color: '#1a2744', label: '갱신 시점 / 보험료 인상 예상' },
+    { type: 'gold',  color: '#c9a96e', label: '납입 완료 시점' },
+    { type: 'dred',  color: '#ef4444', label: '현재 시점' },
+  ]
+  let lx = LABEL_W + 4
+  const ly = legY + 28
+  for (const lg of legItems) {
+    if (lg.type === 'solid') {
+      s += `<rect x="${lx}" y="${ly - 9}" width="18" height="10" rx="3" fill="${lg.color}"/>`
+    } else if (lg.type === 'seg') {
+      s += `<rect x="${lx}" y="${ly - 9}" width="18" height="10" rx="3" fill="${lg.color}" opacity="0.18"/>`
+      s += `<rect x="${lx + 1}" y="${ly - 7}" width="16" height="6" rx="2" fill="${lg.color}" opacity="0.8"/>`
+    } else if (lg.type === 'dot') {
+      s += `<circle cx="${lx + 9}" cy="${ly - 4}" r="5" fill="#fff" stroke="${lg.color}" stroke-width="2"/>`
+      s += `<text x="${lx + 9}" y="${ly - 10}" text-anchor="middle" font-size="7" fill="#dc2626" font-weight="900">↑</text>`
+    } else if (lg.type === 'gold') {
+      s += `<line x1="${lx + 9}" y1="${ly - 11}" x2="${lx + 9}" y2="${ly + 1}" stroke="${lg.color}" stroke-width="2"/>`
+      s += `<polygon points="${lx+9},${ly-13} ${lx+6},${ly-9} ${lx+12},${ly-9}" fill="${lg.color}"/>`
+    } else if (lg.type === 'dred') {
+      s += `<line x1="${lx}" y1="${ly - 4}" x2="${lx + 18}" y2="${ly - 4}" stroke="${lg.color}" stroke-width="2" stroke-dasharray="4,2"/>`
+    }
+    s += `<text x="${lx + 23}" y="${ly}" font-size="8.5" fill="#4b5563" font-weight="600" font-family="Pretendard Variable,sans-serif">${escHtml(lg.label)}</text>`
+    lx += 23 + lg.label.length * 5 + 16
+  }
+
+  const svg = `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" width="100%" style="max-width:${SVG_W}px;display:block" xmlns="http://www.w3.org/2000/svg">${s}</svg>`
+
+  return `
+<!-- ════ PAGE TIMELINE: 보장기간 & 갱신 타임라인 ════ -->
+<div class="pdf-page">
+<div class="page-inner">
+  <div class="page-label">보험별 보장기간 &amp; 갱신 시점</div>
+  <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
+    <div>
+      <div style="font-size:13px;font-weight:900;color:#1a2744">보장기간 · 갱신 타임라인</div>
+      <div style="font-size:10px;color:#64748b;margin-top:2px">내 보험이 ${useAges ? '몇 살까지 보장되고,' : ''} 언제 갱신되어 보험료가 오르는지 한눈에 확인하세요</div>
+    </div>
+  </div>
+  <div style="overflow:hidden;border-radius:10px;border:1px solid #e2e8f0">
+    ${svg}
+  </div>
+  <div style="margin-top:8px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+    <div style="font-size:9px;color:#92400e;font-weight:700;margin-bottom:2px">⚠️ 참고</div>
+    <div style="font-size:9px;color:#78350f;line-height:1.6">
+      보장기간은 계약일·납입기간 정보를 기반으로 자동 추산됩니다. 실제 보장 만기는 보험증권을 직접 확인하세요.<br/>
+      갱신형 보험(주황 배지)은 갱신 시점(●)마다 나이·손해율에 따라 보험료가 <b>인상</b>됩니다. 장기 납입 계획 수립 시 참고하세요.
+    </div>
+  </div>
+</div>
+</div>
+`
+}
+
 // ── 담보비교표 (항상 마지막 페이지) ─────────────────────────────────────
 function buildContactsPage(contracts: ProContract[], addContracts: ProContract[] = []): string {
   const allCos = [...contracts, ...addContracts].map(c => c.company || '').filter(Boolean)
@@ -834,7 +1146,7 @@ function buildCompareTable(contracts: ProContract[]): string {
 
 // ── 메인 HTML ─────────────────────────────────────────────────────────────
 async function buildPrintHtml(input: PdfExportInput): Promise<string> {
-  const { customerName, contracts, selectedImages = [], proposal, advisorInfo } = input
+  const { customerName, customerBirth, contracts, selectedImages = [], proposal, advisorInfo } = input
   const benchmark = input.benchmark
   const hasRemodel = !!proposal && (proposal.addContracts.length > 0 || proposal.removeContractIds.length > 0)
   const beforeContracts = proposal
@@ -1124,6 +1436,7 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
   </div>`
 
   const compareHtml = buildCompareTable(contracts)
+  const timelineHtml = buildTimelineInfographicPage(contracts, customerBirth)
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -1458,6 +1771,8 @@ ${advisorInfo ? `
   </div>
 </div>
 </div>
+
+${timelineHtml}
 
 ${hasRemodel ? `
 <!-- ════ PAGE R1: 추가 제안 상품 ════ -->

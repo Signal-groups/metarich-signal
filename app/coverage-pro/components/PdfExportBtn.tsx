@@ -306,6 +306,7 @@ function ImagePickerModal({
 
 export default function PdfExportBtn({
   customerName,
+  customerBirth,
   contracts,
   outputType,
   disabled,
@@ -313,6 +314,7 @@ export default function PdfExportBtn({
   advisorInfo,
 }: {
   customerName: string
+  customerBirth?: string
   contracts: ProContract[]
   outputType: OutputConfig['outputType']
   disabled?: boolean
@@ -342,7 +344,7 @@ export default function PdfExportBtn({
       const res = await fetch('/api/coverage-pro/pdf-export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerName, contracts: outputContracts, type, selectedImages: images, proposal, advisorInfo, benchmark }),
+        body: JSON.stringify({ customerName, customerBirth, contracts: outputContracts, type, selectedImages: images, proposal, advisorInfo, benchmark }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: '알 수 없는 오류' }))
