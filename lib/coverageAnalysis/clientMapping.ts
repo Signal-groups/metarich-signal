@@ -158,6 +158,13 @@ export function inferClientRowKey(coverageName: string): string | undefined {
       normalized.includes('50%') ||
       normalized.includes('50이상') ||
       normalized.includes('(50')
+    // 소퍼센트(3·5·10·20·30%)·특정: 80%/50% 확인 후 처리
+    const isSmallPct =
+      !is80 && !is50 && (
+        normalized.includes('3%') || normalized.includes('5%') ||
+        normalized.includes('10%') || normalized.includes('20%') ||
+        normalized.includes('30%') || normalized.includes('특정')
+      )
     const isInjury = normalized.includes('상해') || normalized.includes('재해')
     const isDisease = normalized.includes('질병')
     if (is80) {
@@ -169,6 +176,11 @@ export function inferClientRowKey(coverageName: string): string | undefined {
       if (isInjury) return 'disability_injury_50'
       if (isDisease) return 'disability_disease_50'
       return 'disability_disease_50'
+    }
+    if (isSmallPct) {
+      // 특정·소퍼센트 후유장해: 질병 명시 시 질병, 그 외 상해(기본)
+      if (isDisease) return 'disability_disease'
+      return 'disability_injury'
     }
     if (isInjury) return 'disability_injury'
     if (isDisease) return 'disability_disease'

@@ -811,6 +811,29 @@ function detectBatchPart(raw: string): '1/2' | '2/2' | null {
   } catch { return null }
 }
 
+/** 생명보험 계약에서 상해사망+질병사망 동일 금액 시 death_general 하나로 통합 */
+function deduplicateDeathCoverages(coverages: ProCoverage[], contractId: string, company: string): ProCoverage[] {
+  if (!isLifeInsCompany(company)) return coverages
+  const injuryDeaths = coverages.filter(c => c.rowKey === 'death_injury')
+  const diseaseDeaths = coverages.filter(c => c.rowKey === 'death_disease')
+  if (injuryDeaths.length === 0 || diseaseDeaths.length === 0) return coverages
+  const maxInjury = Math.max(...injuryDeaths.map(c => c.amount))
+  const maxDisease = Math.max(...diseaseDeaths.map(c => c.amount))
+  if (maxInjury !== maxDisease) return coverages
+  // 동일 금액 → death_general 하나로 통합 (기존 death_general 있으면 유지)
+  const rest = coverages.filter(c => c.rowKey !== 'death_injury' && c.rowKey !== 'death_disease')
+  const hasGeneral = rest.some(c => c.rowKey === 'death_general')
+  const merged: ProCoverage = {
+    id: `merged-death-${contractId}`,
+    contractId,
+    rowKey: 'death_general',
+    name: '사망보험금',
+    amount: maxInjury,
+    isRenewal: false,
+  }
+  return hasGeneral ? rest : [...rest, merged]
+}
+
 function parseGptsJson(raw: string): ProContract[] | null {
   try {
     const parsed = parseJsonObject(raw)
@@ -825,13 +848,19 @@ function parseGptsJson(raw: string): ProContract[] | null {
           insurer: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
           policyDate: String(item.policy_date ?? item.start_date ?? item.contractDate ?? item['계약일'] ?? ''),
         }
-        const coverages = Array.isArray(item.coverages)
-          ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci, normCtx))
-          : []
+          const contractCompany = String(item.insurer ?? item.company ?? item['보험사'] ?? '')
+        const contractId = `json-${idx}-${Date.now()}`
+        const coverages = deduplicateDeathCoverages(
+          Array.isArray(item.coverages)
+            ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci, normCtx))
+            : [],
+          contractId,
+          contractCompany
+        )
         const isRenewal = Boolean(item.isRenewal ?? false) || parseRenewalFlag(item.renewal_type, item.renewalType, item.policy_type, item.policyType, item['갱신여부'])
         return {
-          id: `json-${idx}-${Date.now()}`,
-          company: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
+          id: contractId,
+          company: contractCompany,
           productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
           policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
           contractDate: String(item.policy_date ?? item.start_date ?? item.contractDate ?? item['계약일'] ?? ''),
@@ -886,17 +915,23 @@ function parseGptsJson(raw: string): ProContract[] | null {
     const arr = Array.isArray(parsed) ? parsed : parsed.contracts ?? parsed.data ?? []
     if (!Array.isArray(arr) || arr.length === 0) return null
     return arr.map((item: Record<string, unknown>, idx: number) => {
+      const legacyCompany = String(item.insurer ?? item.company ?? item['보험사'] ?? '')
+      const legacyId = `json-${idx}-${Date.now()}`
       const normCtx: NormCtx = {
         productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
-        insurer: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
+        insurer: legacyCompany,
         policyDate: String(item.policy_date ?? item.contractDate ?? item['계약일'] ?? ''),
       }
-      const coverages = Array.isArray(item.coverages)
-        ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci, normCtx))
-        : []
+      const coverages = deduplicateDeathCoverages(
+        Array.isArray(item.coverages)
+          ? (item.coverages as Array<Record<string, unknown>>).flatMap((cov, ci) => normalizeCoverageRows(cov, idx, ci, normCtx))
+          : [],
+        legacyId,
+        legacyCompany
+      )
       return {
-        id: `json-${idx}-${Date.now()}`,
-        company: String(item.insurer ?? item.company ?? item['보험사'] ?? ''),
+        id: legacyId,
+        company: legacyCompany,
         productName: String(item.product_name ?? item.productName ?? item['상품명'] ?? ''),
         policyHolder: String(item.policyHolder ?? item['계약자'] ?? ''),
         contractDate: String(item.policy_date ?? item.contractDate ?? item['계약일'] ?? ''),

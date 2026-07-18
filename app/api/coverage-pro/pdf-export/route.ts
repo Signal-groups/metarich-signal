@@ -1460,13 +1460,19 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     .print-bar button{background:#1a2744;color:#fff;border:none;border-radius:8px;
       padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
 
-    .report-header{display:flex;justify-content:space-between;align-items:flex-end;
+    .report-header{display:flex;justify-content:space-between;align-items:center;
       margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #1a2744}
     .report-kicker{color:#c9a96e;font-size:11px;font-weight:900;letter-spacing:.08em}
     .report-title{font-size:20px;font-weight:900;color:#1a2744;margin-top:4px}
-    .report-meta{font-size:11px;color:#64748b;text-align:right}
+    .report-meta{text-align:right}
+    .report-meta-chips{display:flex;align-items:center;gap:12px;justify-content:flex-end}
+    .report-meta-chip{text-align:center}
+    .report-meta-chip .chip-label{font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:.06em}
+    .report-meta-chip .chip-value{font-size:16px;font-weight:900;color:#1a2744;line-height:1.2;margin-top:1px}
+    .report-meta-chip .chip-value.small{font-size:12px;font-weight:600;color:#64748b}
+    .report-meta-divider{width:1px;height:32px;background:#e2e8f0;flex-shrink:0}
 
-    .page-label{font-size:11px;font-weight:900;color:#c9a96e;letter-spacing:.08em;
+    .page-label{font-size:12px;font-weight:900;color:#c9a96e;letter-spacing:.08em;
       margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #e2e8f0}
     .section-title{font-size:13px;font-weight:900;color:#1a2744;margin-bottom:8px;display:flex;align-items:center}
     .section-num{display:inline-flex;align-items:center;justify-content:center;
@@ -1514,10 +1520,10 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
 
     /* 치료비 카드 */
     .tc-card{background:#fafaf8;border:1px solid #e2e8f0;border-radius:10px;padding:11px;margin-bottom:8px}
-    .tc-head{font-weight:900;color:#1a2744;font-size:12px;margin-bottom:7px;
+    .tc-head{font-weight:900;color:#1a2744;font-size:13px;margin-bottom:7px;
       border-bottom:1px solid #e2e8f0;padding-bottom:5px}
     .tc-row{display:flex;justify-content:space-between;align-items:center;
-      padding:2px 0;font-size:11px;color:#374151}
+      padding:3px 0;font-size:12px;color:#374151}
     .tc-val{font-weight:700;color:#1a2744}
     .tc-empty{color:#94a3b8;font-weight:400}
 
@@ -1528,8 +1534,8 @@ async function buildPrintHtml(input: PdfExportInput): Promise<string> {
     .rec-save{background:#fffbeb;border-color:#c9a96e}
     .rec-icon{font-size:20px;flex-shrink:0;margin-top:2px}
     .rec-type{font-size:10px;font-weight:900;letter-spacing:.06em;color:#64748b;margin-bottom:2px}
-    .rec-title{font-size:12px;font-weight:900;color:#1a2744;margin-bottom:3px}
-    .rec-desc{font-size:11px;color:#4b5563;line-height:1.5}
+    .rec-title{font-size:13px;font-weight:900;color:#1a2744;margin-bottom:3px}
+    .rec-desc{font-size:12px;color:#4b5563;line-height:1.5}
 
     /* 비교표 */
     .compare-wrap{overflow-x:auto}
@@ -1700,7 +1706,22 @@ ${advisorInfo ? `
       <div class="report-title">${escHtml(customerName)} 고객 보장분석 ${isKey ? '(주요보장)' : '(전체)'}</div>
     </div>
     <div class="report-meta">
-      계약 수: ${contracts.length}건 &nbsp;|&nbsp; 월 보험료: ${formatMonthly(totalPremium)} &nbsp;|&nbsp; 분석일: ${new Date().toLocaleDateString('ko-KR')}
+      <div class="report-meta-chips">
+        <div class="report-meta-chip">
+          <div class="chip-label">계약 수</div>
+          <div class="chip-value">${contracts.length}<span style="font-size:13px;font-weight:700">건</span></div>
+        </div>
+        <div class="report-meta-divider"></div>
+        <div class="report-meta-chip">
+          <div class="chip-label">월 보험료</div>
+          <div class="chip-value">${formatMonthly(totalPremium)}</div>
+        </div>
+        <div class="report-meta-divider"></div>
+        <div class="report-meta-chip">
+          <div class="chip-label">분석일</div>
+          <div class="chip-value small">${new Date().toLocaleDateString('ko-KR')}</div>
+        </div>
+      </div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:60% 40%;gap:16px;align-items:start">
@@ -1733,19 +1754,19 @@ ${advisorInfo ? `
   <!-- ① 1행: 암치료비 / 뇌심장치료비 / 수술비 / 실손의료비 -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
     <div>
-      <div class="section-title" style="font-size:11px"><span class="section-num">3</span>암 치료비</div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">3</span>암 치료비</div>
       ${cancerCard}
     </div>
     <div>
-      <div class="section-title" style="font-size:11px"><span class="section-num">4</span>뇌·심장 치료비</div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">4</span>뇌·심장 치료비</div>
       ${brainCard}
     </div>
     <div>
-      <div class="section-title" style="font-size:11px"><span class="section-num">5</span>수술비</div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">5</span>수술비</div>
       ${surgeryCard}
     </div>
     <div>
-      <div class="section-title" style="font-size:11px"><span class="section-num">7</span>실손의료비</div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">7</span>실손의료비</div>
       ${silsonCard}
     </div>
   </div>
@@ -1756,12 +1777,12 @@ ${advisorInfo ? `
   <!-- ③ 2행: 간병인+입원일당 / 운전자 / 추천제안 -->
   <div style="display:grid;grid-template-columns:1fr 1fr ${!isKey ? '2fr' : '1fr'};gap:10px;align-items:start">
     <div>
-      <div class="section-title" style="font-size:11px"><span class="section-num">6</span>간병인 · 입원일당</div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">6</span>간병인 · 입원일당</div>
       ${nursingCard}
     </div>
     ${!isKey ? `
     <div>
-      <div class="section-title" style="font-size:11px"><span class="section-num">8</span>운전자보험</div>
+      <div class="section-title" style="font-size:12px"><span class="section-num">8</span>운전자보험</div>
       ${driverCard}
     </div>
     <div>
