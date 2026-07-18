@@ -713,6 +713,8 @@ function buildTimelineInfographicPage(
 
   function parseRenCycle(c: ProContract): number {
     const t = `${c.productName || ''} ${c.paymentPeriod || ''}`.toLowerCase()
+    // 자동차보험은 1년 단위 갱신
+    if (t.includes('자동차') || t.includes('readycar') || t.includes('다이렉트카')) return 1
     if (t.includes('1년갱신')) return 1
     if (t.includes('3년갱신')) return 3
     if (t.includes('5년갱신')) return 5
@@ -802,16 +804,19 @@ function buildTimelineInfographicPage(
   const X_RANGE = Math.max(1, X_MAX - X_MIN)
 
   // ── SVG constants ─────────────────────────────────────────────────────────
-  const LABEL_W = 165
-  const CHART_W = 660
-  const RIGHT_W = 55
-  const SVG_W   = LABEL_W + CHART_W + RIGHT_W
-  const BAR_H   = 15
-  const ROW_H   = 30
-  const HDR_H   = 54
-  const FOOT_H  = 52
+  const LABEL_W = 170
+  const CHART_W = 760
+  const RIGHT_W = 65
+  const SVG_W   = LABEL_W + CHART_W + RIGHT_W  // 995
+  const HDR_H   = 66   // 타임라인 제목 포함
+  const FOOT_H  = 46
   const N       = rows.length
-  const SVG_H   = HDR_H + N * ROW_H + FOOT_H
+  // 페이지를 꽉 채우도록 행 높이 동적 계산 (A4 landscape 기준)
+  const TARGET_SVG_H = Math.floor(SVG_W * 0.76)  // ≈ 756
+  const dynROW_H = Math.floor((TARGET_SVG_H - HDR_H - FOOT_H) / Math.max(1, N))
+  const ROW_H   = Math.max(32, Math.min(76, dynROW_H))
+  const BAR_H   = Math.max(13, Math.floor(ROW_H * 0.46))
+  const SVG_H   = Math.max(TARGET_SVG_H, HDR_H + N * ROW_H + FOOT_H)
 
   const xSvg = (v: number) => LABEL_W + ((v - X_MIN) / X_RANGE) * CHART_W
 
@@ -966,21 +971,12 @@ function buildTimelineInfographicPage(
 <div class="pdf-page">
 <div class="page-inner">
   <div class="page-label">보험별 보장기간 &amp; 갱신 시점</div>
-  <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
-    <div>
-      <div style="font-size:13px;font-weight:900;color:#1a2744">보장기간 · 갱신 타임라인</div>
-      <div style="font-size:10px;color:#64748b;margin-top:2px">내 보험이 ${useAges ? '몇 살까지 보장되고,' : ''} 언제 갱신되어 보험료가 오르는지 한눈에 확인하세요</div>
-    </div>
-  </div>
   <div style="overflow:hidden;border-radius:10px;border:1px solid #e2e8f0">
     ${svg}
   </div>
-  <div style="margin-top:8px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
-    <div style="font-size:9px;color:#92400e;font-weight:700;margin-bottom:2px">⚠️ 참고</div>
-    <div style="font-size:9px;color:#78350f;line-height:1.6">
-      보장기간은 계약일·납입기간 정보를 기반으로 자동 추산됩니다. 실제 보장 만기는 보험증권을 직접 확인하세요.<br/>
-      갱신형 보험(주황 배지)은 갱신 시점(●)마다 나이·손해율에 따라 보험료가 <b>인상</b>됩니다. 장기 납입 계획 수립 시 참고하세요.
-    </div>
+  <div style="margin-top:6px;padding:5px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;display:flex;align-items:center;gap:8px">
+    <span style="font-size:9px;color:#92400e;font-weight:700;flex-shrink:0">⚠️ 참고</span>
+    <span style="font-size:9px;color:#78350f;line-height:1.4">보장기간은 계약일·납입기간 기반 자동 추산입니다. 실제 만기는 증권 확인 필수. 갱신형(●)은 나이·손해율에 따라 보험료 <b>인상</b>됩니다.</span>
   </div>
 </div>
 </div>
