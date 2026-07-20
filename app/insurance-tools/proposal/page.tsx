@@ -249,7 +249,7 @@ const categories: CategoryTemplate[] = [
       // ── 재가급여 4종 ──────────────────────────────────────────────
       { key: "visitCare",       label: "방문요양",    shortLabel: "방문요양",  unit: "만원", kind: "money", guide: "장기요양 1~5등급 방문요양 이용 시 보완금액 (월 1회)" },
       { key: "dayNight",        label: "주야간보호",  shortLabel: "주야간",    unit: "만원", kind: "money", guide: "장기요양 1~인지지원등급 낮 시간 돌봄센터 이용 부담 (월 1회)" },
-      { key: "complexHomecare", label: "복합재가",    shortLabel: "복합재가",  unit: "만원", kind: "money", guide: "장기요양 1~5등급 복합재가급여(방문요양·주야간·방문목욕 2종 이상 이용) 보완금 (월 1회)" },
+      { key: "complexHomecare", label: "복합재가",    shortLabel: "복합재가",  unit: "만원", kind: "money", guide: "장기요양 1~5등급 | 방문요양·방문목욕·방문간호·주야간보호·단기보호 5종 중 2종 이상을 같은 달에 이용한 경우 | 월 1회 지급" },
       { key: "welfareEquipment",label: "복지용구",    shortLabel: "복지용구",  unit: "만원", kind: "money", guide: "장기요양 1~인지지원등급 복지용구(휠체어·목욕의자 등) 이용 보완금 (월 1회)" },
       // ── 시설입소 ──────────────────────────────────────────────────
       { key: "facilityLight",   label: "시설입소 (경증이상)", shortLabel: "시설경증", unit: "만원", kind: "money", guide: "장기요양 1~5등급(경증이상) 시설급여 이용 시 보완금 (월 1회)" },
