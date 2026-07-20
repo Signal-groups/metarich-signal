@@ -239,19 +239,31 @@ const categories: CategoryTemplate[] = [
   {
     id: "homecare",
     label: "재가보험",
-    desc: "방문요양, 주야간보호, 복지용구, 가족돌봄 활용",
+    desc: "방문요양, 주야간보호, 복합재가, 복지용구, 시설입소, 진단금(경증·중등도·중증)",
     tone: "from-blue-500 to-indigo-600",
     icon: Home,
     summary: "집에서 돌봄을 이어가기 위해 필요한 재가급여 보완금과 가족의 돌봄 부담을 준비합니다.",
     infographic: "timeline",
     reportTitle: "재가 돌봄 활용 비교",
     metrics: [
-      { key: "visitCare", label: "방문요양", shortLabel: "방문요양", unit: "만원", kind: "money", guide: "방문요양 이용 시 보완금액" },
-      { key: "dayNight", label: "주야간보호", shortLabel: "주야간", unit: "만원", kind: "money", guide: "낮 시간 돌봄센터 이용 부담" },
-      { key: "familyCare", label: "가족돌봄 지원", shortLabel: "가족돌봄", unit: "만원", kind: "money", guide: "가족 돌봄 공백 보완" },
-      { key: "dementiaDiagnosis", label: "치매 진단비", shortLabel: "치매진단", unit: "만원", kind: "money", guide: "경도·중등도·중증 치매 진단 조건 확인" },
-      { key: "dementiaTargetTreatment", label: "치매 표적치료보장", shortLabel: "표적치료", unit: "만원", kind: "money", guide: "치매 관련 특정 치료·검사 지급 조건 확인" },
-      { key: "grade", label: "대상 등급", shortLabel: "등급", kind: "text", guide: "장기요양등급 또는 치매 단계별 보장 조건" },
+      // ── 재가급여 4종 ──────────────────────────────────────────────
+      { key: "visitCare",       label: "방문요양",    shortLabel: "방문요양",  unit: "만원", kind: "money", guide: "장기요양 1~5등급 방문요양 이용 시 보완금액 (월 1회)" },
+      { key: "dayNight",        label: "주야간보호",  shortLabel: "주야간",    unit: "만원", kind: "money", guide: "장기요양 1~인지지원등급 낮 시간 돌봄센터 이용 부담 (월 1회)" },
+      { key: "complexHomecare", label: "복합재가",    shortLabel: "복합재가",  unit: "만원", kind: "money", guide: "장기요양 1~5등급 복합재가급여(방문요양·주야간·방문목욕 2종 이상 이용) 보완금 (월 1회)" },
+      { key: "welfareEquipment",label: "복지용구",    shortLabel: "복지용구",  unit: "만원", kind: "money", guide: "장기요양 1~인지지원등급 복지용구(휠체어·목욕의자 등) 이용 보완금 (월 1회)" },
+      // ── 시설입소 ──────────────────────────────────────────────────
+      { key: "facilityLight",   label: "시설입소 (경증이상)", shortLabel: "시설경증", unit: "만원", kind: "money", guide: "장기요양 1~5등급(경증이상) 시설급여 이용 시 보완금 (월 1회)" },
+      { key: "facilityeSevere", label: "시설입소 (중증이상)", shortLabel: "시설중증", unit: "만원", kind: "money", guide: "장기요양 1~2등급(중증이상) 시설급여 이용 시 보완금 (월 1회)" },
+      // ── 가족돌봄 ──────────────────────────────────────────────────
+      { key: "familyCare",      label: "가족돌봄 지원", shortLabel: "가족돌봄", unit: "만원", kind: "money", guide: "가족이 돌봄을 제공할 때 발생하는 소득 공백 보완" },
+      // ── 장기요양 진단금 3단계 ─────────────────────────────────────
+      { key: "ltcLightDiagnosis",    label: "진단금 (경증이상, 1~5등급)",    shortLabel: "진단·경증",  unit: "만원", kind: "money", guide: "장기요양 1~5등급(경증이상) 최초 판정 시 진단금" },
+      { key: "ltcModerateDiagnosis", label: "진단금 (중등도이상, 1~3등급)",  shortLabel: "진단·중등도", unit: "만원", kind: "money", guide: "장기요양 1~3등급(중등도이상) 최초 판정 시 진단금" },
+      { key: "ltcSevereDiagnosis",   label: "진단금 (중증이상, 1~2등급)",    shortLabel: "진단·중증",  unit: "만원", kind: "money", guide: "장기요양 1~2등급(중증이상) 최초 판정 시 진단금" },
+      // ── 치매 특이 담보 ────────────────────────────────────────────
+      { key: "dementiaTargetTreatment", label: "치매 표적치료보장", shortLabel: "표적치료", unit: "만원", kind: "money", guide: "최경증·경증 알츠하이머 진단 후 아밀로이드베타 표적약물허가치료 시 지급" },
+      // ── 등급 조건 메모 ────────────────────────────────────────────
+      { key: "grade", label: "대상 등급 / 조건", shortLabel: "등급조건", kind: "text", guide: "장기요양등급 또는 치매 단계별 보장 적용 조건 메모" },
     ],
   },
   {
