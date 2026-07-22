@@ -12,10 +12,18 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   // 예: "질병입원일당"이 "질병입원"보다 먼저, "허혈성심장"이 "심장질환"보다 먼저.
   // ──────────────────────────────────────────────────────────────────────
 
-  // ── 치매 (간병인 패턴보다 앞에 — "치매간병"이 nursing에 걸리지 않도록) ──
-  { patterns: ['치매진단', '치매간병', '치매급여금', '치매생활비', '경도인지장애', '알츠하이머', '치매'], rowKey: 'dementia_diagnosis' },
+  // ── 치매 심각도별 (구체적 패턴 먼저 — 일반 "치매" catch-all보다 앞에) ──
+  { patterns: ['중증치매진단', '중증치매급여금', '중증치매생활비', '중증치매보험금', '심한치매진단', '심한치매', '중증치매'], rowKey: 'dementia_severe' },
+  { patterns: ['중등도치매진단', '중등도치매급여금', '중등도치매생활비', '뚜렷한치매진단', '뚜렷한치매', '중등도치매'], rowKey: 'dementia_moderate' },
+  { patterns: ['경증치매진단', '경증치매급여금', '경증치매생활비', '경도치매진단', '경도치매', '약간의치매', '경도인지장애', '경증치매'], rowKey: 'dementia_mild' },
+  // 치매 공통 (간병인 패턴보다 앞에 — "치매간병"이 nursing에 걸리지 않도록)
+  { patterns: ['치매진단', '치매간병', '치매급여금', '치매생활비', '알츠하이머', '치매'], rowKey: 'dementia_diagnosis' },
 
-  // ── 장기요양 ─────────────────────────────────────────────────────────
+  // ── 재가·시설 급여 (장기요양 서비스 비용 — 치매 패턴 다음, 간병인 패턴 앞) ──
+  { patterns: ['재가급여', '재가서비스', '방문요양', '방문간호', '주야간보호', '단기보호', '재가보험금', '재가지원금', '재가비', '재가이용'], rowKey: 'homecare_benefit' },
+  { patterns: ['시설급여', '시설입소', '시설서비스', '시설보험금', '시설지원금', '요양시설', '시설이용', '시설비용'], rowKey: 'facility_benefit' },
+
+  // ── 장기요양 등급 (재가/시설 급여보다 뒤에 — 급여명이 먼저 매핑) ──────
   { patterns: ['장기요양등급', '노인장기요양', '장기요양보험', '장기요양', '요양등급'], rowKey: 'ltc_grade' },
 
   // ── 중대질병(CI) — 암/뇌/심장 패턴보다 앞에 ─────────────────────────
@@ -144,6 +152,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
 
 export function inferClientRowKey(coverageName: string): string | undefined {
   const normalized = coverageName.replace(/\s+/g, '').toLowerCase()
+
+  // ── N대수술비 범용 처리 (숫자+대+수술 형태: 111대, 50대, 150대 등) ──────
+  if (/\d+대(수술|질병수술|상해수술)/.test(normalized)) {
+    return 'surgery_n_major'
+  }
 
   // ── 후유장해 80% / 50% 선행 판별 ──────────────────────────────────────
   // "(80%이상)" "(50%이상)" 표기가 질병/상해 양쪽에 나타나므로 컨텍스트로 구분
@@ -349,7 +362,14 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   cancer_major_nonbenefit:   '주요치료비 — 비급여암주요치료비',
   vascular_major:            '주요치료비 — 2대질병주요치료비',
   ci_diagnosis:              '기타 — CI(중대질병)진단',
-  dementia_diagnosis:        '기타 — 치매진단',
+  // 치매 심각도별
+  dementia_severe:           '치매 — 중증치매진단',
+  dementia_moderate:         '치매 — 중등도치매진단',
+  dementia_mild:             '치매 — 경증치매진단',
+  dementia_diagnosis:        '치매 — 치매진단(일반)',
+  // 재가·시설
+  homecare_benefit:          '재가 — 재가급여(방문요양 등)',
+  facility_benefit:          '재가 — 시설입소급여',
   ltc_grade:                 '기타 — 장기요양등급',
 }
 

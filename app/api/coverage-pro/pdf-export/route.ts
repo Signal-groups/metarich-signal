@@ -1069,9 +1069,16 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '운전자',    label: '자동차사고부상치료비(14급)', rowKey: 'driver_injury_14' },
     { group: '운전자',    label: '벌금',                 rowKey: 'driver_fine' },
     { group: '기타',      label: '일상배상책임',         rowKey: 'other_liability' },
-    { group: '기타',      label: '치매진단비',           rowKey: 'dementia_diagnosis' },
     { group: '기타',      label: '중대질병(CI)',          rowKey: 'ci_diagnosis' },
-    { group: '기타',      label: '장기요양등급',         rowKey: 'ltc_grade' },
+    // 치매 심각도별
+    { group: '치매',      label: '중증치매 진단금',       rowKey: 'dementia_severe' },
+    { group: '치매',      label: '중등도치매 진단금',     rowKey: 'dementia_moderate' },
+    { group: '치매',      label: '경증치매 진단금',       rowKey: 'dementia_mild' },
+    { group: '치매',      label: '치매진단비(일반)',       rowKey: 'dementia_diagnosis' },
+    // 재가·시설 급여
+    { group: '재가',      label: '재가급여(방문요양 등)', rowKey: 'homecare_benefit' },
+    { group: '재가',      label: '시설입소급여',          rowKey: 'facility_benefit' },
+    { group: '재가',      label: '장기요양등급',          rowKey: 'ltc_grade' },
     { group: '진단비',    label: '양성뇌종양 진단비',    rowKey: 'benign_brain_tumor' },
     { group: '진단비',    label: '양성종양 진단비',      rowKey: 'benign_tumor' },
     { group: '진단비',    label: '암 산정특례',          rowKey: 'cancer_special_case' },
@@ -1944,6 +1951,155 @@ ${hasRemodel ? `
       }).join('')}
     </div>
   </div>
+</div>
+</div>
+
+<!-- ════ PAGE R2-PROPOSAL: 제안서 · 서명 ════ -->
+<div class="pdf-page">
+<div class="page-inner">
+  <div class="page-label">리모델링 제안서 — 보장 개선 안내</div>
+
+  <!-- 상단 타이틀 + 날짜 -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div>
+      <div style="font-size:18px;font-weight:900;color:#1a2744">${escHtml(customerName)} 고객님 맞춤 보장 제안서</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:3px">담당 설계사: ${escHtml(advisorInfo?.name || '메타리치 시그널그룹')}&nbsp;&nbsp;|&nbsp;&nbsp;작성일: ${new Date().toLocaleDateString('ko-KR')}</div>
+    </div>
+    <div style="text-align:right;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 18px">
+      <div style="font-size:9px;color:#94a3b8;font-weight:700">보험료 변동</div>
+      <div style="font-size:22px;font-weight:900;color:${(()=>{const rem=contracts.filter(c=>proposal!.removeContractIds.includes(c.id)).reduce((s,c)=>s+Number(c.monthlyPremium||0),0);const add=proposal!.addContracts.reduce((s,c)=>s+Number(c.monthlyPremium||0),0);return(add-rem)<=0?'#10b981':'#ef4444'})()}">${(()=>{const rem=contracts.filter(c=>proposal!.removeContractIds.includes(c.id)).reduce((s,c)=>s+Number(c.monthlyPremium||0),0);const add=proposal!.addContracts.reduce((s,c)=>s+Number(c.monthlyPremium||0),0);const diff=add-rem;return diff===0?'변동없음':(diff<0?'월 '+formatWon(Math.abs(diff))+' 절감':'월 '+formatWon(diff)+' 증가')})()}</div>
+      <div style="font-size:10px;color:#64748b;margin-top:2px">${formatMonthly(contracts.reduce((s,c)=>s+Number(c.monthlyPremium||0),0))} → <b style="color:#1a2744">${(()=>{const cur=contracts.reduce((s,c)=>s+Number(c.monthlyPremium||0),0);const rem=contracts.filter(c=>proposal!.removeContractIds.includes(c.id)).reduce((s,c)=>s+Number(c.monthlyPremium||0),0);const add=proposal!.addContracts.reduce((s,c)=>s+Number(c.monthlyPremium||0),0);return formatMonthly(cur-rem+add)})()}</b></div>
+    </div>
+  </div>
+
+  <!-- 신규 제안 상품 상세표 -->
+  ${proposal!.addContracts.length > 0 ? `
+  <div style="margin-bottom:14px">
+    <div style="font-size:12px;font-weight:900;color:#059669;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+      <span style="background:#d1fae5;color:#059669;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">+</span>
+      신규 추가 상품 및 주요 보장
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:10px">
+      <thead>
+        <tr style="background:#1a2744;color:#fff">
+          <th style="padding:7px 8px;text-align:left;border-radius:6px 0 0 0">보험사</th>
+          <th style="padding:7px 8px;text-align:left">상품명</th>
+          <th style="padding:7px 8px;text-align:center">납입기간</th>
+          <th style="padding:7px 8px;text-align:center">보장기간</th>
+          <th style="padding:7px 8px;text-align:right">월 보험료</th>
+          <th style="padding:7px 8px;text-align:left;border-radius:0 6px 0 0">주요 보장 (상위 4개)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${proposal!.addContracts.map((c, idx) => {
+          const payPeriod = c.paymentPeriod || '-'
+          const topCovs = c.coverages.filter(cv=>Number(cv.amount)>0).slice(0,4)
+          const bg = idx % 2 === 0 ? '#f8fafc' : '#fff'
+          return `<tr style="background:${bg};border-bottom:1px solid #e2e8f0">
+            <td style="padding:8px;font-weight:700;color:#059669">${escHtml(c.company)}</td>
+            <td style="padding:8px;font-weight:700;color:#1a2744;max-width:180px">${escHtml(c.productName)}</td>
+            <td style="padding:8px;text-align:center;color:#374151">${escHtml(payPeriod.match(/(\d+년납)/)?.[1]||payPeriod.match(/전기납/)?.[0]||'-')}</td>
+            <td style="padding:8px;text-align:center;color:#374151">${escHtml(payPeriod.match(/(\d+세만기|종신)/)?.[1]||'종신')}</td>
+            <td style="padding:8px;text-align:right;font-weight:900;color:#059669">${formatMonthly(Number(c.monthlyPremium||0))}</td>
+            <td style="padding:8px">${topCovs.map(cv=>`<span style="display:inline-block;margin:1px 2px;background:#f0fdf4;border:1px solid #d1fae5;border-radius:4px;padding:1px 6px;font-size:9px;color:#065f46">${escHtml(cv.name||'')} <b>${formatWon(Number(cv.amount||0)*10000)}</b></span>`).join('')}</td>
+          </tr>`
+        }).join('')}
+      </tbody>
+    </table>
+  </div>` : ''}
+
+  <!-- 해지 상품 -->
+  ${proposal!.removeContractIds.length > 0 ? `
+  <div style="margin-bottom:14px">
+    <div style="font-size:12px;font-weight:900;color:#ef4444;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+      <span style="background:#fee2e2;color:#ef4444;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">✕</span>
+      해지 예정 상품
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${contracts.filter(c=>proposal!.removeContractIds.includes(c.id)).map(c=>`
+      <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:10px">
+        <div>
+          <div style="font-size:9px;color:#ef4444;font-weight:700">${escHtml(c.company)}</div>
+          <div style="font-size:11px;font-weight:800;color:#1a2744">${escHtml(c.productName.length>20?c.productName.slice(0,20)+'…':c.productName)}</div>
+        </div>
+        <div style="font-size:12px;font-weight:900;color:#dc2626;border-left:1px solid #fecaca;padding-left:10px">월 ${formatMonthly(Number(c.monthlyPremium||0))}</div>
+      </div>`).join('')}
+    </div>
+  </div>` : ''}
+
+  <!-- 개선 포인트 -->
+  <div style="margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-radius:10px;border:1px solid #bfdbfe">
+    <div style="font-size:12px;font-weight:900;color:#1a2744;margin-bottom:8px">✅ 이번 제안으로 개선되는 보장</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${(()=>{
+        const improvements: string[] = []
+        const keys = [
+          { label:'암 진단비', k:['cancer_general'] },
+          { label:'뇌혈관 진단비', k:['brain_vascular'] },
+          { label:'허혈성심장 진단비', k:['heart_ischemic'] },
+          { label:'항암치료비', k:['cancer_chemo','cancer_radiation','cancer_targeted'] },
+          { label:'2대주요치료비', k:['vascular_major'] },
+          { label:'암주요치료비', k:['cancer_major_benefit','cancer_major_nonbenefit'] },
+          { label:'수술비', k:['surgery_disease','surgery_injury','surgery_n_major','surgery_1_5'] },
+          { label:'간병인 지원', k:['nursing_hospital','nursing_injury','nursing_integrated'] },
+          { label:'후유장해', k:['disability_injury','disability_disease','disability_injury_80','disability_disease_80'] },
+          { label:'사망보험금', k:['death_general','death_injury'] },
+        ]
+        for(const item of keys){
+          const before=sumAmount(beforeContracts,...item.k)
+          const after=sumAmount(afterContracts,...item.k)
+          if(after>before){
+            const diff=after-before
+            improvements.push(`<div style="font-size:10px;padding:5px 8px;background:rgba(255,255,255,0.7);border-radius:6px;display:flex;justify-content:space-between;gap:8px"><span style="color:#374151;font-weight:700">${escHtml(item.label)}</span><span style="color:#059669;font-weight:900">+${formatWon(diff)}</span></div>`)
+          }
+        }
+        if(improvements.length===0){
+          return '<div style="grid-column:1/-1;font-size:10px;color:#94a3b8;text-align:center">비교 데이터 없음</div>'
+        }
+        return improvements.join('')
+      })()}
+    </div>
+  </div>
+
+  <!-- 메모 -->
+  ${proposal!.memo ? `
+  <div style="margin-bottom:14px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+    <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:4px">📝 설계사 메모</div>
+    <div style="font-size:11px;color:#1c1917;white-space:pre-wrap;line-height:1.7">${escHtml(proposal!.memo)}</div>
+  </div>` : ''}
+
+  <!-- 서명란 -->
+  <div style="border-top:2px solid #1a2744;padding-top:14px;margin-top:4px">
+    <div style="text-align:center;font-size:11px;color:#374151;margin-bottom:14px;line-height:1.8">
+      위 내용에 대해 충분한 설명을 듣고 이해하였으며, 본 제안 내용에 동의합니다.<br/>
+      <span style="font-size:9px;color:#94a3b8">※ 본 제안서는 고객 상담용 참고 자료이며, 법적 계약 효력을 대체하지 않습니다.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px">
+        <div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:16px">고 객 서 명</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div>
+            <div style="font-size:11px;color:#374151;margin-bottom:4px">성명: <span style="font-weight:700">${escHtml(customerName)}</span></div>
+            <div style="font-size:11px;color:#374151">서명:</div>
+          </div>
+          <div style="width:140px;border-bottom:1px solid #94a3b8;margin-bottom:2px">&nbsp;</div>
+        </div>
+        <div style="margin-top:14px;font-size:11px;color:#374151">확인 일자: <span style="font-weight:700">${new Date().toLocaleDateString('ko-KR')}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+      </div>
+      <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px">
+        <div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:16px">설 계 사 서 명</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end">
+          <div>
+            <div style="font-size:11px;color:#374151;margin-bottom:4px">성명: <span style="font-weight:700">${escHtml(advisorInfo?.name||'')}</span></div>
+            <div style="font-size:11px;color:#374151">서명:</div>
+          </div>
+          <div style="width:140px;border-bottom:1px solid #94a3b8;margin-bottom:2px">&nbsp;</div>
+        </div>
+        <div style="margin-top:14px;font-size:11px;color:#374151">작성 일자: <span style="font-weight:700">${new Date().toLocaleDateString('ko-KR')}</span></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 
