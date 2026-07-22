@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { supabase } from '../../../lib/supabase'
 import type { ProContract, ProCoverage, RemodelProposal } from '../../../lib/coverageAnalysis/types'
 import { ROW_KEY_LABEL } from '../../../lib/coverageAnalysis/clientMapping'
 
@@ -198,17 +199,25 @@ export default function RemodelComparison({
   proposal,
   onChange,
   userId,
+  customerId,
+  customerName,
+  sessionId,
 }: {
   contracts: ProContract[]
   proposal: RemodelProposal
   onChange: (proposal: RemodelProposal) => void
   userId?: string
+  customerId?: string
+  customerName?: string
+  sessionId?: string
 }) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [showProposalPicker, setShowProposalPicker] = useState(false)
   const [proposalDrafts, setProposalDrafts] = useState<ProposalDraftItem[]>([])
   const [form, setForm] = useState(emptyAddForm)
   const [coverageTab, setCoverageTab] = useState<CoverageTab>('진단')
+  const [crmSaveStatus, setCrmSaveStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
+  const [crmSaveMsg, setCrmSaveMsg] = useState('')
 
   const currentPremium = contracts.reduce((sum, c) => sum + Number(c.monthlyPremium || 0), 0)
   const removedPremium = contracts
@@ -361,6 +370,67 @@ export default function RemodelComparison({
           <div style={{ flex: 1, padding: '10px 16px' }}>
             <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>신규 추가</span>
             <span style={{ fontSize: 14, fontWeight: 900, color: '#10b981', marginLeft: 8 }}>+{formatWon(addedPremium)}</span>
+          </div>
+        </div>
+
+        {/* ── CRM 이력 저장 ─────────────────────────────────────────── */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', borderRadius: '0 0 16px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              disabled={crmSaveStatus === 'saving' || (!customerId && !sessionId)}
+              onClick={async () => {
+                if (crmSaveStatus === 'saving') return
+                setCrmSaveStatus('saving')
+                setCrmSaveMsg('')
+                try {
+                  const removeContracts = contracts.filter((c) => proposal.removeContractIds.includes(c.id))
+                  const { error } = await supabase.from('coverage_remodel_proposals').insert({
+                    session_id: sessionId ?? null,
+                    customer_id: customerId ?? null,
+                    advisor_id: userId ?? null,
+                    remove_contracts: removeContracts,
+                    add_contracts: proposal.addContracts,
+                    before_premium: Math.round(currentPremium),
+                    after_premium: Math.round(afterPremium),
+                    memo: proposal.memo ?? null,
+                  })
+                  if (error) throw new Error(error.message)
+                  setCrmSaveStatus('done')
+                  setCrmSaveMsg('리모델링 제안 이력이 CRM에 저장됐습니다.')
+                } catch (err) {
+                  setCrmSaveStatus('error')
+                  setCrmSaveMsg(err instanceof Error ? err.message : '저장 실패')
+                }
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7, padding: '10px 20px',
+                background: crmSaveStatus === 'done' ? '#10b981' : crmSaveStatus === 'error' ? '#ef4444' : '#1a2744',
+                color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13,
+                cursor: (crmSaveStatus === 'saving' || (!customerId && !sessionId)) ? 'not-allowed' : 'pointer',
+                opacity: (crmSaveStatus === 'saving' || (!customerId && !sessionId)) ? 0.6 : 1,
+              }}
+            >
+              {crmSaveStatus === 'saving' && (
+                <span style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,.35)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+              )}
+              {crmSaveStatus === 'done' ? '✓ 이력 저장 완료' : crmSaveStatus === 'error' ? '⚠️ 저장 실패' : '📋 CRM에 리모델링 이력 저장'}
+            </button>
+            {crmSaveStatus === 'idle' && !customerId && !sessionId && (
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>CRM 고객 연결 시 저장 가능합니다.</span>
+            )}
+            {crmSaveStatus === 'done' && customerId && (
+              <button
+                type="button"
+                onClick={() => window.open(`/crm/customers/${customerId}`, '_blank', 'noopener,noreferrer')}
+                style={{ padding: '10px 16px', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: 10, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+              >CRM에서 확인 ↗</button>
+            )}
+            {crmSaveMsg && (
+              <div style={{ width: '100%', fontSize: 12, marginTop: 4, color: crmSaveStatus === 'error' ? '#b91c1c' : '#047857' }}>
+                {crmSaveMsg}
+              </div>
+            )}
           </div>
         </div>
       </div>

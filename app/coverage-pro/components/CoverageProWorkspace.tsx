@@ -376,8 +376,8 @@ const STEP_TITLES: Record<number, string> = {
   3: 'STEP 3 — 현재 보험',
   4: 'STEP 4 — 보장 확인',
   5: 'STEP 5 — 분석 결과',
-  6: 'STEP 6 — 리모델링',
-  7: 'STEP 7 — 출력',
+  6: 'STEP 6 — 출력 · 저장',
+  7: 'STEP 7 — 리모델링',
 }
 function titleByStep(step: number): string {
   return STEP_TITLES[step] ?? 'COVERAGE ANALYSIS PRO'
@@ -1319,7 +1319,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
                 <button
                   type="button" className="coverage-pro-btn primary"
                   onClick={nextStep}
-                >{currentStep === 7 ? '완료' : '다음 단계'}</button>
+                >{currentStep === 7 ? '리모델링 완료' : '다음 단계'}</button>
               </div>
             </div>
           </div>
@@ -1648,17 +1648,13 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
           {/* ══════════════ STEP 5 — 분석 결과 ═══════════════════════ */}
           {currentStep === 5 && <AnalysisChart contracts={contracts} />}
 
-          {/* ══════════════ STEP 6 — 리모델링 ════════════════════════ */}
+          {/* ══════════════ STEP 6 — 출력 · 저장 ════════════════════ */}
           {currentStep === 6 && (
-            <RemodelComparison contracts={contracts} proposal={proposal} onChange={setProposal} userId={advisorInfo.userId} />
-          )}
-
-          {/* ══════════════ STEP 7 — 출력 · 다운로드 ════════════════════ */}
-          {currentStep === 7 && (
             <div style={{ display: 'grid', gap: 24 }}>
               <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e0e7ef', padding: '28px 32px', boxShadow: '0 2px 12px rgba(16,32,58,0.05)' }}>
-                <div style={{ fontSize: 18, fontWeight: 900, color: '#10203a', marginBottom: 20 }}>
-                  출력 · 다운로드
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#10203a', marginBottom: 6 }}>출력 · 다운로드</div>
+                <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+                  분석이 완료됐습니다. PDF 또는 엑셀로 다운로드하세요.
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
                   <ExcelDownloadBtn
@@ -1750,7 +1746,36 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
               </div>
 
               <BenchmarkSummary contracts={contracts} />
+
+              {/* ── 리모델링 안내 ─────────────────────────────────────── */}
+              <div style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f4fd 100%)', borderRadius: 16, border: '1px solid #c7d8f0', padding: '22px 28px' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#1a2744', marginBottom: 6 }}>🔄 리모델링 제안이 필요하신가요?</div>
+                <div style={{ fontSize: 13, color: '#4b6080', marginBottom: 14 }}>
+                  해지할 상품을 선택하고 새 상품을 추가해 이전·이후 보장을 비교할 수 있습니다.<br/>
+                  리모델링 완료 후 CRM에 제안 이력으로 저장됩니다.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => moveStep(7)}
+                  style={{ padding: '10px 20px', background: '#1a2744', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                >
+                  리모델링 시작 →
+                </button>
+              </div>
             </div>
+          )}
+
+          {/* ══════════════ STEP 7 — 리모델링 ════════════════════════ */}
+          {currentStep === 7 && (
+            <RemodelComparison
+              contracts={contracts}
+              proposal={proposal}
+              onChange={setProposal}
+              userId={advisorInfo.userId}
+              customerId={customer?.id}
+              customerName={customer?.name}
+              sessionId={sessionRef.current?.id}
+            />
           )}
 
         </div>

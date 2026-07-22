@@ -56,6 +56,7 @@ const tabs = [
   { id: 'covercard', label: '보장현황' },
   { id: 'coverage', label: '보장그래프' },
   { id: 'simulator', label: '보장계산' },
+  { id: 'remodel', label: '리모델링 이력' },
   { id: 'alerts', label: '알림' },
   { id: 'dm', label: 'DM' },
 ]
@@ -92,6 +93,8 @@ export default function CustomerDetailPage() {
   const [simSaving, setSimSaving] = useState(false)
   const [simSaved, setSimSaved] = useState(false)
   const [activeScenario, setActiveScenario] = useState<string | null>(null)
+  const [remodelHistory, setRemodelHistory] = useState<any[]>([])
+  const [remodelLoading, setRemodelLoading] = useState(false)
 
   const dmTemplates = [
     { id: 'birthday', title: '생일 축하', content: (name: string, adv: string, ph: string) => `${name} 고객님, 생일을 진심으로 축하드립니다!\n\n항상 건강하고 행복하세요.\n\n담당자 ${adv} ${ph}` },
@@ -186,6 +189,21 @@ export default function CustomerDetailPage() {
   }, [id, router])
 
   useEffect(() => { load() }, [load])
+
+  // 리모델링 이력 탭 전환 시 로드
+  useEffect(() => {
+    if (tab !== 'remodel' || !id) return
+    setRemodelLoading(true)
+    supabase
+      .from('coverage_remodel_proposals')
+      .select('*')
+      .eq('customer_id', id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setRemodelHistory(data ?? [])
+        setRemodelLoading(false)
+      })
+  }, [tab, id])
 
   const saveCustomer = async () => {
     setSaving(true)
@@ -1198,6 +1216,84 @@ ${companyCards.map(({ policy, coverageList }) => `
               </div>
             )}
           </>
+        )}
+
+        {tab === 'remodel' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#10203a' }}>리모델링 제안 이력</div>
+              <button
+                type="button"
+                onClick={() => window.open(`/coverage-pro?customerId=${id}&customerName=${encodeURIComponent(customer?.name || '')}`, '_blank', 'noopener,noreferrer')}
+                style={{ padding: '8px 16px', background: '#1a2744', color: '#fff', border: 'none', borderRadius: 9, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+              >보장분석 PRO 열기 →</button>
+            </div>
+            {remodelLoading ? (
+              <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>로딩 중...</div>
+            ) : remodelHistory.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                아직 저장된 리모델링 이력이 없습니다.<br/>보장분석 PRO에서 리모델링을 완료하면 여기에 표시됩니다.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 14 }}>
+                {remodelHistory.map((r: any) => {
+                  const removeList: any[] = r.remove_contracts ?? []
+                  const addList: any[] = r.add_contracts ?? []
+                  const date = r.created_at ? new Date(r.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
+                  const delta = (r.after_premium ?? 0) - (r.before_premium ?? 0)
+                  return (
+                    <div key={r.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+                      {/* 헤더 */}
+                      <div style={{ padding: '14px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>{date}</div>
+                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, color: '#64748b' }}>기존 <b>{(r.before_premium ?? 0).toLocaleString()}원</b></span>
+                          <span style={{ fontSize: 12, color: '#64748b' }}>제안 <b style={{ color: delta < 0 ? '#10b981' : delta > 0 ? '#ef4444' : '#64748b' }}>{(r.after_premium ?? 0).toLocaleString()}원</b></span>
+                          <span style={{
+                            fontSize: 12, fontWeight: 800, padding: '3px 10px', borderRadius: 9999,
+                            background: delta < 0 ? '#d1fae5' : delta > 0 ? '#fee2e2' : '#f1f5f9',
+                            color: delta < 0 ? '#065f46' : delta > 0 ? '#991b1b' : '#64748b',
+                          }}>
+                            {delta === 0 ? '변동없음' : `${delta < 0 ? '−' : '+'}${Math.abs(delta).toLocaleString()}원`}
+                          </span>
+                        </div>
+                      </div>
+                      {/* 해지/추가 상품 */}
+                      <div style={{ padding: '14px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>해지 상품 ({removeList.length}건)</div>
+                          {removeList.length === 0 ? (
+                            <div style={{ fontSize: 12, color: '#94a3b8' }}>없음</div>
+                          ) : removeList.map((c: any, i: number) => (
+                            <div key={i} style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>
+                              · {c.company} {c.productName || c.product_name || ''}
+                              {c.monthlyPremium || c.monthly_premium ? ` (${Number(c.monthlyPremium || c.monthly_premium).toLocaleString()}원)` : ''}
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#10b981', marginBottom: 8 }}>신규 추가 ({addList.length}건)</div>
+                          {addList.length === 0 ? (
+                            <div style={{ fontSize: 12, color: '#94a3b8' }}>없음</div>
+                          ) : addList.map((c: any, i: number) => (
+                            <div key={i} style={{ fontSize: 12, color: '#374151', marginBottom: 4 }}>
+                              · {c.company} {c.productName || c.product_name || ''}
+                              {c.monthlyPremium || c.monthly_premium ? ` (${Number(c.monthlyPremium || c.monthly_premium).toLocaleString()}원)` : ''}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {r.memo && (
+                        <div style={{ padding: '0 20px 14px', fontSize: 12, color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+                          <b>메모:</b> {r.memo}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )}
 
         {tab === 'alerts' && (
