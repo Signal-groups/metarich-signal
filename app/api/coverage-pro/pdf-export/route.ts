@@ -1034,10 +1034,12 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '암치료비',  label: '항암약물치료비',       rowKey: 'cancer_chemo' },
     { group: '암치료비',  label: '표적항암약물치료비',   rowKey: 'cancer_targeted' },
     { group: '암치료비',  label: '카티항암치료비',       rowKey: 'cancer_cart' },
-    { group: '뇌심장치료', label: '혈전용해치료비',     rowKey: 'two_major_thrombolysis' },
-    { group: '뇌심장치료', label: '중환자실치료비',     rowKey: 'two_major_icu' },
-    { group: '뇌심장치료', label: '뇌심장 수술·시술비', rowKey: 'two_major_surgery' },
-    { group: '뇌심장치료', label: '2대주요치료비(통합)', rowKey: 'vascular_major' },
+    { group: '뇌심장치료', label: '혈전용해치료비',          rowKey: 'two_major_thrombolysis' },
+    { group: '뇌심장치료', label: '중환자실치료비',          rowKey: 'two_major_icu' },
+    { group: '뇌심장치료', label: '뇌심장 수술·시술비',     rowKey: 'two_major_surgery' },
+    { group: '뇌심장치료', label: '2대주요치료비(급여)',     rowKey: 'vascular_major_benefit' },
+    { group: '뇌심장치료', label: '2대주요치료비(비급여)',   rowKey: 'vascular_major_nonbenefit' },
+    { group: '뇌심장치료', label: '2대주요치료비(통합)',     rowKey: 'vascular_major' },
     { group: '수술비',    label: '질병 일반 수술비',     rowKey: 'surgery_disease' },
     { group: '수술비',    label: '질병 상급 수술비',     rowKey: 'surgery_disease_advanced' },
     { group: '수술비',    label: '질병 종합 수술비',     rowKey: 'surgery_disease_comprehensive' },
@@ -2038,7 +2040,7 @@ ${hasRemodel ? `
           { label:'뇌혈관 진단비', k:['brain_vascular'] },
           { label:'허혈성심장 진단비', k:['heart_ischemic'] },
           { label:'항암치료비', k:['cancer_chemo','cancer_radiation','cancer_targeted'] },
-          { label:'2대주요치료비', k:['vascular_major'] },
+          { label:'2대주요치료비', k:['vascular_major','vascular_major_benefit','vascular_major_nonbenefit'] },
           { label:'암주요치료비', k:['cancer_major_benefit','cancer_major_nonbenefit'] },
           { label:'수술비', k:['surgery_disease','surgery_injury','surgery_n_major','surgery_1_5'] },
           { label:'간병인 지원', k:['nursing_hospital','nursing_injury','nursing_integrated'] },
@@ -2172,7 +2174,7 @@ ${hasRemodel ? `
           { label:'허혈성심장진단', keys:['heart_ischemic'] },
           { label:'뇌심장수술', keys:['two_major_surgery'] },
           { label:'중환자실치료', keys:['two_major_icu'] },
-          { label:'뇌심주요치료비', keys:['vascular_major'] },
+          { label:'뇌심주요치료비', keys:['vascular_major','vascular_major_benefit','vascular_major_nonbenefit'] },
         ].map(r => {
           const v = sumAmount(beforeContracts, ...r.keys)
           return v > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #dbeafe">
@@ -2182,7 +2184,7 @@ ${hasRemodel ? `
         }).join('')}
         <div style="margin-top:8px;padding-top:6px;border-top:2px solid #93c5fd;display:flex;justify-content:space-between">
           <span style="font-size:12px;font-weight:900;color:#1e40af">합계</span>
-          <span style="font-size:14px;font-weight:900;color:#1e40af">${formatWon(sumAmount(beforeContracts,'brain_vascular','heart_ischemic','two_major_surgery','two_major_icu','vascular_major'))}</span>
+          <span style="font-size:14px;font-weight:900;color:#1e40af">${formatWon(sumAmount(beforeContracts,'brain_vascular','heart_ischemic','two_major_surgery','two_major_icu','vascular_major','vascular_major_benefit','vascular_major_nonbenefit'))}</span>
         </div>
       </div>
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px">
@@ -2192,7 +2194,7 @@ ${hasRemodel ? `
           { label:'허혈성심장진단', keys:['heart_ischemic'] },
           { label:'뇌심장수술', keys:['two_major_surgery'] },
           { label:'중환자실치료', keys:['two_major_icu'] },
-          { label:'뇌심주요치료비', keys:['vascular_major'] },
+          { label:'뇌심주요치료비', keys:['vascular_major','vascular_major_benefit','vascular_major_nonbenefit'] },
         ].map(r => {
           const v = sumAmount(afterContracts, ...r.keys)
           return v > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #d1fae5">
@@ -2202,7 +2204,7 @@ ${hasRemodel ? `
         }).join('')}
         <div style="margin-top:8px;padding-top:6px;border-top:2px solid #6ee7b7;display:flex;justify-content:space-between">
           <span style="font-size:12px;font-weight:900;color:#059669">합계</span>
-          <span style="font-size:14px;font-weight:900;color:#059669">${formatWon(sumAmount(afterContracts,'brain_vascular','heart_ischemic','two_major_surgery','two_major_icu','vascular_major'))}</span>
+          <span style="font-size:14px;font-weight:900;color:#059669">${formatWon(sumAmount(afterContracts,'brain_vascular','heart_ischemic','two_major_surgery','two_major_icu','vascular_major','vascular_major_benefit','vascular_major_nonbenefit'))}</span>
         </div>
       </div>
     </div>

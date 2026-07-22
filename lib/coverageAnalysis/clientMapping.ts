@@ -140,11 +140,29 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['운전자벌금', '벌금'], rowKey: 'driver_fine' },
   { patterns: ['교통사고처리지원금', '교통사고처리지원', '교통사고처리', '자동차사고피해', '대물대인'], rowKey: 'driver_accident' },
 
-  // ── 주요치료비 — 비급여 먼저 체크 (급여 패턴이 비급여도 매핑하는 것 방지) ──
+  // ── 주요치료비 — 비급여 먼저 체크, 급여, 통합 순서 ───────────────────────
+  // [암 주요치료비]
   { patterns: ['암주요치료비(비급여)', '암주요치료비비급여', '암비급여주요치료', '비급여암주요', '암일반비급여', '암비급여'], rowKey: 'cancer_major_nonbenefit' },
   { patterns: ['암주요치료비(급여)', '암주요치료비급여', '급여암주요치료', '암일반급여'], rowKey: 'cancer_major_benefit' },
-  { patterns: ['암주요치료비'], rowKey: 'cancer_major_nonbenefit' },
-  { patterns: ['2대주요치료비', '2대질병주요치료비', '뇌심주요치료비', '순환계주요치료비', '순환계치료', '뇌혈관주요치료비', '심혈관주요치료비', '뇌심장주요치료비', '뇌/심장주요치료비', '뇌심장치료', '순환계주요', '뇌심주요', '주요치료비'], rowKey: 'vascular_major' },
+  { patterns: ['암주요치료비'], rowKey: 'cancer_major_nonbenefit' },   // 미분류 → 비급여로 기본 처리
+  // [2대질병·순환계 주요치료비 — 비급여 먼저]
+  { patterns: [
+      '2대주요치료비(비급여)', '2대질병주요치료비비급여', '뇌심주요치료비비급여',
+      '순환계주요치료비비급여', '뇌혈관주요치료비비급여', '심혈관주요치료비비급여',
+      '비급여2대주요', '비급여순환계', '비급여뇌심',
+    ], rowKey: 'vascular_major_nonbenefit' },
+  { patterns: [
+      '2대주요치료비(급여)', '2대질병주요치료비급여', '뇌심주요치료비급여',
+      '순환계주요치료비급여', '뇌혈관주요치료비급여', '심혈관주요치료비급여',
+      '급여2대주요', '급여순환계', '급여뇌심',
+    ], rowKey: 'vascular_major_benefit' },
+  // 통합(미분류) — 위 패턴에 걸리지 않은 경우
+  { patterns: [
+      '2대주요치료비', '2대질병주요치료비', '뇌심주요치료비', '순환계주요치료비',
+      '순환계치료', '뇌혈관주요치료비', '심혈관주요치료비',
+      '뇌심장주요치료비', '뇌/심장주요치료비', '뇌심장치료',
+      '순환계주요', '뇌심주요', '주요치료비',
+    ], rowKey: 'vascular_major' },
 
   // ── 기타 ─────────────────────────────────────────────────────────────
   { patterns: ['가족생활배상', '배상책임', '일상배상', '가족배상'], rowKey: 'other_liability' },
@@ -357,10 +375,13 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   driver_injury_14:          '운전자 — 자동차사고부상치료비(14급)',
   driver_accident:           '운전자 — 교통사고처리지원',
   other_liability:           '기타 — 일상생활배상책임',
-  // 주요치료비
-  cancer_major_benefit:      '주요치료비 — 급여암주요치료비',
-  cancer_major_nonbenefit:   '주요치료비 — 비급여암주요치료비',
-  vascular_major:            '주요치료비 — 2대질병주요치료비',
+  // 주요치료비 — 암
+  cancer_major_benefit:      '주요치료비 — 암주요치료비(급여)',
+  cancer_major_nonbenefit:   '주요치료비 — 암주요치료비(비급여)',
+  // 주요치료비 — 2대질병·순환계
+  vascular_major_benefit:    '주요치료비 — 2대주요치료비(급여)',
+  vascular_major_nonbenefit: '주요치료비 — 2대주요치료비(비급여)',
+  vascular_major:            '주요치료비 — 2대주요치료비(통합)',
   ci_diagnosis:              '기타 — CI(중대질병)진단',
   // 치매 심각도별
   dementia_severe:           '치매 — 중증치매진단',
