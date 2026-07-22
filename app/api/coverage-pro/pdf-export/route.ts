@@ -1961,8 +1961,9 @@ ${hasRemodel ? `
         ${[
           { label:'암진단비', keys:['cancer_general'] },
           { label:'유사암진단', keys:['cancer_similar'] },
-          { label:'항암약물', keys:['cancer_chemo','cancer_targeted'] },
-          { label:'항암방사선', keys:['cancer_radiation'] },
+          { label:'일반항암약물치료비', keys:['cancer_chemo'] },
+          { label:'항암방사선치료비', keys:['cancer_radiation'] },
+          { label:'표적항암약물치료비', keys:['cancer_targeted'] },
           { label:'암수술비', keys:['cancer_surgery'] },
           { label:'암주요치료비(급여)', keys:['cancer_major_benefit'] },
           { label:'암주요치료비(비급여)', keys:['cancer_major_nonbenefit'] },
@@ -1983,8 +1984,9 @@ ${hasRemodel ? `
         ${[
           { label:'암진단비', keys:['cancer_general'] },
           { label:'유사암진단', keys:['cancer_similar'] },
-          { label:'항암약물', keys:['cancer_chemo','cancer_targeted'] },
-          { label:'항암방사선', keys:['cancer_radiation'] },
+          { label:'일반항암약물치료비', keys:['cancer_chemo'] },
+          { label:'항암방사선치료비', keys:['cancer_radiation'] },
+          { label:'표적항암약물치료비', keys:['cancer_targeted'] },
           { label:'암수술비', keys:['cancer_surgery'] },
           { label:'암주요치료비(급여)', keys:['cancer_major_benefit'] },
           { label:'암주요치료비(비급여)', keys:['cancer_major_nonbenefit'] },
