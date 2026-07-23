@@ -168,6 +168,43 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
       '순환계주요', '뇌심주요', '주요치료비',
     ], rowKey: 'vascular_major' },
 
+  // ── 치아 (보철>크라운>충전>스케일>신경치료>발치 순 — 구체적 패턴 먼저) ──
+  // 보철 (임플란트·틀니·브리지 포함 — 가장 포괄적 수복)
+  { patterns: [
+      '보철치료비(가형)', '보철치료비(나형)', '보철치료비(다형)',
+      '보철치료비(가)', '보철치료비(나)', '보철치료비(다)',
+      '임플란트치료비', '임플란트보철', '임플란트',
+      '틀니치료비', '완전틀니', '부분틀니', '의치치료비', '의치',
+      '브리지치료비', '브리지',
+      '보철치료비', '보철치료', '보철',
+    ], rowKey: 'dental_prosthesis' },
+  // 크라운·인레이·온레이 (중간 수복)
+  { patterns: [
+      '크라운치료비', '크라운',
+      '인레이치료비', '금인레이', '레진인레이', '세라믹인레이', '인레이',
+      '온레이치료비', '온레이',
+    ], rowKey: 'dental_crown' },
+  // 충전 (레진·아말감 등 간단 수복)
+  { patterns: [
+      '충전치료비', '레진충전', '아말감충전', '레진치료비', '치아충전', '충전치료', '충전',
+    ], rowKey: 'dental_filling' },
+  // 스케일링
+  { patterns: ['치아스케일링', '스케일링치료비', '스케일링'], rowKey: 'dental_scaling' },
+  // 신경치료·발수·치수 처치
+  { patterns: [
+      '신경치료비', '치수치료비', '발수치료비', '근관치료비',
+      '신경치료', '치수치료', '근관치료',
+    ], rowKey: 'dental_root_canal' },
+  // 발치·구강외과
+  { patterns: ['발치치료비', '치아발치', '사랑니발치', '발치', '구강외과치료'], rowKey: 'dental_extraction' },
+  // 치아사고·상해 (교통사고·외부충격으로 치아 파절 등)
+  { patterns: [
+      '치아사고보장', '치아상해', '치아파절', '치아사고',
+      '외상성치아손상', '치아손상', '치아골절',
+    ], rowKey: 'dental_accident' },
+  // 치아 일반 (catch-all — 위에 해당 안 되는 치아보험 포괄 담보)
+  { patterns: ['치아치료비', '치아보험금', '치아보장', '치아'], rowKey: 'dental_general' },
+
   // ── 기타 ─────────────────────────────────────────────────────────────
   { patterns: ['가족생활배상', '배상책임', '일상배상', '가족배상'], rowKey: 'other_liability' },
 ]
@@ -386,6 +423,15 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   vascular_major_benefit:    '주요치료비 — 2대주요치료비(급여)',
   vascular_major_nonbenefit: '주요치료비 — 2대주요치료비(비급여)',
   vascular_major:            '주요치료비 — 2대주요치료비(통합)',
+  // 치아
+  dental_prosthesis:         '치아 — 보철치료(임플란트·틀니·브리지)',
+  dental_crown:              '치아 — 크라운·인레이·온레이',
+  dental_filling:            '치아 — 충전치료(레진·아말감)',
+  dental_scaling:            '치아 — 스케일링',
+  dental_root_canal:         '치아 — 신경치료(근관)',
+  dental_extraction:         '치아 — 발치',
+  dental_accident:           '치아 — 치아사고(파절·상해)',
+  dental_general:            '치아 — 치아치료(일반)',
   ci_diagnosis:              '기타 — CI(중대질병)진단',
   // 치매 심각도별
   dementia_severe:           '치매 — 중증치매진단',
