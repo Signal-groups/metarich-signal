@@ -213,6 +213,9 @@ export default function AnalysisChart({ contracts }: { contracts: ProContract[] 
         </div>
       </div>
 
+      {/* 보장 상세 현황 4열 그리드 */}
+      <CoverageDetailGrid contracts={effectiveContracts} />
+
       {/* 보험사별 월보험료 */}
       <div className="coverage-pro-card coverage-pro-card-pad">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -252,6 +255,93 @@ export default function AnalysisChart({ contracts }: { contracts: ProContract[] 
             })}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ── 4열 보장 상세 그리드 (미가입 포함 전체 표시) ─────────────────────────
+function CoverageDetailGrid({ contracts }: { contracts: ProContract[] }) {
+  function sum(...rowKeys: string[]): number {
+    return contracts.flatMap(c => c.coverages)
+      .filter(cov => rowKeys.includes(cov.rowKey))
+      .reduce((s, cov) => s + Number(cov.amount || 0) * 10_000, 0)
+  }
+
+  function fmt(v: number): string {
+    if (!v) return ''
+    if (v >= 100_000_000) {
+      const e = v / 100_000_000
+      return `${Number.isInteger(e) ? e : e.toFixed(1)}억원`
+    }
+    return `${Math.round(v / 10_000).toLocaleString()}만원`
+  }
+
+  const Row = ({ label, v }: { label: string; v: number }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px dashed #f0f3f8' }}>
+      <span style={{ fontSize: 11, color: '#4b5563' }}>{label}</span>
+      {v > 0
+        ? <span style={{ fontSize: 11, fontWeight: 800, color: '#1a2744' }}>{fmt(v)}</span>
+        : <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 400 }}>미가입</span>}
+    </div>
+  )
+
+  const ColHdr = ({ dot, label }: { dot: string; label: string }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0 8px', borderBottom: '1px solid #e8edf4', marginBottom: 8 }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+      <span style={{ fontSize: 11.5, fontWeight: 900, color: '#1a2744' }}>{label}</span>
+    </div>
+  )
+
+  const cellStyle: React.CSSProperties = { padding: '10px 14px', borderRight: '1px solid #e2e8f0' }
+
+  return (
+    <div className="coverage-pro-card coverage-pro-card-pad">
+      <div className="coverage-pro-section-title" style={{ marginBottom: 14 }}>보장 상세 현황</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+        {/* 암 */}
+        <div style={cellStyle}>
+          <ColHdr dot="#B03A2E" label="암 (Cancer)" />
+          <Row label="암 진단비"           v={sum('cancer_general')} />
+          <Row label="유사암 진단비"        v={sum('cancer_similar')} />
+          <Row label="암 수술비"            v={sum('cancer_surgery')} />
+          <Row label="항암약물치료비"       v={sum('cancer_chemo')} />
+          <Row label="표적항암약물"         v={sum('cancer_targeted')} />
+          <Row label="주요치료비 급여"      v={sum('cancer_major_benefit')} />
+          <Row label="주요치료비 비급여"    v={sum('cancer_major_nonbenefit')} />
+        </div>
+        {/* 뇌혈관 */}
+        <div style={cellStyle}>
+          <ColHdr dot="#1A5276" label="뇌혈관 (Brain)" />
+          <Row label="뇌혈관질환 진단비"    v={sum('brain_vascular')} />
+          <Row label="뇌졸중 진단비"        v={sum('brain_stroke')} />
+          <Row label="뇌출혈 진단비"        v={sum('brain_hemorrhage')} />
+          <Row label="뇌혈관 수술비"        v={sum('brain_surgery')} />
+          <Row label="혈전용해 치료비"      v={sum('two_major_thrombolysis')} />
+          <Row label="2대주요치료비 급여"   v={sum('vascular_major_benefit')} />
+          <Row label="중환자실 치료비"      v={sum('two_major_icu')} />
+        </div>
+        {/* 심장 */}
+        <div style={cellStyle}>
+          <ColHdr dot="#784212" label="심장 (Heart)" />
+          <Row label="심장질환 진단비"      v={sum('heart_vascular')} />
+          <Row label="허혈성심장 진단비"    v={sum('heart_ischemic')} />
+          <Row label="급성심근경색 진단비"  v={sum('heart_acute_mi')} />
+          <Row label="심장 수술비"          v={sum('heart_surgery')} />
+          <Row label="2대주요치료비 비급여" v={sum('vascular_major_nonbenefit')} />
+          <Row label="2대주요치료비 통합"   v={sum('vascular_major')} />
+        </div>
+        {/* 기타 */}
+        <div style={{ padding: '10px 14px' }}>
+          <ColHdr dot="#1E6B3C" label="기타 주요보장" />
+          <Row label="수술비 (질병)"        v={sum('surgery_disease','surgery_disease_advanced','surgery_disease_comprehensive','surgery_disease_type')} />
+          <Row label="입원일당 (질병)"      v={sum('hospital_disease_daily')} />
+          <Row label="1인실 입원일당"       v={sum('hospital_premium_room','hospital_disease_single_room')} />
+          <Row label="일반사망"             v={sum('death_general')} />
+          <Row label="후유장해 80%↑"       v={sum('disability_disease_80','disability_injury_80')} />
+          <Row label="치매 진단비"          v={sum('dementia_severe','dementia_moderate','dementia_mild','dementia_diagnosis')} />
+          <Row label="간병인 (질병)"        v={sum('nursing_hospital')} />
+        </div>
       </div>
     </div>
   )

@@ -2632,7 +2632,27 @@ function buildHowPage(): string {
 
   </div>
 
-  <div style="padding:6px 14px;background:#1A2744;display:flex;justify-content:space-between;align-items:center">
+  <!-- ── 산정특례 compact strip ───────────────────────────────────────── -->
+  <div style="padding:6px 14px 7px;background:#f8fafc;border-top:1px solid #e2e8f0">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-size:9.5px;font-weight:900;color:#1A2744;letter-spacing:.02em">⭐ 산정특례 제도란?</span>
+      <span style="font-size:9px;color:#6b7280">중증질환 등록 시 건강보험 급여 본인부담을 5%로 낮춰 의료비 부담을 대폭 경감하는 국민건강보험 제도입니다.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+      ${([
+        { icon:'🎗', title:'암 산정특례 (V193–)', desc:'암 확진 후 최대 5년. 급여 의료비 5% 부담. 갑상선·경계성 종양 등은 별도 코드·비율 적용.' },
+        { icon:'🧠', title:'뇌혈관 산정특례 (I60–)', desc:'뇌졸중·뇌출혈·뇌경색 확진. 60일간 급여 5% 부담. 이후 재등록 가능.' },
+        { icon:'❤️', title:'심장 산정특례 (I20–)', desc:'급성심근경색·심부전 등. 30일간 급여 5% 부담. 관련 시술 포함.' },
+        { icon:'🔬', title:'희귀·중증난치', desc:'희귀질환 10%, 중증난치 10% 부담 (일부 5%). 치매·파킨슨 포함 1,200여 종.' },
+      ] as const).map(item => `
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:5px;padding:5px 8px">
+          <div style="font-size:9.5px;font-weight:900;color:#1A2744;margin-bottom:2px">${item.icon} ${item.title}</div>
+          <div style="font-size:8.5px;color:#6b7280;line-height:1.5">${item.desc}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <div style="padding:5px 14px;background:#1A2744;display:flex;justify-content:space-between;align-items:center">
     <div style="font-size:8.5px;color:rgba(255,255,255,.35)">※ 위 내용은 일반적인 보장 구조를 설명하며, 실제 지급은 가입 약관 및 보험사 심사 기준에 따릅니다.</div>
     <div style="font-size:8px;color:rgba(255,255,255,.3)">${new Date().toLocaleDateString('ko-KR')} 작성</div>
   </div>
