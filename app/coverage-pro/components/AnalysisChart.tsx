@@ -334,13 +334,14 @@ function CoverageDetailGrid({ contracts }: { contracts: ProContract[] }) {
         {/* 기타 */}
         <div style={{ padding: '10px 14px' }}>
           <ColHdr dot="#1E6B3C" label="기타 주요보장" />
-          <Row label="수술비 (질병)"        v={sum('surgery_disease','surgery_disease_advanced','surgery_disease_comprehensive','surgery_disease_type')} />
+          <Row label="수술비 (질병)"        v={sum('surgery_disease','surgery_disease_advanced','surgery_disease_comprehensive','surgery_disease_type','surgery_1_5','surgery_advanced','surgery_comprehensive','surgery_n_major')} />
           <Row label="입원일당 (질병)"      v={sum('hospital_disease_daily')} />
           <Row label="1인실 입원일당"       v={sum('hospital_premium_room','hospital_disease_single_room')} />
           <Row label="일반사망"             v={sum('death_general')} />
           <Row label="후유장해 80%↑"       v={sum('disability_disease_80','disability_injury_80')} />
+          <Row label="후유장해 (일반)"      v={sum('disability_disease_50','disability_disease','disability_injury_50','disability_injury')} />
           <Row label="치매 진단비"          v={sum('dementia_severe','dementia_moderate','dementia_mild','dementia_diagnosis')} />
-          <Row label="간병인 (질병)"        v={sum('nursing_hospital')} />
+          <Row label="골절·화상 진단비"     v={sum('fracture_diagnosis','burn_diagnosis')} />
         </div>
       </div>
     </div>
