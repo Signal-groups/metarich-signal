@@ -1078,6 +1078,8 @@ function buildCompareTable(contracts: ProContract[]): string {
     { group: '치매',      label: '경증치매 진단금',       rowKey: 'dementia_mild' },
     { group: '치매',      label: '치매진단비(일반)',       rowKey: 'dementia_diagnosis' },
     // 재가·시설 급여
+    { group: '재가',      label: '복합재가급여',          rowKey: 'homecare_complex' },
+    { group: '재가',      label: '복지용구급여',          rowKey: 'homecare_welfare_equipment' },
     { group: '재가',      label: '재가급여(방문요양 등)', rowKey: 'homecare_benefit' },
     { group: '재가',      label: '시설입소급여',          rowKey: 'facility_benefit' },
     { group: '재가',      label: '장기요양등급',          rowKey: 'ltc_grade' },

@@ -20,7 +20,11 @@ const NAME_TO_ROW_KEY: Array<{ patterns: string[]; rowKey: string }> = [
   { patterns: ['치매진단', '치매간병', '치매급여금', '치매생활비', '알츠하이머', '치매'], rowKey: 'dementia_diagnosis' },
 
   // ── 재가·시설 급여 (장기요양 서비스 비용 — 치매 패턴 다음, 간병인 패턴 앞) ──
-  { patterns: ['재가급여', '재가서비스', '방문요양', '방문간호', '주야간보호', '단기보호', '재가보험금', '재가지원금', '재가비', '재가이용'], rowKey: 'homecare_benefit' },
+  // 복합재가: 여러 재가서비스를 묶은 복합형 — 방문요양보다 먼저 매핑
+  { patterns: ['복합재가급여', '복합형재가', '복합재가서비스', '복합재가'], rowKey: 'homecare_complex' },
+  // 복지용구: 전동침대·휠체어 등 장기요양 용구급여 — 재가 패턴보다 먼저
+  { patterns: ['복지용구급여', '장기요양복지용구', '복지용구구입', '복지용구대여', '복지용구'], rowKey: 'homecare_welfare_equipment' },
+  { patterns: ['재가급여', '재가서비스', '방문요양', '방문간호', '방문목욕', '주야간보호', '단기보호', '재가보험금', '재가지원금', '재가비', '재가이용'], rowKey: 'homecare_benefit' },
   { patterns: ['시설급여', '시설입소', '시설서비스', '시설보험금', '시설지원금', '요양시설', '시설이용', '시설비용'], rowKey: 'facility_benefit' },
 
   // ── 장기요양 등급 (재가/시설 급여보다 뒤에 — 급여명이 먼저 매핑) ──────
@@ -390,6 +394,8 @@ export const ROW_KEY_LABEL: Record<string, string> = {
   dementia_diagnosis:        '치매 — 치매진단(일반)',
   // 재가·시설
   homecare_benefit:          '재가 — 재가급여(방문요양 등)',
+  homecare_complex:          '재가 — 복합재가급여',
+  homecare_welfare_equipment:'재가 — 복지용구급여',
   facility_benefit:          '재가 — 시설입소급여',
   ltc_grade:                 '기타 — 장기요양등급',
 }

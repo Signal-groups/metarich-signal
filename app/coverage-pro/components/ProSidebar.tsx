@@ -8,8 +8,8 @@ export const PRO_STEPS: Array<{ id: StepNumber; title: string }> = [
   { id: 3, title: '현재 보험' },
   { id: 4, title: '보장 확인' },
   { id: 5, title: '분석 결과' },
-  { id: 6, title: '리모델링' },
-  { id: 7, title: '출력 · 다운로드' },
+  { id: 6, title: '출력 · 저장' },
+  { id: 7, title: '리모델링' },
 ]
 
 export default function ProSidebar({
