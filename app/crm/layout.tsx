@@ -27,12 +27,20 @@ const NAV: NavItem[] = [
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6 5.87v-2a4 4 0 00-2-3.46M15 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
   },
   {
+    href: '/crm/board', label: '업무보드', exact: false,
+    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1" strokeWidth="2"/><rect x="10" y="3" width="5" height="12" rx="1" strokeWidth="2"/><rect x="17" y="3" width="4" height="8" rx="1" strokeWidth="2"/></svg>
+  },
+  {
     href: '/crm/family', label: '가족관리', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/></svg>
   },
   {
     href: '/crm/alerts', label: '알림관리', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+  },
+  {
+    href: '/crm/renewals', label: '만기·갱신', exact: false,
+    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
   },
   {
     href: '/crm/dm-cards', label: 'DM 카드', exact: false,

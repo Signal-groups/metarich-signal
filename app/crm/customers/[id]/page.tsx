@@ -222,6 +222,8 @@ export default function CustomerDetailPage() {
       consulting_summary: editForm.consulting_summary || null,
       insurance_reason: editForm.insurance_reason || null,
       tags: editForm.tags || [],
+      car_insurance_renewal_date: (editForm as any).car_insurance_renewal_date || null,
+      indemnity_renewal_date: (editForm as any).indemnity_renewal_date || null,
       updated_at: new Date().toISOString(),
     }).eq('id', id).eq('advisor_id', customer.advisor_id)
     setCustomer({ ...customer, ...editForm })
@@ -1682,12 +1684,19 @@ function AlertsTab({ customer, alerts, policies, onRefresh }: { customer: any; a
       if (nextBday < today) nextBday.setFullYear(today.getFullYear() + 1)
       toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'birthday', title: '고객 생일', message: `${customer.name} 고객님 생일`, due_date: toIso(nextBday), is_done: false, is_read: false })
     }
-    if (customer.car_insurance_renewal_date) {
-      const renewal = new Date(customer.car_insurance_renewal_date)
-      if (renewal > today) {
-        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d60', title: '자동차보험 갱신 D-60', message: `자동차보험 갱신 D-60`, due_date: toIso(addDays(renewal, -60)), is_done: false, is_read: false })
-        toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d30', title: '자동차보험 갱신 D-30', message: `자동차보험 갱신 D-30`, due_date: toIso(addDays(renewal, -30)), is_done: false, is_read: false })
-      }
+    if ((customer as any).car_insurance_renewal_date) {
+      const renewal = new Date((customer as any).car_insurance_renewal_date)
+      // 올해 기준, 이미 지났으면 내년으로
+      const thisYearRenewal = new Date(today.getFullYear(), renewal.getMonth(), renewal.getDate())
+      if (thisYearRenewal < today) thisYearRenewal.setFullYear(today.getFullYear() + 1)
+      toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d60', title: `🚗 자동차보험 갱신 D-60 (${customer.name})`, message: `자동차보험 갱신일 60일 전입니다.`, due_date: toIso(addDays(thisYearRenewal, -60)), is_done: false, is_read: false })
+      toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'car_renewal_d30', title: `🚗 자동차보험 갱신 D-30 (${customer.name})`, message: `자동차보험 갱신일 30일 전입니다.`, due_date: toIso(addDays(thisYearRenewal, -30)), is_done: false, is_read: false })
+    }
+    if ((customer as any).indemnity_renewal_date) {
+      const renewal = new Date((customer as any).indemnity_renewal_date)
+      const thisYearRenewal = new Date(today.getFullYear(), renewal.getMonth(), renewal.getDate())
+      if (thisYearRenewal < today) thisYearRenewal.setFullYear(today.getFullYear() + 1)
+      toInsert.push({ customer_id: customer.id, customer_name: customer.name, type: 'indemnity_renewal', title: `🔄 실손보험 갱신 D-30 (${customer.name})`, message: `실손보험 갱신일 30일 전입니다. 세대 전환 여부를 확인하세요.`, due_date: toIso(addDays(thisYearRenewal, -30)), is_done: false, is_read: false })
     }
     if (customer.join_date) {
       const joinDate = new Date(customer.join_date)
@@ -1907,6 +1916,8 @@ function EditBasicForm({ editForm, setEditForm }: { editForm: any; setEditForm: 
         <Field label="보험 건수"><input type="number" className="form-input" value={editForm.policy_count || ''} onChange={(e) => update('policy_count', e.target.value)} /></Field>
         <Field label="실손 세대"><input type="number" className="form-input" value={editForm.indemnity_generation || ''} onChange={(e) => update('indemnity_generation', e.target.value)} /></Field>
         <Field label="가족 인원"><input type="number" className="form-input" value={editForm.family_count || ''} onChange={(e) => update('family_count', e.target.value)} /></Field>
+        <Field label="🚗 자동차보험 갱신일"><input type="date" className="form-input" value={(editForm as any).car_insurance_renewal_date || ''} onChange={(e) => update('car_insurance_renewal_date', e.target.value)} /></Field>
+        <Field label="🔄 실손보험 갱신일"><input type="date" className="form-input" value={(editForm as any).indemnity_renewal_date || ''} onChange={(e) => update('indemnity_renewal_date', e.target.value)} /></Field>
       </div>
       <Field label="상태">
         <select className="form-input" value={editForm.status || 'new'} onChange={(e) => update('status', e.target.value)}>

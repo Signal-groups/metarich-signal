@@ -4,29 +4,125 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
-const UPLOAD_STORAGE_KEY = 'signal-crm-upload-files'
+/* ─── 상태 정보 ─────────────────────────────────────────── */
+const STATUS_INFO: { key: string; label: string; color: string; bg: string }[] = [
+  { key: 'new',        label: '신규',  color: '#64748b', bg: '#f1f5f9' },
+  { key: 'analysis',   label: '분석',  color: '#2563eb', bg: '#eff6ff' },
+  { key: 'consulting', label: '상담',  color: '#d97706', bg: '#fffbeb' },
+  { key: 'proposal',   label: '제안',  color: '#7c3aed', bg: '#f5f3ff' },
+  { key: 'contracted', label: '계약',  color: '#059669', bg: '#f0fdf4' },
+  { key: 'managing',   label: '관리',  color: '#0891b2', bg: '#ecfeff' },
+  { key: 'hold',       label: '보류',  color: '#dc2626', bg: '#fff7ed' },
+]
 
-const statusLabels: Record<string, string> = {
-  new: '신규',
-  analysis: '분석',
-  consulting: '상담',
-  proposal: '제안',
-  hold: '보류',
-  contracted: '계약',
-  managing: '관리',
+const DAY_KR = ['일', '월', '화', '수', '목', '금', '토']
+
+/* ─── 날짜 계산 유틸 ─────────────────────────────────────── */
+function daysDiff(dateStr: string | null | undefined, from: Date = new Date()): number {
+  if (!dateStr) return 9999
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return 9999
+  return Math.round((d.getTime() - from.getTime()) / 86_400_000)
 }
 
-const statusBadges: Record<string, string> = {
-  new: 'badge-gray',
-  analysis: 'badge-blue',
-  consulting: 'badge-yellow',
-  proposal: 'badge-purple',
-  hold: 'badge-red',
-  contracted: 'badge-green',
-  managing: 'badge-cyan',
+/** 올해 생일까지 남은 일수 (0 = 오늘) */
+function birthdayDaysLeft(birthDate: string | null | undefined): number {
+  if (!birthDate) return 9999
+  const birth = new Date(birthDate)
+  if (Number.isNaN(birth.getTime())) return 9999
+  const today = new Date()
+  const thisYear = new Date(today.getFullYear(), birth.getMonth(), birth.getDate())
+  let diff = Math.round((thisYear.getTime() - today.getTime()) / 86_400_000)
+  if (diff < 0) diff += 365   // 이미 지났으면 내년으로
+  return diff
 }
 
-const notifTypeLabels: Record<string, string> = {
+/** join_date 기준 목표일까지 남은 일수 */
+function followUpDaysLeft(joinDate: string | null | undefined, targetDays: number): number {
+  if (!joinDate) return 9999
+  const joined = new Date(joinDate)
+  if (Number.isNaN(joined.getTime())) return 9999
+  const target = new Date(joined.getTime() + targetDays * 86_400_000)
+  return Math.round((target.getTime() - Date.now()) / 86_400_000)
+}
+
+/* ─── 오늘 업무 항목 계산 ────────────────────────────────── */
+interface TodoItem {
+  type: 'birthday' | 'followup_90' | 'followup_180' | 'followup_365' | 'notif'
+  customer?: { id: string; name: string; phone?: string }
+  daysLeft: number
+  label: string
+  badge: string
+  badgeColor: string
+}
+
+function computeTodayItems(customers: any[], notifications: any[]): TodoItem[] {
+  const items: TodoItem[] = []
+  const WINDOW = 7   // 7일 이내
+
+  for (const c of customers) {
+    const bDay = birthdayDaysLeft(c.birth_date)
+    if (bDay <= WINDOW) {
+      items.push({
+        type: 'birthday', customer: c,
+        daysLeft: bDay,
+        label: bDay === 0 ? '🎂 오늘 생일' : `🎂 생일 D-${bDay}`,
+        badge: bDay === 0 ? '오늘' : `D-${bDay}`,
+        badgeColor: '#be185d',
+      })
+    }
+    const f90 = followUpDaysLeft(c.join_date, 90)
+    if (f90 >= -1 && f90 <= 3) {
+      items.push({
+        type: 'followup_90', customer: c,
+        daysLeft: f90,
+        label: '📞 가입 90일 연락',
+        badge: f90 <= 0 ? '오늘' : `D-${f90}`,
+        badgeColor: '#2563eb',
+      })
+    }
+    const f180 = followUpDaysLeft(c.join_date, 180)
+    if (f180 >= -1 && f180 <= 3) {
+      items.push({
+        type: 'followup_180', customer: c,
+        daysLeft: f180,
+        label: '📞 가입 6개월 연락',
+        badge: f180 <= 0 ? '오늘' : `D-${f180}`,
+        badgeColor: '#7c3aed',
+      })
+    }
+    const f365 = followUpDaysLeft(c.join_date, 365)
+    if (f365 >= -1 && f365 <= 3) {
+      items.push({
+        type: 'followup_365', customer: c,
+        daysLeft: f365,
+        label: '📞 가입 1년 연락',
+        badge: f365 <= 0 ? '오늘' : `D-${f365}`,
+        badgeColor: '#059669',
+      })
+    }
+  }
+
+  // 미완료 알림 추가 (D-7 이내)
+  for (const n of notifications) {
+    if (n.is_done) continue
+    const diff = daysDiff(n.due_date)
+    if (diff >= -1 && diff <= 7) {
+      items.push({
+        type: 'notif',
+        customer: { id: n.customer_id, name: n.customer_name || '고객' },
+        daysLeft: diff,
+        label: `🔔 ${NOTIF_LABEL[n.type] || n.type}`,
+        badge: diff <= 0 ? '오늘' : `D-${diff}`,
+        badgeColor: '#ea580c',
+      })
+    }
+  }
+
+  return items.sort((a, b) => a.daysLeft - b.daysLeft)
+}
+
+const NOTIF_LABEL: Record<string, string> = {
   birthday: '생일',
   indemnity_end: '면책 종료',
   reduction_end: '감액 종료',
@@ -35,405 +131,380 @@ const notifTypeLabels: Record<string, string> = {
   indemnity_renewal: '실손 재가입',
   join_30: '가입 30일',
   join_90: '가입 90일',
-  join_180: '가입 180일',
+  join_180: '가입 6개월',
   join_365: '가입 1년',
   consulting: '상담 예정',
 }
 
-const notifBadges: Record<string, string> = {
-  birthday: 'badge-pink',
-  indemnity_end: 'badge-orange',
-  reduction_end: 'badge-orange',
-  car_renewal_d60: 'badge-purple',
-  car_renewal_d30: 'badge-purple',
-  indemnity_renewal: 'badge-cyan',
-  join_30: 'badge-blue',
-  join_90: 'badge-blue',
-  join_180: 'badge-blue',
-  join_365: 'badge-blue',
-  consulting: 'badge-green',
-}
-
+/* ─── 메인 컴포넌트 ─────────────────────────────────────── */
 export default function CrmDashboard() {
-  const [loading, setLoading] = useState(true)
-  const [advisorName, setAdvisorName] = useState('담당자')
-  const [customers, setCustomers] = useState<any[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [advisorName, setAdvisorName]   = useState('담당자')
+  const [customers, setCustomers]       = useState<any[]>([])
   const [notifications, setNotifications] = useState<any[]>([])
-  const [uploadItems, setUploadItems] = useState<any[]>([])
-  const [currentUserId, setCurrentUserId] = useState('')
+  const [genBulk, setGenBulk]           = useState<'idle' | 'running' | 'done' | 'err'>('idle')
+  const [genMsg, setGenMsg]             = useState('')
 
   useEffect(() => {
     const load = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      setCurrentUserId(session.user.id)
 
-      const { data: userData } = await supabase
-        .from('users')
-        .select('name')
-        .eq('id', session.user.id)
-        .single()
+      const [{ data: userData }, { data: custs }] = await Promise.all([
+        supabase.from('users').select('name').eq('id', session.user.id).single(),
+        supabase.from('customers').select('*')
+          .eq('advisor_id', session.user.id).is('deleted_at', null)
+          .order('join_date', { ascending: false }),
+      ])
 
       setAdvisorName(userData?.name || session.user.email?.split('@')[0] || '담당자')
-
-      const { data: custs } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('advisor_id', session.user.id)
-        .is('deleted_at', null)
-        .order('join_date', { ascending: false })
-
       const custList = custs || []
       setCustomers(custList)
 
       const custIds = custList.map((c: any) => c.id)
-      const { data: notifs } = custIds.length > 0
-        ? await supabase
-          .from('notifications')
-          .select('*')
+      if (custIds.length > 0) {
+        const { data: notifs } = await supabase
+          .from('notifications').select('*')
           .in('customer_id', custIds)
-          .order('due_date', { ascending: true })
-          .limit(30)
-        : { data: [] }
-
-      setNotifications(notifs || [])
-
+          .order('due_date', { ascending: true }).limit(50)
+        setNotifications(notifs || [])
+      }
       setLoading(false)
     }
-
     load()
   }, [])
 
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(UPLOAD_STORAGE_KEY)
-      setUploadItems(saved ? JSON.parse(saved) : [])
-    } catch {
-      setUploadItems([])
-    }
-  }, [])
+  const today = new Date()
+  const todayStr = today.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
 
   const stats = useMemo(() => {
-    const now = new Date()
-    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    const totalPremium = customers.reduce((sum, customer) => sum + (customer.monthly_premium || 0), 0)
-
+    const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+    const totalPremium = customers.reduce((s, c) => s + (c.monthly_premium || 0), 0)
+    const contracted = customers.filter((c) => c.status === 'contracted' || c.status === 'managing')
     return {
       total: customers.length,
-      thisMonth: customers.filter((customer) => customer.join_date?.startsWith(thisMonth)).length,
+      thisMonth: customers.filter((c) => c.join_date?.startsWith(thisMonth)).length,
       totalPremium,
-      pendingNotif: notifications.filter((item) => !item.is_done).length,
-      doneNotif: notifications.filter((item) => item.is_done).length,
-      birthday: notifications.filter((item) => item.type === 'birthday' && !item.is_done).length,
-      renewal: notifications.filter((item) => String(item.type).includes('renewal') && !item.is_done).length,
+      contracted: contracted.length,
+      contractedPremium: contracted.reduce((s, c) => s + (c.monthly_premium || 0), 0),
+      pendingNotif: notifications.filter((n) => !n.is_done).length,
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers, notifications])
 
-  const analysisSuggestions = useMemo(() => {
-    const latestByCustomer: Record<string, string> = {}
-    const customerIds = new Set(customers.map((customer) => customer.id))
-    uploadItems
-      .filter((item) => item.ownerId === currentUserId || (!item.ownerId && item.customerId && customerIds.has(item.customerId)))
-      .filter((item) => item.category === '보장분석' || item.structuredAnalysis)
-      .forEach((item) => {
-        const key = item.customerId || normalizeName(item.customerName)
-        if (!key) return
-        const date = item.date || ''
-        if (!latestByCustomer[key] || date > latestByCustomer[key]) latestByCustomer[key] = date
-      })
+  const todayItems = useMemo(
+    () => computeTodayItems(customers, notifications),
+    [customers, notifications]
+  )
 
-    const now = new Date()
-    return customers.map((customer) => {
-      const latest = latestByCustomer[customer.id] || latestByCustomer[normalizeName(customer.name)] || ''
-      const days = latest ? daysBetween(latest, now) : 9999
-      const reason = !latest ? '분석 이력 없음' : days >= 365 ? '1년 경과' : days >= 180 ? '6개월 경과' : ''
-      return { customer, latest, days, reason }
-    }).filter((item) => item.reason).slice(0, 6)
-  }, [currentUserId, customers, uploadItems])
+  const statusCounts = useMemo(() =>
+    STATUS_INFO.map((s) => ({ ...s, count: customers.filter((c) => c.status === s.key).length })),
+    [customers]
+  )
+
+  const runBulkGenerate = async () => {
+    setGenBulk('running')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
+      const res = await fetch('/api/crm/generate-notifications', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      setGenMsg(json.message)
+      setGenBulk('done')
+    } catch (e: any) {
+      setGenMsg(e.message || '오류')
+      setGenBulk('err')
+    }
+    setTimeout(() => { setGenBulk('idle'); setGenMsg('') }, 4000)
+  }
 
   if (loading) {
     return (
-      <div className="card card-p" style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 28, height: 28, border: '3px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 28, height: 28, border: '3px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     )
   }
 
   return (
-    <>
-      <div className="page-header">
+    <div style={{ display: 'grid', gap: 16 }}>
+
+      {/* ── 오늘의 업무브리핑 배너 ─────────────────────────── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a2744 0%, #2d4a8a 100%)',
+        borderRadius: 20, padding: '28px 32px', color: '#fff',
+        display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 24,
+      }}>
         <div>
-          <div className="page-title">안녕하세요, {advisorName}님!</div>
-          <div className="page-subtitle">오늘의 고객 관리 현황을 한눈에 확인하세요.</div>
-        </div>
-        <div className="header-right">
-          <div className="date-chip">
-            <CalendarIcon />
-            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,.55)', fontWeight: 700, marginBottom: 6 }}>
+            {todayStr}
           </div>
-          <Link href="/crm/alerts" className="btn-notif" aria-label="알림">
-            <BellIcon />
-            {stats.pendingNotif > 0 && <div className="badge-red">{stats.pendingNotif}</div>}
+          <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 6 }}>
+            안녕하세요, {advisorName}님! 👋
+          </div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,.75)', lineHeight: 1.6 }}>
+            {todayItems.length > 0
+              ? `오늘 챙겨야 할 항목이 ${todayItems.length}건 있어요.`
+              : '오늘은 긴급 업무가 없습니다. 여유롭게 시작하세요! ☀️'}
+          </div>
+        </div>
+        {/* 빠른 실행 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 180 }}>
+          <Link href="/crm/customers/new" style={quickBtn('#c9a96e', '#1a2744')}>
+            + 신규 고객 등록
           </Link>
-          <div className="profile-chip">
-            <div className="profile-avatar">{advisorName.slice(0, 1)}</div>
-            <div>
-              <div className="profile-name">{advisorName}</div>
-              <div className="profile-role">보험 담당자</div>
-            </div>
-          </div>
+          <a href="/coverage-pro" target="_blank" rel="noopener noreferrer" style={quickBtn('rgba(255,255,255,.15)', '#fff')}>
+            ⚡ 보장분석 PRO
+          </a>
+          <Link href="/crm/board" style={quickBtn('rgba(255,255,255,.1)', '#fff')}>
+            📋 업무보드
+          </Link>
+          <button
+            onClick={runBulkGenerate}
+            disabled={genBulk === 'running'}
+            style={{ ...quickBtn('rgba(255,255,255,.08)', '#fff'), border: '1px solid rgba(255,255,255,.2)', cursor: 'pointer' }}
+          >
+            {genBulk === 'running' ? '⏳ 생성 중...'
+             : genBulk === 'done' ? `✅ ${genMsg}`
+             : genBulk === 'err' ? `❌ ${genMsg}`
+             : '🔔 전체 알림 생성'}
+          </button>
         </div>
       </div>
 
-      <div className="grid-6" style={{ marginBottom: 16 }}>
-        <StatCard icon="🎂" iconBg="#fdf2f8" label="생일 고객" value={stats.birthday} unit="명" sub="이번 주" color="#be185d" />
-        <StatCard icon="⏳" iconBg="#fff7ed" label="면책/감액 알림" value={notifications.filter((n) => n.type === 'indemnity_end' || n.type === 'reduction_end').length} unit="건" sub="처리 필요" color="#ea580c" />
-        <StatCard icon="🔔" iconBg="#eff6ff" label="갱신 알림" value={stats.renewal} unit="건" sub="D-60 / D-30" color="#2563eb" />
-        <StatCard icon="👥" iconBg="#ecfeff" label="전체 고객" value={stats.total} unit="명" sub={`신규 ${stats.thisMonth}명`} color="#0891b2" />
-        <StatCard icon="💬" iconBg="#f0fdf4" label="알림" value={stats.pendingNotif} unit="건" sub={`완료 ${stats.doneNotif}건`} color="#16a34a" />
-        <StatCard icon="₩" iconBg="#faf5ff" label="월 보험료" value={Math.round(stats.totalPremium / 10000)} unit="만" sub="전체 합계" color="#7c3aed" />
+      {/* ── KPI 카드 4개 ───────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+        <KpiCard icon="👥" label="전체 고객" value={stats.total} unit="명" sub={`이달 신규 ${stats.thisMonth}명`} color="#2563eb" bg="#eff6ff" />
+        <KpiCard icon="✅" label="계약·관리" value={stats.contracted} unit="명" sub={`월 ${fmtW(stats.contractedPremium)} 보험료`} color="#059669" bg="#f0fdf4" />
+        <KpiCard icon="₩" label="총 월 보험료" value={Math.round(stats.totalPremium / 10_000)} unit="만" sub="전체 고객 합산" color="#7c3aed" bg="#faf5ff" />
+        <KpiCard icon="🔔" label="미완료 알림" value={stats.pendingNotif} unit="건" sub="확인 필요" color="#ea580c" bg="#fff7ed" link="/crm/alerts" />
       </div>
 
-      <div className="grid-3" style={{ marginBottom: 16 }}>
-        <div className="card card-p" style={{ gridColumn: 'span 2' }}>
-          <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>알림</div>
-            <Link href="/crm/alerts" className="link">전체보기</Link>
-          </div>
-          <div className="grid-2" style={{ marginBottom: 12 }}>
-            <MiniStatus label="미완료" value={stats.pendingNotif} color="#dc2626" />
-            <MiniStatus label="완료" value={stats.doneNotif} color="#16a34a" />
-          </div>
-          {notifications.filter((item) => !item.is_done).slice(0, 6).map((item) => (
-            <div key={item.id} className={`alert-item ${!item.is_read ? 'unread' : ''}`} style={{ marginLeft: -20, marginRight: -20 }}>
-              {!item.is_read && <div className="alert-unread-dot" />}
-              <span className={`badge ${notifBadges[item.type] || 'badge-gray'}`}>{notifTypeLabels[item.type] || item.type}</span>
-              <div className="alert-info">
-                <div className="alert-name">{item.customer_name}</div>
-                {item.message && <div className="alert-msg">{item.message}</div>}
-              </div>
-              <div className="alert-date">{item.due_date}</div>
-            </div>
-          ))}
-          {stats.pendingNotif === 0 && <EmptyState text="현재 미완료 알림이 없습니다." />}
-        </div>
+      {/* ── 2열: 오늘의 할 일 + 고객 상태 현황 ─────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 
+        {/* 오늘의 할 일 */}
         <div className="card card-p">
-          <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>분석 제안</div>
-            <Link href="/crm/analysis" className="link">보장분석</Link>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div className="card-title" style={{ marginBottom: 0 }}>📌 오늘의 할 일</div>
+            <Link href="/crm/alerts" className="link" style={{ fontSize: 12 }}>전체 알림</Link>
           </div>
-          {analysisSuggestions.map(({ customer, latest, reason }) => (
-            <Link key={customer.id} href={`/crm/analysis?customerId=${customer.id}`} className="family-card" style={{ textDecoration: 'none', marginBottom: 8 }}>
-              <div className="family-avatar" style={{ background: '#eff6ff', color: '#2563eb' }}>{customer.name?.slice(0, 1)}</div>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div className="fw-700" style={{ fontSize: 13 }}>{customer.name}</div>
-                <div className="text-muted" style={{ fontSize: 11 }}>{latest ? `최근 분석 ${latest}` : '분석 이력 없음'}</div>
-              </div>
-              <span className={`badge ${reason.includes('1년') ? 'badge-red' : reason.includes('6개월') ? 'badge-yellow' : 'badge-blue'}`}>{reason}</span>
-            </Link>
-          ))}
-          {analysisSuggestions.length === 0 && <EmptyState text="분석 제안 고객이 없습니다." />}
-        </div>
-      </div>
-
-      {/* 상태별 고객 분포 + 보장분석 제안 빠른 현황 */}
-      <div className="grid-3" style={{ marginBottom: 16 }}>
-        {/* 상태별 고객 분포 */}
-        <div className="card card-p" style={{ gridColumn: 'span 2' }}>
-          <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>고객 상태 현황</div>
-            <Link href="/crm/customers" className="link">전체보기</Link>
-          </div>
-          <StatusDistribution customers={customers} />
-        </div>
-
-        {/* 이번달 보험료 요약 */}
-        <div className="card card-p">
-          <div className="flex justify-between items-center mb-16">
-            <div className="card-title" style={{ marginBottom: 0 }}>보험료 현황</div>
-            <Link href="/crm/customers" className="link">고객관리</Link>
-          </div>
-          <PremiumSummary customers={customers} />
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-p flex justify-between items-center">
-          <div className="card-title" style={{ marginBottom: 0 }}>최근 등록 고객</div>
-          <Link href="/crm/customers" className="link">전체보기</Link>
-        </div>
-        <div className="tbl-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>고객명</th>
-                <th>연락처</th>
-                <th>월 보험료</th>
-                <th>상태</th>
-                <th>등록일</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {customers.slice(0, 5).map((customer) => (
-                <tr key={customer.id}>
-                  <td>
-                    <Link href={`/crm/customers/${customer.id}`} className="fw-700 text-blue">
-                      {customer.name}
-                    </Link>
-                  </td>
-                  <td>{customer.phone || '-'}</td>
-                  <td>{formatPremium(customer.monthly_premium)}</td>
-                  <td><span className={`badge ${statusBadges[customer.status] || 'badge-gray'}`}>{statusLabels[customer.status] || customer.status || '-'}</span></td>
-                  <td>{customer.join_date || '-'}</td>
-                  <td><Link href={`/crm/customers/${customer.id}`} className="btn btn-secondary btn-xs">상세</Link></td>
-                </tr>
+          {todayItems.length === 0 ? (
+            <div style={{ padding: '28px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+              오늘 예정된 항목이 없어요 🎉
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {todayItems.slice(0, 8).map((item, i) => (
+                <Link
+                  key={i}
+                  href={item.customer ? `/crm/customers/${item.customer.id}` : '/crm/alerts'}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '9px 12px', borderRadius: 10, background: '#f8fafc',
+                    border: '1px solid #e2e8f0', textDecoration: 'none',
+                    transition: 'background .15s',
+                  }}
+                >
+                  <span style={{
+                    fontSize: 10, fontWeight: 900, padding: '2px 8px',
+                    borderRadius: 999, background: item.badgeColor + '18',
+                    color: item.badgeColor, flexShrink: 0,
+                  }}>
+                    {item.badge}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.customer?.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#64748b' }}>{item.label}</div>
+                  </div>
+                  {item.customer?.phone && (
+                    <span style={{ fontSize: 11, color: '#94a3b8', flexShrink: 0 }}>{item.customer.phone}</span>
+                  )}
+                </Link>
               ))}
-              {customers.length === 0 && (
-                <tr>
-                  <td colSpan={6}><EmptyState text="등록된 고객이 없습니다." /></td>
-                </tr>
+              {todayItems.length > 8 && (
+                <div style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', paddingTop: 4 }}>
+                  +{todayItems.length - 8}건 더 있음 — <Link href="/crm/alerts" className="link">전체보기</Link>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          )}
+        </div>
+
+        {/* 고객 상태 현황 */}
+        <div className="card card-p">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div className="card-title" style={{ marginBottom: 0 }}>📊 고객 상태 현황</div>
+            <Link href="/crm/board" className="link" style={{ fontSize: 12 }}>업무보드</Link>
+          </div>
+          {customers.length === 0 ? (
+            <div style={{ padding: '28px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>등록된 고객이 없습니다.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {statusCounts.filter((s) => s.count > 0).map((s) => {
+                const max = Math.max(...statusCounts.map((x) => x.count), 1)
+                return (
+                  <Link key={s.key} href={`/crm/board?status=${s.key}`} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 44px', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: s.color, background: s.bg, borderRadius: 8, padding: '3px 8px', textAlign: 'center' }}>{s.label}</span>
+                    <div style={{ height: 12, borderRadius: 999, background: '#f1f5f9', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(s.count / max) * 100}%`, borderRadius: 999, background: s.color, transition: 'width .5s' }} />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 900, color: s.color, textAlign: 'right' }}>{s.count}명</span>
+                  </Link>
+                )
+              })}
+              <div style={{ marginTop: 6, paddingTop: 10, borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>전체 {stats.total}명</span>
+                <Link href="/crm/board" className="btn btn-secondary btn-xs">업무보드 열기 →</Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </>
+
+      {/* ── 2열: 이번 주 생일 + 최근 등록 고객 ─────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+        {/* 이번 주 생일 & Follow-up */}
+        <div className="card card-p">
+          <div className="card-title" style={{ marginBottom: 14 }}>🗓 이번 주 예정</div>
+          <WeeklyPreview customers={customers} />
+        </div>
+
+        {/* 최근 등록 고객 */}
+        <div className="card card-p">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div className="card-title" style={{ marginBottom: 0 }}>🆕 최근 등록 고객</div>
+            <Link href="/crm/customers" className="link" style={{ fontSize: 12 }}>전체보기</Link>
+          </div>
+          {customers.length === 0 ? (
+            <div style={{ padding: '28px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>등록된 고객이 없습니다.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {customers.slice(0, 6).map((c) => {
+                const s = STATUS_INFO.find((x) => x.key === c.status) ?? STATUS_INFO[0]
+                return (
+                  <Link key={c.id} href={`/crm/customers/${c.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, flexShrink: 0 }}>
+                      {c.name?.slice(0, 1)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744' }}>{c.name}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{c.join_date || '-'} 등록</div>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 8, background: s.bg, color: s.color, flexShrink: 0 }}>{s.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 보험료 현황 요약 ────────────────────────────────── */}
+      <div className="card card-p">
+        <div className="card-title" style={{ marginBottom: 14 }}>💰 보험료 현황</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }}>
+          {[
+            { label: '총 월 보험료', value: fmtW(stats.totalPremium), color: '#7c3aed' },
+            { label: '계약·관리 고객 보험료', value: fmtW(stats.contractedPremium), color: '#059669' },
+            { label: '고객 평균 보험료', value: stats.total > 0 ? fmtW(Math.round(stats.totalPremium / stats.total)) : '-', color: '#2563eb' },
+            { label: '계약·관리 고객 수', value: `${stats.contracted}명`, color: '#0891b2' },
+          ].map((item) => (
+            <div key={item.label} style={{ background: '#f8fafc', borderRadius: 14, padding: '16px 18px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, marginBottom: 8 }}>{item.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: item.color }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
   )
 }
 
-function StatCard({ icon, iconBg, label, value, unit, sub, color }: {
-  icon: string
-  iconBg: string
-  label: string
-  value: number
-  unit: string
-  sub: string
-  color: string
+/* ─── 이번 주 예정 컴포넌트 ─────────────────────────────── */
+function WeeklyPreview({ customers }: { customers: any[] }) {
+  const items: { daysLeft: number; label: string; customerName: string; customerId: string; color: string }[] = []
+
+  for (const c of customers) {
+    const bDay = birthdayDaysLeft(c.birth_date)
+    if (bDay <= 7) items.push({ daysLeft: bDay, label: '🎂 생일', customerName: c.name, customerId: c.id, color: '#be185d' })
+    const f90 = followUpDaysLeft(c.join_date, 90)
+    if (f90 >= 0 && f90 <= 7) items.push({ daysLeft: f90, label: '📞 가입 90일', customerName: c.name, customerId: c.id, color: '#2563eb' })
+    const f180 = followUpDaysLeft(c.join_date, 180)
+    if (f180 >= 0 && f180 <= 7) items.push({ daysLeft: f180, label: '📞 가입 6개월', customerName: c.name, customerId: c.id, color: '#7c3aed' })
+    const f365 = followUpDaysLeft(c.join_date, 365)
+    if (f365 >= 0 && f365 <= 7) items.push({ daysLeft: f365, label: '📞 가입 1년', customerName: c.name, customerId: c.id, color: '#059669' })
+  }
+
+  items.sort((a, b) => a.daysLeft - b.daysLeft)
+
+  if (items.length === 0) {
+    return <div style={{ padding: '20px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>이번 주 예정된 일정이 없어요</div>
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      {items.slice(0, 7).map((item, i) => (
+        <Link key={i} href={`/crm/customers/${item.customerId}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, background: item.color + '15',
+            color: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 900, flexShrink: 0, textAlign: 'center',
+          }}>
+            {item.daysLeft === 0 ? '오늘' : `D-${item.daysLeft}`}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744' }}>{item.customerName}</div>
+            <div style={{ fontSize: 11, color: '#64748b' }}>{item.label}</div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
+/* ─── KPI 카드 ──────────────────────────────────────────── */
+function KpiCard({ icon, label, value, unit, sub, color, bg, link }: {
+  icon: string; label: string; value: number; unit: string; sub: string; color: string; bg: string; link?: string
 }) {
-  return (
-    <div className="card stat-card">
-      <div className="stat-icon" style={{ background: iconBg }}>{icon}</div>
-      <div className="stat-label">{label}</div>
-      <div className="stat-value" style={{ color }}>
-        {value}<span style={{ fontSize: 14, fontWeight: 400, color: '#94a3b8' }}>{unit}</span>
+  const content = (
+    <div className="card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, height: '100%' }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+        {icon}
       </div>
-      <div className="stat-sub">{sub}</div>
-    </div>
-  )
-}
-
-function MiniStatus({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="bg-gray rounded p-12" style={{ textAlign: 'center' }}>
-      <div className="text-muted" style={{ fontSize: 11 }}>{label}</div>
-      <div className="fw-700" style={{ fontSize: 20, color }}>{value}</div>
-    </div>
-  )
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div style={{ padding: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{text}</div>
-}
-
-const STATUS_INFO: { key: string; label: string; color: string; bg: string }[] = [
-  { key: 'new',        label: '신규',   color: '#64748b', bg: '#f1f5f9' },
-  { key: 'analysis',   label: '분석',   color: '#2563eb', bg: '#eff6ff' },
-  { key: 'consulting', label: '상담',   color: '#d97706', bg: '#fffbeb' },
-  { key: 'proposal',   label: '제안',   color: '#7c3aed', bg: '#f5f3ff' },
-  { key: 'contracted', label: '계약',   color: '#059669', bg: '#f0fdf4' },
-  { key: 'managing',   label: '관리',   color: '#0891b2', bg: '#ecfeff' },
-  { key: 'hold',       label: '보류',   color: '#dc2626', bg: '#fff7ed' },
-]
-
-function StatusDistribution({ customers }: { customers: any[] }) {
-  if (customers.length === 0) return <EmptyState text="등록된 고객이 없습니다." />
-  const counts = STATUS_INFO.map((s) => ({
-    ...s,
-    count: customers.filter((c) => c.status === s.key).length,
-  })).filter((s) => s.count > 0)
-  const max = Math.max(...counts.map((s) => s.count), 1)
-
-  return (
-    <div style={{ display: 'grid', gap: 10 }}>
-      {counts.map((s) => (
-        <div key={s.key} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 36px', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: s.color, background: s.bg, borderRadius: 8, padding: '3px 8px', textAlign: 'center' }}>
-            {s.label}
-          </span>
-          <div style={{ height: 14, borderRadius: 999, background: '#f1f5f9', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${(s.count / max) * 100}%`, borderRadius: 999, background: s.color, transition: 'width .5s' }} />
-          </div>
-          <span style={{ fontSize: 13, fontWeight: 900, color: s.color, textAlign: 'right' }}>{s.count}명</span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 22, fontWeight: 900, color, lineHeight: 1 }}>
+          {value.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: '#94a3b8', marginLeft: 2 }}>{unit}</span>
         </div>
-      ))}
-      <div style={{ marginTop: 4, display: 'flex', justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>전체 {customers.length}명</span>
+        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{sub}</div>
       </div>
     </div>
   )
+  return link ? <Link href={link} style={{ textDecoration: 'none' }}>{content}</Link> : content
 }
 
-function PremiumSummary({ customers }: { customers: any[] }) {
-  const total = customers.reduce((s, c) => s + (c.monthly_premium || 0), 0)
-  const contracted = customers.filter((c) => c.status === 'contracted' || c.status === 'managing')
-  const contractedPremium = contracted.reduce((s, c) => s + (c.monthly_premium || 0), 0)
-  const avgPremium = customers.length > 0 ? total / customers.length : 0
-
-  const rows = [
-    { label: '총 월 보험료', value: Math.round(total / 10000), unit: '만원', color: '#7c3aed' },
-    { label: '계약·관리 고객', value: Math.round(contractedPremium / 10000), unit: '만원', color: '#059669' },
-    { label: '고객 평균', value: Math.round(avgPremium / 10000), unit: '만원', color: '#2563eb' },
-    { label: '계약·관리 수', value: contracted.length, unit: '명', color: '#0891b2' },
-  ]
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-      {rows.map((row) => (
-        <div key={row.label} style={{ background: '#f8fafc', borderRadius: 14, padding: '14px 16px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, marginBottom: 6 }}>{row.label}</div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: row.color }}>
-            {row.value.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 400, color: '#94a3b8', marginLeft: 2 }}>{row.unit}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
+/* ─── 유틸 ──────────────────────────────────────────────── */
+function fmtW(v: number): string {
+  if (!v) return '-'
+  const w = Math.round(v / 10_000)
+  return w >= 10_000 ? `${(w / 10_000).toFixed(1)}억` : `${w.toLocaleString()}만원`
 }
 
-function formatPremium(value?: number): string {
-  const v = Number(value) || 0
-  if (v === 0) return '-'
-  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
-  return `${v.toLocaleString()}원`
-}
-
-function normalizeName(value: any) {
-  return String(value ?? '').replace(/\s/g, '').trim()
-}
-
-function daysBetween(dateText: string, now: Date) {
-  const target = new Date(dateText)
-  if (Number.isNaN(target.getTime())) return 9999
-  return Math.floor((now.getTime() - target.getTime()) / (1000 * 60 * 60 * 24))
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2" />
-      <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
-      <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
-      <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
-    </svg>
-  )
-}
-
-function BellIcon() {
-  return (
-    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-  )
+function quickBtn(bg: string, color: string): React.CSSProperties {
+  return {
+    display: 'block', textAlign: 'center', padding: '9px 16px', borderRadius: 10,
+    background: bg, color, fontSize: 13, fontWeight: 700, textDecoration: 'none',
+    border: `1px solid ${color === '#fff' ? 'rgba(255,255,255,.2)' : 'transparent'}`,
+    cursor: 'pointer',
+  }
 }
