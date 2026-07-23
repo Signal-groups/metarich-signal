@@ -2280,6 +2280,12 @@ ${!isKey ? `
 </div>
 ` : ''}
 
+<!-- ════ PAGE SUMMARY: 핵심 보장 요약 (가로 1장) ════ -->
+${buildSummaryPage(contracts, totalPremium, customerName, customerBirth, advisorInfo)}
+
+<!-- ════ PAGE HOW: 보장 작동 방식 ════ -->
+${buildHowPage()}
+
 <!-- ════ PAGE CONTACTS: 보험사별 연락처 ════ -->
 <div class="pdf-page">
 <div class="page-inner">
@@ -2334,5 +2340,283 @@ ${selectedImageSources.map((item, idx) => `
 </script>
 </body>
 </html>
+`
+}
+
+// ── 헬퍼: 금액 셀 (0이면 "미가입" 회색 표시) ──────────────────────────────
+function amtCell(v: number): string {
+  if (!v) return `<span style="color:#cbd5e1;font-size:10px;font-weight:400">미가입</span>`
+  return `<span style="font-size:11px;font-weight:900;color:#1A2744">${formatWon(v)}</span>`
+}
+
+// ── PAGE SUMMARY: 핵심 보장 요약 (가로 1장) ─────────────────────────────────
+function buildSummaryPage(
+  contracts: ProContract[],
+  totalPremium: number,
+  customerName: string,
+  customerBirth: string | undefined,
+  advisorInfo: { name?: string; phone?: string } | undefined,
+): string {
+  const policyCount  = contracts.length
+  const renewalCount = contracts.filter(c => hasRenewalText(c.productName, c.paymentPeriod)).length
+  const silsonInfo   = inferSilsonInfo(contracts)
+  const analysisDate = new Date().toLocaleDateString('ko-KR')
+  const advisorStr   = [advisorInfo?.name, advisorInfo?.phone].filter(Boolean).join(' ') || '담당 설계사'
+
+  // ── 암 ─────────────────────────────────────────────────────────────────
+  const s = (k: string) => sumAmount(contracts, k)
+  const cancerRows = [
+    { label: '암 진단비',                v: s('cancer_general') },
+    { label: '유사암 진단비',             v: s('cancer_similar') },
+    { label: '암 수술비',                v: s('cancer_surgery') },
+    { label: '항암약물치료비',            v: s('cancer_chemo') },
+    { label: '표적항암약물',              v: s('cancer_targeted') },
+    { label: '주요치료비 <span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#dbeafe;color:#1e40af">급여</span>', v: s('cancer_major_benefit') },
+    { label: '주요치료비 <span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#fef3c7;color:#92400e">비급여</span>', v: s('cancer_major_nonbenefit') },
+  ]
+  const brainRows = [
+    { label: '뇌혈관질환 진단비',         v: s('brain_vascular') },
+    { label: '뇌졸중 진단비',             v: s('brain_stroke') },
+    { label: '뇌출혈 진단비',             v: s('brain_hemorrhage') },
+    { label: '뇌혈관 수술비',             v: s('brain_surgery') },
+    { label: '혈전용해 치료비',           v: s('two_major_thrombolysis') },
+    { label: '2대주요치료비 <span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#dbeafe;color:#1e40af">급여</span>', v: s('vascular_major_benefit') },
+    { label: '중환자실 치료비',           v: s('two_major_icu') },
+  ]
+  const heartRows = [
+    { label: '심장질환 진단비',           v: s('heart_vascular') },
+    { label: '허혈성심장 진단비',         v: s('heart_ischemic') },
+    { label: '급성심근경색 진단비',       v: s('heart_acute_mi') },
+    { label: '심장 수술비',               v: s('heart_surgery') },
+    { label: '2대주요치료비 <span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#fef3c7;color:#92400e">비급여</span>', v: s('vascular_major_nonbenefit') },
+    { label: '2대주요치료비 <span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;background:#e8edf9;color:#1a2744">통합</span>', v: s('vascular_major') },
+  ]
+  const etcRows = [
+    { label: '수술비 (질병)', v: sumAmount(contracts,'surgery_disease','surgery_disease_advanced','surgery_disease_comprehensive','surgery_disease_type') },
+    { label: '입원일당 (질병)', v: s('hospital_disease_daily') },
+    { label: '1인실 입원일당', v: sumAmount(contracts,'hospital_premium_room','hospital_disease_single_room') },
+    { label: '일반사망', v: s('death_general') },
+    { label: '후유장해 80%↑', v: sumAmount(contracts,'disability_disease_80','disability_injury_80') },
+    { label: '치매 진단비', v: sumAmount(contracts,'dementia_severe','dementia_moderate','dementia_mild','dementia_diagnosis') },
+    { label: '간병인 (질병)', v: s('nursing_hospital') },
+  ]
+
+  const col = (rows: {label:string; v:number}[]) =>
+    rows.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px dashed #f0f3f8">
+      <span style="font-size:10.5px;color:#4b5563">${r.label}</span>
+      ${amtCell(r.v)}
+    </div>`).join('')
+
+  // 점검 칩
+  const chips: {label:string; cls:'ok'|'warn'|'miss'}[] = []
+  if (s('cancer_general') >= 50_000_000) chips.push({label:'암 진단 충족 ✓',cls:'ok'})
+  else if (s('cancer_general') > 0)       chips.push({label:`암 진단 ${formatWon(s('cancer_general'))} — 보완 필요`,cls:'warn'})
+  else                                     chips.push({label:'암 진단비 미가입',cls:'miss'})
+  if (s('brain_vascular') >= 30_000_000)  chips.push({label:'뇌혈관 진단 충족 ✓',cls:'ok'})
+  else if (s('brain_vascular') > 0)        chips.push({label:`뇌혈관 ${formatWon(s('brain_vascular'))} — 보완 필요`,cls:'warn'})
+  else                                     chips.push({label:'뇌혈관 진단비 미가입',cls:'miss'})
+  if (s('heart_ischemic') >= 30_000_000)  chips.push({label:'심장 진단 충족 ✓',cls:'ok'})
+  else if (s('heart_ischemic') > 0)        chips.push({label:`심장 ${formatWon(s('heart_ischemic'))} — 보완 필요`,cls:'warn'})
+  else                                     chips.push({label:'심장 진단비 미가입',cls:'miss'})
+  if (silsonInfo.generation && silsonInfo.generation !== '미가입') chips.push({label:`실손 ${silsonInfo.generation} 가입 ✓`,cls:'ok'})
+  else chips.push({label:'실손보험 미가입',cls:'miss'})
+  if (!s('cancer_major_nonbenefit')) chips.push({label:'비급여 주요치료비 미흡',cls:'warn'})
+  if (!sumAmount(contracts,'dementia_severe','dementia_moderate','dementia_mild','dementia_diagnosis')) chips.push({label:'치매 미가입',cls:'miss'})
+  if (!s('nursing_hospital')) chips.push({label:'간병인 미가입',cls:'miss'})
+  if (renewalCount > 0) chips.push({label:`갱신형 ${renewalCount}건 — 보험료 인상 주의`,cls:'warn'})
+
+  const chipCss: Record<string,string> = {
+    ok:   'background:#d1fae5;color:#065f46',
+    warn: 'background:#fef3c7;color:#92400e',
+    miss: 'background:#fee2e2;color:#991b1b',
+  }
+
+  const colStyle = 'border-right:1px solid #e2e8f0;padding:10px 12px'
+  const hdrDot = (c:string) => `<div style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0"></div>`
+
+  return `
+<!-- ════ PAGE SUMMARY: 핵심 보장 요약 ════ -->
+<div class="pdf-page">
+<div class="page-inner" style="padding:0">
+  <!-- 헤더 -->
+  <div style="background:#1A2744;padding:9px 16px;display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="font-size:9.5px;font-weight:700;color:#C9A96E;letter-spacing:.06em">METARICH SIGNAL · 보장분석 요약</div>
+      <div style="width:1px;height:20px;background:rgba(255,255,255,.2)"></div>
+      <div style="font-size:13px;font-weight:900;color:#fff">${escHtml(customerName)}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.5)">${escHtml(customerBirth || '')}${customerBirth ? ' · ' : ''}분석일 ${analysisDate} · ${escHtml(advisorStr)}</div>
+    </div>
+    <div style="display:flex;gap:18px">
+      ${[
+        {v: `${Math.round(totalPremium).toLocaleString()}원`, l: '월 납입보험료'},
+        {v: `${policyCount}건`, l: '보험계약'},
+        {v: silsonInfo.generation || '미가입', l: '실손보험'},
+      ].map(k => `
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:900;color:#C9A96E">${k.v}</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.45);margin-top:1px">${k.l}</div>
+        </div>`).join('<div style="width:1px;height:28px;background:rgba(255,255,255,.15)"></div>')}
+    </div>
+  </div>
+
+  <!-- 4열 보장표 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-bottom:1px solid #e2e8f0">
+    <div style="${colStyle}">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0 8px;border-bottom:1px solid #e8edf4;margin-bottom:7px">
+        ${hdrDot('#B03A2E')}<span style="font-size:11px;font-weight:900;color:#1A2744">암 (Cancer)</span>
+      </div>
+      ${col(cancerRows)}
+    </div>
+    <div style="${colStyle}">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0 8px;border-bottom:1px solid #e8edf4;margin-bottom:7px">
+        ${hdrDot('#1A5276')}<span style="font-size:11px;font-weight:900;color:#1A2744">뇌혈관 (Brain)</span>
+      </div>
+      ${col(brainRows)}
+    </div>
+    <div style="${colStyle}">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0 8px;border-bottom:1px solid #e8edf4;margin-bottom:7px">
+        ${hdrDot('#784212')}<span style="font-size:11px;font-weight:900;color:#1A2744">심장 (Heart)</span>
+      </div>
+      ${col(heartRows)}
+    </div>
+    <div style="${colStyle}border-right:none">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0 8px;border-bottom:1px solid #e8edf4;margin-bottom:7px">
+        ${hdrDot('#1E6B3C')}<span style="font-size:11px;font-weight:900;color:#1A2744">기타 주요보장</span>
+      </div>
+      ${col(etcRows)}
+    </div>
+  </div>
+
+  <!-- 점검 칩 -->
+  <div style="padding:7px 12px;display:flex;flex-wrap:wrap;gap:5px;border-bottom:1px solid #e2e8f0;background:#f8fafc">
+    <span style="font-size:9.5px;font-weight:700;color:#94a3b8;line-height:20px;margin-right:3px">보장 점검 ·</span>
+    ${chips.map(c => `<span style="font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:20px;${chipCss[c.cls]}">${c.label}</span>`).join('')}
+  </div>
+
+  <!-- 푸터 -->
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 14px;background:#1A2744">
+    <div style="font-size:8.5px;color:rgba(255,255,255,.35)">※ 본 요약표는 고객 상담 참고용이며 실제 보험금 지급은 보험사 심사 결과에 따릅니다.</div>
+    <div style="font-size:9px;font-weight:800;color:#C9A96E;letter-spacing:.06em">METARICH SIGNAL GROUP</div>
+  </div>
+</div>
+</div>
+`
+}
+
+// ── PAGE HOW: 보장 작동 방식 ─────────────────────────────────────────────────
+function buildHowPage(): string {
+  // 지급 유형 뱃지
+  const badge1 = `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:#fee2e2;color:#991b1b">1회 지급</span>`
+  const badgeR = `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:#d1fae5;color:#065f46">반복 지급</span>`
+
+  // 흐름 화살표 박스
+  const ev  = (t:string) => `<span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:#f1f5f9;color:#374151;white-space:nowrap">${t}</span>`
+  const pay = (t:string, bg='#1A2744') => `<span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:${bg};color:#fff;white-space:nowrap">${t}</span>`
+  const arr = `<span style="color:#94a3b8;font-size:13px;font-weight:900;line-height:1">→</span>`
+  const note= (t:string) => `<span style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:4px;background:#fef3c7;color:#92400e;white-space:nowrap">${t}</span>`
+
+  const flowRow = (...items: string[]) =>
+    `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">${items.join('')}</div>`
+
+  const row = (name:string, v:string) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 7px;background:#f8fafc;border-radius:4px;margin-bottom:3px">
+      <span style="font-size:10px;color:#4b5563">${name}</span>
+      <span style="font-size:10.5px;font-weight:800;color:#1A2744">${v}</span>
+    </div>`
+  const rowNone = (name:string) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 7px;background:#f8fafc;border-radius:4px;margin-bottom:3px">
+      <span style="font-size:10px;color:#4b5563">${name}</span>
+      <span style="font-size:10px;color:#cbd5e1;font-weight:400">미가입 시 전액 자부담</span>
+    </div>`
+
+  const desc = (t:string) =>
+    `<div style="font-size:9.5px;color:#6b7280;margin-top:5px;line-height:1.55;border-left:2px solid #e2e8f0;padding-left:7px">${t}</div>`
+
+  const cell = (content:string, isLast=false) =>
+    `<div style="padding:12px 14px;border-right:${isLast ? 'none' : '1px solid #e2e8f0'};border-bottom:1px solid #e2e8f0">${content}</div>`
+
+  const title = (dot:string, name:string, badgeHtml:string) =>
+    `<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px">
+      <div style="width:10px;height:10px;border-radius:50%;background:${dot};flex-shrink:0"></div>
+      <span style="font-size:12px;font-weight:900;color:#1A2744">${name}</span>
+      ${badgeHtml}
+    </div>`
+
+  return `
+<!-- ════ PAGE HOW: 보장 작동 방식 ════ -->
+<div class="pdf-page">
+<div class="page-inner" style="padding:0">
+  <div style="background:#1A2744;padding:8px 16px;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:13px;font-weight:900;color:#fff">보장별 작동 방식 — 어떤 상황에서 얼마나 받을 수 있나</div>
+      <div style="font-size:9.5px;color:rgba(255,255,255,.45);margin-top:2px">각 보장이 발동되는 조건과 지급 방식을 정리했습니다.</div>
+    </div>
+    <div style="font-size:9px;font-weight:700;color:#C9A96E">METARICH SIGNAL GROUP</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e2e8f0">
+
+    ${cell(`
+      ${title('#B03A2E','암 진단비',badge1)}
+      ${flowRow(ev('조직검사·영상 확진'),arr,ev('진단확정서 제출'),arr,pay('일시금 지급','#B03A2E'))}
+      ${row('일반암 (유사암 제외)','가입금액 전액 — 1회')}
+      ${row('유사암 (갑상선·경계성 등)','별도 가입금액 — 1회')}
+      ${desc('확진일 기준 1회 지급. 재진단·전이는 면책기간 경과 후 약관에 따라 재청구 가능. 유사암과 일반암은 별도 담보.')}
+    `)}
+
+    ${cell(`
+      ${title('#B03A2E','항암약물 · 방사선 · 주요치료비',badge1+'&nbsp;'+badgeR)}
+      ${flowRow(ev('항암 치료 시작'),arr,ev('처방전·진료기록'),arr,note('지급 방식 구분'))}
+      ${row('항암약물치료비 (chemo)','치료 개시 1회 — 일시금')}
+      ${row('방사선 치료비','치료 개시 1회 — 일시금')}
+      ${row('암주요치료비 (급여·비급여)','해당 치료 회차마다 — 반복')}
+      ${desc('진단비·항암약물·방사선은 진단/치료 개시 시점 1회 지급. 주요치료비는 치료를 받을 때마다 반복 청구 가능 — 가장 실질적 혜택.')}
+    `)}
+
+    ${cell(`
+      ${title('#1A5276','뇌혈관 진단비',badge1)}
+      ${flowRow(ev('MRI·CT 이상 소견'),arr,ev('신경과 확진'),arr,pay('일시금 지급','#1A5276'))}
+      ${row('뇌혈관질환 (광범위)','가입금액 전액 — 1회')}
+      ${row('뇌졸중 (협의)','가입금액 전액 — 1회')}
+      ${row('뇌출혈 (협의)','가입금액 전액 — 1회')}
+      ${desc('광범위→협의 순으로 범위 좁아짐. 뇌혈관 가입 시 뇌졸중·뇌출혈 중복지급 여부는 약관 확인. 혈전용해치료비는 시술 시 반복 청구.')}
+    `)}
+
+    ${cell(`
+      ${title('#784212','심장 진단비',badge1)}
+      ${flowRow(ev('심전도·조영술 이상'),arr,ev('심장내과 확진'),arr,pay('일시금 지급','#784212'))}
+      ${row('심장질환 (광범위)','가입금액 전액 — 1회')}
+      ${row('허혈성심장 (협의)','가입금액 전액 — 1회')}
+      ${row('급성심근경색 (최협의)','가입금액 전액 — 1회')}
+      ${desc('심장질환→허혈성→급성심근경색 순으로 범위 좁아짐. 관상동맥 중재술(스텐트 등) 시 2대주요치료비 반복 청구 가능.')}
+    `)}
+
+    ${cell(`
+      ${title('#1E6B3C','수술비 · 2대주요치료비',badgeR)}
+      ${flowRow(ev('수술·시술 발생'),arr,ev('진료비 영수증'),arr,pay('건별·회차별 지급','#1E6B3C'))}
+      ${row('수술비 (질병·상해)','수술 1회당 — 반복')}
+      ${row('2대주요치료비 (뇌심장)','치료 회차마다 — 반복')}
+      ${rowNone('뇌혈관·심장 수술비')}
+      ${desc('수술비는 동일 질병이라도 수술 횟수마다 청구 가능. 2대주요치료비(혈전용해·중환자실·시술)는 치료를 받을 때마다 반복 청구 — 장기 치료일수록 실질 수령액 큼.')}
+    `)}
+
+    ${cell(`
+      ${title('#555e7a','실손의료보험 (3세대 기준)',badgeR)}
+      ${flowRow(ev('진료·입원·검사'),arr,ev('영수증·처방전'),arr,note('자기부담금 차감 후 지급'))}
+      ${row('급여 의료비','자기부담 20% 제외 — 반복')}
+      ${row('비급여 의료비','자기부담 30% 제외 — 반복')}
+      ${row('3대비급여 (도수·주사·MRI)','특약 한도 내 반복')}
+      ${desc('모든 질병·상해 치료비를 실비 보전. 3세대는 급여/비급여 분리 지급, 비급여 한도 연간 적용. 다음연도 무사고 할인 적용 — 실손은 모든 보장의 기본.')}
+    `, true)}
+
+  </div>
+
+  <div style="padding:6px 14px;background:#1A2744;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:8.5px;color:rgba(255,255,255,.35)">※ 위 내용은 일반적인 보장 구조를 설명하며, 실제 지급은 가입 약관 및 보험사 심사 기준에 따릅니다.</div>
+    <div style="font-size:8px;color:rgba(255,255,255,.3)">${new Date().toLocaleDateString('ko-KR')} 작성</div>
+  </div>
+</div>
+</div>
 `
 }
