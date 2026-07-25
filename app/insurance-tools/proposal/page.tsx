@@ -1584,27 +1584,27 @@ function ProposalReport({
                 {sortedMain.map((group, idx) => {
                   const isLast = idx === sortedMain.length - 1
                   return (
-                    <section key={idx} className="flex min-h-0 flex-col overflow-auto rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="mb-1.5 shrink-0 text-[11px] font-black text-slate-800">{group.title}</p>
+                    <section key={idx} className="flex min-h-0 flex-col overflow-auto rounded-2xl border border-slate-200 bg-white p-4">
+                      <p className="mb-2 shrink-0 text-sm font-black text-slate-800">{group.title}</p>
                       <table className="w-full border-collapse text-left">
                         <thead>
                           <tr className="bg-slate-50">
-                            <th className="px-2 py-1 text-[10px] font-black text-slate-500">보장 항목</th>
-                            <th className="px-2 py-1 text-[10px] font-black text-slate-700">보장 금액</th>
+                            <th className="px-3 py-2 text-xs font-black text-slate-500">보장 항목</th>
+                            <th className="px-3 py-2 text-xs font-black text-slate-700">보장 금액</th>
                           </tr>
                         </thead>
                         <tbody>
                           {group.metrics.map((metric) => (
                             <tr key={metric.key} className="border-t border-slate-100">
-                              <td className="px-2 py-1 text-[10px] font-bold text-slate-600">{metric.label}</td>
-                              <td className="px-2 py-1 text-[10px] font-black text-slate-900">
+                              <td className="px-3 py-2 text-xs font-bold text-slate-600">{metric.label}</td>
+                              <td className="px-3 py-2 text-xs font-black text-slate-900">
                                 {metricText(metric, visiblePlans[0].metrics[metric.key], visiblePlans[0])}
                               </td>
                             </tr>
                           ))}
                           {group.metrics.length === 0 && (
                             <tr className="border-t border-slate-100">
-                              <td colSpan={2} className="px-2 py-4 text-center text-[10px] font-bold text-slate-400">-</td>
+                              <td colSpan={2} className="px-3 py-4 text-center text-xs font-bold text-slate-400">-</td>
                             </tr>
                           )}
                         </tbody>
@@ -1612,7 +1612,7 @@ function ProposalReport({
                       {/* 마지막 그룹(간병) 아래에 추가담보 */}
                       {isLast && hasCustom && (
                         <>
-                          <p className="mb-1 mt-2 shrink-0 border-t border-slate-200 pt-2 text-[11px] font-black text-slate-800">추가 담보</p>
+                          <p className="mb-1 mt-3 shrink-0 border-t border-slate-200 pt-3 text-sm font-black text-slate-800">추가 담보</p>
                           <table className="w-full border-collapse text-left">
                             <tbody>
                               {customItems.map((name) => {
@@ -1621,8 +1621,8 @@ function ProposalReport({
                                 )
                                 return (
                                   <tr key={name} className="border-t border-slate-100 bg-slate-50/60">
-                                    <td className="px-2 py-1 text-[10px] font-bold text-slate-600">{name}</td>
-                                    <td className="px-2 py-1 text-[10px] font-black text-slate-900">
+                                    <td className="px-3 py-2 text-xs font-bold text-slate-600">{name}</td>
+                                    <td className="px-3 py-2 text-xs font-black text-slate-900">
                                       {item?.amount ? `${won(num(item.amount))}만원` : "-"}
                                     </td>
                                   </tr>
@@ -1739,19 +1739,19 @@ function PlanSnapshot({ template, plans }: { template: CategoryTemplate; plans: 
   return (
     <div className="space-y-4">
       {plans.map((plan, index) => (
-        <div key={plan.id} className="rounded-2xl bg-slate-50 p-4">
+        <div key={plan.id} className="rounded-2xl bg-slate-50 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-black text-slate-950">{plan.company || `${String.fromCharCode(65 + index)} 보험사`}</p>
-              <p className="text-xs font-bold text-slate-400">{plan.productName || "상품명 미입력"}</p>
+              <p className="text-base font-black text-slate-950">{plan.company || `${String.fromCharCode(65 + index)} 보험사`}</p>
+              <p className="text-sm font-bold text-slate-400">{plan.productName || "상품명 미입력"}</p>
             </div>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-cyan-700">{formatPremium(plan)}</span>
+            <span className="rounded-full bg-white px-4 py-1.5 text-sm font-black text-cyan-700">{formatPremium(plan)}</span>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             {template.metrics.slice(0, 4).map((metric) => (
-              <div key={metric.key} className="rounded-xl bg-white p-3">
-                <p className="text-[10px] font-black text-slate-400">{metric.shortLabel || metric.label}</p>
-                <p className="mt-1 text-sm font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</p>
+              <div key={metric.key} className="rounded-xl bg-white p-4">
+                <p className="text-xs font-black text-slate-400">{metric.shortLabel || metric.label}</p>
+                <p className="mt-2 text-xl font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</p>
               </div>
             ))}
           </div>
@@ -2183,49 +2183,49 @@ function ComparisonTable({
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="bg-slate-50">
-            <th className="w-[170px] px-4 py-2.5 text-xs font-black text-slate-500">{plans.length === 1 ? "보장 항목" : "비교 항목"}</th>
+            <th className="w-[170px] px-4 py-3 text-sm font-black text-slate-500">{plans.length === 1 ? "보장 항목" : "비교 항목"}</th>
             {plans.length > 1 && plans.map((plan, index) => (
-              <th key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-700">
+              <th key={plan.id} className="px-4 py-3 text-sm font-black text-slate-700">
                 {plan.company || `${String.fromCharCode(65 + index)}안`}
               </th>
             ))}
-            {plans.length === 1 && <th className="px-4 py-2.5 text-xs font-black text-slate-700">보장 금액</th>}
-            {showCross && <th className="px-4 py-2.5 text-xs font-black text-emerald-700">합산 보장</th>}
+            {plans.length === 1 && <th className="px-4 py-3 text-sm font-black text-slate-700">보장 금액</th>}
+            {showCross && <th className="px-4 py-3 text-sm font-black text-emerald-700">합산 보장</th>}
           </tr>
         </thead>
         <tbody>
           {plans.length > 1 && (
             <tr className="border-t border-slate-100">
-              <td className="px-4 py-2.5 text-xs font-black text-slate-500">월 보험료</td>
-              {plans.map((plan) => <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{formatPremium(plan)}</td>)}
-              {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
+              <td className="px-4 py-3 text-sm font-black text-slate-500">월 보험료</td>
+              {plans.map((plan) => <td key={plan.id} className="px-4 py-3 text-sm font-black text-slate-900">{formatPremium(plan)}</td>)}
+              {showCross && <td className="px-4 py-3 text-sm font-black text-emerald-700">{totalPremium > 0 ? formatKrw(totalPremium) : "-"}</td>}
             </tr>
           )}
           {visibleMetrics.map((metric) => (
             <tr key={metric.key} className="border-t border-slate-100">
-              <td className="px-4 py-2.5 text-xs font-black text-slate-500">{metric.label}</td>
+              <td className="px-4 py-3 text-sm font-black text-slate-500">{metric.label}</td>
               {plans.map((plan) => (
-                <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</td>
+                <td key={plan.id} className="px-4 py-3 text-sm font-black text-slate-900">{metricText(metric, plan.metrics[metric.key], plan)}</td>
               ))}
-              {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">{sumMetric(metric)}</td>}
+              {showCross && <td className="px-4 py-3 text-sm font-black text-emerald-700">{sumMetric(metric)}</td>}
             </tr>
           ))}
           {visibleMetrics.length === 0 && customRows.length === 0 && (
             <tr className="border-t border-slate-100">
-              <td colSpan={plans.length + (showCross ? 2 : 1)} className="px-4 py-8 text-center text-xs font-bold text-slate-400">
+              <td colSpan={plans.length + (showCross ? 2 : 1)} className="px-4 py-8 text-center text-sm font-bold text-slate-400">
                 확인 가능한 담보가 없습니다.
               </td>
             </tr>
           )}
           {customRows.map((name) => (
             <tr key={name} className="border-t border-slate-100 bg-slate-50/60">
-              <td className="px-4 py-2.5 text-xs font-black text-slate-500">{name}</td>
+              <td className="px-4 py-3 text-sm font-black text-slate-500">{name}</td>
               {plans.map((plan) => {
                 const item = (plan.customCoverages ?? []).find((coverage) => (coverage.name.trim() || "추가 담보") === name)
                 const amount = item?.amount ? `${won(num(item.amount))}만원` : "-"
-                return <td key={plan.id} className="px-4 py-2.5 text-xs font-black text-slate-900">{amount}</td>
+                return <td key={plan.id} className="px-4 py-3 text-sm font-black text-slate-900">{amount}</td>
               })}
-              {showCross && <td className="px-4 py-2.5 text-xs font-black text-emerald-700">개별 확인</td>}
+              {showCross && <td className="px-4 py-3 text-sm font-black text-emerald-700">개별 확인</td>}
             </tr>
           ))}
         </tbody>
@@ -2864,45 +2864,50 @@ function BundleCoverPage({
         </div>
 
         {/* 보장 영역 목록 */}
-        <div className="flex-1 flex flex-col p-8 pb-4 gap-3 overflow-hidden">
-          <p className="text-[10px] font-black tracking-[0.15em] text-slate-400 uppercase">이번 제안에 포함된 보장 영역</p>
-          {sections.map((s, idx) => {
-            const tpl = categories.find((c) => c.id === s.templateId)
-            if (!tpl) return null
-            return (
-              <div key={idx} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                {/* 카테고리 헤더바 */}
-                <div className={`flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${tpl.tone} text-white`}>
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center">
-                    <CategoryIcon template={tpl} />
-                  </div>
-                  <p className="text-sm font-black">{tpl.label}</p>
-                </div>
-                {/* 플랜 행 */}
-                {s.plans.map((p, pi) => (
-                  <div key={pi} className="grid items-center gap-2 border-t border-slate-100 px-4 py-2.5"
-                    style={{ gridTemplateColumns: "1fr auto auto auto" }}>
-                    <div className="min-w-0">
-                      <p className="truncate text-[11px] font-black text-slate-800">
-                        {p.company || "보험사 미입력"} · {p.productName || "상품명 미입력"}
-                      </p>
+        <div className="flex-1 flex flex-col p-8 pb-4 overflow-hidden">
+          <p className="mb-4 text-[11px] font-black tracking-[0.15em] text-slate-400 uppercase">이번 제안에 포함된 보장 영역</p>
+          <div
+            className={`grid gap-4 flex-1 ${sections.length <= 4 ? 'grid-cols-2' : 'grid-cols-1'}`}
+            style={{ gridAutoRows: '1fr' }}
+          >
+            {sections.map((s, idx) => {
+              const tpl = categories.find((c) => c.id === s.templateId)
+              if (!tpl) return null
+              return (
+                <div key={idx} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
+                  {/* 카테고리 헤더바 */}
+                  <div className={`flex items-center gap-3 px-6 py-5 bg-gradient-to-r ${tpl.tone} text-white`}>
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
+                      <CategoryIcon template={tpl} />
                     </div>
-                    {p.paymentYears ? (
-                      <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-600">
-                        {p.paymentYears}년납
-                      </span>
-                    ) : <span />}
-                    {p.coverageYears ? (
-                      <span className="shrink-0 rounded bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600">
-                        ~{p.coverageYears}
-                      </span>
-                    ) : <span />}
-                    <span className="shrink-0 text-[11px] font-black text-[#1A2744]">{formatPremium(p)}</span>
+                    <p className="text-xl font-black">{tpl.label}</p>
                   </div>
-                ))}
-              </div>
-            )
-          })}
+                  {/* 플랜 행 */}
+                  {s.plans.map((p, pi) => (
+                    <div key={pi} className="flex-1 grid items-center gap-3 border-t border-slate-100 px-6 py-4"
+                      style={{ gridTemplateColumns: "1fr auto auto auto" }}>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-slate-800">
+                          {p.company || "보험사 미입력"} · {p.productName || "상품명 미입력"}
+                        </p>
+                      </div>
+                      {p.paymentYears ? (
+                        <span className="shrink-0 rounded-lg bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                          {p.paymentYears}년납
+                        </span>
+                      ) : <span />}
+                      {p.coverageYears ? (
+                        <span className="shrink-0 rounded-lg bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-600">
+                          ~{p.coverageYears}
+                        </span>
+                      ) : <span />}
+                      <span className="shrink-0 text-base font-black text-[#1A2744]">{formatPremium(p)}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {/* 하단: 합산 + 설계사 */}

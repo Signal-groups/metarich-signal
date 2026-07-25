@@ -147,47 +147,115 @@ const COVERAGE_TAB_KEYS: Record<CoverageTab, string[]> = {
 
 // ── 제안서 불러오기: 메트릭키 → rowKey 역매핑 ─────────────────────────
 const METRIC_TO_ROW_KEY: Record<string, string> = {
-  cancer: 'cancer_general', minorCancer: 'cancer_similar',
-  brain: 'brain_stroke', heart: 'heart_acute_mi',
-  injurySurgery: 'surgery_injury', diseaseSurgery: 'surgery_disease',
-  diseaseTypeSurgery: 'surgery_1_5', diseaseNSurgery: 'surgery_n_major',
-  chemoDrug: 'cancer_chemo', chemoRadiation: 'cancer_radiation',
-  targetDrug: 'cancer_targeted', heavyIon: 'cancer_hadron',
-  robotCancerSurgery: 'cancer_davinci',
-  cancerMajorTreatmentGeneral: 'cancer_major_benefit',
-  cancerMajorTreatmentNonCovered: 'cancer_major_nonbenefit',
-  twoMajorTreatmentComprehensive: 'vascular_major',
-  care: 'nursing_hospital', liability: 'other_liability',
-  trafficSupport: 'driver_accident', lawyer: 'driver_lawyer', finePerson: 'driver_fine',
+  // ── 진단비 ──────────────────────────────────────────────────────────
+  cancer:                        'cancer_general',
+  minorCancer:                   'cancer_similar',
+  brain:                         'brain_stroke',
+  heart:                         'heart_acute_mi',
+  // ── 수술비 ──────────────────────────────────────────────────────────
+  injurySurgery:                 'surgery_injury',
+  diseaseSurgery:                'surgery_disease',
+  injuryAdvancedSurgery:         'surgery_injury_advanced',
+  diseaseAdvancedSurgery:        'surgery_disease_advanced',
+  injuryComprehensiveSurgery:    'surgery_injury_comprehensive',
+  diseaseComprehensiveSurgery:   'surgery_disease_comprehensive',
+  injuryTypeSurgery:             'surgery_injury_type',
+  diseaseTypeSurgery:            'surgery_1_5',
+  diseaseNSurgery:               'surgery_n_major',
+  // ── 항암 치료 ────────────────────────────────────────────────────────
+  chemoDrug:                     'cancer_chemo',
+  chemoRadiation:                'cancer_radiation',
+  targetDrug:                    'cancer_targeted',
+  heavyIon:                      'cancer_hadron',
+  robotCancerSurgery:            'cancer_davinci',
+  // ── 주요치료비 ───────────────────────────────────────────────────────
+  cancerMajorTreatmentGeneral:   'cancer_major_benefit',
+  cancerMajorTreatmentNonCovered:'cancer_major_nonbenefit',
+  twoMajorTreatmentComprehensive:'vascular_major',
+  twoMajorTreatmentAdvanced:     'two_major_icu',
+  // ── 간병 ────────────────────────────────────────────────────────────
+  care:                          'nursing_hospital',
+  diseaseCareDaily:              'nursing_hospital',
+  injuryCareDaily:               'nursing_injury',
+  after181Daily:                 'nursing_care_hospital',
+  nursingHospitalDaily:          'nursing_care_hospital',
+  diseaseIntegratedDaily:        'nursing_integrated',
+  injuryIntegratedDaily:         'nursing_integrated',
+  // ── 재가·시설 ────────────────────────────────────────────────────────
+  visitCare:                     'homecare_benefit',
+  dayNight:                      'homecare_benefit',
+  complexHomecare:               'homecare_complex',
+  welfareEquipment:              'homecare_welfare_equipment',
+  facilityLight:                 'facility_benefit',
+  facilityeSevere:               'facility_benefit',
+  // ── 운전자 ──────────────────────────────────────────────────────────
+  trafficSupport:                'driver_accident',
+  lawyer:                        'driver_lawyer',
+  finePerson:                    'driver_fine',
+  injury:                        'driver_injury_14',
+  // ── 기타 ────────────────────────────────────────────────────────────
+  liability:                     'other_liability',
 }
 type ProposalDraftPlan = {
   company: string; productName: string; monthlyPremium: string
   paymentYears: string
   metrics: Record<string, string>
-  customCoverages?: Array<{ name: string; amount: string }>
+  customCoverages?: Array<{ name: string; amount: string; note?: string; id?: string }>
 }
 type ProposalDraftItem = {
   id: string; title?: string; savedAt: string
   customerName?: string; templateId?: string
+  mode?: string
   plans?: ProposalDraftPlan[]
+  bundlePlans?: Record<string, ProposalDraftPlan[]>
+  bundleIds?: string[]
 }
 const PROPOSAL_DRAFTS_KEY_PREFIX = 'metarich_proposal_drafts'
 
+/** 번들/단일 모드에 관계없이 해당 제안서의 모든 플랜을 반환 */
+function extractAllPlans(draft: ProposalDraftItem): ProposalDraftPlan[] {
+  if (draft.mode === 'bundle' && draft.bundlePlans) {
+    const ids = draft.bundleIds?.length ? draft.bundleIds : Object.keys(draft.bundlePlans)
+    return ids.flatMap((catId) => {
+      const arr = draft.bundlePlans![catId]
+      return Array.isArray(arr) ? arr : []
+    })
+  }
+  return draft.plans || []
+}
+
+/** 제안서 플랜 1개 → ProContract 변환 (동일 rowKey는 최대값 유지) */
 function planToProContract(plan: ProposalDraftPlan, draftId: string, idx: number): ProContract {
-  const coverages: ProCoverage[] = []
+  const coverageMap: Record<string, number> = {}
+
   for (const [mKey, amtStr] of Object.entries(plan.metrics || {})) {
     const rowKey = METRIC_TO_ROW_KEY[mKey]
-    if (rowKey && Number(amtStr) > 0)
-      coverages.push({ id: `pi-${draftId}-${idx}-${rowKey}`, contractId: '', rowKey, name: ROW_KEY_LABEL[rowKey] ?? rowKey, amount: Number(amtStr) })
+    if (!rowKey) continue
+    const amt = Number(amtStr)
+    if (amt > 0) coverageMap[rowKey] = Math.max(coverageMap[rowKey] ?? 0, amt)
   }
-  for (const cc of plan.customCoverages || [])
+
+  const coverages: ProCoverage[] = Object.entries(coverageMap).map(([rowKey, amount]) => ({
+    id: `pi-${draftId}-${idx}-${rowKey}`,
+    contractId: '',
+    rowKey,
+    name: ROW_KEY_LABEL[rowKey] ?? rowKey,
+    amount,
+  }))
+
+  for (const cc of plan.customCoverages || []) {
     if (cc.name && cc.amount)
       coverages.push({ id: `pi-cc-${draftId}-${cc.name}`, contractId: '', rowKey: 'unknown', name: cc.name, amount: Number(cc.amount) || 0 })
+  }
+
   return {
     id: `proposal-import-${draftId}-${idx}`,
-    company: plan.company || '제안 보험사', productName: plan.productName || '제안 상품',
+    company: plan.company || '제안 보험사',
+    productName: plan.productName || '제안 상품',
     paymentPeriod: plan.paymentYears || undefined,
-    monthlyPremium: Number(plan.monthlyPremium) || 0, coverages, status: 'active',
+    monthlyPremium: Number(plan.monthlyPremium) || 0,
+    coverages,
+    status: 'active',
   }
 }
 
@@ -814,7 +882,9 @@ export default function RemodelComparison({
                 </div>
               ) : proposalDrafts.map((draft) => {
                 const date = new Date(draft.savedAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-                const planCount = draft.plans?.length || 0
+                const allPlans = extractAllPlans(draft)
+                const planCount = allPlans.length
+                const isBundle = draft.mode === 'bundle'
                 return (
                   <div
                     key={draft.id}
@@ -825,26 +895,32 @@ export default function RemodelComparison({
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#1a2744')}
                     onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
                     onClick={() => {
-                      if (!draft.plans || draft.plans.length === 0) { alert('상품 정보가 없는 제안서입니다.'); return }
-                      const newContracts = draft.plans.map((p, i) => planToProContract(p, draft.id, i))
+                      const plans = extractAllPlans(draft)
+                      if (plans.length === 0) { alert('상품 정보가 없는 제안서입니다.'); return }
+                      const newContracts = plans.map((p, i) => planToProContract(p, draft.id, i))
                       onChange({ ...proposal, addContracts: [...proposal.addContracts, ...newContracts] })
                       setShowProposalPicker(false)
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <div style={{ fontWeight: 800, fontSize: 14, color: '#1a2744' }}>
-                          {draft.customerName || '고객명 없음'} · {draft.title || '제안서'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontWeight: 800, fontSize: 14, color: '#1a2744' }}>
+                            {draft.customerName || '고객명 없음'} · {draft.title || '제안서'}
+                          </div>
+                          {isBundle && (
+                            <span style={{ fontSize: 10, fontWeight: 700, background: '#eef5ff', color: '#2563eb', borderRadius: 6, padding: '1px 7px' }}>통합</span>
+                          )}
                         </div>
                         <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>
                           상품 {planCount}개 · {date}
                         </div>
-                        {draft.plans && draft.plans.length > 0 && (
+                        {allPlans.length > 0 && (
                           <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                            {draft.plans.slice(0, 3).map((p, i) => (
+                            {allPlans.slice(0, 3).map((p, i) => (
                               <span key={i}>{i > 0 ? ' / ' : ''}{p.company} {p.productName}</span>
                             ))}
-                            {draft.plans.length > 3 ? ` 외 ${draft.plans.length - 3}개` : ''}
+                            {allPlans.length > 3 ? ` 외 ${allPlans.length - 3}개` : ''}
                           </div>
                         )}
                       </div>
