@@ -12,9 +12,11 @@ const IMAGE_CATALOG: ImageCategory[] = [
   {
     category: '상품 구조',
     items: [
-      { path: '/coverage-stats/ci-gi-insurance-compare.svg',          label: 'CI·GI 보험 비교' },
-      { path: '/coverage-stats/renewal-vs-nonrenewal-compare.svg',    label: '갱신형·비갱신형 비교' },
+      { path: '/coverage-stats/ci-gi-insurance-compare.svg',                 label: 'CI·GI 보험 비교' },
+      { path: '/coverage-stats/renewal-vs-nonrenewal-compare.svg',           label: '갱신형·비갱신형 비교' },
       { path: '/coverage-stats/health-insurance-actual-expense-enrollment.png', label: '실손 가입 현황' },
+      { path: '/coverage-stats/group-personal-fire-insurance-2605.png',      label: '단체·개인 화재보험' },
+      { path: '/coverage-stats/treatment-paradigm-shift.png',                label: '치료 패러다임 변화' },
     ],
   },
   {
@@ -26,60 +28,138 @@ const IMAGE_CATALOG: ImageCategory[] = [
       { path: '/coverage-stats/brain-heart-treatment-roadmap-2605.png', label: '뇌·심장 치료 로드맵' },
       { path: '/coverage-stats/heart-age-gender-cardiac-arrest.png',    label: '연령·성별 심정지 현황' },
       { path: '/coverage-stats/stroke-age-aftereffect.png',             label: '뇌졸중 후유증·연령' },
-      { path: '/coverage-stats/stroke-patient-trend-exposure.png',      label: '뇌족중 환자 추이' },
+      { path: '/coverage-stats/stroke-patient-trend-exposure.png',      label: '뇌졸중 환자 추이' },
       { path: '/coverage-stats/icu-care-cost-2605.png',                 label: '중환자실 치료비' },
     ],
   },
   {
     category: '암',
     items: [
-      { path: '/coverage-stats/anticancer-scope.png',               label: '항암 보장범위' },
-      { path: '/coverage-stats/cancer-treatment-roadmap-2605.png',  label: '암 치료 로드맵' },
-      { path: '/coverage-stats/cancer-treatment-process.png',       label: '암 치료 과정' },
-      { path: '/coverage-stats/cancer-target-cost-2605.png',        label: '표적항암 비용' },
-      { path: '/coverage-stats/cancer-target-cost-detail-2605.png', label: '표적항암 비용 상세' },
-      { path: '/coverage-stats/targeted-anticancer-1.jpg',          label: '가방항암(경구) ①' },
-      { path: '/coverage-stats/targeted-anticancer-2.jpg',          label: '가방항암(경구) ②' },
-      { path: '/coverage-stats/cancer-death-probability.png',       label: '암 사망 확률' },
-      { path: '/coverage-stats/cancer-top5-gender.png',             label: '성별 암 TOP5' },
-      { path: '/coverage-stats/cancer-treatment-cost-ratio.png',    label: '암 치료비 구성' },
+      { path: '/coverage-stats/anticancer-scope.png',                    label: '항암 보장범위' },
+      { path: '/coverage-stats/cancer-treatment-roadmap-2605.png',       label: '암 치료 로드맵' },
+      { path: '/coverage-stats/cancer-treatment-process.png',            label: '암 치료 과정' },
+      { path: '/coverage-stats/cancer-target-cost-2605.png',             label: '표적항암 비용' },
+      { path: '/coverage-stats/cancer-target-cost-detail-2605.png',      label: '표적항암 비용 상세' },
+      { path: '/coverage-stats/targeted-anticancer-1.jpg',               label: '가방항암(경구) ①' },
+      { path: '/coverage-stats/targeted-anticancer-2.jpg',               label: '가방항암(경구) ②' },
+      { path: '/coverage-stats/portable-chemo-2605.png',                 label: '경구항암 가방항암' },
+      { path: '/coverage-stats/cancer-death-probability.png',            label: '암 사망 확률' },
+      { path: '/coverage-stats/cancer-top5-gender.png',                  label: '성별 암 TOP5' },
+      { path: '/coverage-stats/cancer-treatment-cost-ratio.png',         label: '암 치료비 구성' },
+      { path: '/coverage-stats/cancer-patient-trend-top5-death.png',     label: '암 환자 추이·TOP5 사망' },
+      { path: '/coverage-stats/cancer-malignant-screening.png',          label: '암 검진 현황' },
+      { path: '/coverage-stats/cancer-screening-income-survival.png',    label: '암 검진 소득·생존율' },
+      { path: '/coverage-stats/cancer-type-recurrence-period.png',       label: '암 유형별 재발 기간' },
+      { path: '/coverage-stats/cancer-ngs-test-guide.png',               label: 'NGS 유전자 검사 가이드' },
+      { path: '/coverage-stats/target-ngs-2605.png',                     label: '표적항암·NGS' },
+      { path: '/coverage-stats/female-cancer-breast-trend.png',          label: '여성 유방암 추이' },
+      { path: '/coverage-stats/lung-cancer-smoking-trend.png',           label: '폐암·흡연 추이' },
+      { path: '/coverage-stats/colon-risk-death-trend.png',              label: '대장암 위험·사망 추이' },
+      { path: '/coverage-stats/colon-survival-age-death.png',            label: '대장암 연령별 생존·사망' },
+      { path: '/coverage-stats/gastric-incidence-survival.png',          label: '위암 발생·생존율' },
+      { path: '/coverage-stats/gastric-progression-chronic-atrophic.png',label: '위암 진행·만성위축성' },
+      { path: '/coverage-stats/leqembi-news-2605.png',                   label: '알츠하이머 신약(레켐비)' },
+      { path: '/coverage-stats/carbon-proton-compare-2605.png',          label: '탄소·양성자 치료 비교' },
     ],
   },
   {
     category: '수술·치료비',
     items: [
-      { path: '/coverage-stats/surgery-type-compare-2605.png',        label: '수술 종류 비교' },
-      { path: '/coverage-stats/surgery-type-vs-n-surgery-2605.png',   label: 'N대수술 비교' },
-      { path: '/coverage-stats/major-surgery-cost-hospital-days.png', label: '주요 수술비·입원일' },
-      { path: '/coverage-stats/special-case-2605.png',                label: '산정특레' },
-      { path: '/coverage-stats/nhis-special-case-table.png',          label: '산정특레 표' },
+      { path: '/coverage-stats/surgery-type-compare-2605.png',           label: '수술 종류 비교' },
+      { path: '/coverage-stats/surgery-type-vs-n-surgery-2605.png',      label: 'N대수술 비교' },
+      { path: '/coverage-stats/major-surgery-cost-hospital-days.png',    label: '주요 수술비·입원일' },
+      { path: '/coverage-stats/special-case-2605.png',                   label: '산정특례' },
+      { path: '/coverage-stats/nhis-special-case-table.png',             label: '산정특례 표' },
+      { path: '/coverage-stats/medical-receipt-sample.svg',              label: '의료비 영수증 샘플' },
+      { path: '/coverage-stats/receipt-items-2605.png',                  label: '영수증 항목 설명' },
+      { path: '/coverage-stats/receipt-safe-01.png',                     label: '안전 영수증 ①' },
+      { path: '/coverage-stats/receipt-safe-02.png',                     label: '안전 영수증 ②' },
+      { path: '/coverage-stats/receipt-safe-03.png',                     label: '안전 영수증 ③' },
+      { path: '/coverage-stats/receipt-safe-04.png',                     label: '안전 영수증 ④' },
+      { path: '/coverage-stats/receipt-safe-05.png',                     label: '안전 영수증 ⑤' },
     ],
   },
   {
     category: '사망·보장범위',
     items: [
       { path: '/coverage-stats/death-scope-2605.png',             label: '사망 보장범위' },
+      { path: '/coverage-stats/death-coverage-scope.svg',         label: '사망 보장범위 (도식)' },
       { path: '/coverage-stats/death-status-by-age-gender.png',   label: '연령·성별 사망현황' },
       { path: '/coverage-stats/top-10-death-causes-gender.png',   label: '10대 사망원인' },
       { path: '/coverage-stats/disease-death-share-10year.png',   label: '10년간 사인 비율' },
+      { path: '/coverage-stats/pneumonia-aging-probability.png',  label: '폐렴·고령화 확률' },
+      { path: '/coverage-stats/pneumonia-death-comparison.png',   label: '폐렴 사망 비교' },
+      { path: '/coverage-stats/chronic-disease-death-management.png', label: '만성질환 사망·관리' },
     ],
   },
   {
     category: '간병·치매',
     items: [
       { path: '/coverage-stats/longterm-care-grade-cost-2605.png', label: '장기요양 등급별 비용' },
-      { path: '/coverage-stats/dementia-status-2024.png',          label: '치매 현황 2024' },
-      { path: '/coverage-stats/dementia-senior-patient-ratio.png', label: '치매 환자 비율' },
-      { path: '/coverage-stats/caregiver-burden-depression.png',   label: '간병 부담·우울' },
+      { path: '/coverage-stats/dementia-status-2024.png',           label: '치매 현황 2024' },
+      { path: '/coverage-stats/dementia-senior-patient-ratio.png',  label: '치매 환자 비율' },
+      { path: '/coverage-stats/dementia-family-pain.png',           label: '치매 가족 부담' },
+      { path: '/coverage-stats/dementia-prestage-guide.png',        label: '치매 전단계 가이드' },
+      { path: '/coverage-stats/caregiver-burden-depression.png',    label: '간병 부담·우울' },
+      { path: '/coverage-stats/cdr-diagnosis-age.png',              label: 'CDR 진단·연령' },
+      { path: '/coverage-stats/ltc-recognition-cause.png',          label: '장기요양 인정 원인' },
+      { path: '/coverage-stats/long-care-concern.png',              label: '장기요양 걱정' },
+      { path: '/coverage-stats/nursing-hospital-vs-nursing-home.png',label: '요양병원 vs 요양원' },
+    ],
+  },
+  {
+    category: '치아·구강',
+    items: [
+      { path: '/coverage-stats/dental-cavity-checkup-treatment.png', label: '치과 충치 검진·치료' },
+      { path: '/coverage-stats/dental-coverage-start-date.png',      label: '치아보험 보장 시작일' },
+      { path: '/coverage-stats/dental-health-risk.png',              label: '치과 건강 위험' },
+      { path: '/coverage-stats/dental-top5-disease-delay.png',       label: '치과 TOP5 질환·지연' },
+      { path: '/coverage-stats/gum-disease-age-outpatient.png',      label: '잇몸 질환 연령별 추이' },
+      { path: '/coverage-stats/implant-price-senior-growth.png',     label: '임플란트 비용·고령화' },
+      { path: '/coverage-stats/senior-dental-needs.png',             label: '고령층 치과 수요' },
+      { path: '/coverage-stats/child-dental-top10-cavity-count.png', label: '어린이 충치 TOP10' },
+    ],
+  },
+  {
+    category: '노인·고령화',
+    items: [
+      { path: '/coverage-stats/life-expectancy-aging-index.png',         label: '기대수명·고령화 지수' },
+      { path: '/coverage-stats/life-expectancy-parent-support.png',      label: '기대수명·부모 부양' },
+      { path: '/coverage-stats/old-population-coverage-period.png',      label: '노인 인구·보장기간' },
+      { path: '/coverage-stats/old-household-100-plus-population.png',   label: '100세 이상 인구' },
+      { path: '/coverage-stats/senior-chronic-disease-burden.png',       label: '고령층 만성질환 부담' },
+      { path: '/coverage-stats/senior-medical-cost-complex-disease.png', label: '고령층 의료비·복합질환' },
+      { path: '/coverage-stats/senior-noncovered-treatment-concern.png', label: '고령층 비급여 걱정' },
+      { path: '/coverage-stats/parent-support-risk-ready.png',           label: '부모 부양 위험·준비' },
+      { path: '/coverage-stats/retirement-needs.svg',                    label: '은퇴 후 필요 자금' },
+      { path: '/coverage-stats/lifetime-medical-expense.png',            label: '평생 의료비' },
+    ],
+  },
+  {
+    category: '어린이·성장',
+    items: [
+      { path: '/coverage-stats/child-cancer-age-death.png',          label: '어린이 암 연령·사망' },
+      { path: '/coverage-stats/child-cancer-survival-germ.png',      label: '어린이 암 생존·백혈병' },
+      { path: '/coverage-stats/child-danger-place-development.png',  label: '어린이 위험 장소·발달' },
+      { path: '/coverage-stats/child-emergency-burn.png',            label: '어린이 응급·화상' },
+      { path: '/coverage-stats/child-safety-accident-5year.png',     label: '어린이 안전사고 5년' },
+      { path: '/coverage-stats/child-traffic-characteristics.png',   label: '어린이 교통사고 특성' },
+      { path: '/coverage-stats/child-traffic-schoolzone.png',        label: '어린이 스쿨존 사고' },
     ],
   },
   {
     category: '운전자·기타',
     items: [
-      { path: '/coverage-stats/driver-vs-auto-insurance.png',  label: '운전자 vs 자동차보험' },
-      { path: '/coverage-stats/auto-vs-driver-coverage.png',   label: '자동차·운전자 비교' },
-      { path: '/coverage-stats/liability-guide-2605.png',      label: '배상책임 가이드' },
-      { path: '/coverage-stats/lifetime-medical-expense.png',  label: '평생 의료비' },
+      { path: '/coverage-stats/driver-vs-auto-insurance.png',        label: '운전자 vs 자동차보험' },
+      { path: '/coverage-stats/auto-vs-driver-coverage.png',         label: '자동차·운전자 비교' },
+      { path: '/coverage-stats/driver-insurance-history-2605.png',   label: '운전자보험 이력' },
+      { path: '/coverage-stats/liability-guide-2605.png',            label: '배상책임 가이드' },
+      { path: '/coverage-stats/traffic-accident-age-composition.png',label: '교통사고 연령별 구성' },
+      { path: '/coverage-stats/traffic-death-perpetrator-age.png',   label: '교통사고 사망·가해자 연령' },
+      { path: '/coverage-stats/car-price-claim-paid.png',            label: '차량 가격·보험금 지급' },
+      { path: '/coverage-stats/liver-alcohol-death.png',             label: '간 질환·알코올·사망' },
+      { path: '/coverage-stats/liver-cause-btype-trend.png',         label: '간 질환 원인·B형' },
+      { path: '/coverage-stats/pet-insurance-guide-2605.png',        label: '반려동물 보험 가이드' },
     ],
   },
 ]
@@ -179,7 +259,59 @@ function ImagePickerModal({
   onCancel: () => void
 }) {
   const [activeCategory, setActiveCategory] = useState(IMAGE_CATALOG[0].category)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const isSearching = searchQuery.trim().length > 0
+  const q = searchQuery.trim().toLowerCase()
+
+  // 검색 결과: 전 카테고리에서 label·category 모두 매칭
+  const searchResults: Array<ImageItem & { category: string }> = isSearching
+    ? IMAGE_CATALOG.flatMap((cat) =>
+        cat.items
+          .filter((item) =>
+            item.label.toLowerCase().includes(q) ||
+            cat.category.toLowerCase().includes(q)
+          )
+          .map((item) => ({ ...item, category: cat.category }))
+      )
+    : []
+
+  // 현재 탭 이미지 (검색 중이 아닐 때)
   const currentItems = IMAGE_CATALOG.find((c) => c.category === activeCategory)?.items ?? []
+
+  function ImageCard({ item, categoryLabel }: { item: ImageItem; categoryLabel?: string }) {
+    const isSelected = selected.has(item.path)
+    return (
+      <div
+        onClick={() => onToggle(item.path)}
+        style={{
+          border: isSelected ? '2px solid #1a2744' : '2px solid #e5e7eb',
+          borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
+          background: isSelected ? '#eff6ff' : '#fff',
+          position: 'relative',
+        }}
+      >
+        {isSelected && (
+          <div style={{
+            position: 'absolute', top: 5, right: 5, width: 20, height: 20,
+            background: '#1a2744', borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: 12, fontWeight: 900,
+          }}>✓</div>
+        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={item.path} alt={item.label} style={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }} />
+        <div style={{ padding: '4px 6px 5px' }}>
+          {categoryLabel && (
+            <div style={{ fontSize: 9, color: '#9ca3af', fontWeight: 600, marginBottom: 1 }}>{categoryLabel}</div>
+          )}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#1a2744', textAlign: 'center' }}>
+            {item.label}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{
@@ -201,59 +333,92 @@ function ImagePickerModal({
 
         {/* 주요 콘텐츠 */}
         <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-          {/* 왼쪽: 탭 + 이미지 그리드 */}
+          {/* 왼쪽: 검색 + 탭 + 이미지 그리드 */}
           <div style={{ flex: '0 0 56%', display: 'flex', flexDirection: 'column', borderRight: '1px solid #e5e7eb' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '10px 14px', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
-              {IMAGE_CATALOG.map((cat) => {
-                const selCount = cat.items.filter((i) => selected.has(i.path)).length
-                return (
+
+            {/* 검색창 */}
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+                  fontSize: 14, color: '#9ca3af', pointerEvents: 'none',
+                }}>🔍</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="이미지 검색... (예: 암, 뇌졸중, 수술비)"
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '7px 32px 7px 32px',
+                    border: '1px solid #d1d5db', borderRadius: 8,
+                    fontSize: 13, color: '#1a2744', outline: 'none',
+                    background: isSearching ? '#fff' : '#f3f4f6',
+                  }}
+                />
+                {isSearching && (
                   <button
-                    key={cat.category}
-                    onClick={() => setActiveCategory(cat.category)}
+                    onClick={() => setSearchQuery('')}
                     style={{
-                      padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                      fontSize: 11, fontWeight: 700,
-                      background: activeCategory === cat.category ? '#1a2744' : '#e5e7eb',
-                      color: activeCategory === cat.category ? '#fff' : '#374151',
+                      position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 14, color: '#9ca3af', lineHeight: 1,
                     }}
-                  >
-                    {cat.category}{selCount > 0 ? ` (${selCount})` : ''}
-                  </button>
-                )
-              })}
+                  >✕</button>
+                )}
+              </div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                {currentItems.map((item) => {
-                  const isSelected = selected.has(item.path)
+
+            {/* 카테고리 탭 (검색 중에는 숨김) */}
+            {!isSearching && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '8px 14px', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+                {IMAGE_CATALOG.map((cat) => {
+                  const selCount = cat.items.filter((i) => selected.has(i.path)).length
                   return (
-                    <div
-                      key={item.path}
-                      onClick={() => onToggle(item.path)}
+                    <button
+                      key={cat.category}
+                      onClick={() => setActiveCategory(cat.category)}
                       style={{
-                        border: isSelected ? '2px solid #1a2744' : '2px solid #e5e7eb',
-                        borderRadius: 8, overflow: 'hidden', cursor: 'pointer',
-                        background: isSelected ? '#eff6ff' : '#fff',
-                        position: 'relative',
+                        padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                        fontSize: 11, fontWeight: 700,
+                        background: activeCategory === cat.category ? '#1a2744' : '#e5e7eb',
+                        color: activeCategory === cat.category ? '#fff' : '#374151',
                       }}
                     >
-                      {isSelected && (
-                        <div style={{
-                          position: 'absolute', top: 5, right: 5, width: 20, height: 20,
-                          background: '#1a2744', borderRadius: '50%',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontSize: 12, fontWeight: 900,
-                        }}>✓</div>
-                      )}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.path} alt={item.label} style={{ width: '100%', height: 100, objectFit: 'cover', display: 'block' }} />
-                      <div style={{ padding: '5px 6px', fontSize: 10, fontWeight: 700, color: '#1a2744', textAlign: 'center' }}>
-                        {item.label}
-                      </div>
-                    </div>
+                      {cat.category}{selCount > 0 ? ` (${selCount})` : ''}
+                    </button>
                   )
                 })}
               </div>
+            )}
+
+            {/* 이미지 그리드 */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: 14 }}>
+              {isSearching ? (
+                searchResults.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0', fontSize: 13 }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>🔍</div>
+                    "{searchQuery}"에 맞는 이미지가 없습니다.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 10, fontWeight: 600 }}>
+                      검색 결과 {searchResults.length}개
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                      {searchResults.map((item) => (
+                        <ImageCard key={item.path} item={item} categoryLabel={item.category} />
+                      ))}
+                    </div>
+                  </>
+                )
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  {currentItems.map((item) => (
+                    <ImageCard key={item.path} item={item} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -275,6 +440,23 @@ function ImagePickerModal({
                 )
               })}
             </div>
+            {/* 선택된 이미지 목록 */}
+            {selected.size > 0 && (
+              <div style={{ width: '100%', borderTop: '1px solid #e5e7eb', paddingTop: 12, marginTop: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', marginBottom: 6 }}>선택됨 ({selected.size}개)</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 120, overflowY: 'auto' }}>
+                  {IMAGE_CATALOG.flatMap((c) => c.items).filter((i) => selected.has(i.path)).map((item) => (
+                    <div key={item.path} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: '#1a2744' }}>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                      <button
+                        onClick={() => onToggle(item.path)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 13, padding: '0 2px', flexShrink: 0 }}
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
