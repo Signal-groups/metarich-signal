@@ -1434,6 +1434,282 @@ function ReportCoverPage({
   )
 }
 
+// ── 카테고리별 테마 ─────────────────────────────────────────────────────
+const CATEGORY_THEME_MAP: Record<string, { accent: string; accentBg: string; badge: string }> = {
+  dental:    { accent: '#E91E63', accentBg: '#FCE4F3', badge: '#E91E63' },
+  health:    { accent: '#E53E3E', accentBg: '#FFF5F5', badge: '#E53E3E' },
+  driver:    { accent: '#0277BD', accentBg: '#E3F2FD', badge: '#0277BD' },
+  care:      { accent: '#6B21A8', accentBg: '#F3E8FF', badge: '#6B21A8' },
+  homecare:  { accent: '#059669', accentBg: '#ECFDF5', badge: '#059669' },
+  pet:       { accent: '#EA580C', accentBg: '#FFF7ED', badge: '#EA580C' },
+  shortlife: { accent: '#2D4A8A', accentBg: '#EEF2FF', badge: '#2D4A8A' },
+  annuity:   { accent: '#B8860B', accentBg: '#FDFBF0', badge: '#B8860B' },
+}
+const METRIC_EMOJI: Record<string, string> = {
+  implant:'🦷', crown:'👑', bridge:'🔗', filling:'✨', denture:'🦴',
+  rootCanal:'💉', scaling:'🔬', waiting:'⏳',
+  cancer:'🩺', minorCancer:'🟡', brain:'🧠', heart:'🫀',
+  injurySurgery:'✂️', diseaseSurgery:'✂️', care:'💊',
+  chemoDrug:'💊', targetDrug:'🔬', heavyIon:'⚡', robotCancerSurgery:'🤖',
+  trafficSupport:'🚗', lawyer:'⚖️', finePerson:'📋', fineProperty:'🏠',
+  injury:'🚑', liability:'🛡️', renewal:'🔄',
+  dementia:'🧠', longTermCare:'🏥', hospitalNurse:'🏥',
+}
+
+// ── 인포그래픽 스타일 단일 제안서 (single 모드) ─────────────────────────
+function BeautifulSinglePage({
+  template, plan, customerName, consultant,
+}: {
+  template: CategoryTemplate
+  plan: PlanData
+  customerName: string
+  consultant: ConsultantInfo
+}) {
+  const today = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' }).replace(/\.\s*/g, '.').replace(/\.$/, '')
+  const theme = CATEGORY_THEME_MAP[template.id] ?? { accent:'#1A2744', accentBg:'#EEF2FF', badge:'#1A2744' }
+  const premium = plan.isDollar
+    ? `$${won(num(plan.monthlyPremium))}`
+    : num(plan.monthlyPremium) ? formatKrw(num(plan.monthlyPremium)) : '-'
+
+  // ① 보장 항목 행 — 템플릿 순서 유지, 값 있는 항목이 위로
+  const metricRows = template.metrics.map(m => ({
+    icon: METRIC_EMOJI[m.key] ?? '✔️',
+    label: m.label,
+    shortLabel: m.shortLabel || m.label,
+    value: metricText(m, plan.metrics[m.key] ?? '', plan),
+    hasValue: !!(plan.metrics[m.key] && plan.metrics[m.key] !== ''),
+    isText: m.kind === 'text',
+  }))
+  const customRows = (plan.customCoverages ?? []).filter(cc => cc.name.trim()).map(cc => ({
+    icon: '✔️',
+    label: cc.name,
+    shortLabel: cc.name,
+    value: cc.amount ? `${won(num(cc.amount))}만원` : (cc.note || '-'),
+    hasValue: !!(cc.amount || cc.note),
+    isText: false,
+  }))
+  // 값 있는 것 먼저, 없는 것 뒤 (단 동일 그룹 내 원래 순서 유지)
+  const tableRows = [
+    ...metricRows.filter(r => r.hasValue),
+    ...customRows.filter(r => r.hasValue),
+    ...metricRows.filter(r => !r.hasValue),
+    ...customRows.filter(r => !r.hasValue),
+  ]
+
+  // ② 핵심 보장 카드 — 항상 6개 (값 없으면 회색 "미가입" 카드)
+  const valuedRows = tableRows.filter(r => r.hasValue && !r.isText)
+  const emptyRows  = tableRows.filter(r => !r.hasValue && !r.isText)
+  const cardSlots  = [...valuedRows, ...emptyRows].slice(0, 6)
+  while (cardSlots.length < 6) cardSlots.push({ icon:'—', label:'', shortLabel:'', value:'', hasValue:false, isText:false })
+
+  // ③ 왼쪽: 주계약 가입금액 (없으면 납입/보장 정보로 대체)
+  const mainMetric = template.metrics.find(m => m.kind === 'money')
+  const mainVal    = mainMetric ? plan.metrics[mainMetric.key] : ''
+  const mainDisplay = mainVal ? metricText(mainMetric!, mainVal, plan) : '-'
+
+  // ④ 설계 포인트 텍스트 (없으면 template.summary 사용)
+  const strengthsText = plan.strengths || template.summary
+
+  // ⑤ 인쇄용 주의사항 (없으면 기본)
+  const cautionsText = plan.cautions || '상기 내용은 상담 자료로만 활용하며, 최종 보험료·보장은 약관을 따릅니다.'
+
+  const base: React.CSSProperties = {
+    fontFamily: "'Pretendard Variable','Pretendard',-apple-system,sans-serif",
+    wordBreak: 'keep-all',
+  }
+
+  return (
+    <div className="proposal-page" style={{ width:'297mm', height:'210mm', overflow:'hidden', background:'#fff', display:'flex', flexDirection:'column', ...base }}>
+
+      {/* ── HEADER ─────────────────────────────────────────── */}
+      <div style={{ background:'#1A2744', padding:'8px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:10 }}>
+        {/* 로고 */}
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          <div style={{ width:40, height:40, borderRadius:'50%', border:'2px solid #C9A96E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🧭</div>
+          <div>
+            <div style={{ color:'#C9A96E', fontSize:9, fontWeight:900, letterSpacing:'0.12em' }}>보험의 기준</div>
+            <div style={{ color:'rgba(255,255,255,0.45)', fontSize:7.5, letterSpacing:'0.12em' }}>METARICH</div>
+          </div>
+        </div>
+        {/* 타이틀 */}
+        <div style={{ flex:1, paddingLeft:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:2 }}>
+            <span style={{ background:theme.badge, color:'#fff', fontSize:9.5, fontWeight:900, padding:'2px 9px', borderRadius:999, flexShrink:0 }}>{template.label} 맞춤 제안서</span>
+            <span style={{ color:'rgba(255,255,255,0.4)', fontSize:9 }}>{customerName || '고객'}님을 위한 {template.label} 보장 분석</span>
+          </div>
+          <div style={{ color:'#fff', fontSize:18, fontWeight:900, letterSpacing:'-0.02em', lineHeight:1.2 }}>
+            {customerName || '고객'}님을 위한{' '}
+            <span style={{ color:'#C9A96E' }}>{template.label} 맞춤 제안서</span>
+          </div>
+        </div>
+        {/* 상품정보 박스 */}
+        <div style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:8, padding:'6px 12px', flexShrink:0, minWidth:195 }}>
+          {[
+            { icon:'🏢', label:'보험회사', val: plan.company || '-' },
+            { icon:'📋', label:'상품명',   val: plan.productName || '-' },
+            { icon:'👤', label:'피보험자', val: customerName || '-' },
+            { icon:'📅', label:'제안일',   val: today },
+          ].map(r => (
+            <div key={r.label} style={{ display:'flex', gap:5, alignItems:'center', marginBottom:2.5 }}>
+              <span style={{ fontSize:9.5 }}>{r.icon}</span>
+              <span style={{ color:'rgba(255,255,255,0.42)', fontSize:8.5, fontWeight:700, minWidth:38 }}>{r.label}</span>
+              <span style={{ color:'#fff', fontSize:8.5, fontWeight:700, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.val}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── BODY ───────────────────────────────────────────── */}
+      <div style={{ flex:1, display:'grid', gridTemplateColumns:'58mm 1fr 80mm', minHeight:0 }}>
+
+        {/* LEFT — 보험료·가입정보·설계포인트 */}
+        <div style={{ background:'#F8FAFC', padding:'12px 12px', borderRight:'1px solid #E2E8F0', display:'flex', flexDirection:'column', gap:8 }}>
+          {/* 월 보험료 */}
+          <div style={{ background:'#1A2744', borderRadius:11, padding:'11px 8px', textAlign:'center', flexShrink:0 }}>
+            <div style={{ fontSize:8.5, fontWeight:700, color:'rgba(255,255,255,0.5)', marginBottom:2 }}>💰 월 보험료</div>
+            <div style={{ fontSize:21, fontWeight:900, color:'#C9A96E', letterSpacing:'-0.02em' }}>{premium}</div>
+          </div>
+          {/* 가입형태 */}
+          <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:10, padding:'9px 10px', flexShrink:0 }}>
+            <div style={{ fontSize:10.5, fontWeight:900, color:'#1A2744', marginBottom:6, borderBottom:'1px solid #F1F5F9', paddingBottom:5 }}>가입형태</div>
+            {[
+              { label:'갱신 여부', val: plan.metrics['renewal'] || plan.metrics['renewalType'] || (template.id==='dental'?'갱신형':'-') },
+              { label:'납입기간', val: plan.paymentYears ? `${plan.paymentYears}년납` : '-' },
+              { label:'보장기간', val: plan.coverageYears ? `최대 ${plan.coverageYears}세` : '-' },
+            ].map(item => (
+              <div key={item.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                <span style={{ fontSize:9.5, color:'#64748B' }}>{item.label}</span>
+                <span style={{ fontSize:9.5, fontWeight:800, color:'#1A2744' }}>{item.val}</span>
+              </div>
+            ))}
+          </div>
+          {/* 주계약 가입금액 */}
+          <div style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:10, padding:'9px 10px', textAlign:'center', flexShrink:0 }}>
+            <div style={{ fontSize:8.5, color:'#64748B', marginBottom:3 }}>주계약 가입금액</div>
+            <div style={{ fontSize:15, fontWeight:900, color:'#1A2744' }}>{mainDisplay}</div>
+          </div>
+          {/* 설계 포인트 — 남은 공간 전부 채움 */}
+          <div style={{ background:theme.accentBg, border:`1px solid ${theme.accent}25`, borderRadius:10, padding:'9px 10px', flex:1, overflow:'hidden' }}>
+            <div style={{ fontSize:9.5, fontWeight:900, color:theme.accent, marginBottom:5 }}>✅ 설계 포인트</div>
+            <div style={{ fontSize:8.5, color:'#374151', lineHeight:1.7 }}>
+              {strengthsText.split(/[·\n]/).filter(Boolean).map((s, i) => (
+                <div key={i} style={{ display:'flex', gap:4, marginBottom:3 }}>
+                  <span style={{ color:theme.accent, flexShrink:0 }}>✓</span>
+                  <span>{s.trim()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* MIDDLE — 보장 항목 표 */}
+        <div style={{ padding:'12px 14px', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:7, flexShrink:0 }}>
+            <div style={{ width:3, height:14, background:'#1A2744', borderRadius:2 }} />
+            <span style={{ fontSize:12.5, fontWeight:900, color:'#1A2744' }}>주요 보장 내용</span>
+            <span style={{ fontSize:8.5, color:'#94A3B8', marginLeft:2 }}>(가입내용 기준)</span>
+          </div>
+          {/* 테이블 헤더 */}
+          <div style={{ display:'grid', gridTemplateColumns:'26px 1fr 86px', background:'#1A2744', borderRadius:'7px 7px 0 0', padding:'5px 9px', flexShrink:0 }}>
+            <span />
+            <span style={{ color:'#fff', fontSize:9, fontWeight:900 }}>보장 항목</span>
+            <span style={{ color:'#fff', fontSize:9, fontWeight:900, textAlign:'right' }}>보장금액</span>
+          </div>
+          {/* 테이블 바디 — flex:1로 남은 높이 전부 채움 */}
+          <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            {tableRows.slice(0, 14).map((row, i) => (
+              <div key={i} style={{
+                display:'grid', gridTemplateColumns:'26px 1fr 86px',
+                padding:'4.5px 9px',
+                background: !row.hasValue ? '#FAFAFA' : i%2===0 ? '#F8FAFC' : '#fff',
+                borderBottom:'1px solid #F1F5F9',
+                alignItems:'center',
+                flex: '1 0 auto',
+              }}>
+                <span style={{ fontSize:12, textAlign:'center', opacity: row.hasValue ? 1 : 0.35 }}>{row.icon}</span>
+                <span style={{ fontSize:9, fontWeight: row.hasValue ? 600 : 400, color: row.hasValue ? '#1A2744' : '#94A3B8' }}>{row.label}</span>
+                <span style={{ fontSize:10, fontWeight:900, color: !row.hasValue ? '#D1D5DB' : row.isText ? '#1A2744' : theme.accent, textAlign:'right' }}>
+                  {row.value || '-'}
+                </span>
+              </div>
+            ))}
+            {/* 항목이 적을 때 남는 공간 채우기 */}
+            {tableRows.length < 14 && (
+              <div style={{ flex:1, background:'#FAFAFA', borderBottom:'1px solid #F1F5F9' }} />
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT — 핵심 보장 카드 */}
+        <div style={{ padding:'12px 12px', borderLeft:'1px solid #E2E8F0', display:'flex', flexDirection:'column', gap:7 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
+            <div style={{ width:3, height:14, background:theme.accent, borderRadius:2 }} />
+            <span style={{ fontSize:11.5, fontWeight:900, color:'#1A2744' }}>한눈에 보는 핵심 보장</span>
+          </div>
+          {/* 카드 그리드 — 항상 6개 (2행 3열) */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gridTemplateRows:'1fr 1fr', gap:5, flex:'0 0 auto' }}>
+            {cardSlots.map((item, i) => (
+              <div key={i} style={{
+                background: item.hasValue ? '#1A2744' : '#F1F5F9',
+                borderRadius:9, padding:'8px 4px',
+                textAlign:'center', display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center', minHeight:52,
+              }}>
+                <div style={{ fontSize:17, marginBottom:2, opacity: item.hasValue ? 1 : 0.3 }}>{item.icon}</div>
+                <div style={{ fontSize:8, color: item.hasValue ? 'rgba(255,255,255,0.6)' : '#94A3B8', marginBottom:2, lineHeight:1.2 }}>{item.shortLabel || item.label}</div>
+                <div style={{ fontSize:10, fontWeight:900, color: item.hasValue ? '#C9A96E' : '#CBD5E1' }}>{item.value || '—'}</div>
+              </div>
+            ))}
+          </div>
+          {/* 설명 블록 — 남은 공간 전부 채움 */}
+          <div style={{ background:'#1A2744', borderRadius:10, padding:'10px 11px', flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+            <div>
+              <div style={{ fontSize:9.5, fontWeight:900, color:'#C9A96E', marginBottom:6, lineHeight:1.5 }}>
+                🛡️ 든든한 {template.label} 보장으로<br/>건강한 미래를 지켜드립니다!
+              </div>
+              {valuedRows.slice(0,5).map((m, i) => (
+                <div key={i} style={{ fontSize:8.5, color:'rgba(255,255,255,0.7)', marginBottom:3.5, display:'flex', gap:4, alignItems:'flex-start' }}>
+                  <span style={{ color:theme.accent, flexShrink:0, marginTop:1 }}>✓</span>
+                  <span>{m.label} 보장 {m.value !== '-' ? m.value : '준비'}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize:7.5, color:'rgba(255,255,255,0.28)', marginTop:6, lineHeight:1.5, borderTop:'1px solid rgba(255,255,255,0.1)', paddingTop:6 }}>
+              ※ {cautionsText}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── FOOTER ─────────────────────────────────────────── */}
+      <div style={{ background:'#1A2744', padding:'6px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <div style={{ width:24, height:24, borderRadius:'50%', background:'rgba(201,169,110,0.18)', border:'1px solid #C9A96E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12 }}>👤</div>
+            <div>
+              <div style={{ color:'rgba(255,255,255,0.4)', fontSize:7.5, fontWeight:700 }}>담당설계사</div>
+              <div style={{ color:'#fff', fontSize:11.5, fontWeight:900 }}>{consultant.name || '설계사명'} 지점장</div>
+            </div>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+            <span style={{ fontSize:12 }}>📞</span>
+            <span style={{ color:'#C9A96E', fontSize:11.5, fontWeight:900 }}>{consultant.phone || '연락처'}</span>
+          </div>
+        </div>
+        <div style={{ textAlign:'center', flex:1, padding:'0 16px' }}>
+          <div style={{ color:'rgba(255,255,255,0.25)', fontSize:7.5 }}>
+            ※ 본 자료는 상담용 요약 자료이며, 보다 자세한 내용은 약관 및 상품설명서를 확인해 주세요.
+          </div>
+        </div>
+        <div style={{ textAlign:'right' }}>
+          <div style={{ color:'#C9A96E', fontSize:12, fontWeight:900, letterSpacing:'0.05em' }}>메타리치</div>
+          <div style={{ color:'rgba(255,255,255,0.35)', fontSize:7.5, letterSpacing:'0.15em' }}>METARICH</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ProposalReport({
   template,
   mode,
@@ -1464,6 +1740,20 @@ function ProposalReport({
     group.metrics.length > 0 || (template.id === "health" && group.title.includes("추가 담보") && hasCustomCoverage)
   )
   const scenarioPageNum = mode === "single" ? pageOffset + 4 : pageOffset + 3 + outputGroups.length
+
+  // ── single 모드: 인포그래픽 스타일 단일 페이지 ──────────────────────
+  if (mode === "single" && visiblePlans.length > 0) {
+    return (
+      <div className="proposal-print-area">
+        <BeautifulSinglePage
+          template={template}
+          plan={visiblePlans[0]}
+          customerName={customerName}
+          consultant={consultant}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="proposal-print-area">
