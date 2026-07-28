@@ -1830,6 +1830,8 @@ ${advisorInfo ? `
 
 ${timelineHtml}
 
+${buildCoverageScenarioPages(contracts)}
+
 ${hasRemodel ? `
 <!-- ════ PAGE R1: 추가 제안 상품 ════ -->
 <div class="pdf-page">
@@ -2522,6 +2524,356 @@ function buildSummaryPage(
 </div>
 </div>
 `
+}
+
+// ── PAGE S1~S3: 보장 시나리오 (암 / 뇌심장 / 근골격계+다빈도) ────────────────
+function buildCoverageScenarioPages(contracts: ProContract[]): string {
+  const ARROW =
+    '<div style="display:flex;align-items:center;flex-shrink:0;padding:0 2px;padding-top:28px">' +
+    '<span style="color:#c9a96e;font-size:22px;font-weight:900;line-height:1">›</span>' +
+    '</div>'
+
+  function stepHtml(
+    icon: string,
+    stepLabel: string,
+    items: Array<{ lbl: string; keys: string[]; daily?: boolean }>,
+    bg: string,
+    fg: string,
+  ): string {
+    const lumpItems = items.filter(it => !it.daily && it.keys.length > 0)
+    const dayItems  = items.filter(it =>  it.daily && it.keys.length > 0)
+    const lumpTotal = lumpItems.reduce((s, it) => s + sumAmount(contracts, ...it.keys), 0)
+    const dayTotal  = dayItems .reduce((s, it) => s + sumAmount(contracts, ...it.keys), 0)
+    const hasAny = lumpTotal > 0 || dayTotal > 0
+
+    // 금액 블록
+    let amtBlock = ''
+    if (!hasAny) {
+      amtBlock =
+        '<div style="text-align:center;padding:10px 0 6px">' +
+        '<div style="font-size:20px;color:#e2e8f0;margin-bottom:6px">—</div>' +
+        '<span style="display:inline-block;background:#fee2e2;color:#991b1b;' +
+        'font-size:11px;font-weight:900;padding:4px 12px;border-radius:999px">✕ 미가입</span>' +
+        '</div>'
+    } else {
+      let nums = ''
+      if (lumpTotal > 0)
+        nums +=
+          '<div style="font-size:22px;font-weight:900;color:#1a2744;line-height:1.15;white-space:nowrap">' +
+          formatWon(lumpTotal) + '</div>'
+      if (dayTotal > 0)
+        nums +=
+          '<div style="margin-top:2px">' +
+          '<span style="font-size:17px;font-weight:900;color:#2d4a8a">' + formatMonthly(dayTotal) + '</span>' +
+          '<span style="font-size:11px;color:#64748b;font-weight:700">/일</span>' +
+          '</div>'
+      amtBlock =
+        '<div style="text-align:center;margin-bottom:5px">' + nums + '</div>' +
+        '<div style="text-align:center;margin-bottom:6px">' +
+        '<span style="display:inline-block;background:#dcfce7;color:#166534;' +
+        'font-size:11px;font-weight:900;padding:4px 12px;border-radius:999px">✅ 준비</span>' +
+        '</div>'
+    }
+
+    // 세부 항목 (참고용 소형)
+    const subRows = items
+      .filter(it => it.keys.length > 0 && sumAmount(contracts, ...it.keys) > 0)
+      .map(it => {
+        const v = sumAmount(contracts, ...it.keys)
+        return (
+          '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #f1f5f9">' +
+          '<span style="font-size:10px;color:#64748b;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+          escHtml(it.lbl) + '</span>' +
+          '<span style="font-size:10px;font-weight:800;color:#374151;white-space:nowrap;margin-left:3px">' +
+          (it.daily ? formatMonthly(v) + '/일' : formatWon(v)) + '</span>' +
+          '</div>'
+        )
+      }).join('')
+
+    return (
+      '<div style="flex:1;border-radius:12px;overflow:hidden;border:1.5px solid ' +
+      (hasAny ? fg + '40' : '#e5e7eb') + ';min-width:0">' +
+      '<div style="background:' + (hasAny ? bg : '#f9fafb') + ';padding:12px 6px;text-align:center;' +
+      'border-bottom:1.5px solid ' + (hasAny ? fg + '30' : '#e5e7eb') + '">' +
+      '<div style="font-size:26px;line-height:1;margin-bottom:5px">' + icon + '</div>' +
+      '<div style="font-size:12px;font-weight:900;color:' + (hasAny ? fg : '#94a3b8') + '">' + escHtml(stepLabel) + '</div>' +
+      '</div>' +
+      '<div style="padding:10px 8px;background:#fff">' +
+      amtBlock +
+      (subRows ? '<div style="margin-top:4px">' + subRows + '</div>' : '') +
+      '</div>' +
+      '</div>'
+    )
+  }
+
+  // 하단 총합 배너
+  function summaryBar(
+    groups: Array<{ lbl: string; keys: string[] }>,
+    lumpTotal: number,
+    note: string,
+  ): string {
+    const cells = groups.map(g => {
+      const v = g.keys.length > 0 ? sumAmount(contracts, ...g.keys) : 0
+      return (
+        '<div style="text-align:center;padding:0 8px;flex:1">' +
+        '<div style="font-size:9.5px;color:rgba(255,255,255,0.5);margin-bottom:3px;white-space:nowrap">' + escHtml(g.lbl) + '</div>' +
+        '<div style="font-size:13px;font-weight:900;white-space:nowrap;color:' +
+        (v > 0 ? '#c9a96e' : 'rgba(255,255,255,0.2)') + '">' +
+        (v > 0 ? formatWon(v) : '—') + '</div>' +
+        '</div>'
+      )
+    }).join('<div style="width:1px;background:rgba(255,255,255,0.12);flex-shrink:0;align-self:stretch"></div>')
+
+    return (
+      '<div style="background:linear-gradient(135deg,#1a2744,#2d4a8a);border-radius:12px;' +
+      'padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:0">' +
+      '<div style="display:flex;align-items:center;flex:1;overflow:hidden">' + cells + '</div>' +
+      '<div style="border-left:1px solid rgba(255,255,255,0.15);padding-left:20px;flex-shrink:0;text-align:right">' +
+      '<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px">총 보상예정금액</div>' +
+      '<div style="font-size:26px;font-weight:900;color:#c9a96e;white-space:nowrap">' +
+      (lumpTotal > 0 ? formatWon(lumpTotal) : '—') + '</div>' +
+      '<div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px">' + escHtml(note) + '</div>' +
+      '</div>' +
+      '</div>'
+    )
+  }
+
+  // ─── PAGE S1: 암 ────────────────────────────────────────────────────────
+  const cancerDiagSum  = sumAmount(contracts, 'cancer_general', 'cancer_similar', 'cancer_special_case')
+  const cancerSurgSum  = sumAmount(contracts, 'cancer_surgery', 'cancer_davinci', 'surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive')
+  const cancerChemoSum = sumAmount(contracts, 'cancer_chemo', 'cancer_radiation', 'cancer_targeted', 'cancer_hadron', 'cancer_proton', 'cancer_major_benefit', 'cancer_major_nonbenefit')
+  const cancerHospSum  = sumAmount(contracts, 'silson_disease_inpatient')
+  const cancerOutSum   = sumAmount(contracts, 'silson_disease_outpatient')
+  const cancerDisSum   = sumAmount(contracts, 'disability_disease_80', 'disability_disease')
+  const cancerLumpSum  = cancerDiagSum + cancerSurgSum + cancerChemoSum + cancerHospSum + cancerOutSum + cancerDisSum
+
+  const pageCancer =
+    '<!-- ════ PAGE S1: 암 시나리오 ════ -->\n' +
+    '<div class="pdf-page">\n<div class="page-inner">\n' +
+    '<div class="page-label">보장 시나리오 — 암 발생 시 받을 수 있는 보험금</div>\n' +
+    '<div style="display:flex;flex-direction:column;height:100%;gap:10px">' +
+    // 헤더
+    '<div style="background:linear-gradient(135deg,#1a2744,#2d4a8a);border-radius:12px;padding:12px 20px">' +
+    '<div style="font-size:17px;font-weight:900;color:#fff">🩺&nbsp;암 발생 시 — 내 보험에서 받는 금액</div>' +
+    '<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:4px">' +
+    '진단 → 수술 → 항암치료 → 입원·간병 → 통원 → 후유장해 &nbsp;단계별 보장 확인' +
+    '</div></div>' +
+    // 플로우
+    '<div style="display:flex;gap:6px;align-items:stretch;flex:1">' +
+    stepHtml('🩺', '① 진단', [
+      { lbl: '암 진단비', keys: ['cancer_general'] },
+      { lbl: '유사암 진단비', keys: ['cancer_similar'] },
+      { lbl: '암 산정특례', keys: ['cancer_special_case'] },
+    ], '#fef2f2', '#991b1b') +
+    ARROW +
+    stepHtml('✂️', '② 수술', [
+      { lbl: '암 수술비', keys: ['cancer_surgery'] },
+      { lbl: '로봇수술(다빈치)', keys: ['cancer_davinci'] },
+      { lbl: '질병수술비', keys: ['surgery_disease'] },
+      { lbl: '고액수술비', keys: ['surgery_disease_advanced', 'surgery_disease_comprehensive'] },
+    ], '#fff7ed', '#9a3412') +
+    ARROW +
+    stepHtml('💊', '③ 항암치료', [
+      { lbl: '일반항암약물', keys: ['cancer_chemo'] },
+      { lbl: '방사선치료비', keys: ['cancer_radiation'] },
+      { lbl: '표적항암약물', keys: ['cancer_targeted'] },
+      { lbl: '중입자·양성자', keys: ['cancer_hadron', 'cancer_proton'] },
+      { lbl: '주요치료비(급여)', keys: ['cancer_major_benefit'] },
+      { lbl: '주요치료비(비급여)', keys: ['cancer_major_nonbenefit'] },
+    ], '#faf5ff', '#6b21a8') +
+    ARROW +
+    stepHtml('🛏', '④ 입원·간병', [
+      { lbl: '입원일당', keys: ['hospital_disease_daily'], daily: true },
+      { lbl: '간병인 지원', keys: ['nursing_hospital'], daily: true },
+      { lbl: '실손(입원한도)', keys: ['silson_disease_inpatient'] },
+    ], '#f0fdf4', '#166534') +
+    ARROW +
+    stepHtml('🚶', '⑤ 통원', [
+      { lbl: '실손(통원)', keys: ['silson_disease_outpatient'] },
+    ], '#eff6ff', '#1e40af') +
+    ARROW +
+    stepHtml('🦯', '⑥ 후유장해', [
+      { lbl: '장해 80% 이상', keys: ['disability_disease_80'] },
+      { lbl: '장해(3%~)', keys: ['disability_disease'] },
+    ], '#fdf4ff', '#7e22ce') +
+    '</div>' +
+    // 총합 배너
+    summaryBar([
+      { lbl: '① 진단', keys: ['cancer_general', 'cancer_similar', 'cancer_special_case'] },
+      { lbl: '② 수술', keys: ['cancer_surgery', 'cancer_davinci', 'surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive'] },
+      { lbl: '③ 항암치료', keys: ['cancer_chemo', 'cancer_radiation', 'cancer_targeted', 'cancer_hadron', 'cancer_proton', 'cancer_major_benefit', 'cancer_major_nonbenefit'] },
+      { lbl: '④ 입원(실손)', keys: ['silson_disease_inpatient'] },
+      { lbl: '⑤ 통원', keys: ['silson_disease_outpatient'] },
+      { lbl: '⑥ 후유장해', keys: ['disability_disease_80', 'disability_disease'] },
+    ], cancerLumpSum, '일당 별도 · 실손은 실제 의료비 기준') +
+    '</div>' +
+    '</div>\n</div>\n\n'
+
+  // ─── PAGE S2: 뇌·심장 ──────────────────────────────────────────────────
+  const brainDiagSum    = sumAmount(contracts, 'brain_vascular', 'brain_stroke', 'brain_special_case', 'heart_ischemic', 'heart_acute_mi', 'heart_special_case')
+  const brainEmergSum   = sumAmount(contracts, 'two_major_thrombolysis', 'vascular_major', 'vascular_major_benefit', 'vascular_major_nonbenefit')
+  const brainSurgSum    = sumAmount(contracts, 'two_major_surgery', 'surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive')
+  const brainIcuSum     = sumAmount(contracts, 'two_major_icu')
+  const brainHospSum    = sumAmount(contracts, 'silson_disease_inpatient')
+  const brainDisSum     = sumAmount(contracts, 'disability_disease_80', 'disability_disease')
+  const brainHeartLumpSum = brainDiagSum + brainEmergSum + brainSurgSum + brainIcuSum + brainHospSum + brainDisSum
+
+  const pageBrainHeart =
+    '<!-- ════ PAGE S2: 뇌·심장 시나리오 ════ -->\n' +
+    '<div class="pdf-page">\n<div class="page-inner">\n' +
+    '<div class="page-label">보장 시나리오 — 뇌·심장 질환 시 받을 수 있는 보험금</div>\n' +
+    '<div style="display:flex;flex-direction:column;height:100%;gap:10px">' +
+    // 헤더
+    '<div style="background:linear-gradient(135deg,#1e3a5f,#0f766e);border-radius:12px;padding:12px 20px">' +
+    '<div style="font-size:17px;font-weight:900;color:#fff">🩺&nbsp;뇌·심장 질환 시 — 내 보험에서 받는 금액</div>' +
+    '<div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:4px">' +
+    '진단 → 응급·시술 → 수술 → 중환자실 → 입원·간병 → 후유장해' +
+    '</div></div>' +
+    // 플로우
+    '<div style="display:flex;gap:5px;align-items:stretch;flex:1">' +
+    stepHtml('🩺', '① 진단', [
+      { lbl: '뇌혈관 진단비', keys: ['brain_vascular'] },
+      { lbl: '뇌졸중 진단비', keys: ['brain_stroke'] },
+      { lbl: '뇌 산정특례', keys: ['brain_special_case'] },
+      { lbl: '허혈성심장', keys: ['heart_ischemic'] },
+      { lbl: '급성심근경색', keys: ['heart_acute_mi'] },
+      { lbl: '심장 산정특례', keys: ['heart_special_case'] },
+    ], '#eff6ff', '#1e40af') +
+    ARROW +
+    stepHtml('🚑', '② 응급·시술', [
+      { lbl: '혈전용해·제거', keys: ['two_major_thrombolysis'] },
+      { lbl: '2대주요치료비', keys: ['vascular_major', 'vascular_major_benefit', 'vascular_major_nonbenefit'] },
+    ], '#fff7ed', '#c2410c') +
+    ARROW +
+    stepHtml('✂️', '③ 수술', [
+      { lbl: '뇌심장 수술비', keys: ['two_major_surgery'] },
+      { lbl: '질병수술비', keys: ['surgery_disease'] },
+      { lbl: '고액수술비', keys: ['surgery_disease_advanced', 'surgery_disease_comprehensive'] },
+    ], '#faf5ff', '#6b21a8') +
+    ARROW +
+    stepHtml('🏥', '④ 중환자실', [
+      { lbl: '중환자실 치료비', keys: ['two_major_icu'] },
+    ], '#fff1f2', '#be123c') +
+    ARROW +
+    stepHtml('🛏', '⑤ 입원·간병', [
+      { lbl: '입원일당', keys: ['hospital_disease_daily'], daily: true },
+      { lbl: '간병인 지원', keys: ['nursing_hospital'], daily: true },
+      { lbl: '실손(입원한도)', keys: ['silson_disease_inpatient'] },
+    ], '#f0fdf4', '#166534') +
+    ARROW +
+    stepHtml('🦯', '⑥ 후유장해', [
+      { lbl: '장해 80% 이상', keys: ['disability_disease_80'] },
+      { lbl: '장해(3%~)', keys: ['disability_disease'] },
+    ], '#fdf4ff', '#7e22ce') +
+    '</div>' +
+    // 총합 배너
+    summaryBar([
+      { lbl: '① 진단', keys: ['brain_vascular', 'brain_stroke', 'brain_special_case', 'heart_ischemic', 'heart_acute_mi', 'heart_special_case'] },
+      { lbl: '② 응급·시술', keys: ['two_major_thrombolysis', 'vascular_major', 'vascular_major_benefit', 'vascular_major_nonbenefit'] },
+      { lbl: '③ 수술', keys: ['two_major_surgery', 'surgery_disease', 'surgery_disease_advanced', 'surgery_disease_comprehensive'] },
+      { lbl: '④ 중환자실', keys: ['two_major_icu'] },
+      { lbl: '⑤ 입원(실손)', keys: ['silson_disease_inpatient'] },
+      { lbl: '⑥ 후유장해', keys: ['disability_disease_80', 'disability_disease'] },
+    ], brainHeartLumpSum, '일당 별도 · 실손은 실제 의료비 기준') +
+    '</div>' +
+    '</div>\n</div>\n\n'
+
+  // ─── PAGE S3: 근골격계 + 다빈도 수술 ────────────────────────────────────
+  const muscoDiagSum = sumAmount(contracts, 'fracture_diagnosis')
+  const muscoSurgSum = sumAmount(contracts, 'surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type')
+  const muscoHospSum = sumAmount(contracts, 'silson_injury_inpatient')
+  const muscoOutSum  = sumAmount(contracts, 'silson_injury_outpatient', 'silson_disease_outpatient')
+  const muscoDisSum  = sumAmount(contracts, 'disability_injury_80', 'disability_injury')
+  const muscoLumpSum = muscoDiagSum + muscoSurgSum + muscoHospSum + muscoOutSum + muscoDisSum
+
+  const freqSurgSum  = sumAmount(contracts, 'surgery_disease', 'surgery_1_5', 'surgery_n_major')
+  const freqHospSum  = sumAmount(contracts, 'silson_disease_inpatient')
+  const freqOutSum   = sumAmount(contracts, 'silson_disease_outpatient')
+  const freqLumpSum  = freqSurgSum + freqHospSum + freqOutSum
+
+  const pageMusco =
+    '<!-- ════ PAGE S3: 근골격계+다빈도 시나리오 ════ -->\n' +
+    '<div class="pdf-page">\n<div class="page-inner">\n' +
+    '<div class="page-label">보장 시나리오 — 근골격계 · 다빈도 수술 시 받을 수 있는 보험금</div>\n' +
+    '<div style="display:flex;flex-direction:column;height:100%;gap:8px">' +
+    // 근골격계 헤더
+    '<div style="background:linear-gradient(135deg,#374151,#4b5563);border-radius:12px;padding:10px 18px">' +
+    '<div style="font-size:15px;font-weight:900;color:#fff">🦴 근골격계 (골절·인대·관절 수술)</div>' +
+    '<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px">진단 → 수술 → 입원 → 재활통원 → 후유장해</div>' +
+    '</div>' +
+    // 근골격계 플로우
+    '<div style="display:flex;gap:6px;align-items:stretch;flex:1">' +
+    stepHtml('🦴', '① 골절진단', [
+      { lbl: '골절 진단비', keys: ['fracture_diagnosis'] },
+    ], '#fef9c3', '#854d0e') +
+    ARROW +
+    stepHtml('✂️', '② 수술', [
+      { lbl: '상해수술비', keys: ['surgery_injury'] },
+      { lbl: '상해 고액수술', keys: ['surgery_injury_advanced', 'surgery_injury_comprehensive'] },
+      { lbl: '종수술비(상해)', keys: ['surgery_injury_type'] },
+    ], '#fef2f2', '#991b1b') +
+    ARROW +
+    stepHtml('🛏', '③ 입원', [
+      { lbl: '상해입원일당', keys: ['hospital_injury_daily'], daily: true },
+      { lbl: '실손(상해입원)', keys: ['silson_injury_inpatient'] },
+    ], '#f0fdf4', '#166534') +
+    ARROW +
+    stepHtml('🚶', '④ 재활통원', [
+      { lbl: '실손(상해통원)', keys: ['silson_injury_outpatient'] },
+      { lbl: '실손(질병통원)', keys: ['silson_disease_outpatient'] },
+    ], '#eff6ff', '#1e40af') +
+    ARROW +
+    stepHtml('🦯', '⑤ 후유장해', [
+      { lbl: '장해 80%(상해)', keys: ['disability_injury_80'] },
+      { lbl: '장해(3%~, 상해)', keys: ['disability_injury'] },
+    ], '#fdf4ff', '#7e22ce') +
+    '</div>' +
+    // 근골격계 총합 배너
+    summaryBar([
+      { lbl: '① 진단', keys: ['fracture_diagnosis'] },
+      { lbl: '② 수술', keys: ['surgery_injury', 'surgery_injury_advanced', 'surgery_injury_comprehensive', 'surgery_injury_type'] },
+      { lbl: '③ 입원(실손)', keys: ['silson_injury_inpatient'] },
+      { lbl: '④ 통원', keys: ['silson_injury_outpatient', 'silson_disease_outpatient'] },
+      { lbl: '⑤ 후유장해', keys: ['disability_injury_80', 'disability_injury'] },
+    ], muscoLumpSum, '일당 별도 · 실제 후유장해는 MRI 후 약관 기준 확정') +
+    // 구분선
+    '<div style="border-top:2px dashed #e2e8f0"></div>' +
+    // 다빈도 헤더
+    '<div style="background:linear-gradient(135deg,#475569,#64748b);border-radius:12px;padding:10px 18px">' +
+    '<div style="font-size:15px;font-weight:900;color:#fff">📋 다빈도 수술 (백내장·치질·탈장·맹장 등)</div>' +
+    '<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px">외래 진단 → 수술 → 입원·통원 (당일~2박)</div>' +
+    '</div>' +
+    // 다빈도 플로우
+    '<div style="display:flex;gap:6px;align-items:stretch;flex:1">' +
+    stepHtml('📋', '① 외래진단', [
+      { lbl: '(수술 결정 단계)', keys: [] },
+    ], '#f8fafc', '#94a3b8') +
+    ARROW +
+    stepHtml('✂️', '② 수술', [
+      { lbl: '질병수술비', keys: ['surgery_disease'] },
+      { lbl: '1~5종 수술비', keys: ['surgery_1_5'] },
+      { lbl: 'N대질병수술비', keys: ['surgery_n_major'] },
+    ], '#fff7ed', '#9a3412') +
+    ARROW +
+    stepHtml('🛏', '③ 입원(당일~)', [
+      { lbl: '질병입원일당', keys: ['hospital_disease_daily'], daily: true },
+      { lbl: '실손(입원)', keys: ['silson_disease_inpatient'] },
+    ], '#f0fdf4', '#166534') +
+    ARROW +
+    stepHtml('🚶', '④ 통원·회복', [
+      { lbl: '실손(통원)', keys: ['silson_disease_outpatient'] },
+    ], '#eff6ff', '#1e40af') +
+    '</div>' +
+    // 다빈도 총합 배너
+    summaryBar([
+      { lbl: '② 수술', keys: ['surgery_disease', 'surgery_1_5', 'surgery_n_major'] },
+      { lbl: '③ 입원(실손)', keys: ['silson_disease_inpatient'] },
+      { lbl: '④ 통원', keys: ['silson_disease_outpatient'] },
+    ], freqLumpSum, '일당 별도 · 수술비 등급에 따라 지급액 상이') +
+    '</div>' +
+    '</div>\n</div>\n'
+
+  return pageCancer + pageBrainHeart + pageMusco
 }
 
 // ── PAGE HOW: 보장 작동 방식 ─────────────────────────────────────────────────
