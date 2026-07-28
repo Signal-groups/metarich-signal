@@ -136,8 +136,13 @@ function deriveVascularMajor(contracts: ProContract[]) {
 function formatWon(v: number): string {
   if (!v) return '-'
   const comma = (n: number) => Math.round(n).toLocaleString('ko-KR')
-  if (v >= 10_000) return `${comma(Math.round(v / 10_000))}만원`
-  return `${comma(v)}원`
+  const man = Math.round(v / 10_000)   // 원 → 만원
+  if (man <= 0) return `${comma(v)}원`
+  if (man < 10_000) return `${comma(man)}만원`        // 5,000만원, 250만원
+  const eok = Math.floor(man / 10_000)               // 억 단위
+  const rem  = man % 10_000                          // 나머지 만원
+  if (rem === 0) return `${eok}억원`                  // 1억원, 2억원
+  return `${eok}억 ${comma(rem)}만원`                 // 1억 1,000만원
 }
 function formatMonthly(v: number): string {
   if (!v) return '-'
