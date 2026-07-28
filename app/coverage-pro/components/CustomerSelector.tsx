@@ -188,7 +188,7 @@ function mapCrmRowsToContracts(customer: CustomerRow, policies: PolicyRow[], cov
       contractId: policyId,
       rowKey,
       name,
-      amount: Number(coverage.amount || 0),
+      amount: Number(coverage.amount || 0) / 10_000, // DB는 원 단위 저장 → 만원으로 변환
       expiryDate: coverage.end_date || coverage.expiry_date || coverage.maturity || '',
       isRenewal: isRenewalText(coverage.renewal_type, coverage.note),
     }

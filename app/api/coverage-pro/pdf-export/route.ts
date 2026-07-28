@@ -440,7 +440,15 @@ function buildRecommendations(contracts: ProContract[]) {
 function buildContractBreakdownPage(contracts: ProContract[]): string {
   if (!contracts.length) return ''
 
-  const fmtWonB = (v: number) => v ? `${v.toLocaleString()}만원` : '-'
+  const fmtWonB = (v: number) => {
+    if (!v) return '-'
+    const comma = (n: number) => Math.round(n).toLocaleString('ko-KR')
+    const man = Math.round(v)
+    if (man < 10_000) return `${comma(man)}만원`
+    const eok = Math.floor(man / 10_000)
+    const rem  = man % 10_000
+    return rem === 0 ? `${eok}억원` : `${eok}억 ${comma(rem)}만원`
+  }
 
   // contractDate 파싱 → Date 객체
   function parseContractDate(d?: string): Date | null {
