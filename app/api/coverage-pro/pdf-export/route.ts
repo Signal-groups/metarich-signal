@@ -136,12 +136,6 @@ function deriveVascularMajor(contracts: ProContract[]) {
 function formatWon(v: number): string {
   if (!v) return '-'
   const comma = (n: number) => Math.round(n).toLocaleString('ko-KR')
-  if (v >= 100_000_000) {
-    const eok     = Math.floor(v / 100_000_000)
-    const remain  = Math.round((v % 100_000_000) / 10_000)
-    if (remain === 0) return `${comma(eok)}억원`
-    return `${comma(eok)}억 ${comma(remain)}만원`
-  }
   if (v >= 10_000) return `${comma(Math.round(v / 10_000))}만원`
   return `${comma(v)}원`
 }
