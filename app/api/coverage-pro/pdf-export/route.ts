@@ -135,16 +135,19 @@ function deriveVascularMajor(contracts: ProContract[]) {
 
 function formatWon(v: number): string {
   if (!v) return '-'
+  const comma = (n: number) => Math.round(n).toLocaleString('ko-KR')
   if (v >= 100_000_000) {
-    const eok = v / 100_000_000
-    return `${Number.isInteger(eok) ? eok.toFixed(0) : eok.toFixed(1)}억`
+    const eok     = Math.floor(v / 100_000_000)
+    const remain  = Math.round((v % 100_000_000) / 10_000)
+    if (remain === 0) return `${comma(eok)}억원`
+    return `${comma(eok)}억 ${comma(remain)}만원`
   }
-  if (v >= 10_000)      return `${Math.round(v / 10_000).toLocaleString()}만원`
-  return `${v.toLocaleString()}원`
+  if (v >= 10_000) return `${comma(Math.round(v / 10_000))}만원`
+  return `${comma(v)}원`
 }
 function formatMonthly(v: number): string {
   if (!v) return '-'
-  return `${Math.round(v).toLocaleString()}원`
+  return `${Math.round(v).toLocaleString('ko-KR')}원`
 }
 function formatPercent(current: number, target: number): string {
   if (!target) return '0%'
