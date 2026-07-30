@@ -362,6 +362,28 @@ function readDraft() {
   } catch { return null }
 }
 
+/**
+ * 세션/localStorage에서 로드된 contracts의 cov.amount 단위 정규화.
+ * 이전 버그(CustomerSelector에서 /10_000 누락)로 원 단위가 만원으로 잘못 저장된 경우
+ * 자동 감지 후 만원으로 변환한다.
+ *
+ * 기준: 개별 담보 가입금액이 500,000만원(50억원)을 초과하는 것은 현실적으로 불가능.
+ * → amount >= 500_000 이면 원 단위로 간주하고 /10_000 처리.
+ */
+function normalizeContractAmounts(contracts: ProContract[]): ProContract[] {
+  return contracts.map((c) => ({
+    ...c,
+    coverages: c.coverages.map((cov) => {
+      const amt = Number(cov.amount || 0)
+      // 50억원(500,000만원) 초과 → 원 단위로 판단 → 만원으로 변환
+      if (amt > 500_000) {
+        return { ...cov, amount: Math.round(amt / 10_000) }
+      }
+      return cov
+    }),
+  }))
+}
+
 // ── 금액 파싱 헬퍼 (만원 단위로 정규화) ─────────────────────────────────
 // ── 유틸 헬퍼 ─────────────────────────────────────────────────────────────
 function formatWon(won: number): string {
@@ -953,7 +975,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
 
   const [currentStep,  setCurrentStep]  = useState<StepNumber>(initialStep)
   const [customer,     setCustomer]     = useState<ProCustomer | undefined>(() => draft?.customer)
-  const [contracts,    setContracts]    = useState<ProContract[]>(() => draft?.contracts || [])
+  const [contracts,    setContracts]    = useState<ProContract[]>(() => normalizeContractAmounts(draft?.contracts || []))
   const [stepStatus,   setStepStatus]   = useState<Partial<Record<StepNumber, StepStatus>>>(
     () => draft?.stepStatus || { 1: requestedCustomerId ? 'warning' : 'pending' }
   )
@@ -1109,7 +1131,7 @@ export default function CoverageProWorkspace({ initialStep = 1 }: { initialStep?
     sessionRef.current = session
     localStorage.setItem(SESSION_ID_KEY, session.id)
     setCustomer(session.customerSnapshot)
-    setContracts(session.contracts ?? [])
+    setContracts(normalizeContractAmounts(session.contracts ?? []))
     setStepStatus(session.stepStatus ?? {})
     setProposal(session.remodelProposal ?? defaultProposal)
     setOutputConfig(session.outputConfig ?? defaultOutputConfig)

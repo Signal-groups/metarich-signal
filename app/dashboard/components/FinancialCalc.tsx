@@ -21,7 +21,7 @@ const C = {
   muted: "#718096",
 }
 
-type TabId = "retirement" | "care" | "compare" | "inflation" | "compound" | "variable"
+type TabId = "retirement" | "care" | "compare" | "inflation" | "compound" | "variable" | "noranwoo"
 type RetirementLevelId = "unprepared" | "minimum" | "standard" | "comfort"
 type PensionType = "db" | "dc" | "irp"
 type CompoundMode = "single" | "monthly"
@@ -59,6 +59,7 @@ const MENU: { id: TabId; label: string; desc: string }[] = [
   { id: "inflation", label: "화폐가치 하락", desc: "물가 상승에 따른 구매력 변화" },
   { id: "compound", label: "복리 계산", desc: "일시납·월적립식과 거치기간" },
   { id: "variable", label: "코스트 애버리지", desc: "일시납과 월적립식 투자 비교" },
+  { id: "noranwoo", label: "노란우산공제 절세", desc: "사업자 공제한도·최대혜택·과납 진단" },
 ]
 
 const RETIREMENT_LEVELS: {
@@ -316,6 +317,7 @@ export default function FinancialCalc() {
           {tab === "inflation" && <InflationCalc />}
           {tab === "compound" && <CompoundCalc age={state.age} />}
           {tab === "variable" && <VariableCalc />}
+          {tab === "noranwoo" && <NoranwooCalc />}
         </main>
       </div>
     </div>
@@ -1002,6 +1004,322 @@ function VariableCalc() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── 노란우산공제 세금 계산 헬퍼 (2025년 기준) ─────────────────────────────
+const NOR_TAX_BRACKETS: { limit: number; rate: number; deduction: number }[] = [
+  { limit: 14_000_000,     rate: 0.06, deduction: 0 },
+  { limit: 50_000_000,     rate: 0.15, deduction: 1_260_000 },
+  { limit: 88_000_000,     rate: 0.24, deduction: 5_760_000 },
+  { limit: 150_000_000,    rate: 0.35, deduction: 15_440_000 },
+  { limit: 300_000_000,    rate: 0.38, deduction: 19_940_000 },
+  { limit: 500_000_000,    rate: 0.40, deduction: 25_940_000 },
+  { limit: 1_000_000_000,  rate: 0.42, deduction: 35_940_000 },
+  { limit: Infinity,       rate: 0.45, deduction: 65_940_000 },
+]
+function norCalcTax(won: number): number {
+  if (won <= 0) return 0
+  for (const b of NOR_TAX_BRACKETS) {
+    if (won <= b.limit) return Math.max(0, Math.round(won * b.rate - b.deduction))
+  }
+  return 0
+}
+function norGetLimit(businessWon: number): number { // 원 반환
+  if (businessWon <= 40_000_000)  return 6_000_000
+  if (businessWon <= 60_000_000)  return 5_000_000
+  if (businessWon <= 100_000_000) return 4_000_000
+  return 2_000_000
+}
+function norRateLabel(won: number): string {
+  if (won <= 14_000_000)  return '6%'
+  if (won <= 50_000_000)  return '주로 15%'
+  if (won <= 88_000_000)  return '24%'
+  if (won <= 150_000_000) return '35%'
+  if (won <= 300_000_000) return '38%'
+  if (won <= 500_000_000) return '40%'
+  if (won <= 1_000_000_000) return '42%'
+  return '45%'
+}
+function norTaxSaving(taxableWon: number, deductWon: number): { income: number; local: number; total: number } {
+  const before = norCalcTax(taxableWon)
+  const after  = norCalcTax(Math.max(0, taxableWon - deductWon))
+  const income = Math.max(0, before - after)
+  const local  = Math.round(income * 0.1)
+  return { income, local, total: income + local }
+}
+function norFmtMan(won: number): string {
+  const man = Math.round(won / 10_000)
+  if (man === 0) return '0원'
+  if (man >= 10_000) {
+    const eok = Math.floor(man / 10_000)
+    const rem  = man % 10_000
+    return rem === 0 ? `${eok}억원` : `${eok}억 ${rem.toLocaleString()}만원`
+  }
+  return `${man.toLocaleString()}만원`
+}
+
+// ── 노란우산공제 절세 계산기 컴포넌트 ─────────────────────────────────────
+function NoranwooCalc() {
+  // 상태: 내부적으로 만원 단위 (MoneyInputRow는 원 단위 받음)
+  const [revenueMan,  setRevenueMan]  = useState(35000) // 연매출 (만원)
+  const [profitRate,  setProfitRate]  = useState(15)    // 순이익률 (%)
+  const [incomeMan,   setIncomeMan]   = useState(0)     // 사업소득 직접입력 (0=자동)
+  const [taxableMan,  setTaxableMan]  = useState(0)     // 과세표준 (0=시나리오모드)
+  const [monthlyMan,  setMonthlyMan]  = useState(0)     // 현재 월납부 (0=미입력)
+
+  const autoIncMan   = Math.round(revenueMan * profitRate / 100)
+  const actualIncMan = incomeMan > 0 ? incomeMan : autoIncMan
+  const actualIncWon = actualIncMan * 10_000
+
+  const limitWon     = norGetLimit(actualIncWon)
+  const limitMan     = Math.round(limitWon / 10_000)
+  const optMonthly   = Math.round(limitMan / 12)
+
+  const isExact      = taxableMan > 0
+  const taxableWon   = isExact ? taxableMan * 10_000 : actualIncWon
+  const maxSaving    = norTaxSaving(taxableWon, limitWon)
+
+  // 현재 납부 분석
+  const curYearlyMan = monthlyMan * 12
+  const effDeductMan = Math.min(curYearlyMan, limitMan)
+  const overPayMan   = Math.max(0, curYearlyMan - limitMan)
+  const curSaving    = monthlyMan > 0 ? norTaxSaving(taxableWon, effDeductMan * 10_000) : null
+
+  // 시나리오 (과세표준 미입력 시)
+  const PROFIT_RATES = [10, 15, 20, 30]
+  const scenarios = PROFIT_RATES.map(rate => {
+    const bizMan  = Math.round(revenueMan * rate / 100)
+    const bizWon  = bizMan * 10_000
+    const limWon  = norGetLimit(bizWon)
+    const limMan  = Math.round(limWon / 10_000)
+    const optMon  = Math.round(limMan / 12)
+    const saving  = norTaxSaving(bizWon, limWon)
+    const rateLabel = norRateLabel(bizWon)
+    const curSav  = monthlyMan > 0
+      ? norTaxSaving(bizWon, Math.min(monthlyMan * 12, limMan) * 10_000)
+      : null
+    const overpay = monthlyMan > 0 ? Math.max(0, monthlyMan * 12 - limMan) : 0
+    return { rate, bizMan, limMan, optMon, saving, rateLabel, curSav, overpay }
+  })
+
+  return (
+    <div>
+      <SectionTitle title="노란우산공제 절세 계산기" desc="2025년 납입분 기준 — 사업소득공제 한도, 최대 절세효과, 과납 여부를 확인합니다." />
+
+      {/* ── 입력 영역 ── */}
+      <div style={{ background: C.slateLight, borderRadius: 16, padding: 18, marginBottom: 14 }}>
+        <p style={{ margin: '0 0 12px', color: C.slate, fontSize: 12, fontWeight: 900, letterSpacing: '0.3px' }}>기본 정보 입력</p>
+        <div style={{ display: 'grid', gridTemplateColumns: inputGrid(3), gap: 12, marginBottom: 12 }}>
+          <MoneyInputRow
+            label="연 매출액"
+            value={revenueMan * 10_000}
+            onChange={v => setRevenueMan(Math.max(1, Math.round(v / 10_000)))}
+          />
+          <InputRow
+            label="순이익률 (예상)"
+            value={profitRate}
+            onChange={setProfitRate}
+            unit="%"
+            hint={`→ 사업소득 약 ${autoIncMan.toLocaleString()}만원`}
+          />
+          <MoneyInputRow
+            label="사업소득금액 (직접입력 시 우선)"
+            value={incomeMan * 10_000}
+            onChange={v => setIncomeMan(Math.round(v / 10_000))}
+            hint={incomeMan > 0 ? `직접입력: ${incomeMan.toLocaleString()}만원` : '비워두면 순이익률 자동계산'}
+          />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: inputGrid(2), gap: 12 }}>
+          <div>
+            <MoneyInputRow
+              label="과세표준 (알면 정확계산, 모르면 비워두기)"
+              value={taxableMan * 10_000}
+              onChange={v => setTaxableMan(Math.round(v / 10_000))}
+              hint={isExact ? `정확계산 모드 (${taxableMan.toLocaleString()}만원)` : '미입력 시 → 순이익률별 시나리오 비교'}
+            />
+          </div>
+          <MoneyInputRow
+            label="현재 월 납부액 (과납 진단용)"
+            value={monthlyMan * 10_000}
+            onChange={v => setMonthlyMan(Math.round(v / 10_000))}
+            hint={monthlyMan > 0 ? `연 ${(monthlyMan * 12).toLocaleString()}만원 납부 중` : '비워두면 과납 진단 생략'}
+          />
+        </div>
+      </div>
+
+      {/* ── 핵심 지표 카드 ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: inputGrid(isExact ? 4 : 3), gap: 10, marginBottom: 14 }}>
+        <Metric
+          label="소득공제 한도 (연)"
+          value={`${limitMan.toLocaleString()}만원`}
+          tone={C.navy}
+          sub={`사업소득 ${actualIncMan.toLocaleString()}만원 기준`}
+        />
+        <Metric
+          label="권장 월 납부액"
+          value={`월 ${optMonthly.toLocaleString()}만원`}
+          tone={C.blue}
+          sub={`연 ${limitMan.toLocaleString()}만원 한도 기준`}
+        />
+        {isExact ? (
+          <>
+            <Metric
+              label="최대 소득세 절감"
+              value={norFmtMan(maxSaving.income)}
+              tone={C.teal}
+              sub={`과세표준 적용세율: ${norRateLabel(taxableWon)}`}
+            />
+            <Metric
+              label="지방소득세 포함 총 절세"
+              value={norFmtMan(maxSaving.total)}
+              tone={C.gold}
+              sub={`소득세 ${norFmtMan(maxSaving.income)} + 지방세 ${norFmtMan(maxSaving.local)}`}
+            />
+          </>
+        ) : (
+          <Metric
+            label="현재 사업소득 예상세율"
+            value={norRateLabel(actualIncWon)}
+            tone={C.teal}
+            sub={`사업소득 ${actualIncMan.toLocaleString()}만원 기준 (단순추정)`}
+          />
+        )}
+      </div>
+
+      {/* ── 과납 진단 배너 ── */}
+      {monthlyMan > 0 && isExact && (
+        overPayMan > 0 ? (
+          <div style={{ background: '#FFF5F5', border: '1.5px solid #FC8181', borderRadius: 14, padding: '13px 16px', marginBottom: 14 }}>
+            <p style={{ margin: '0 0 5px', color: '#C53030', fontSize: 13, fontWeight: 900 }}>
+              ⚠️ 월 {Math.round(overPayMan / 12).toLocaleString()}만원 과납 — 연 {overPayMan.toLocaleString()}만원은 소득공제 없이 적립만 됩니다
+            </p>
+            <p style={{ margin: '0 0 4px', color: '#742A2A', fontSize: 12, fontWeight: 700 }}>
+              현재 납부 연 {curYearlyMan.toLocaleString()}만원 중 공제가능 {effDeductMan.toLocaleString()}만원 / 공제불가 {overPayMan.toLocaleString()}만원
+            </p>
+            <p style={{ margin: 0, color: '#742A2A', fontSize: 11, fontWeight: 700 }}>
+              실제 절세효과: {curSaving ? norFmtMan(curSaving.total) : '-'} → 권장납부(월 {optMonthly}만원) 시 동일 절세 {norFmtMan(maxSaving.total)} 달성 가능
+            </p>
+          </div>
+        ) : (
+          <div style={{ background: '#F0FFF4', border: '1.5px solid #68D391', borderRadius: 14, padding: '11px 16px', marginBottom: 14 }}>
+            <p style={{ margin: 0, color: '#276749', fontSize: 12, fontWeight: 900 }}>
+              ✅ 현재 월 {monthlyMan.toLocaleString()}만원은 한도 이내 — 과납 없음.
+              {curSaving && ` 실제 절세효과: ${norFmtMan(curSaving.total)} / 한도까지 월 ${Math.max(0, optMonthly - monthlyMan).toLocaleString()}만원 추가 가능`}
+            </p>
+          </div>
+        )
+      )}
+
+      {/* ── 정확계산 결과 ── */}
+      {isExact && (
+        <ResultHero
+          title={`과세표준 ${taxableMan.toLocaleString()}만원 기준 — 정확 절세 계산`}
+          tone={C.teal}
+          body={
+            `공제 전 과세표준 ${taxableMan.toLocaleString()}만원 → 공제 후 ${Math.max(0, taxableMan - limitMan).toLocaleString()}만원 ` +
+            `| 소득세 절감 ${norFmtMan(maxSaving.income)} + 지방소득세 ${norFmtMan(maxSaving.local)} = 총 절세 ${norFmtMan(maxSaving.total)}`
+          }
+        />
+      )}
+
+      {/* ── 시나리오 비교 테이블 (과세표준 미입력 시) ── */}
+      {!isExact && (
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 16, overflow: 'hidden', marginTop: 4 }}>
+          <div style={{ background: C.navy, padding: '11px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <p style={{ margin: 0, color: C.gold, fontSize: 12, fontWeight: 900 }}>
+              📊 연매출 {revenueMan.toLocaleString()}만원 — 순이익률별 시나리오 비교 (2025년 기준)
+            </p>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 700 }}>
+              과세표준 입력 시 정확한 계산 가능
+            </span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#F7F8FA', borderBottom: `2px solid ${C.border}` }}>
+                  {[
+                    { label: '순이익률', align: 'center' },
+                    { label: '예상 사업소득', align: 'center' },
+                    { label: '공제한도(연)', align: 'center' },
+                    { label: '월 적정납부', align: 'center' },
+                    { label: '예상세율 구간', align: 'center' },
+                    { label: '최대 절세효과', align: 'center' },
+                    ...(monthlyMan > 0 ? [{ label: `현재 월${monthlyMan}만원 납부 시`, align: 'center' }] : []),
+                  ].map(h => (
+                    <th key={h.label} style={{ padding: '10px 14px', fontWeight: 900, color: C.navy, fontSize: 12, textAlign: h.align as 'center', whiteSpace: 'nowrap' }}>{h.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {scenarios.map((s, i) => {
+                  const isOver = monthlyMan > 0 && s.overpay > 0
+                  return (
+                    <tr key={s.rate} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? '#fff' : '#F9FAFC' }}>
+                      <td style={{ padding: '13px 16px', fontWeight: 900, color: C.blue, textAlign: 'center', fontSize: 16 }}>
+                        {s.rate}%
+                      </td>
+                      <td style={{ padding: '13px 14px', fontWeight: 800, color: C.text, textAlign: 'center' }}>
+                        약 {s.bizMan.toLocaleString()}만원
+                      </td>
+                      <td style={{ padding: '13px 14px', fontWeight: 900, color: C.teal, textAlign: 'center', fontSize: 15 }}>
+                        {s.limMan.toLocaleString()}만원
+                      </td>
+                      <td style={{ padding: '13px 14px', fontWeight: 900, color: C.navy, textAlign: 'center', fontSize: 15 }}>
+                        월 {s.optMon.toLocaleString()}만원
+                        <span style={{ display: 'block', fontSize: 10, color: C.muted, fontWeight: 700 }}>연 {s.limMan.toLocaleString()}만원</span>
+                      </td>
+                      <td style={{ padding: '13px 14px', textAlign: 'center' }}>
+                        <span style={{ background: C.blueLight, color: C.blue, fontSize: 12, fontWeight: 900, padding: '3px 10px', borderRadius: 99 }}>
+                          {s.rateLabel}
+                        </span>
+                      </td>
+                      <td style={{ padding: '13px 14px', textAlign: 'center' }}>
+                        <span style={{ color: C.gold, fontWeight: 900, fontSize: 15 }}>
+                          약 {Math.round(s.saving.total / 10_000).toLocaleString()}만원
+                        </span>
+                        <span style={{ display: 'block', fontSize: 10, color: C.muted, fontWeight: 700 }}>
+                          소득세 {Math.round(s.saving.income / 10_000).toLocaleString()}만 + 지방세 {Math.round(s.saving.local / 10_000).toLocaleString()}만
+                        </span>
+                      </td>
+                      {monthlyMan > 0 && (
+                        <td style={{ padding: '13px 14px', textAlign: 'center' }}>
+                          {isOver ? (
+                            <div>
+                              <span style={{ color: '#E53E3E', fontWeight: 900, fontSize: 12, display: 'block' }}>
+                                ⚠️ 연 {s.overpay.toLocaleString()}만원 과납
+                              </span>
+                              <span style={{ color: '#E53E3E', fontSize: 11, fontWeight: 700 }}>
+                                실절세 {s.curSav ? Math.round(s.curSav.total / 10_000).toLocaleString() : '-'}만원
+                              </span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span style={{ color: '#38A169', fontWeight: 900, fontSize: 12, display: 'block' }}>✅ 한도 이내</span>
+                              {s.curSav && (
+                                <span style={{ color: C.muted, fontSize: 11, fontWeight: 700 }}>
+                                  절세 {Math.round(s.curSav.total / 10_000).toLocaleString()}만원
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ background: '#FAFBFC', padding: '10px 18px', borderTop: `1px solid ${C.border}` }}>
+            <p style={{ margin: 0, color: C.muted, fontSize: 11, fontWeight: 700, lineHeight: 1.65 }}>
+              ※ 절세효과 = 소득세 절감 + 지방소득세(소득세의 10%) 합산 / 사업소득금액 ≈ 과세표준 단순 적용 (기본공제 등 개인 공제 미반영)
+              <br />※ 정확한 절세액 확인은 위 「과세표준」란에 종합소득세 신고서상 과세표준을 직접 입력하세요.
+            </p>
+          </div>
         </div>
       )}
     </div>
