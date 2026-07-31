@@ -21,7 +21,7 @@ const C = {
   muted: "#718096",
 }
 
-type TabId = "retirement" | "care" | "compare" | "inflation" | "compound" | "variable" | "noranwoo"
+type TabId = "retirement" | "care" | "compare" | "inflation" | "compound" | "variable" | "noranwoo" | "pension"
 type RetirementLevelId = "unprepared" | "minimum" | "standard" | "comfort"
 type PensionType = "db" | "dc" | "irp"
 type CompoundMode = "single" | "monthly"
@@ -60,6 +60,7 @@ const MENU: { id: TabId; label: string; desc: string }[] = [
   { id: "compound", label: "복리 계산", desc: "일시납·월적립식과 거치기간" },
   { id: "variable", label: "코스트 애버리지", desc: "일시납과 월적립식 투자 비교" },
   { id: "noranwoo", label: "노란우산공제 절세", desc: "사업자 공제한도·최대혜택·과납 진단" },
+  { id: "pension", label: "연금 시뮬레이터", desc: "변액·공시이율 연금 수령액 인포그래픽" },
 ]
 
 const RETIREMENT_LEVELS: {
@@ -318,6 +319,7 @@ export default function FinancialCalc() {
           {tab === "compound" && <CompoundCalc age={state.age} />}
           {tab === "variable" && <VariableCalc />}
           {tab === "noranwoo" && <NoranwooCalc />}
+          {tab === "pension" && <PensionCalc />}
         </main>
       </div>
     </div>
@@ -1322,6 +1324,636 @@ function NoranwooCalc() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PensionCalc v3 — 실제 상품 기반 종합 연금 시뮬레이터
+// KDB 예시 반영: 40세남 10년납71만 → 65세 월100만원 (종신)
+// ════════════════════════════════════════════════════════════════════
+
+type PPT = 'variable' | 'declared' | 'dollar'   // 상품유형 (달러연금 추가)
+type PGender = 'male' | 'female'
+type PMode = 'self' | 'child'
+type PPayType = '5y' | '10y' | '15y' | '20y' | 'lifetime' | 'inherit'
+
+// 연금개시나이별 기본지급률 (종신, 남/여) — KDB·IBK 실제 데이터 기반
+const BASE_ANNUITY_RATES: Record<number, { male: number; female: number }> = {
+  55: { male: 3.6, female: 3.1 },
+  60: { male: 4.2, female: 3.8 },
+  65: { male: 6.0, female: 5.4 },
+  70: { male: 7.8, female: 7.2 },
+  75: { male: 10.0, female: 9.3 },
+  80: { male: 13.0, female: 12.0 },
+}
+
+// 달러연금 MetLife 참고 데이터 (2026.04 기준)
+const DOLLAR_RATE_DEFAULT = 4.66    // 현재 달러 공시이율 (%)
+const DOLLAR_MIN_RATE = 0.7         // 최저보증이율 (5년 초과)
+const DOLLAR_EARLY_MULTIPLIER = 3.0 // 조기집중 증배수
+
+// 달러 포맷: $1,234 / 원화 환산도 병행 표시
+function fmtUSD(usd: number): string {
+  return '$' + Math.round(usd).toLocaleString()
+}
+
+// 변액연금 3시나리오 (IBK 기준)
+const VAR3 = [
+  { key: 'bear', label: '비관형', invest: -1, pure: -4.96, color: '#C0392B', bg: '#FDEDED', note: '원금 손실 시나리오' },
+  { key: 'base', label: '기준형', invest: 2.50, pure: -1.46, color: '#1A3052', bg: '#EBF3FB', note: '업계 평균 수준' },
+  { key: 'bull', label: '낙관형', invest: 3.75, pure: -0.21, color: '#0E7E6B', bg: '#E3F5F1', note: '장기 목표 수준' },
+]
+
+// 세액공제율 (2025 기준)
+function taxCreditRate(annualIncome: number): number {
+  return annualIncome <= 55_000_000 ? 0.165 : 0.132
+}
+
+// 연금소득세율 (수령나이별)
+function pensionTaxRate(age: number): number {
+  if (age >= 80) return 0.033
+  if (age >= 70) return 0.044
+  return 0.055
+}
+
+function pFV3(net: number, rate: number, months: number): number {
+  const r = rate / 100 / 12
+  if (months <= 0) return 0
+  if (Math.abs(r) < 0.000001) return net * months
+  return net * ((Math.pow(1 + r, months) - 1) / r) * (1 + r)
+}
+
+function pMon3(res: number, rate: number, months: number): number {
+  const r = rate / 100 / 12
+  if (months <= 0 || res <= 0) return 0
+  if (Math.abs(r) < 0.000001) return res / months
+  return res * r / (1 - Math.pow(1 + r, -months))
+}
+
+function fmtW3(won: number): string {
+  const v = Math.round(won)
+  if (v >= 100_000_000) {
+    const uk = Math.floor(v / 100_000_000)
+    const man = Math.round((v % 100_000_000) / 10_000)
+    return man > 0 ? `${uk.toLocaleString()}억 ${man.toLocaleString()}만원` : `${uk.toLocaleString()}억원`
+  }
+  if (v >= 10_000) return `${Math.round(v / 10_000).toLocaleString()}만원`
+  return `${v.toLocaleString()}원`
+}
+
+// ── 상속·증여 팝업 ─────────────────────────────────────────────
+
+function InheritanceModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 24, maxWidth: 720, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.22)', fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif" }}>
+        <div style={{ background: `linear-gradient(135deg, ${C.navy}, #2D4A8A)`, borderRadius: '24px 24px 0 0', padding: '20px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ margin: 0, color: C.gold, fontSize: 11, fontWeight: 900, letterSpacing: '0.8px' }}>연금보험 + 세금 설계</p>
+            <p style={{ margin: '3px 0 0', color: '#fff', fontSize: 17, fontWeight: 950 }}>상속세 · 증여세 핵심 가이드</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 20, width: 36, height: 36, cursor: 'pointer', fontWeight: 900 }}>✕</button>
+        </div>
+        <div style={{ padding: '22px 26px', display: 'grid', gap: 18 }}>
+          <div>
+            <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 900, color: C.navy }}>📊 상속세·증여세 세율 (동일 적용)</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: C.navy }}>{['과세표준','세율','누진공제'].map((h,i) => <th key={h} style={{ padding:'9px 14px', color:C.gold, fontWeight:900, textAlign:i===0?'left':'center', fontSize:12, border:'none' }}>{h}</th>)}</tr></thead>
+              <tbody>{[['1억원 이하','10%','-'],['5억원 이하','20%','1,000만원'],['10억원 이하','30%','6,000만원'],['30억원 이하','40%','1억 6,000만원'],['30억원 초과','50%','4억 6,000만원']].map((row,i) => (
+                <tr key={row[0]} style={{ background: i%2===0?'#fff':'#F7F8FA' }}>
+                  <td style={{ padding:'9px 14px', fontWeight:700, color:C.text }}>{row[0]}</td>
+                  <td style={{ padding:'9px 14px', textAlign:'center', fontWeight:900, color:['40%','50%'].includes(row[1])?C.rose:C.navy, fontSize:15 }}>{row[1]}</td>
+                  <td style={{ padding:'9px 14px', textAlign:'center', fontWeight:700, color:C.muted }}>{row[2]}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <div style={{ background:'#F0F7FF', borderRadius:14, padding:'14px 16px', border:`1px solid ${C.border}` }}>
+              <p style={{ margin:'0 0 10px', fontSize:12, fontWeight:900, color:C.blue }}>🏛️ 상속세 주요 공제</p>
+              {[['기초공제','2억원'],['배우자 상속공제','5억~30억원'],['일괄공제','5억원'],['금융재산 공제','순금융재산 20% (최대 2억)'],['동거주택 공제','주택가액 80% (최대 6억)']].map(item => (
+                <div key={item[0]} style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:12 }}>
+                  <span style={{ color:C.slate, fontWeight:700 }}>{item[0]}</span>
+                  <span style={{ color:C.navy, fontWeight:900 }}>{item[1]}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ background:'#F0FFF4', borderRadius:14, padding:'14px 16px', border:`1px solid ${C.border}` }}>
+              <p style={{ margin:'0 0 10px', fontSize:12, fontWeight:900, color:C.teal }}>🎁 증여세 기본공제 (10년 합산)</p>
+              {[['배우자','6억원'],['직계존비속 (성인)','5,000만원'],['직계존비속 (미성년)','2,000만원'],['기타 친족','1,000만원']].map(item => (
+                <div key={item[0]} style={{ marginBottom:9, fontSize:12 }}>
+                  <div style={{ color:C.slate, fontWeight:700, marginBottom:2 }}>{item[0]}</div>
+                  <div style={{ color:C.teal, fontWeight:900, fontSize:14 }}>{item[1]}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background:C.goldLight, borderRadius:14, padding:'14px 18px', border:`1.5px solid ${C.gold}` }}>
+            <p style={{ margin:'0 0 10px', fontSize:13, fontWeight:900, color:'#7B5B00' }}>💡 연금보험과 상속·증여 핵심 포인트</p>
+            {['연금보험 사망보험금은 수익자 지정 시 상속재산 제외 → 빠른 수령 가능 (단, 상속세 과세대상 될 수 있음)','자녀를 수익자로 지정 시 10년 단위 증여세 공제 활용 가능 (성인자녀 5,000만원 이내)','계약자=부모·피보험자=자녀·수익자=자녀 구조: 연금 수령 시점에 증여 이슈 가능 → 세무사 상담 권장','종신보험+연금전환 구조: 사망 시 유족 생계 보장, 생존 시 연금 전환으로 상속·노후 동시 설계','상속세 신고기한: 사망일이 속하는 달의 말일부터 6개월 이내'].map((txt, i) => (
+              <div key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', marginBottom: i<4?8:0 }}>
+                <span style={{ fontSize:14, flexShrink:0 }}>{'✅💰📋🏢⚖️'.split('').filter((_,j)=>j%2===0)[i]}</span>
+                <span style={{ fontSize:12, fontWeight:700, color:'#5A3F00', lineHeight:1.6 }}>{txt}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ margin:0, fontSize:11, color:C.muted, fontWeight:700, lineHeight:1.7 }}>
+            ※ 2025~2026년 기준 / 개인별 상황에 따라 달라질 수 있으므로 공인세무사 상담을 통해 확인하세요.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── 메인 PensionCalc ──────────────────────────────────────────────
+
+function PensionCalc() {
+  const [mode, setMode] = useState<PMode>('self')
+  const [productType, setProductType] = useState<PPT>('variable')
+  const [gender, setGender] = useState<PGender>('male')
+  const [currentAge, setCurrentAge] = useState(40)
+  const [childAge, setChildAge] = useState(10)
+  const [monthlyMan, setMonthlyMan] = useState(50)
+  const [payPreset, setPayPreset] = useState<5|7|10|0>(10)
+  const [payYears, setPayYears] = useState(10)
+  const [pensionStartAge, setPensionStartAge] = useState<number>(65)
+  const [childPensionAge, setChildPensionAge] = useState<number>(60)
+  const [variableRate, setVariableRate] = useState(3.75)
+  const [declaredRate, setDeclaredRate] = useState(2.42)
+  const [dollarRate, setDollarRate] = useState(DOLLAR_RATE_DEFAULT)
+  const [exchangeRate, setExchangeRate] = useState(1380)     // 현재 환율 (원/달러)
+  const [dollarMonthly, setDollarMonthly] = useState(310)   // 달러연금 월납 (달러)
+  const [earlyMultiplier, setEarlyMultiplier] = useState(DOLLAR_EARLY_MULTIPLIER) // 조기집중 증배수
+  const [annuityPayRate, setAnnuityPayRate] = useState(2.42)
+  const [annuityBaseRate, setAnnuityBaseRate] = useState(6.0)   // 기본지급률 (종신형)
+  const [autoBaseRate, setAutoBaseRate] = useState(true)         // 자동/수동
+  const [guaranteeRatio, setGuaranteeRatio] = useState(210)     // 최저연금보증배율(%)
+  const [payType, setPayType] = useState<PPayType>('lifetime')
+  const [showInheritance, setShowInheritance] = useState(false)
+  const [annualIncomeMan, setAnnualIncomeMan] = useState(5000)  // 세액공제 계산용 연소득(만원)
+
+  // 연금개시나이에 따른 기본지급률 자동 설정
+  const subjectAge = mode === 'child' ? childAge : currentAge
+  const subjectPensionAge = mode === 'child' ? childPensionAge : pensionStartAge
+  const autoRate = (BASE_ANNUITY_RATES[subjectPensionAge] || BASE_ANNUITY_RATES[65])[gender]
+  const effectiveBaseRate = autoBaseRate ? autoRate : annuityBaseRate
+
+  // 달러연금: 월납을 달러로 별도 관리
+  const isDollar = productType === 'dollar'
+  const monthly = isDollar ? dollarMonthly * exchangeRate : monthlyMan * 10_000
+  const netMonthly = isDollar
+    ? dollarMonthly * 0.92   // 달러 기준 사업비 8% 공제
+    : monthly * 0.92
+  const growthRate = productType === 'variable' ? variableRate : isDollar ? dollarRate : declaredRate
+  const payMonths = payYears * 12
+  const pensionStart = Math.max(subjectAge + payYears, subjectPensionAge)
+  const deferYears = Math.max(0, pensionStart - (subjectAge + payYears))
+  const totalPaid = monthly * payMonths
+
+  // 달러 수치 (USD 기준)
+  const dollarTotalPaid = dollarMonthly * payMonths
+  const dollarNetMonthly = dollarMonthly * 0.92
+
+  // 변액: 기준 시나리오 (3.75%) → 최저보증 MAX
+  const minGuarantee = totalPaid * (guaranteeRatio / 100)
+
+  function calcReserve(rate: number): number {
+    const r0 = pFV3(netMonthly, rate, payMonths)
+    const r1 = deferYears > 0 ? r0 * Math.pow(1 + Math.max(0, rate) / 100, deferYears) : r0
+    return Math.max(0, r1)
+  }
+
+  const reserveBase = calcReserve(growthRate)
+  const effectiveReserve = productType === 'variable' ? Math.max(reserveBase, minGuarantee) : reserveBase
+
+  const lifeExpect = gender === 'male' ? 82 : 88
+  const lifetimeMonths = Math.max(12 * 10, (lifeExpect - pensionStart) * 12)
+
+  // 수령방식별 월수령액
+  function getMonthly(pt: PPayType): number {
+    switch (pt) {
+      case '5y':       return pMon3(effectiveReserve, annuityPayRate, 60)
+      case '10y':      return pMon3(effectiveReserve, annuityPayRate, 120)
+      case '15y':      return pMon3(effectiveReserve, annuityPayRate, 180)
+      case '20y':      return pMon3(effectiveReserve, annuityPayRate, 240)
+      case 'lifetime': return effectiveReserve * (effectiveBaseRate / 100) / 12
+      case 'inherit':  return reserveBase * (annuityPayRate / 100) / 12
+      default: return 0
+    }
+  }
+  function getTotalMonths(pt: PPayType): number {
+    const m: Record<PPayType, number> = { '5y':60, '10y':120, '15y':180, '20y':240, 'lifetime':lifetimeMonths, 'inherit':lifetimeMonths }
+    return m[pt]
+  }
+
+  const selMonthly = getMonthly(payType)
+  const selTotal = selMonthly * getTotalMonths(payType)
+
+  const PAY_CARDS: { key: PPayType; label: string; sub: string }[] = [
+    { key:'5y',       label:'5년 확정', sub:'단기 고수령' },
+    { key:'10y',      label:'10년 확정', sub:'안정 균형형' },
+    { key:'15y',      label:'15년 확정', sub:'중기 보장' },
+    { key:'20y',      label:'20년 확정', sub:'장기 보장' },
+    { key:'lifetime', label:'종신', sub:`기대수명 ${lifeExpect}세` },
+    { key:'inherit',  label:'상속', sub:'원금유지 이자수령' },
+  ]
+
+  // 세제혜택 계산
+  const annualIncome = annualIncomeMan * 10_000
+  const creditRate = taxCreditRate(annualIncome)
+  const taxCreditLimit = 6_000_000  // 600만원 (연금저축 한도)
+  const annualPaid = monthly * 12
+  const creditableAmt = Math.min(annualPaid, taxCreditLimit)
+  const annualTaxCredit = creditableAmt * creditRate
+  const pensionTax = selMonthly * 12 * pensionTaxRate(pensionStart)
+
+  const inputSt: React.CSSProperties = {
+    width:'100%', padding:'9px 12px', borderRadius:10, border:`1.5px solid ${C.border}`,
+    fontSize:14, fontWeight:700, color:C.text, background:'#fff', outline:'none',
+    fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif", boxSizing:'border-box',
+  }
+  const labelSt: React.CSSProperties = { fontSize:11, fontWeight:900, color:C.muted, letterSpacing:'0.3px', marginBottom:5, display:'block' }
+  const cardSt: React.CSSProperties = { background:'#fff', borderRadius:18, padding:'20px 22px', border:`1px solid ${C.border}` }
+
+  const handlePreset = (p: 5|7|10|0) => {
+    setPayPreset(p)
+    if (p !== 0) setPayYears(p)
+  }
+
+  return (
+    <div style={{ display:'grid', gap:14 }}>
+      {showInheritance && <InheritanceModal onClose={() => setShowInheritance(false)} />}
+
+      {/* ── 최상단 컨트롤 ── */}
+      <div style={{ ...cardSt, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+        {/* 모드 */}
+        <div style={{ display:'flex', border:`2px solid ${C.border}`, borderRadius:12, overflow:'hidden' }}>
+          {(['self','child'] as PMode[]).map((m, i) => (
+            <button key={m} onClick={() => setMode(m)} style={{ padding:'9px 14px', fontSize:13, fontWeight:900, cursor:'pointer', border:'none', background:mode===m?C.navy:'#fff', color:mode===m?'#fff':C.slate, fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif", transition:'all 0.18s' }}>
+              {['👤 본인 연금','👶 자녀 연금'][i]}
+            </button>
+          ))}
+        </div>
+        {/* 상품 */}
+        <div style={{ display:'flex', border:`2px solid ${C.border}`, borderRadius:12, overflow:'hidden' }}>
+          {(['variable','declared','dollar'] as PPT[]).map((t, i) => (
+            <button key={t} onClick={() => setProductType(t)} style={{ padding:'9px 14px', fontSize:13, fontWeight:900, cursor:'pointer', border:'none', background:productType===t?C.blue:'#fff', color:productType===t?'#fff':C.slate, fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif", transition:'all 0.18s' }}>
+              {['📈 변액연금','🏦 공시이율연금','🇺🇸 달러연금'][i]}
+            </button>
+          ))}
+        </div>
+        {/* 성별 */}
+        <div style={{ display:'flex', border:`2px solid ${C.border}`, borderRadius:12, overflow:'hidden' }}>
+          {(['male','female'] as PGender[]).map((g, i) => (
+            <button key={g} onClick={() => setGender(g)} style={{ padding:'9px 12px', fontSize:12, fontWeight:900, cursor:'pointer', border:'none', background:gender===g?(g==='male'?C.teal:'#9B59B6'):'#fff', color:gender===g?'#fff':C.slate, fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif", transition:'all 0.18s' }}>
+              {['남성 (82세)','여성 (88세)'][i]}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setShowInheritance(true)} style={{ marginLeft:'auto', background:`linear-gradient(135deg, ${C.gold}, #E8A84B)`, border:'none', borderRadius:12, color:C.navy, fontWeight:900, fontSize:13, padding:'9px 18px', cursor:'pointer', fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif", boxShadow:`0 3px 10px rgba(201,168,76,0.35)` }}>
+          🏛️ 상속·증여 가이드 →
+        </button>
+      </div>
+
+      {/* ── 입력 ── */}
+      <div style={{ ...cardSt }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+          <p style={{ margin:0, fontSize:14, fontWeight:900, color:C.navy }}>📋 {mode==='child'?'자녀 연금':'기본 정보'} 입력</p>
+          {/* 납입기간 프리셋 */}
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <span style={{ fontSize:11, fontWeight:900, color:C.muted }}>납입기간</span>
+            {([5,7,10] as const).map(p => (
+              <button key={p} onClick={() => handlePreset(p)} style={{ padding:'5px 12px', borderRadius:8, fontSize:12, fontWeight:900, cursor:'pointer', border:`1.5px solid ${payPreset===p?C.navy:C.border}`, background:payPreset===p?C.navy:'#fff', color:payPreset===p?'#fff':C.slate, fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif" }}>{p}년납</button>
+            ))}
+            <button onClick={() => handlePreset(0)} style={{ padding:'5px 10px', borderRadius:8, fontSize:12, fontWeight:900, cursor:'pointer', border:`1.5px solid ${payPreset===0?C.navy:C.border}`, background:payPreset===0?C.navy:'#fff', color:payPreset===0?'#fff':C.slate, fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif" }}>직접입력</button>
+          </div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px,1fr))', gap:12 }}>
+          {mode==='child' ? <>
+            <div><label style={labelSt}>자녀 현재 나이</label><input type="number" value={childAge} min={0} max={50} onChange={e=>setChildAge(Number(e.target.value))} style={inputSt} /></div>
+          </> : <>
+            <div><label style={labelSt}>현재 나이</label><input type="number" value={currentAge} min={20} max={70} onChange={e=>setCurrentAge(Number(e.target.value))} style={inputSt} /></div>
+          </>}
+          <div><label style={labelSt}>월 납입금액 (만원)</label><input type="number" value={monthlyMan} min={1} onChange={e=>setMonthlyMan(Number(e.target.value))} style={inputSt} /></div>
+          <div>
+            <label style={labelSt}>납입기간 (년)</label>
+            <input type="number" value={payYears} min={5} max={50} onChange={e=>{ setPayYears(Number(e.target.value)); setPayPreset(0) }} style={{ ...inputSt, borderColor: payPreset===0?C.blue:C.border }} />
+          </div>
+          <div>
+            <label style={labelSt}>{mode==='child'?'자녀 ':' '}연금개시 나이</label>
+            <select value={mode==='child'?childPensionAge:pensionStartAge} onChange={e=>{ const v=Number(e.target.value); if(mode==='child')setChildPensionAge(v); else setPensionStartAge(v) }} style={{ ...inputSt, appearance:'none', cursor:'pointer', background:`#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234A5568' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center`, paddingRight:32 }}>
+              {[55,60,65,70,75,80].map(a=><option key={a} value={a}>{a}세</option>)}
+            </select>
+          </div>
+          {productType==='variable' ? (
+            <div><label style={labelSt}>예상 투자수익률 (%)</label><input type="number" value={variableRate} min={-5} max={15} step={0.25} onChange={e=>setVariableRate(Number(e.target.value))} style={{ ...inputSt, borderColor:C.blue }} /></div>
+          ) : productType==='dollar' ? (
+            <div><label style={labelSt}>달러 공시이율 (%) MetLife 4.66</label><input type="number" value={dollarRate} min={0.5} max={8} step={0.1} onChange={e=>setDollarRate(Number(e.target.value))} style={{ ...inputSt, borderColor:'#22577A' }} /></div>
+          ) : (
+            <div><label style={labelSt}>공시이율 (%) 현재 2.42</label><input type="number" value={declaredRate} min={0.5} max={8} step={0.1} onChange={e=>setDeclaredRate(Number(e.target.value))} style={{ ...inputSt, borderColor:C.teal }} /></div>
+          )}
+          <div><label style={labelSt}>확정형 연금지급이율 (%)</label><input type="number" value={annuityPayRate} min={0.5} max={6} step={0.1} onChange={e=>setAnnuityPayRate(Number(e.target.value))} style={inputSt} /></div>
+        </div>
+
+        {/* 고급 설정 */}
+        {/* 달러연금 전용 입력 */}
+        {isDollar && (
+          <div style={{ marginTop:14, paddingTop:14, borderTop:`2px dashed #22577A40`, display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px,1fr))', gap:12, background:'rgba(34,87,122,0.04)', borderRadius:12, padding:'12px 14px' }}>
+            <div>
+              <label style={{ ...labelSt, color:'#22577A' }}>🇺🇸 월 납입보험료 (달러)</label>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <span style={{ fontSize:16, fontWeight:900, color:'#22577A' }}>$</span>
+                <input type="number" value={dollarMonthly} min={50} step={10} onChange={e=>setDollarMonthly(Number(e.target.value))} style={{ ...inputSt, borderColor:'#22577A', flex:1 }} />
+              </div>
+              <p style={{ margin:'3px 0 0', fontSize:10, color:'#22577A', fontWeight:700 }}>원화 환산: {fmtW3(dollarMonthly * exchangeRate)}/월</p>
+            </div>
+            <div>
+              <label style={{ ...labelSt, color:'#22577A' }}>현재 환율 (원/달러)</label>
+              <input type="number" value={exchangeRate} min={1000} max={2000} step={10} onChange={e=>setExchangeRate(Number(e.target.value))} style={{ ...inputSt, borderColor:'#22577A' }} />
+            </div>
+            <div>
+              <label style={{ ...labelSt, color:'#22577A' }}>조기집중 증배수 (MetLife 3.0배)</label>
+              <input type="number" value={earlyMultiplier} min={1} max={5} step={0.5} onChange={e=>setEarlyMultiplier(Number(e.target.value))} style={{ ...inputSt, borderColor:'#22577A' }} />
+              <p style={{ margin:'3px 0 0', fontSize:10, color:'#22577A', fontWeight:700 }}>개시 후 첫 10년 집중 지급</p>
+            </div>
+          </div>
+        )}
+        <div style={{ marginTop:14, paddingTop:14, borderTop:`1px dashed ${C.border}`, display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px,1fr))', gap:12 }}>
+          <div>
+            <label style={labelSt}>
+              종신형 기본지급률 (%)
+              <button onClick={()=>setAutoBaseRate(v=>!v)} style={{ marginLeft:8, fontSize:10, padding:'2px 8px', borderRadius:6, border:`1px solid ${C.border}`, background:autoBaseRate?C.teal:'#fff', color:autoBaseRate?'#fff':C.slate, cursor:'pointer', fontWeight:900, fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif" }}>
+                {autoBaseRate?'자동':'수동'}
+              </button>
+            </label>
+            <input type="number" value={autoBaseRate?autoRate:annuityBaseRate} disabled={autoBaseRate} min={1} max={20} step={0.1} onChange={e=>setAnnuityBaseRate(Number(e.target.value))} style={{ ...inputSt, background:autoBaseRate?'#F7F8FA':'#fff', color:autoBaseRate?C.muted:C.text }} />
+            {autoBaseRate && <p style={{ margin:'3px 0 0', fontSize:10, color:C.muted, fontWeight:700 }}>※ {subjectPensionAge}세 {gender==='male'?'남':'여'}성 기준 자동 설정</p>}
+          </div>
+          {productType==='variable' && (
+            <div>
+              <label style={labelSt}>최저연금보증배율 (%)</label>
+              <input type="number" value={guaranteeRatio} min={100} max={300} step={10} onChange={e=>setGuaranteeRatio(Number(e.target.value))} style={inputSt} />
+              <p style={{ margin:'3px 0 0', fontSize:10, color:C.muted, fontWeight:700 }}>최저연금기준금액: {fmtW3(minGuarantee)}</p>
+            </div>
+          )}
+          <div>
+            <label style={labelSt}>연 소득 (만원, 세액공제 계산용)</label>
+            <input type="number" value={annualIncomeMan} min={1000} step={500} onChange={e=>setAnnualIncomeMan(Number(e.target.value))} style={inputSt} />
+          </div>
+        </div>
+
+        {deferYears>0 && <div style={{ marginTop:12, background:C.blueLight, borderRadius:10, padding:'8px 14px', fontSize:12, fontWeight:700, color:C.blue }}>ℹ️ 납입 종료({subjectAge+payYears}세) 후 {deferYears}년 거치 → {pensionStart}세 연금 개시</div>}
+        {mode==='child' && <div style={{ marginTop:8, background:'#FFF5FB', borderRadius:10, padding:'8px 14px', fontSize:12, fontWeight:700, color:'#7B2D6E', border:`1px solid #F3C6E8` }}>👶 자녀({childAge}세) — 부모 납입 {payYears}년 후 자녀 {pensionStart}세 연금개시 / 기대수명 {lifeExpect}세까지 수령</div>}
+      </div>
+
+      {/* ── 수령방식 탑다운 선택 ── */}
+      <div style={{ ...cardSt }}>
+        <p style={{ margin:'0 0 12px', fontSize:14, fontWeight:900, color:C.navy }}>💳 수령방식 선택</p>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10, marginBottom:16 }}>
+          {PAY_CARDS.map(card => {
+            const m = getMonthly(card.key)
+            return (
+              <button key={card.key} onClick={()=>setPayType(card.key)} style={{ padding:'13px 10px', borderRadius:14, cursor:'pointer', transition:'all 0.18s', border:`2px solid ${payType===card.key?C.navy:C.border}`, background:payType===card.key?C.navy:'#F7F8FA', fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif", textAlign:'center' }}>
+                <div style={{ fontSize:11, fontWeight:900, color:payType===card.key?'rgba(255,255,255,0.8)':C.muted, marginBottom:4 }}>{card.label}</div>
+                <div style={{ fontSize:17, fontWeight:950, letterSpacing:'-0.5px', color:payType===card.key?C.gold:C.navy }}>{fmtW3(m)}</div>
+                <div style={{ fontSize:10, fontWeight:700, marginTop:3, color:payType===card.key?'rgba(255,255,255,0.6)':C.muted }}>{card.sub}</div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* 결과 히어로 */}
+        <div style={{ background:`linear-gradient(135deg, ${C.navy}, #2D4A8A)`, borderRadius:16, padding:'20px 22px', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px,1fr))', gap:14 }}>
+          {[
+            { label:'총 납입금액', value:fmtW3(totalPaid), sub:`월 ${monthlyMan}만 × ${payYears*12}개월` },
+            { label:'연금개시 재원', value:fmtW3(effectiveReserve), sub: productType==='variable'?`보증: ${fmtW3(minGuarantee)}`:`공시이율 ${declaredRate}%` },
+            { label:'월 수령액', value:fmtW3(selMonthly), sub:`연 ${fmtW3(selMonthly*12)}` },
+            { label:'총 수령예상액', value:fmtW3(selTotal), sub:`납입 대비 ${(selTotal/totalPaid).toFixed(1)}배` },
+          ].map(c2=>(
+            <div key={c2.label}>
+              <p style={{ margin:'0 0 3px', color:'rgba(255,255,255,0.6)', fontSize:11, fontWeight:900 }}>{c2.label}</p>
+              <p style={{ margin:'0 0 3px', color:C.gold, fontSize:18, fontWeight:950, letterSpacing:'-0.5px' }}>{c2.value}</p>
+              <p style={{ margin:0, color:'rgba(255,255,255,0.45)', fontSize:11, fontWeight:700 }}>{c2.sub}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── KDB 실제 사례 참고 ── */}
+      <div style={{ background:C.goldLight, borderRadius:14, padding:'14px 18px', border:`1.5px solid ${C.gold}`, display:'grid', gridTemplateColumns:'1fr auto', gap:12, alignItems:'center' }}>
+        <div>
+          <p style={{ margin:'0 0 6px', fontSize:12, fontWeight:900, color:'#7B5B00' }}>📊 KDB 영리한 변액연금 실제 사례 (10년납, 종신연금형)</p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+            {[['40세男, 65세개시','71만원/월','월 100만원 보장','100세 누계 4억2천만'],['30세男, 65세개시','57만원/월','월 101만원 보장','100세 누계 4억2천만'],['50세男, 70세개시','80만원/월','월 100만원 보장','100세 누계 3억6천만']].map((col,i)=>(
+              <div key={i} style={{ background:'rgba(255,255,255,0.7)', borderRadius:10, padding:'8px 10px' }}>
+                {col.map((v,j)=><p key={j} style={{ margin:j>0?'3px 0 0':0, fontSize:j===0?11:12, fontWeight:j===0?700:900, color:j===0?'#9B7000':'#5A3F00' }}>{v}</p>)}
+              </div>
+            ))}
+            <div style={{ background:'rgba(255,255,255,0.5)', borderRadius:10, padding:'8px 10px', display:'flex', alignItems:'center' }}>
+              <p style={{ margin:0, fontSize:11, fontWeight:700, color:'#9B7000', lineHeight:1.6 }}>※ 최저연금보증금액이 실제 펀드보다 높을 시 보증금액 기준 지급</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 달러연금 MetLife 비교표 ── */}
+      {isDollar && (
+        <div style={{ ...cardSt, border:`2px solid #22577A40` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+            <span style={{ fontSize:20 }}>🇺🇸</span>
+            <div>
+              <p style={{ margin:0, fontSize:14, fontWeight:900, color:'#22577A' }}>MetLife 달러연금보험 참고 예시 (5년납 $310/월)</p>
+              <p style={{ margin:'2px 0 0', fontSize:11, fontWeight:700, color:C.muted }}>무배당 오로지 연금을 위한 달러연금보험 (보증비용부과형) · 2026.04 공시기준</p>
+            </div>
+          </div>
+          {/* 종신연금 3시나리오 */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:12 }}>
+            {[
+              { label:'최저보증이율 0.7%', reserve:'$25,294', lifetime:`$1,084/년`, early:`$3,253/년`, color:'#C0392B', bg:'#FDEDED' },
+              { label:'평균공시이율 2.5%', reserve:'$53,695', lifetime:`$2,515/년`, early:`$7,546/년`, color:'#1A3052', bg:'#EBF3FB' },
+              { label:'현재이율 4.66%', reserve:'$177,781', lifetime:`$9,153/년`, early:`$27,460/년`, color:'#0E7E6B', bg:'#E3F5F1' },
+            ].map(s=>(
+              <div key={s.label} style={{ background:s.bg, borderRadius:14, padding:'14px 16px', border:`2px solid ${s.color}22` }}>
+                <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:900, color:s.color }}>{s.label}</p>
+                <p style={{ margin:'0 0 3px', fontSize:11, fontWeight:700, color:C.muted }}>90세 개시 적립액</p>
+                <p style={{ margin:'0 0 8px', fontSize:16, fontWeight:950, color:s.color }}>{s.reserve}</p>
+                <div style={{ background:'rgba(255,255,255,0.7)', borderRadius:8, padding:'7px 10px' }}>
+                  <p style={{ margin:'0 0 3px', fontSize:10, fontWeight:900, color:C.muted }}>조기집중(3배) — 첫 10년</p>
+                  <p style={{ margin:'0 0 5px', fontSize:14, fontWeight:950, color:s.color }}>{s.early}</p>
+                  <p style={{ margin:'0 0 3px', fontSize:10, fontWeight:900, color:C.muted }}>이후 종신</p>
+                  <p style={{ margin:0, fontSize:14, fontWeight:950, color:s.color }}>{s.lifetime}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* 확정형 + 상속형 */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+            {[
+              { type:'확정 10년', min:'$2,596/년', mid:'$5,955/년', max:'$21,128/년' },
+              { type:'확정 20년', min:'$1,343/년', mid:'$3,343/년', max:'$13,174/년' },
+              { type:'상속연금 (이자)', min:'$176/년', mid:'$1,335/년', max:'$8,243/년' },
+              { type:'상속 원금 보존', min:'$25,294', mid:'$53,695', max:'$177,781' },
+            ].map(r=>(
+              <div key={r.type} style={{ background:'#F7F8FA', borderRadius:12, padding:'12px 13px', border:`1px solid ${C.border}` }}>
+                <p style={{ margin:'0 0 6px', fontSize:11, fontWeight:900, color:C.navy }}>{r.type}</p>
+                <p style={{ margin:'0 0 2px', fontSize:10, color:'#C0392B', fontWeight:700 }}>최저: {r.min}</p>
+                <p style={{ margin:'0 0 2px', fontSize:10, color:C.blue, fontWeight:700 }}>평균: {r.mid}</p>
+                <p style={{ margin:0, fontSize:10, color:C.teal, fontWeight:700 }}>현재: {r.max}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop:12, background:'rgba(34,87,122,0.07)', borderRadius:10, padding:'9px 14px' }}>
+            <p style={{ margin:0, fontSize:11, fontWeight:700, color:'#22577A', lineHeight:1.7 }}>
+              💱 달러 납입/수령 → 환율 헤지 효과 | 7년 후 원금 도달 (해약환급금 100%) | 최저이율 5년이내 1.0%, 5년초과 0.7% 보증<br/>
+              현재 환율 {exchangeRate}원/달러 기준: 월 $310 ≈ {fmtW3(310 * exchangeRate)} · 총 ${dollarTotalPaid.toLocaleString()} ≈ {fmtW3(dollarTotalPaid * exchangeRate)}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 타임라인 ── */}
+      <div style={{ ...cardSt }}>
+        <p style={{ margin:'0 0 14px', fontSize:14, fontWeight:900, color:C.navy }}>📊 납입 ~ 수령 타임라인</p>
+        <div style={{ display:'flex', borderRadius:10, overflow:'hidden', height:42 }}>
+          <div style={{ width:`${Math.max(3, payYears/(lifeExpect-subjectAge)*100)}%`, background:C.navy, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <span style={{ color:'#fff', fontSize:10, fontWeight:900, whiteSpace:'nowrap', padding:'0 6px' }}>납입 {payYears}년</span>
+          </div>
+          {deferYears>0.5 && (
+            <div style={{ width:`${deferYears/(lifeExpect-subjectAge)*100}%`, background:'#3B6CB7', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <span style={{ color:'#fff', fontSize:10, fontWeight:900 }}>거치 {deferYears}년</span>
+            </div>
+          )}
+          <div style={{ flex:1, background:`linear-gradient(90deg, ${C.gold}, #E8A84B)`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <span style={{ color:C.navy, fontSize:10, fontWeight:900, whiteSpace:'nowrap', padding:'0 6px' }}>수령 {lifeExpect-pensionStart}년 (종신 기준)</span>
+          </div>
+        </div>
+        <div style={{ display:'flex', justifyContent:'space-between', marginTop:7, flexWrap:'wrap', gap:4 }}>
+          <span style={{ fontSize:11, fontWeight:900, color:C.navy }}>{subjectAge}세 가입</span>
+          {deferYears>0&&<span style={{ fontSize:11, fontWeight:700, color:'#3B6CB7' }}>{subjectAge+payYears}세 납입완료</span>}
+          <span style={{ fontSize:11, fontWeight:900, color:'#9B5B00' }}>{pensionStart}세 연금개시</span>
+          <span style={{ fontSize:11, fontWeight:900, color:C.rose }}>{lifeExpect}세 기대수명</span>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:16 }}>
+          {[
+            { label:'총 납입금액', value:fmtW3(totalPaid), color:C.navy },
+            { label:'연금개시 재원', value:fmtW3(effectiveReserve), color:C.blue },
+            { label:'재원/납입', value:`${(effectiveReserve/totalPaid*100).toFixed(0)}%`, color:C.teal },
+          ].map(c2=>(
+            <div key={c2.label} style={{ background:'#F7F8FA', borderRadius:12, padding:'12px 14px', border:`1.5px solid ${C.border}` }}>
+              <p style={{ margin:'0 0 3px', fontSize:11, fontWeight:900, color:C.muted }}>{c2.label}</p>
+              <p style={{ margin:0, fontSize:17, fontWeight:950, color:c2.color }}>{c2.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 세제혜택 요약 ── */}
+      <div style={{ ...cardSt }}>
+        <p style={{ margin:'0 0 14px', fontSize:14, fontWeight:900, color:C.navy }}>🧾 세제혜택 요약 (세제적격 연금저축/IRP 기준)</p>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px,1fr))', gap:10 }}>
+          {[
+            { label:'세액공제율', value:`${(creditRate*100).toFixed(1)}%`, sub:`연소득 ${annualIncomeMan.toLocaleString()}만원 기준`, color:C.blue },
+            { label:'연간 세액공제액', value:fmtW3(annualTaxCredit), sub:`한도 600만원 × ${(creditRate*100).toFixed(1)}%`, color:C.teal },
+            { label:'납입기간 총 절세', value:fmtW3(annualTaxCredit*payYears), sub:`${payYears}년 × 연 ${fmtW3(annualTaxCredit)}`, color:C.teal },
+            { label:'수령 시 연금소득세', value:fmtW3(pensionTax), sub:`${pensionStart}세 기준 ${(pensionTaxRate(pensionStart)*100).toFixed(1)}%`, color:C.rose },
+          ].map(c2=>(
+            <div key={c2.label} style={{ background:'#F7F8FA', borderRadius:14, padding:'14px 16px', border:`1.5px solid ${C.border}` }}>
+              <p style={{ margin:'0 0 4px', fontSize:11, fontWeight:900, color:C.muted }}>{c2.label}</p>
+              <p style={{ margin:'0 0 3px', fontSize:17, fontWeight:950, color:c2.color }}>{c2.value}</p>
+              <p style={{ margin:0, fontSize:10, fontWeight:700, color:C.muted }}>{c2.sub}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop:12, background:'#F0F7FF', borderRadius:10, padding:'10px 14px', fontSize:12, fontWeight:700, color:C.blue }}>
+          💡 연금소득세율: 55~70세 5.5% / 70~80세 4.4% / 80세+ 3.3% (분리과세, 종합소득세보다 유리)
+        </div>
+      </div>
+
+      {/* ── 변액 3시나리오 ── */}
+      {productType==='variable' && (
+        <div style={{ ...cardSt }}>
+          <p style={{ margin:'0 0 14px', fontSize:14, fontWeight:900, color:C.navy }}>
+            🔀 변액연금 3가지 시나리오 비교
+            <span style={{ fontSize:11, fontWeight:700, color:C.muted, marginLeft:8 }}>— {PAY_CARDS.find(p=>p.key===payType)?.label} 기준</span>
+          </p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:14 }}>
+            {VAR3.map(s => {
+              const r = calcReserve(s.invest)
+              const eff = Math.max(r, minGuarantee)
+              const isGuarantee = r < minGuarantee
+              const m = payType==='lifetime' ? eff*(effectiveBaseRate/100)/12
+                : payType==='inherit' ? r*(annuityPayRate/100)/12
+                : pMon3(eff, annuityPayRate, getTotalMonths(payType))
+              return (
+                <div key={s.key} style={{ background:s.bg, borderRadius:16, padding:'16px 18px', border:`2px solid ${s.color}22` }}>
+                  <p style={{ margin:'0 0 4px', fontSize:12, fontWeight:900, color:s.color }}>{s.label}</p>
+                  <p style={{ margin:'0 0 2px', fontSize:11, fontWeight:700, color:C.muted }}>투자 {s.invest}% (순 {s.pure}%)</p>
+                  <p style={{ margin:'0 0 10px', fontSize:10, fontWeight:700, color:C.muted }}>{s.note}</p>
+                  {isGuarantee && <div style={{ background:`${s.color}15`, borderRadius:8, padding:'6px 10px', marginBottom:8, fontSize:11, fontWeight:900, color:s.color }}>🛡️ 최저보증 적용 {fmtW3(minGuarantee)}</div>}
+                  <p style={{ margin:'0 0 4px', fontSize:22, fontWeight:950, color:s.color, letterSpacing:'-0.5px' }}>{fmtW3(m)}<span style={{ fontSize:12 }}>/월</span></p>
+                  <p style={{ margin:0, fontSize:12, fontWeight:700, color:C.muted }}>적립금: {fmtW3(eff)} / 연 {fmtW3(m*12)}</p>
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ background:'#F7F8FA', borderRadius:12, padding:'10px 14px', fontSize:11, fontWeight:700, color:C.muted }}>
+            ※ 비관형(-1%): 최저연금보증금액이 적립금보다 높아 보증금액 기준으로 지급 / 기준·낙관형: 적립금 기준 / 실제 순수익률은 펀드 운용보수 등 차감 후 수익률
+          </div>
+        </div>
+      )}
+
+      {/* ── 공시이율 시나리오 ── */}
+      {productType==='declared' && (
+        <div style={{ ...cardSt }}>
+          <p style={{ margin:'0 0 14px', fontSize:14, fontWeight:900, color:C.navy }}>
+            🔀 공시이율별 시나리오
+            <span style={{ fontSize:11, fontWeight:700, color:C.muted, marginLeft:8 }}>— {PAY_CARDS.find(p=>p.key===payType)?.label} 기준</span>
+          </p>
+          <div style={{ overflowX:'auto' }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+              <thead>
+                <tr style={{ background:'#F7F8FA', borderBottom:`2px solid ${C.border}` }}>
+                  {['공시이율','연금재원','월 수령액','연 수령액','납입 대비'].map((h,i)=>(
+                    <th key={h} style={{ padding:'10px 13px', fontWeight:900, fontSize:12, color:C.navy, textAlign:i===0?'left':'right', border:'none' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[1.5,2.0,2.42,2.5,3.0,3.5,4.0].map(rate=>{
+                  const res = calcReserve(rate)
+                  const m = payType==='lifetime' ? res*(BASE_ANNUITY_RATES[pensionStart]||BASE_ANNUITY_RATES[65])[gender]/100/12
+                    : payType==='inherit' ? res*(rate/100)/12
+                    : pMon3(res, annuityPayRate, getTotalMonths(payType))
+                  const total = m * getTotalMonths(payType)
+                  const ratio = total/totalPaid
+                  const isCur = Math.abs(rate-declaredRate)<0.01
+                  return (
+                    <tr key={rate} style={{ background:isCur?'rgba(14,126,107,0.08)':(rate%1===0?'#F7F8FA':'#fff'), fontWeight:isCur?900:700 }}>
+                      <td style={{ padding:'10px 13px', color:isCur?C.teal:C.text }}>{isCur?'▶ ':''}{rate}%{isCur?' ★':''}</td>
+                      <td style={{ padding:'10px 13px', textAlign:'right' }}>{fmtW3(res)}</td>
+                      <td style={{ padding:'10px 13px', textAlign:'right', color:isCur?C.teal:C.text, fontSize:isCur?15:13 }}>{fmtW3(m)}</td>
+                      <td style={{ padding:'10px 13px', textAlign:'right' }}>{fmtW3(m*12)}</td>
+                      <td style={{ padding:'10px 13px', textAlign:'right', fontWeight:900, color:ratio>=2?C.teal:ratio>=1?C.blue:C.rose }}>{ratio.toFixed(1)}배</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* 주석 */}
+      <div style={{ background:'#F7F8FA', borderRadius:12, padding:'12px 18px', border:`1px solid ${C.border}` }}>
+        <p style={{ margin:0, color:C.muted, fontSize:11, fontWeight:700, lineHeight:1.8 }}>
+          ※ 사업비 8% 공제 후 순보험료 기준 계산 / 기본지급률: 연금개시나이·성별 기반 자동 설정 (KDB·IBK 실사례 참고)<br />
+          ※ 공시이율 2026년 7월 현재 2.42% / 생명보험협회 공시실(pub.insure.or.kr) 참고<br />
+          ※ 세제혜택 계산: 세제적격 연금저축 기준 (연 600만원 세액공제 한도) / IRP 추가 시 최대 900만원<br />
+          ※ 기초연금: 2026년 기준연금액 349,700원/월 — 소득하위 70% 어르신 대상, 국민연금과 연동 감액 가능
+        </p>
+      </div>
     </div>
   )
 }
