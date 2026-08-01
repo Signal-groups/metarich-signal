@@ -23,6 +23,7 @@ type Post = {
   createdAt: string
   createdBy: string
   editedAt?: string
+  images?: string[]    // Supabase Storage public URLs
 }
 
 type Props = {
@@ -81,9 +82,34 @@ export default function ProductStrategyBoard({ user }: Props) {
   const [formContent,   setFormContent]   = useState("")
   const [formMonth,     setFormMonth]     = useState(currentMonth)
   const [formImportant, setFormImportant] = useState(false)
+  const [formImages,    setFormImages]    = useState<string[]>([])
   const [editingId,     setEditingId]     = useState<string | null>(null)
+  const [uploading,     setUploading]     = useState(false)
 
   const months = monthOptions()
+
+  // ── 이미지 업로드 ────────────────────────────────────────────────────────────
+  const uploadImages = async (files: FileList): Promise<string[]> => {
+    const urls: string[] = []
+    for (const file of Array.from(files)) {
+      const ext = file.name.split(".").pop() || "jpg"
+      const path = `strategy/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage.from("team-assets").upload(path, file, { upsert: false })
+      if (error) {
+        // 버킷이 없으면 base64 fallback
+        const b64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(file)
+        })
+        urls.push(b64)
+      } else {
+        const { data: pub } = supabase.storage.from("team-assets").getPublicUrl(path)
+        urls.push(pub.publicUrl)
+      }
+    }
+    return urls
+  }
 
   // ── 로드 ────────────────────────────────────────────────────────────────────
 
@@ -129,6 +155,7 @@ export default function ProductStrategyBoard({ user }: Props) {
     setFormContent("")
     setFormMonth(filterMonth)
     setFormImportant(false)
+    setFormImages([])
     setShowForm(true)
   }
 
@@ -138,8 +165,23 @@ export default function ProductStrategyBoard({ user }: Props) {
     setFormContent(post.content)
     setFormMonth(post.month)
     setFormImportant(post.important)
+    setFormImages(post.images || [])
     setSelectedPost(null)
     setShowForm(true)
+  }
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    setUploading(true)
+    try {
+      const newUrls = await uploadImages(e.target.files)
+      setFormImages(prev => [...prev, ...newUrls])
+    } catch (err: any) {
+      alert("이미지 업로드 중 오류: " + err.message)
+    } finally {
+      setUploading(false)
+      e.target.value = ""
+    }
   }
 
   const handleSave = async () => {
@@ -155,7 +197,7 @@ export default function ProductStrategyBoard({ user }: Props) {
       if (editingId) {
         updated = existing.map(p =>
           p.id === editingId
-            ? { ...p, title: formTitle, content: formContent, month: formMonth, important: formImportant, editedAt: new Date().toISOString() }
+            ? { ...p, title: formTitle, content: formContent, month: formMonth, important: formImportant, images: formImages, editedAt: new Date().toISOString() }
             : p
         )
       } else {
@@ -165,6 +207,7 @@ export default function ProductStrategyBoard({ user }: Props) {
           content: formContent,
           month: formMonth,
           important: formImportant,
+          images: formImages,
           createdAt: new Date().toISOString(),
           createdBy: name,
         }
@@ -390,6 +433,9 @@ export default function ProductStrategyBoard({ user }: Props) {
           formContent={formContent} setFormContent={setFormContent}
           formMonth={formMonth} setFormMonth={setFormMonth}
           formImportant={formImportant} setFormImportant={setFormImportant}
+          formImages={formImages} setFormImages={setFormImages}
+          uploading={uploading}
+          onImageSelect={handleImageSelect}
           saving={saving}
           months={months}
           onSave={handleSave}
@@ -438,6 +484,7 @@ function PostRow({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           {pinned && <span style={{ background: GOLD, color: NAVY, fontSize: 10, fontWeight: 900, padding: "2px 7px", borderRadius: 100 }}>중요</span>}
+          {post.images && post.images.length > 0 && <span style={{ fontSize: 11, color: "#9CA3AF" }}>🖼 {post.images.length}</span>}
           <span style={{ fontSize: 14, fontWeight: 900, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{post.title}</span>
         </div>
         <p style={{ margin: 0, fontSize: 12, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -450,6 +497,12 @@ function PostRow({
           {post.editedAt && <span style={{ fontSize: 10, color: "#D1D5DB" }}>(수정됨)</span>}
         </div>
       </div>
+      {/* 썸네일 */}
+      {post.images && post.images.length > 0 && (
+        <div style={{ flexShrink: 0, width: 52, height: 52, borderRadius: 8, overflow: "hidden", border: "1px solid #E8ECF0" }}>
+          <img src={post.images[0]} alt="썸네일" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </div>
+      )}
 
       {/* 관리 버튼 */}
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
@@ -523,6 +576,18 @@ function PostDetailModal({
           <div style={{ fontSize: 15, color: "#374151", lineHeight: 1.9, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>
             {post.content}
           </div>
+          {/* 이미지 */}
+          {post.images && post.images.length > 0 && (
+            <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {post.images.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                  style={{ display: "block", borderRadius: 10, overflow: "hidden", border: "1px solid #E8ECF0", flexShrink: 0 }}>
+                  <img src={url} alt={`첨부 이미지 ${i + 1}`}
+                    style={{ maxWidth: 280, maxHeight: 200, objectFit: "cover", display: "block" }} />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 하단 버튼 */}
@@ -555,6 +620,7 @@ function PostDetailModal({
 function WriteFormModal({
   editingId, formTitle, setFormTitle, formContent, setFormContent,
   formMonth, setFormMonth, formImportant, setFormImportant,
+  formImages, setFormImages, uploading, onImageSelect,
   saving, months, onSave, onClose,
 }: {
   editingId: string | null
@@ -562,10 +628,14 @@ function WriteFormModal({
   formContent: string; setFormContent: (v: string) => void
   formMonth: string; setFormMonth: (v: string) => void
   formImportant: boolean; setFormImportant: (v: boolean) => void
+  formImages: string[]; setFormImages: (v: string[]) => void
+  uploading: boolean
+  onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
   saving: boolean; months: string[]
   onSave: () => void; onClose: () => void
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   useEffect(() => { textareaRef.current?.focus() }, [])
 
   return (
@@ -643,6 +713,43 @@ function WriteFormModal({
               onFocus={e => (e.target.style.borderColor = GOLD)}
               onBlur={e => (e.target.style.borderColor = "#E8ECF0")}
             />
+          </div>
+
+          {/* 이미지 첨부 */}
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 900, color: "#9CA3AF", display: "block", marginBottom: 8 }}>🖼 이미지 첨부 (선택)</label>
+            {/* 업로드 버튼 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={onImageSelect}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              style={{ padding: "9px 18px", borderRadius: 10, border: `1.5px dashed ${GOLD}80`, background: `${GOLD}0A`, color: uploading ? "#9CA3AF" : "#7B5B00", fontSize: 12, fontWeight: 900, cursor: uploading ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}
+            >
+              {uploading ? "⏳ 업로드 중..." : "📎 이미지 추가"}
+            </button>
+            {/* 미리보기 */}
+            {formImages.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+                {formImages.map((url, i) => (
+                  <div key={i} style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: "1px solid #E8ECF0" }}>
+                    <img src={url} alt={`이미지 ${i + 1}`} style={{ width: 100, height: 100, objectFit: "cover", display: "block" }} />
+                    <button
+                      type="button"
+                      onClick={() => setFormImages(formImages.filter((_, j) => j !== i))}
+                      style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 12, display: "grid", placeItems: "center", fontFamily: "inherit" }}
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 안내 */}

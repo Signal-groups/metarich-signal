@@ -725,24 +725,22 @@ export default function DashboardPage() {
                 {/* 아코디언 내용 */}
                 {isOpen && (
                   <div className="border-t border-[#e8eef5] px-5 py-4">
-                    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {regularTools.map((tool) => {
                         const locked = (tool as any).locked
                         return (
                           <button key={tool.id} type="button"
                             onClick={() => { if (locked) return; if (isConsultEditMode && tool.editable) { toggleMenu(tool.id); return; } handleNavigation(tool); }}
-                            className={`flex h-11 items-center gap-3 rounded-lg border px-3 text-left transition ${locked ? 'border-[#edf0f5] bg-[#f8f9fb] opacity-60 cursor-default' : 'border-[#dce6f1] bg-white hover:bg-[#f3f7fe] hover:border-[#b8d0f0]'}`}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 100, flex: '1 1 100px', maxWidth: 160, minHeight: 80, borderRadius: 12, border: locked ? '1px solid #edf0f5' : '1px solid #dce6f1', background: locked ? '#f8f9fb' : '#fff', padding: '12px 10px', cursor: locked ? 'default' : 'pointer', opacity: locked ? 0.6 : 1, textAlign: 'center', transition: 'all 0.15s' }}
+                            onMouseOver={e => { if (!locked) { (e.currentTarget as HTMLButtonElement).style.background = '#f3f7fe'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#b8d0f0'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; } }}
+                            onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.background = locked ? '#f8f9fb' : '#fff'; (e.currentTarget as HTMLButtonElement).style.borderColor = locked ? '#edf0f5' : '#dce6f1'; (e.currentTarget as HTMLButtonElement).style.transform = 'none'; }}
                           >
-                            <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-md ${locked ? 'bg-[#edf0f5] text-[#9aadbe]' : 'bg-[#eef4fb] text-[#0a3a86]'}`}>
+                            <span style={{ display: 'grid', placeItems: 'center', width: 32, height: 32, borderRadius: 8, background: locked ? '#edf0f5' : '#eef4fb', color: locked ? '#9aadbe' : '#0a3a86' }}>
                               <ToolIcon icon={tool.icon} className="h-4 w-4" />
                             </span>
-                            <span className={`flex-1 truncate text-[12px] font-black ${locked ? 'text-[#9aadbe]' : 'text-[#10203a]'}`}>{tool.title}</span>
+                            <span style={{ fontSize: 11, fontWeight: 900, color: locked ? '#9aadbe' : '#10203a', lineHeight: 1.3 }}>{tool.title}</span>
                             {tool.premium && <PremiumMenuBadge />}
-                            {locked ? (
-                              <span className="rounded-full bg-[#1a2744] px-1.5 py-0.5 text-[9px] font-black text-white">PRO</span>
-                            ) : (
-                              <ChevronRight className="h-3.5 w-3.5 text-[#c8d6e5]" />
-                            )}
+                            {locked && <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', background: '#1a2744', borderRadius: 100, padding: '1px 6px' }}>PRO</span>}
                           </button>
                         )
                       })}
@@ -754,23 +752,27 @@ export default function DashboardPage() {
                         const locked0 = (t0 as any).locked
                         const locked1 = (t1 as any).locked
                         return (
-                          <div className="col-span-2 flex items-stretch gap-0 overflow-hidden rounded-lg border border-[#dce6f1] bg-white md:col-span-1">
-                            <button
-                              type="button"
-                              onClick={() => { if (!locked0) handleNavigation(t0); }}
-                              className={`flex flex-1 flex-col items-center justify-center gap-1 px-3 py-3 text-center transition hover:bg-[#f3f7fe] ${locked0 ? 'opacity-50 cursor-default' : ''}`}
+                          <div style={{ display: 'flex', borderRadius: 12, border: '1px solid #dce6f1', overflow: 'hidden', minWidth: 210, flex: '1 1 210px', maxWidth: 330 }}>
+                            <button type="button" onClick={() => { if (!locked0) handleNavigation(t0); }}
+                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, padding: '12px 10px', cursor: locked0 ? 'default' : 'pointer', opacity: locked0 ? 0.5 : 1, background: '#fff', border: 'none', minHeight: 80 }}
+                              onMouseOver={e => { if (!locked0) (e.currentTarget as HTMLButtonElement).style.background = '#f3f7fe'; }}
+                              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; }}
                             >
-                              <ToolIcon icon={t0.icon} className="h-4 w-4 text-[#0a3a86]" />
-                              <span className="text-[10px] font-black leading-tight text-[#10203a]">{t0.title}</span>
+                              <span style={{ display: 'grid', placeItems: 'center', width: 32, height: 32, borderRadius: 8, background: '#eef4fb', color: '#0a3a86' }}>
+                                <ToolIcon icon={t0.icon} className="h-4 w-4" />
+                              </span>
+                              <span style={{ fontSize: 11, fontWeight: 900, color: '#10203a', lineHeight: 1.3 }}>{t0.title}</span>
                             </button>
-                            <div className="w-px bg-[#e8eef5]" />
-                            <button
-                              type="button"
-                              onClick={() => { if (!locked1) handleNavigation(t1); }}
-                              className={`flex flex-1 flex-col items-center justify-center gap-1 px-3 py-3 text-center transition hover:bg-[#f3f7fe] ${locked1 ? 'opacity-50 cursor-default' : ''}`}
+                            <div style={{ width: 1, background: '#e8eef5', flexShrink: 0 }} />
+                            <button type="button" onClick={() => { if (!locked1) handleNavigation(t1); }}
+                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, padding: '12px 10px', cursor: locked1 ? 'default' : 'pointer', opacity: locked1 ? 0.5 : 1, background: '#fff', border: 'none', minHeight: 80 }}
+                              onMouseOver={e => { if (!locked1) (e.currentTarget as HTMLButtonElement).style.background = '#f3f7fe'; }}
+                              onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; }}
                             >
-                              <ToolIcon icon={t1.icon} className="h-4 w-4 text-[#0a3a86]" />
-                              <span className="text-[10px] font-black leading-tight text-[#10203a]">{t1.title}</span>
+                              <span style={{ display: 'grid', placeItems: 'center', width: 32, height: 32, borderRadius: 8, background: '#eef4fb', color: '#0a3a86' }}>
+                                <ToolIcon icon={t1.icon} className="h-4 w-4" />
+                              </span>
+                              <span style={{ fontSize: 11, fontWeight: 900, color: '#10203a', lineHeight: 1.3 }}>{t1.title}</span>
                             </button>
                           </div>
                         )
