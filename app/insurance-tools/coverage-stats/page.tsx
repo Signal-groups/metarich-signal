@@ -1302,7 +1302,84 @@ function InfoMini({ icon, title, body }: { icon: React.ReactNode; title: string;
   )
 }
 
+// ─── 워터마크 다운로드 유틸 ─────────────────────────────────────────────────────
+
+async function downloadWithWatermark(imageSrc: string, title: string) {
+  const canvas = document.createElement("canvas")
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return
+
+  // 원본 이미지 로드
+  const img = new window.Image()
+  img.crossOrigin = "anonymous"
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = reject
+    img.src = imageSrc
+  })
+
+  canvas.width  = img.naturalWidth  || img.width
+  canvas.height = img.naturalHeight || img.height
+
+  // 흰 배경
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  // 원본 이미지 그리기
+  ctx.drawImage(img, 0, 0)
+
+  // 워터마크 로고 로드
+  try {
+    const logo = new window.Image()
+    logo.crossOrigin = "anonymous"
+    await new Promise<void>((res) => {
+      logo.onload = () => res()
+      logo.onerror = () => res()  // 로고 실패해도 계속
+      logo.src = "/bohum-logo-sidebar.png"
+    })
+
+    if (logo.naturalWidth > 0) {
+      // 대형 워터마크: 캔버스 너비의 65% 크기로
+      const wMax = canvas.width  * 0.65
+      const hMax = canvas.height * 0.65
+      const ratio = Math.min(wMax / logo.naturalWidth, hMax / logo.naturalHeight)
+      const wW = logo.naturalWidth  * ratio
+      const wH = logo.naturalHeight * ratio
+      const wx = (canvas.width  - wW) / 2
+      const wy = (canvas.height - wH) / 2
+
+      ctx.globalAlpha = 0.08  // 투명도 8%
+      ctx.drawImage(logo, wx, wy, wW, wH)
+      ctx.globalAlpha = 1.0
+    }
+  } catch {
+    // 워터마크 로드 실패 시 무시
+  }
+
+  // 다운로드
+  const link = document.createElement("a")
+  const ext   = imageSrc.toLowerCase().endsWith(".svg") ? "png" : (imageSrc.split(".").pop() || "png")
+  link.download = `보험의기준_${title}.${ext}`
+  link.href     = canvas.toDataURL("image/png")
+  link.click()
+}
+
+// ─── 이미지 모달 ─────────────────────────────────────────────────────────────
+
 function ImageModal({ item, onClose }: { item: { title: string; image: string }; onClose: () => void }) {
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    try {
+      await downloadWithWatermark(item.image, item.title)
+    } catch {
+      alert("이미지 저장 중 오류가 발생했습니다.")
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
       <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
@@ -1311,12 +1388,35 @@ function ImageModal({ item, onClose }: { item: { title: string; image: string };
             <p className="text-[11px] font-black tracking-[0.2em] text-[#1f5597]">IMAGE MATERIAL</p>
             <h2 className="mt-1 text-xl font-black text-slate-900">{item.title}</h2>
           </div>
-          <button onClick={onClose} className="rounded-full bg-slate-900 p-3 text-white hover:bg-slate-700">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="flex items-center gap-2 rounded-xl bg-[#1f5597] px-4 py-2 text-[12px] font-black text-white hover:bg-[#174280] disabled:opacity-60 transition-all"
+              title="워터마크 포함 PNG 저장"
+            >
+              {downloading ? (
+                <>⏳ 저장 중...</>
+              ) : (
+                <><ImageIcon className="h-4 w-4" />📥 이미지 저장</>
+              )}
+            </button>
+            <button onClick={onClose} className="rounded-full bg-slate-900 p-3 text-white hover:bg-slate-700">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
         <div className="overflow-auto bg-slate-100 p-4">
-          <img src={item.image} alt={item.title} className="mx-auto max-h-[78vh] w-auto max-w-full rounded-2xl bg-white object-contain shadow-sm" />
+          <img
+            src={item.image}
+            alt={item.title}
+            className="mx-auto max-h-[78vh] w-auto max-w-full rounded-2xl bg-white object-contain shadow-sm"
+          />
+        </div>
+        <div className="border-t border-slate-100 bg-slate-50 px-5 py-2">
+          <p className="text-[11px] font-bold text-slate-400">
+            💡 이미지 저장 시 <span className="font-black text-[#1f5597]">보험의기준</span> 워터마크가 자동으로 삽입됩니다 (투명도 8%)
+          </p>
         </div>
       </div>
     </div>
@@ -1324,6 +1424,20 @@ function ImageModal({ item, onClose }: { item: { title: string; image: string };
 }
 
 function PreviewModal({ item, onClose }: { item: CoverageStatItem; onClose: () => void }) {
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    if (!item.imageUrl) return
+    setDownloading(true)
+    try {
+      await downloadWithWatermark(item.imageUrl, item.title)
+    } catch {
+      alert("이미지 저장 중 오류가 발생했습니다.")
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm">
       <div className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
@@ -1332,23 +1446,50 @@ function PreviewModal({ item, onClose }: { item: CoverageStatItem; onClose: () =
             <p className="text-[11px] font-black tracking-[0.2em] text-[#1f5597]">IMAGE MATERIAL</p>
             <h2 className="mt-1 text-xl font-black text-slate-900">{item.title}</h2>
           </div>
-          <button onClick={onClose} className="rounded-full bg-slate-900 p-3 text-white hover:bg-slate-700">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            {item.imageUrl && (
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="flex items-center gap-2 rounded-xl bg-[#1f5597] px-4 py-2 text-[12px] font-black text-white hover:bg-[#174280] disabled:opacity-60 transition-all"
+                title="워터마크 포함 PNG 저장"
+              >
+                {downloading ? (
+                  <>⏳ 저장 중...</>
+                ) : (
+                  <><ImageIcon className="h-4 w-4" />📥 이미지 저장</>
+                )}
+              </button>
+            )}
+            <button onClick={onClose} className="rounded-full bg-slate-900 p-3 text-white hover:bg-slate-700">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
         <div className="overflow-auto bg-slate-100 p-4">
           {item.imageUrl ? (
-            <img src={item.imageUrl} alt={item.title} className="mx-auto max-h-[78vh] w-auto max-w-full rounded-2xl bg-white object-contain shadow-sm" />
+            <img
+              src={item.imageUrl}
+              alt={item.title}
+              className="mx-auto max-h-[78vh] w-auto max-w-full rounded-2xl bg-white object-contain shadow-sm"
+            />
           ) : (
             <div className="grid min-h-[420px] place-items-center rounded-2xl bg-white text-center">
               <div>
                 <ImageIcon className="mx-auto h-16 w-16 text-[#1f5597]/30" />
-                <p className="mt-4 text-lg font-black text-slate-700">{item.title}이미지가 준비되지 않았습니다.</p>
+                <p className="mt-4 text-lg font-black text-slate-700">{item.title} 이미지가 준비되지 않았습니다.</p>
                 <p className="mt-2 text-sm text-slate-400">곧 업데이트될 예정입니다.</p>
               </div>
             </div>
           )}
         </div>
+        {item.imageUrl && (
+          <div className="border-t border-slate-100 bg-slate-50 px-5 py-2">
+            <p className="text-[11px] font-bold text-slate-400">
+              💡 이미지 저장 시 <span className="font-black text-[#1f5597]">보험의기준</span> 워터마크가 자동으로 삽입됩니다 (투명도 8%)
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

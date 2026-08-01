@@ -78,11 +78,11 @@ function ToolIcon({ icon }: { icon: string }) {
   }
 }
 
-export default function Sidebar({ 
-  user, selectedDate, onDateChange, mode, onBack, 
+export default function Sidebar({
+  user, selectedDate, onDateChange, mode, onBack,
   externalMenuStatus, onMenuStatusChange, onTabChange, activeTab,
   isOpen, setIsOpen, onOpenOffice, onOpenConsulting,
-  menuLayout, onMenuLayoutChange
+  menuLayout, onMenuLayoutChange, recentCustomers
 }: any) {
   const router = useRouter();
   
@@ -392,13 +392,33 @@ export default function Sidebar({
                 onClick={openConsulting}
               />
 
+              {canUseOffice && (
+                <NavItem
+                  icon="업무"
+                  iconNode={<MessageSquareText className="h-5 w-5 opacity-80" />}
+                  label="사무실업무"
+                  active={mode === 'office'}
+                  onClick={openOffice}
+                />
+              )}
+
               {canUseCrm && (
                 <NavItem
                   icon="CRM"
-                  label="고객관리"
+                  label="CRM 고객관리"
                   active={false}
                   onClick={openCrm}
                   badge="PREMIUM"
+                />
+              )}
+
+              {isApproved && (
+                <NavItem
+                  icon="dm"
+                  iconNode={<ScrollText className="h-5 w-5 opacity-80" />}
+                  label="고객 DM 발송"
+                  active={false}
+                  onClick={openContentStudio}
                 />
               )}
 
@@ -452,28 +472,8 @@ export default function Sidebar({
                 </>
               )}
 
-              {(isApproved || canUseOffice || canUseClaim || canUseBranding || isMaster) && (
+              {(canUseClaim || canUseBranding || isMaster) && (
                 <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">업무</p>
-              )}
-
-              {isApproved && (
-                <NavItem
-                  icon="dm"
-                  iconNode={<ScrollText className="h-5 w-5 opacity-80" />}
-                  label="고객 DM 발송"
-                  active={false}
-                  onClick={openContentStudio}
-                />
-              )}
-
-              {canUseOffice && (
-                <NavItem
-                  icon="업무"
-                  iconNode={<MessageSquareText className="h-5 w-5 opacity-80" />}
-                  label="사무실업무"
-                  active={mode === 'office'}
-                  onClick={openOffice}
-                />
               )}
 
               {canUseClaim && (
@@ -493,18 +493,6 @@ export default function Sidebar({
                   active={false}
                   onClick={showAiAutomationStatus}
                   badge="PRO"
-                />
-              )}
-
-              {isApproved && (
-                <NavItem
-                  icon="📦"
-                  label="이달의 상품전략"
-                  active={activeTab === 'strategy'}
-                  onClick={() => {
-                    if (onTabChange) onTabChange('strategy')
-                    setIsOpen(false)
-                  }}
                 />
               )}
 
@@ -537,6 +525,38 @@ export default function Sidebar({
                 />
               )}
             </nav>
+
+            {/* 최근 상담 고객 */}
+            {canUseCrm && recentCustomers && recentCustomers.length > 0 && (
+              <div className="mt-1">
+                <div className="flex items-center justify-between px-2 mb-2">
+                  <p className="text-[10px] font-bold tracking-widest text-white/30">최근 상담 고객</p>
+                  <button
+                    onClick={() => { window.open(`${window.location.origin}/crm/customers`, "_blank", "noopener,noreferrer"); setIsOpen(false); }}
+                    className="text-[9px] font-bold text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    전체 →
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {recentCustomers.slice(0, 5).map((c: any) => (
+                    <button
+                      key={c.id}
+                      onClick={() => { window.open(`${window.location.origin}/crm/customers/${c.id}`, "_blank", "noopener,noreferrer"); setIsOpen(false); }}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/15 text-[11px] font-black text-white">
+                        {(c.name || '?')[0]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[12px] font-bold text-white/90">{c.name || '이름 없음'}</p>
+                        {c.status && <p className="text-[10px] text-white/40 truncate">{c.status}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {isApproved && mode === 'office' && (
               <div className="space-y-4">
