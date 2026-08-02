@@ -10,7 +10,17 @@ import {
   ScrollText, Users, X,
 } from 'lucide-react'
 import type { ConsultingTool } from '../../../lib/consultingTools'
+import { CONSULTING_TOOL_CATEGORIES } from '../../../lib/consultingTools'
 import { supabase } from '../../../lib/supabase'
+
+const CAT_STYLE: Record<string, { bg: string; border: string; iconBg: string; activeBg: string; activeText: string }> = {
+  face:     { bg: '#eef8ff', border: '#bfdbfe', iconBg: '#dbeafe', activeBg: '#1b54ad', activeText: '#fff' },
+  customer: { bg: '#f0fdf4', border: '#bbf7d0', iconBg: '#dcfce7', activeBg: '#0f6e56', activeText: '#fff' },
+  coverage: { bg: '#fdf4ff', border: '#e9d5ff', iconBg: '#f3e8ff', activeBg: '#7c3aed', activeText: '#fff' },
+  financial:{ bg: '#fff7ed', border: '#fed7aa', iconBg: '#ffedd5', activeBg: '#d97706', activeText: '#fff' },
+  planning: { bg: '#f0f9ff', border: '#bae6fd', iconBg: '#e0f2fe', activeBg: '#0284c7', activeText: '#fff' },
+  claims:   { bg: '#fff1f2', border: '#fecdd3', iconBg: '#ffe4e6', activeBg: '#e63946', activeText: '#fff' },
+}
 
 function ToolIcon({ icon, size = 18 }: { icon: string; size?: number }) {
   const props = { size, color: '#0a3a86' }
@@ -62,6 +72,7 @@ export default function ProHome({
   const [pipeline, setPipeline] = useState<Record<string, number>>({})
   const [showAllFavs, setShowAllFavs] = useState(false)
   const [showTodayModal, setShowTodayModal] = useState(false)
+  const [activeCat, setActiveCat] = useState<string | null>(null)
   // 드래그앤드롭용 로컬 순서 상태
   const [localFavIds, setLocalFavIds] = useState<string[]>(favorites)
   const dragStartIdx = useRef<number | null>(null)
@@ -169,6 +180,16 @@ export default function ProHome({
 
   const maxPipe = Math.max(...PIPELINE_STAGES.map(s => pipeline[s] || 0), 1)
 
+  // 업무별 카테고리 (고객 상담 제외)
+  const categorySections = CONSULTING_TOOL_CATEGORIES
+    .filter(cat => cat.id !== 'customer')
+    .map(cat => ({ ...cat, tools: visibleTools.filter(t => t.category === cat.id) }))
+    .filter(s => s.tools.length > 0)
+
+  const activeSectionData = activeCat
+    ? categorySections.find(c => c.id === activeCat)
+    : null
+
   return (
     <div style={{ display: 'grid', gap: 16 }}>
 
@@ -256,28 +277,86 @@ export default function ProHome({
           {/* 구분선 */}
           <div style={{ width: 1, background: '#e8eef5', alignSelf: 'stretch', flexShrink: 0, minHeight: 80 }} />
 
-          {/* 오른쪽: 빠른 이동 4버튼 2x2 */}
-          <div style={{ flex: '0 0 200px', minWidth: 180 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>빠른 이동</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {[
-                { label: '공지·업데이트', emoji: '📢', onClick: onNoticeClick, color: '#1b54ad' },
-                { label: '이달의 전략', emoji: '📊', onClick: onStrategyClick, color: '#8a6a1e' },
-                { label: '고객관리', emoji: '👥', onClick: () => window.open('/crm/customers', '_blank', 'noopener,noreferrer'), color: '#0f6e56' },
-                { label: '시그널 홈', emoji: '🏢', onClick: () => window.open('https://signalgroup-sigma.vercel.app/index.html', '_blank'), color: '#374151' },
-              ].map((b, i) => (
-                <button key={i} onClick={b.onClick}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 6px', borderRadius: 10, border: '1px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', textAlign: 'center' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.07)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  <span style={{ fontSize: 18 }}>{b.emoji}</span>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: b.color, lineHeight: 1.3 }}>{b.label}</span>
-                </button>
-              ))}
+          {/* 오른쪽: 업무별 도구 + 빠른 이동 */}
+          <div style={{ flex: '1 1 0', minWidth: 180, paddingLeft: 4, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* 업무별 도구 */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>업무별 도구</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {categorySections.map(cat => {
+                  const isActive = activeCat === cat.id
+                  const s = CAT_STYLE[cat.id] || CAT_STYLE.face
+                  return (
+                    <button key={cat.id}
+                      onClick={() => setActiveCat(prev => prev === cat.id ? null : cat.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                        padding: '7px 12px', borderRadius: 9, width: '100%',
+                        border: `1.5px solid ${isActive ? s.activeBg : s.border}`,
+                        background: isActive ? s.activeBg : s.bg,
+                        cursor: 'pointer', transition: 'all 0.15s',
+                        boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                      }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,32,58,0.08)'; }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.boxShadow = 'none'; }}
+                    >
+                      <span style={{ fontSize: 11, fontWeight: 800, color: isActive ? s.activeText : '#10203a', flex: 1, textAlign: 'left' }}>{cat.title}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>{cat.tools.length}</span>
+                      <ChevronDown size={11} color={isActive ? s.activeText : '#94a3b8'} style={{ transform: isActive ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 빠른 이동 2x2 */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>빠른 이동</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {[
+                  { label: '공지·업데이트', emoji: '📢', onClick: onNoticeClick, color: '#1b54ad' },
+                  { label: '이달의 전략', emoji: '📊', onClick: onStrategyClick, color: '#8a6a1e' },
+                  { label: '고객관리', emoji: '👥', onClick: () => window.open('/crm/customers', '_blank', 'noopener,noreferrer'), color: '#0f6e56' },
+                  { label: '시그널 홈', emoji: '🏢', onClick: () => window.open('https://signalgroup-sigma.vercel.app/index.html', '_blank'), color: '#374151' },
+                ].map((b, i) => (
+                  <button key={i} onClick={b.onClick}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '9px 4px', borderRadius: 10, border: '1px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', textAlign: 'center' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.07)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <span style={{ fontSize: 18 }}>{b.emoji}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: b.color, lineHeight: 1.3 }}>{b.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* 아코디언 펼침 영역 */}
+        {activeSectionData && (() => {
+          const s = CAT_STYLE[activeSectionData.id] || CAT_STYLE.face
+          return (
+            <div style={{ marginTop: 14, padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${s.border}`, background: s.bg }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>{activeSectionData.desc}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {activeSectionData.tools.map(tool => (
+                  <button key={tool.id} onClick={() => onNavigate(tool)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 9, border: `1px solid ${s.border}`, background: '#fff', cursor: 'pointer', transition: 'all 0.12s', whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = s.activeBg; }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = s.border; }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: s.iconBg, flexShrink: 0 }}>
+                      <ToolIcon icon={tool.icon} size={12} />
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#10203a' }}>{tool.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
       </section>
 
       {/* ══════════════════════════════════════════════════
