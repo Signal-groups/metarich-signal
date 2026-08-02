@@ -357,6 +357,12 @@ export default function DashboardPage() {
     });
   };
 
+  // 즐겨찾기 순서 변경 (드래그앤드롭)
+  const reorderFavorites = (newIds: string[]) => {
+    setFavorites(newIds);
+    if (user?.id) localStorage.setItem(`mr-favorites-${user.id}`, JSON.stringify(newIds));
+  };
+
   const toggleFavoritesVisible = () => {
     setIsFavoritesVisible(prev => {
       const next = !prev;
@@ -962,6 +968,7 @@ export default function DashboardPage() {
               <ProHome
                 {...commonProps}
                 recentCustomers={recentCustomers}
+                onFavReorder={reorderFavorites}
               />
             ) : (
               <GeneralHome
