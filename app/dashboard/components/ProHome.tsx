@@ -214,24 +214,25 @@ export default function ProHome({
                         <button
                           onClick={() => isFavEditMode ? onFavToggle(tool.id) : onNavigate(tool)}
                           style={{
-                            position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                            padding: '10px 12px', borderRadius: 10, width: 72,
+                            position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                            padding: '10px 8px', borderRadius: 10, width: 76,
                             border: `1.5px solid ${isFavEditMode && !isFav ? '#e8eef5' : isFavEditMode ? '#1b54ad' : '#e8eef5'}`,
                             background: isFavEditMode && !isFav ? '#f8fafc' : isFavEditMode ? '#eef4fb' : '#f8fafc',
-                            cursor: isFavEditMode ? 'pointer' : 'pointer',
+                            cursor: 'pointer',
                             boxShadow: isFavEditMode ? '0 2px 8px rgba(16,32,58,0.06)' : 'none',
                             transition: 'all 0.12s',
                           }}
                           onMouseEnter={e => { if (!isFavEditMode) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
                           onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
                         >
-                          {/* 상위 3개 왕관 */}
                           {!isFavEditMode && i < 3 && <span style={{ position: 'absolute', top: 3, right: 3, fontSize: 8 }}>👑</span>}
                           {isFavEditMode && (
                             <Star size={9} style={{ position: 'absolute', top: 4, right: 4, fill: isFav ? '#f59e0b' : 'none', color: isFav ? '#f59e0b' : '#d1d5db' }} />
                           )}
-                          <span style={{ color: '#0a3a86', display: 'flex' }}><ToolIcon icon={tool.icon} size={18} /></span>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
+                            <ToolIcon icon={tool.icon} size={17} />
+                          </span>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
                         </button>
                       </div>
                     )

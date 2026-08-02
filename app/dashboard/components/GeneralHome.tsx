@@ -141,8 +141,8 @@ export default function GeneralHome({
       <section style={card}>
         <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
-          {/* 왼쪽: 즐겨찾기 5×2 */}
-          <div style={{ flex: '1 1 340px', minWidth: 300, paddingRight: 20 }}>
+          {/* 왼쪽: 즐겨찾기 5×2 — 전체의 2/3 */}
+          <div style={{ flex: '2 1 0', minWidth: 280, paddingRight: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
@@ -176,7 +176,7 @@ export default function GeneralHome({
                       onClick={() => isFavEditMode ? onFavToggle(tool.id) : onNavigate(tool)}
                       style={{
                         position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        gap: 5, padding: '9px 4px', borderRadius: 10,
+                        gap: 6, padding: '10px 4px', borderRadius: 10,
                         border: `1.5px solid ${isFavEditMode && isFav ? '#1b54ad' : '#e8eef5'}`,
                         background: isFavEditMode && isFav ? '#eef4fb' : '#f8fafc',
                         cursor: 'pointer', transition: 'all 0.12s',
@@ -187,10 +187,10 @@ export default function GeneralHome({
                       {isFavEditMode && (
                         <Star size={8} style={{ position: 'absolute', top: 3, right: 3, fill: isFav ? '#f59e0b' : 'none', color: isFav ? '#f59e0b' : '#cbd5e1' }} />
                       )}
-                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: '#eef4fb' }}>
-                        <ToolIcon icon={tool.icon} size={14} />
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
+                        <ToolIcon icon={tool.icon} size={17} />
                       </span>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
                     </button>
                   )
                 })}
@@ -201,43 +201,70 @@ export default function GeneralHome({
           {/* 구분선 */}
           <div style={{ width: 1, background: '#e8eef5', alignSelf: 'stretch', flexShrink: 0, minHeight: 100 }} />
 
-          {/* 오른쪽: 업무별 도구 5개 카테고리 버튼 */}
-          <div style={{ flex: '0 0 220px', minWidth: 200, paddingLeft: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#10203a', marginBottom: 12 }}>업무별 도구</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {categorySections.map(cat => {
-                const isActive = activeCat === cat.id
-                const s = CAT_STYLE[cat.id] || CAT_STYLE.face
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => toggleCat(cat.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                      padding: '9px 14px', borderRadius: 10, width: '100%',
-                      border: `1.5px solid ${isActive ? s.activeBg : s.border}`,
-                      background: isActive ? s.activeBg : s.bg,
-                      cursor: 'pointer', transition: 'all 0.15s',
-                      boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
-                    }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,32,58,0.08)'; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.boxShadow = 'none'; }}
-                  >
-                    <span style={{ fontSize: 12, fontWeight: 800, color: isActive ? s.activeText : '#10203a', textAlign: 'left', flex: 1 }}>
-                      {cat.title}
-                    </span>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>
-                      {cat.tools.length}
-                    </span>
-                    <ChevronDown
-                      size={12}
-                      color={isActive ? s.activeText : '#94a3b8'}
-                      style={{ transform: isActive ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}
-                    />
-                  </button>
-                )
-              })}
+          {/* 오른쪽: 업무별 도구 + 빠른 이동 — 전체의 1/3 */}
+          <div style={{ flex: '1 1 0', minWidth: 180, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* 업무별 도구 */}
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: '#10203a', marginBottom: 10 }}>업무별 도구</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {categorySections.map(cat => {
+                  const isActive = activeCat === cat.id
+                  const s = CAT_STYLE[cat.id] || CAT_STYLE.face
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleCat(cat.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                        padding: '8px 12px', borderRadius: 9, width: '100%',
+                        border: `1.5px solid ${isActive ? s.activeBg : s.border}`,
+                        background: isActive ? s.activeBg : s.bg,
+                        cursor: 'pointer', transition: 'all 0.15s',
+                        boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                      }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,32,58,0.08)'; }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.boxShadow = 'none'; }}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 800, color: isActive ? s.activeText : '#10203a', textAlign: 'left', flex: 1 }}>
+                        {cat.title}
+                      </span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>
+                        {cat.tools.length}
+                      </span>
+                      <ChevronDown
+                        size={11}
+                        color={isActive ? s.activeText : '#94a3b8'}
+                        style={{ transform: isActive ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}
+                      />
+                    </button>
+                  )
+                })}
+              </div>
             </div>
+
+            {/* 빠른 이동 2×2 */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>빠른 이동</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                {[
+                  { label: '공지·업데이트', emoji: '📢', onClick: onNoticeClick, color: '#1b54ad' },
+                  { label: '이달의 전략', emoji: '📊', onClick: onStrategyClick, color: '#8a6a1e' },
+                  { label: '시그널 홈', emoji: '🏢', onClick: () => window.open('https://signalgroup-sigma.vercel.app/index.html', '_blank'), color: '#374151' },
+                  { label: '사용가이드', emoji: '📖', onClick: () => window.open('/guide.html', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no'), color: '#0f6e56' },
+                ].map((b, i) => (
+                  <button key={i} onClick={b.onClick}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '9px 4px', borderRadius: 10, border: '1px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', textAlign: 'center' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.07)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <span style={{ fontSize: 18 }}>{b.emoji}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: b.color, lineHeight: 1.3 }}>{b.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
 

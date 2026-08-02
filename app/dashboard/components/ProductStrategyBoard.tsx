@@ -560,7 +560,7 @@ function PostDetailModal({
     <>
     <div style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(10,16,32,0.75)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: "'Pretendard Variable','Pretendard',-apple-system,sans-serif" }}
       onClick={onClose}>
-      <div style={{ background: "#fff", borderRadius: 24, width: "100%", maxWidth: 680, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.4)" }}
+      <div style={{ background: "#fff", borderRadius: 24, width: "100%", maxWidth: 960, maxHeight: "92vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.4)" }}
         onClick={e => e.stopPropagation()}>
 
         {/* 헤더 */}
@@ -674,7 +674,7 @@ function WriteFormModal({
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 600, background: "rgba(10,16,32,0.8)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: "'Pretendard Variable','Pretendard',-apple-system,sans-serif" }}
       onClick={onClose}>
-      <div style={{ background: "#fff", borderRadius: 24, width: "100%", maxWidth: 680, maxHeight: "92vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.45)" }}
+      <div style={{ background: "#fff", borderRadius: 24, width: "100%", maxWidth: 960, maxHeight: "92vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.45)" }}
         onClick={e => e.stopPropagation()}>
 
         {/* 헤더 */}
