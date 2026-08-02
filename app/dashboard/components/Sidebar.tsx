@@ -393,6 +393,17 @@ export default function Sidebar({
                 onClick={openConsulting}
               />
 
+              <NavItem
+                icon="document"
+                iconNode={<ScrollText className="h-5 w-5 opacity-80" />}
+                label="보험회사 정보(공시실)"
+                active={false}
+                onClick={() => {
+                  window.open(`${window.location.origin}/gongsi.html`, "_blank", "noopener,noreferrer");
+                  setIsOpen(false);
+                }}
+              />
+
               {canUseOffice && (
                 <NavItem
                   icon="업무"

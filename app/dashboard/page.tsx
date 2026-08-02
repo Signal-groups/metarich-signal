@@ -503,8 +503,8 @@ export default function DashboardPage() {
       .map(cat => ({ ...cat, tools: cat.tools.filter(tool => !(tool as any).locked) }))
       .filter(cat => cat.tools.length > 0)
 
-    // 진료기록확인 숨김 / 내보험바로알기+고객상담카드 통합
-    const HIDDEN_FACE_IDS = new Set(['show_hira'])
+    // 진료기록확인·상품공시조회 숨김(사이드바 전용) / 내보험바로알기+고객상담카드 통합
+    const HIDDEN_FROM_MAIN = new Set(['show_hira', 'show_gongsi'])
     const COMBINED_FACE_IDS = new Set(['show_insurance_survey', 'show_card_consult'])
 
     const noticeCnt = announcements.filter(a => a.category === 'notice').length
@@ -698,12 +698,13 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* ── 데스크톱 아코디언 섹션 ── */}
-        <div className="hidden space-y-2 md:block">
+        {/* ── 데스크톱 카테고리 그리드 ── */}
+        <div className="hidden md:block">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '8px', alignItems: 'start' }}>
           {allCategorySections.map((cat) => {
             const isOpen = openConsultCategories[cat.id] ?? false
-            // 진료기록확인 숨김
-            const displayTools = cat.tools.filter(t => !HIDDEN_FACE_IDS.has(t.id))
+            // 진료기록확인·상품공시조회 숨김
+            const displayTools = cat.tools.filter(t => !HIDDEN_FROM_MAIN.has(t.id))
             // 내보험바로알기 + 고객상담카드는 통합 카드로 처리
             const combinedTools = cat.id === 'face' ? displayTools.filter(t => COMBINED_FACE_IDS.has(t.id)) : []
             const regularTools = cat.id === 'face' ? displayTools.filter(t => !COMBINED_FACE_IDS.has(t.id)) : displayTools
@@ -783,6 +784,7 @@ export default function DashboardPage() {
               </section>
             )
           })}
+          </div>
         </div>
 
         {/* ── 공지·업데이트 통합 팝업 ── */}
