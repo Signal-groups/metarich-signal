@@ -43,6 +43,8 @@ import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
 import ProductStrategyBoard from "./components/ProductStrategyBoard"
 import CalendarWidget from "./components/CalendarWidget"
+import GeneralHome from "./components/GeneralHome"
+import ProHome from "./components/ProHome"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, CONSULTING_TOOL_GROUPS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { MENU_LAYOUT_KEY, type MenuLayout, defaultMenuLayout, isToolHidden, orderToolsByLayout, parseMenuLayout } from "../../lib/menuLayout"
 import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice, canAccessCrm } from "../../lib/roles"
@@ -940,7 +942,34 @@ export default function DashboardPage() {
                 return <AgentView {...props} />;
               })()
             )
-          ) : renderConsultingView()}
+          ) : (() => {
+            // 2-tier 대시보드: canUseCrm → ProHome, 그 외 → GeneralHome
+            // 마스터는 masterPreviewMode 토글로 전환
+            const showProHome = isMaster ? masterPreviewMode === 'pro' : canUseCrm
+            const commonProps = {
+              user,
+              announcements,
+              favorites,
+              isFavEditMode,
+              visibleTools: visibleConsultingTools,
+              onFavEditToggle: () => setIsFavEditMode(!isFavEditMode),
+              onFavToggle: toggleFavorite,
+              onNavigate: handleNavigation,
+              onNoticeClick: () => { setShowNoticePopup(true); setNoticePopupTab('notice') },
+              onStrategyClick: () => setActiveTab('strategy'),
+            }
+            return showProHome ? (
+              <ProHome
+                {...commonProps}
+                recentCustomers={recentCustomers}
+              />
+            ) : (
+              <GeneralHome
+                {...commonProps}
+                canUseCrm={canUseCrm}
+              />
+            )
+          })()}
         </div>
 
       </main>
