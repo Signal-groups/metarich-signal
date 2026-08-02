@@ -42,6 +42,7 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import BrandingAIPage from "./components/BrandingAIPage"
 import ProductStrategyBoard from "./components/ProductStrategyBoard"
+import CalendarWidget from "./components/CalendarWidget"
 import { CONSULTING_TOOLS, CONSULTING_TOOL_CATEGORIES, CONSULTING_TOOL_GROUPS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
 import { MENU_LAYOUT_KEY, type MenuLayout, defaultMenuLayout, isToolHidden, orderToolsByLayout, parseMenuLayout } from "../../lib/menuLayout"
 import { normalizeRole, isApprovedUser, canAccessBranding, canAccessOffice, canAccessCrm } from "../../lib/roles"
@@ -600,6 +601,11 @@ export default function DashboardPage() {
             </div>
           ))}
         </section>
+
+        {/* ── 고객관리 캘린더 ── */}
+        {isApproved && (
+          <CalendarWidget user={user} canUseCrm={canUseCrm} />
+        )}
 
         {/* ── 모바일 전용 ── */}
         <section className="mb-3 rounded-[14px] border border-[#dce6f1] bg-white px-4 py-3 shadow-sm md:hidden">

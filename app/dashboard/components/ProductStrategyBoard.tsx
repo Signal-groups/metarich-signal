@@ -184,6 +184,18 @@ export default function ProductStrategyBoard({ user }: Props) {
     }
   }
 
+  const handleFileDrop = async (files: FileList) => {
+    setUploading(true)
+    try {
+      const newUrls = await uploadImages(files)
+      setFormImages(prev => [...prev, ...newUrls])
+    } catch (err: any) {
+      alert("이미지 업로드 중 오류: " + err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!formTitle.trim() || !formContent.trim()) {
       alert("제목과 내용을 입력해주세요.")
@@ -436,6 +448,7 @@ export default function ProductStrategyBoard({ user }: Props) {
           formImages={formImages} setFormImages={setFormImages}
           uploading={uploading}
           onImageSelect={handleImageSelect}
+          onFileDrop={handleFileDrop}
           saving={saving}
           months={months}
           onSave={handleSave}
@@ -541,7 +554,10 @@ function PostDetailModal({
   onClose: () => void; onEdit: (p: Post) => void
   onDelete: (id: string) => void; onToggleImportant: (p: Post) => void
 }) {
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null)
+
   return (
+    <>
     <div style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(10,16,32,0.75)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: "'Pretendard Variable','Pretendard',-apple-system,sans-serif" }}
       onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 24, width: "100%", maxWidth: 680, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.4)" }}
@@ -576,15 +592,15 @@ function PostDetailModal({
           <div style={{ fontSize: 15, color: "#374151", lineHeight: 1.9, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>
             {post.content}
           </div>
-          {/* 이미지 */}
+          {/* 이미지 — 클릭 시 전체화면 */}
           {post.images && post.images.length > 0 && (
-            <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
               {post.images.map((url, i) => (
-                <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                  style={{ display: "block", borderRadius: 10, overflow: "hidden", border: "1px solid #E8ECF0", flexShrink: 0 }}>
+                <div key={i} onClick={() => setLightboxImg(url)}
+                  style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #E8ECF0", cursor: "zoom-in", background: "#f8f9fa" }}>
                   <img src={url} alt={`첨부 이미지 ${i + 1}`}
-                    style={{ maxWidth: 280, maxHeight: 200, objectFit: "cover", display: "block" }} />
-                </a>
+                    style={{ width: "100%", height: "auto", display: "block", objectFit: "contain" }} />
+                </div>
               ))}
             </div>
           )}
@@ -612,6 +628,21 @@ function PostDetailModal({
         )}
       </div>
     </div>
+
+    {/* 라이트박스 */}
+    {lightboxImg && (
+      <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.97)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+        onClick={() => setLightboxImg(null)}>
+        <button onClick={() => setLightboxImg(null)}
+          style={{ position: "absolute", top: 20, right: 20, background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", fontSize: 22, cursor: "pointer", padding: "8px 14px", borderRadius: 10, lineHeight: 1, fontFamily: "inherit" }}>
+          ✕
+        </button>
+        <img src={lightboxImg} alt="전체 보기"
+          onClick={e => e.stopPropagation()}
+          style={{ maxWidth: "95vw", maxHeight: "95vh", objectFit: "contain", borderRadius: 10 }} />
+      </div>
+    )}
+  </>
   )
 }
 
@@ -620,7 +651,7 @@ function PostDetailModal({
 function WriteFormModal({
   editingId, formTitle, setFormTitle, formContent, setFormContent,
   formMonth, setFormMonth, formImportant, setFormImportant,
-  formImages, setFormImages, uploading, onImageSelect,
+  formImages, setFormImages, uploading, onImageSelect, onFileDrop,
   saving, months, onSave, onClose,
 }: {
   editingId: string | null
@@ -631,11 +662,13 @@ function WriteFormModal({
   formImages: string[]; setFormImages: (v: string[]) => void
   uploading: boolean
   onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onFileDrop: (files: FileList) => void
   saving: boolean; months: string[]
   onSave: () => void; onClose: () => void
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [dragOver, setDragOver] = useState(false)
   useEffect(() => { textareaRef.current?.focus() }, [])
 
   return (
@@ -715,26 +748,24 @@ function WriteFormModal({
             />
           </div>
 
-          {/* 이미지 첨부 */}
+          {/* 이미지 첨부 — 드래그앤드롭 */}
           <div>
             <label style={{ fontSize: 11, fontWeight: 900, color: "#9CA3AF", display: "block", marginBottom: 8 }}>🖼 이미지 첨부 (선택)</label>
-            {/* 업로드 버튼 */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={onImageSelect}
-              style={{ display: "none" }}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              style={{ padding: "9px 18px", borderRadius: 10, border: `1.5px dashed ${GOLD}80`, background: `${GOLD}0A`, color: uploading ? "#9CA3AF" : "#7B5B00", fontSize: 12, fontWeight: 900, cursor: uploading ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}
+            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onImageSelect} style={{ display: "none" }} />
+            {/* 드롭존 */}
+            <div
+              onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files.length > 0) onFileDrop(e.dataTransfer.files) }}
+              onClick={() => !uploading && fileInputRef.current?.click()}
+              style={{ border: `2px dashed ${dragOver ? GOLD : GOLD + "60"}`, borderRadius: 14, padding: "22px 16px", textAlign: "center", cursor: uploading ? "wait" : "pointer", background: dragOver ? `${GOLD}14` : `${GOLD}06`, transition: "all 0.18s" }}
             >
-              {uploading ? "⏳ 업로드 중..." : "📎 이미지 추가"}
-            </button>
+              <div style={{ fontSize: 26, marginBottom: 6 }}>{uploading ? "⏳" : "📸"}</div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: dragOver ? "#7B5B00" : "#9CA3AF" }}>
+                {uploading ? "업로드 중..." : "이미지를 여기에 드래그하거나 클릭하여 업로드"}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 11, color: "#D1D5DB" }}>여러 장 동시 업로드 · JPG, PNG, WEBP</p>
+            </div>
             {/* 미리보기 */}
             {formImages.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
