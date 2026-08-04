@@ -115,6 +115,7 @@ export default function GeneralHome({
   const uid = user?.id || 'guest'
 
   // ── 보험사 코드 ─────────────────────────────────────────────────────
+  const [isInsuOpen, setIsInsuOpen] = useState(true)
   const [insuTab, setInsuTab] = useState<'life' | 'non'>('life')
   const [showPw, setShowPw] = useState(false)
   const [lifeCodes, setLifeCodes] = useState<InsuCode[]>(() => {
@@ -388,66 +389,84 @@ export default function GeneralHome({
           <CalendarWidget user={user} canUseCrm={canUseCrm} />
         </div>
 
-        {/* 우측: 보험사 코드 & 비밀번호 (달력 높이에 맞춤) */}
-        <div style={{ flex: '0 0 340px', minWidth: 280, display: 'flex', flexDirection: 'column' }}>
-          <section style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px 18px' }}>
+        {/* 우측: 보험사 코드 & 비밀번호 */}
+        <div style={{ flex: '0 0 400px', minWidth: 320, display: 'flex', flexDirection: 'column' }}>
+          <section style={{ ...card, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '14px 18px', ...(isInsuOpen ? { flex: 1 } : {}) }}>
 
-            {/* 헤더 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexShrink: 0 }}>
+            {/* 헤더 — 클릭하면 열고 닫힘 */}
+            <button
+              onClick={() => setIsInsuOpen(p => !p)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%', fontFamily: 'inherit' }}
+            >
               <span style={{ fontSize: 13, fontWeight: 900, color: '#10203a' }}>보험사 코드 & 비밀번호</span>
-              <button onClick={() => setShowPw(p => !p)}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid #dce6f1', background: '#f8fafc', cursor: 'pointer', fontFamily: 'inherit' }}>
-                {showPw ? <EyeOff size={12} color="#94a3b8" /> : <Eye size={12} color="#94a3b8" />}
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>{showPw ? '숨기기' : '보기'}</span>
-              </button>
-            </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>
+                  {(insuTab === 'life' ? lifeCodes : nonCodes).filter(r => r.code).length}개 등록됨
+                </span>
+                <ChevronDown size={14} color="#94a3b8" style={{ transition: 'transform 0.2s', transform: isInsuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+              </div>
+            </button>
 
-            {/* 탭 */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexShrink: 0 }}>
-              {(['life', 'non'] as const).map(tab => (
-                <button key={tab} onClick={() => setInsuTab(tab)}
-                  style={{ flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', background: insuTab === tab ? '#1A2744' : '#f1f5f9', color: insuTab === tab ? '#fff' : '#64748b' }}>
-                  {tab === 'life' ? '생명보험' : '손해보험'}
-                </button>
-              ))}
-            </div>
-
-            {/* 컬럼 헤더 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 64px 64px 28px', gap: 3, paddingBottom: 4, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
-              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
-              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
-              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
-              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>순서</span>
-            </div>
-
-            {/* 스크롤 목록 */}
-            <div style={{ flex: 1, overflowY: 'auto', marginTop: 2 }}>
-              {(insuTab === 'life' ? lifeCodes : nonCodes).map((row, idx, arr) => (
-                <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr 64px 64px 28px', gap: 3, alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.company}</span>
-                  <input value={row.code}
-                    onChange={e => updateCode(insuTab, row.id, 'code', e.target.value)}
-                    placeholder="코드"
-                    style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 4px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', textAlign: 'center', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
-                  <input value={showPw ? row.pw : row.pw ? '••••' : ''}
-                    onChange={e => showPw && updateCode(insuTab, row.id, 'pw', e.target.value)}
-                    readOnly={!showPw}
-                    placeholder="비번"
-                    type={showPw ? 'text' : 'password'}
-                    style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 4px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', textAlign: 'center', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const, background: !showPw && row.pw ? '#f8fafc' : '#fff' }} />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
-                    <button onClick={() => moveRow(insuTab, idx, -1)} disabled={idx === 0}
-                      style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', padding: 0, color: idx === 0 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
-                      <ChevronUp size={11} />
-                    </button>
-                    <button onClick={() => moveRow(insuTab, idx, 1)} disabled={idx === arr.length - 1}
-                      style={{ background: 'none', border: 'none', cursor: idx === arr.length - 1 ? 'default' : 'pointer', padding: 0, color: idx === arr.length - 1 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
-                      <ChevronDown size={11} />
-                    </button>
+            {/* 펼쳐진 내용 */}
+            {isInsuOpen && (
+              <>
+                {/* 탭 + 비번 토글 */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 12, marginBottom: 10, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                    {(['life', 'non'] as const).map(tab => (
+                      <button key={tab} onClick={() => setInsuTab(tab)}
+                        style={{ flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', background: insuTab === tab ? '#1A2744' : '#f1f5f9', color: insuTab === tab ? '#fff' : '#64748b' }}>
+                        {tab === 'life' ? '생명보험' : '손해보험'}
+                      </button>
+                    ))}
                   </div>
+                  <button onClick={() => setShowPw(p => !p)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', borderRadius: 8, border: '1px solid #dce6f1', background: '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                    {showPw ? <EyeOff size={12} color="#94a3b8" /> : <Eye size={12} color="#94a3b8" />}
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>{showPw ? '숨김' : '보기'}</span>
+                  </button>
                 </div>
-              ))}
-            </div>
+
+                {/* 컬럼 헤더 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 28px', gap: 3, paddingBottom: 4, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>순서</span>
+                </div>
+
+                {/* 스크롤 목록 */}
+                <div style={{ flex: 1, overflowY: 'auto', marginTop: 2, maxHeight: 196 }}>
+                  {(insuTab === 'life' ? lifeCodes : nonCodes).map((row, idx, arr) => (
+                    <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 28px', gap: 3, alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #f1f5f9' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.company}</span>
+                      <input value={row.code}
+                        onChange={e => updateCode(insuTab, row.id, 'code', e.target.value)}
+                        placeholder="코드 (10자리)"
+                        maxLength={15}
+                        style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 5px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
+                      <input value={showPw ? row.pw : row.pw ? '•'.repeat(Math.min(row.pw.length, 8)) : ''}
+                        onChange={e => showPw && updateCode(insuTab, row.id, 'pw', e.target.value)}
+                        readOnly={!showPw}
+                        placeholder="비밀번호"
+                        type={showPw ? 'text' : 'password'}
+                        maxLength={20}
+                        style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 5px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const, background: !showPw && row.pw ? '#f8fafc' : '#fff' }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+                        <button onClick={() => moveRow(insuTab, idx, -1)} disabled={idx === 0}
+                          style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', padding: 0, color: idx === 0 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
+                          <ChevronUp size={11} />
+                        </button>
+                        <button onClick={() => moveRow(insuTab, idx, 1)} disabled={idx === arr.length - 1}
+                          style={{ background: 'none', border: 'none', cursor: idx === arr.length - 1 ? 'default' : 'pointer', padding: 0, color: idx === arr.length - 1 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
+                          <ChevronDown size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </section>
 
         </div>
