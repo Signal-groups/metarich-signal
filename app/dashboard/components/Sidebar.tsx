@@ -384,7 +384,7 @@ export default function Sidebar({
 
             {/* Navigation List */}
             <nav className="space-y-1">
-              <p className="px-2 mb-2 text-[10px] font-bold tracking-widest text-white/30">메인</p>
+              <p className="px-2 mb-2 text-[12px] font-bold tracking-widest text-white/40">메인</p>
 
               <NavItem
                 icon="홈"
@@ -467,7 +467,7 @@ export default function Sidebar({
 
               {sidebarLayoutTools.filter((tool) => !["show_dm", "show_exam"].includes(tool.id)).length > 0 && (
                 <>
-                  <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">빠른 메뉴</p>
+                  <p className="px-2 mb-2 mt-5 text-[12px] font-bold tracking-widest text-white/40">빠른 메뉴</p>
                   {sidebarLayoutTools
                     .filter((tool) => !["show_dm", "show_exam"].includes(tool.id))
                     .map((tool) => (
@@ -485,7 +485,7 @@ export default function Sidebar({
               )}
 
               {(canUseClaim || canUseBranding || isMaster) && (
-                <p className="px-2 mb-2 mt-5 text-[10px] font-bold tracking-widest text-white/30">업무</p>
+                <p className="px-2 mb-2 mt-5 text-[12px] font-bold tracking-widest text-white/40">업무</p>
               )}
 
               {canUseClaim && (
@@ -546,7 +546,7 @@ export default function Sidebar({
                   onClick={() => setRecentCustsOpen(prev => !prev)}
                   className="flex w-full items-center justify-between px-2 mb-1 group"
                 >
-                  <p className="text-[10px] font-bold tracking-widest text-white/30 group-hover:text-white/50 transition-colors">최근 상담 고객</p>
+                  <p className="text-[12px] font-bold tracking-widest text-white/40 group-hover:text-white/50 transition-colors">최근 상담 고객</p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); window.open(`${window.location.origin}/crm/customers`, "_blank", "noopener,noreferrer"); setIsOpen(false); }}
@@ -570,8 +570,8 @@ export default function Sidebar({
                           {(c.name || '?')[0]}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[11px] font-bold text-white/85">{c.name || '이름 없음'}</p>
-                          {c.status && <p className="text-[9px] text-white/35 truncate">{c.status}</p>}
+                          <p className="truncate text-[13px] font-bold text-white/85">{c.name || '이름 없음'}</p>
+                          {c.status && <p className="text-[11px] text-white/35 truncate">{c.status}</p>}
                         </div>
                       </button>
                     ))}
@@ -924,7 +924,7 @@ function NavItem({ icon, label, active, onClick, variant, badge, iconNode, arrow
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${variantClass}`}
     >
       <span className={iconClass}>{iconNode ?? icon}</span>
-      <span className={`text-[13px] ${variant ? 'font-black' : 'font-medium'}`}>{label}</span>
+      <span className={`text-[15px] ${variant ? 'font-black' : 'font-semibold'}`}>{label}</span>
       <span className="ml-auto flex items-center gap-2">
         {badge && (
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${

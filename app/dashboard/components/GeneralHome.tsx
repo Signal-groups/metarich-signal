@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import {
   ArrowLeftRight, BarChart3, BookOpen, Calculator, CarFront,
-  ChevronDown, ChevronUp, ClipboardCheck, FileSearch, Hospital,
+  ChevronDown, ChevronUp, ClipboardCheck, FileSearch, GripVertical, Hospital,
   PieChart, Scale, Search, ShieldCheck, Star, Stethoscope, ScrollText, Bell, Eye, EyeOff,
 } from 'lucide-react'
 import type { ConsultingTool } from '../../../lib/consultingTools'
@@ -120,6 +120,8 @@ export default function GeneralHome({
   const [insuTab, setInsuTab] = useState<'life' | 'non'>('life')
   const [showPw, setShowPw] = useState(false)
   const [copiedCell, setCopiedCell] = useState<string | null>(null)
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
 
   const copyToClipboard = (text: string, cellId: string) => {
     if (!text) return
@@ -127,6 +129,15 @@ export default function GeneralHome({
       setCopiedCell(cellId)
       setTimeout(() => setCopiedCell(null), 1500)
     }).catch(() => {})
+  }
+
+  const dropRow = (type: 'life' | 'non', from: number, to: number) => {
+    if (from === to) return
+    const arr = [...(type === 'life' ? lifeCodes : nonCodes)]
+    const [item] = arr.splice(from, 1)
+    arr.splice(to, 0, item)
+    if (type === 'life') { setLifeCodes(arr); localStorage.setItem(`insu-life-${uid}`, JSON.stringify(arr)) }
+    else { setNonCodes(arr); localStorage.setItem(`insu-non-${uid}`, JSON.stringify(arr)) }
   }
   const [lifeCodes, setLifeCodes] = useState<InsuCode[]>(() => {
     if (typeof window === 'undefined') return DEFAULT_LIFE
@@ -308,7 +319,7 @@ export default function GeneralHome({
                       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
                         <ToolIcon icon={tool.icon} size={17} />
                       </span>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
                     </button>
                   )
                 })}
@@ -341,10 +352,10 @@ export default function GeneralHome({
                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,32,58,0.08)'; }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <span style={{ fontSize: 12, fontWeight: 800, color: isActive ? s.activeText : '#10203a', textAlign: 'left', flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: isActive ? s.activeText : '#10203a', textAlign: 'left', flex: 1 }}>
                       {cat.title}
                     </span>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>
                       {cat.tools.length}
                     </span>
                     <ChevronDown
@@ -379,7 +390,7 @@ export default function GeneralHome({
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: s.iconBg, flexShrink: 0 }}>
                       <ToolIcon icon={tool.icon} size={12} />
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: '#10203a' }}>{tool.title}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#10203a' }}>{tool.title}</span>
                   </button>
                 ))}
               </div>
@@ -425,36 +436,51 @@ export default function GeneralHome({
                   <div style={{ display: 'flex', gap: 4, flex: 1 }}>
                     {(['life', 'non'] as const).map(tab => (
                       <button key={tab} onClick={() => setInsuTab(tab)}
-                        style={{ flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', background: insuTab === tab ? '#1A2744' : '#f1f5f9', color: insuTab === tab ? '#fff' : '#64748b' }}>
+                        style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', background: insuTab === tab ? '#1A2744' : '#f1f5f9', color: insuTab === tab ? '#fff' : '#64748b' }}>
                         {tab === 'life' ? '생명보험' : '손해보험'}
                       </button>
                     ))}
                   </div>
                   <button onClick={() => setShowPw(p => !p)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', borderRadius: 8, border: '1px solid #dce6f1', background: '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-                    {showPw ? <EyeOff size={12} color="#94a3b8" /> : <Eye size={12} color="#94a3b8" />}
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>{showPw ? '숨김' : '보기'}</span>
+                    style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 10px', borderRadius: 8, border: '1px solid #dce6f1', background: '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                    {showPw ? <EyeOff size={13} color="#94a3b8" /> : <Eye size={13} color="#94a3b8" />}
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{showPw ? '숨김' : '보기'}</span>
                   </button>
                   <button
                     onClick={() => setIsInsuEdit(p => !p)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '4px 10px', borderRadius: 8, border: `1px solid ${isInsuEdit ? '#1A2744' : '#dce6f1'}`, background: isInsuEdit ? '#1A2744' : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: isInsuEdit ? '#fff' : '#64748b' }}>{isInsuEdit ? '저장' : '수정'}</span>
+                    style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '5px 12px', borderRadius: 8, border: `1px solid ${isInsuEdit ? '#1A2744' : '#dce6f1'}`, background: isInsuEdit ? '#1A2744' : '#f8fafc', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: isInsuEdit ? '#fff' : '#64748b' }}>{isInsuEdit ? '저장' : '수정'}</span>
                   </button>
                 </div>
 
                 {/* 컬럼 헤더 */}
-                <div style={{ display: 'grid', gridTemplateColumns: isInsuEdit ? '1fr 90px 110px 28px' : '1fr 90px 110px', gap: 3, paddingBottom: 4, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
-                  <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
-                  <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
-                  <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
-                  {isInsuEdit && <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>순서</span>}
+                <div style={{ display: 'grid', gridTemplateColumns: isInsuEdit ? '1fr 90px 110px 22px' : '1fr 90px 110px', gap: 4, paddingBottom: 5, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
+                  {isInsuEdit && <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>≡</span>}
                 </div>
 
                 {/* 스크롤 목록 */}
-                <div style={{ flex: 1, overflowY: 'auto', marginTop: 2, maxHeight: 196 }}>
-                  {(insuTab === 'life' ? lifeCodes : nonCodes).map((row, idx, arr) => (
-                    <div key={row.id} style={{ display: 'grid', gridTemplateColumns: isInsuEdit ? '1fr 90px 110px 28px' : '1fr 90px 110px', gap: 3, alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #f1f5f9' }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.company}</span>
+                <div style={{ flex: 1, overflowY: 'auto', marginTop: 2, maxHeight: 224 }}>
+                  {(insuTab === 'life' ? lifeCodes : nonCodes).map((row, idx) => (
+                    <div
+                      key={row.id}
+                      draggable={isInsuEdit}
+                      onDragStart={() => { setDragIdx(idx); setOverIdx(idx) }}
+                      onDragOver={e => { e.preventDefault(); setOverIdx(idx) }}
+                      onDrop={() => { if (dragIdx !== null) { dropRow(insuTab, dragIdx, idx); setDragIdx(null); setOverIdx(null) } }}
+                      onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: isInsuEdit ? '1fr 90px 110px 22px' : '1fr 90px 110px',
+                        gap: 4, alignItems: 'center', padding: '5px 0',
+                        borderBottom: overIdx === idx && dragIdx !== null && dragIdx !== idx ? '2px solid #1A2744' : '1px solid #f1f5f9',
+                        opacity: dragIdx === idx ? 0.4 : 1,
+                        cursor: isInsuEdit ? 'grab' : 'default',
+                        transition: 'opacity 0.15s',
+                      }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#374151', paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.company}</span>
 
                       {/* 코드 셀 */}
                       {isInsuEdit ? (
@@ -462,12 +488,12 @@ export default function GeneralHome({
                           onChange={e => updateCode(insuTab, row.id, 'code', e.target.value)}
                           placeholder="코드 (10자리)"
                           maxLength={15}
-                          style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 5px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
+                          style={{ fontSize: 12, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
                       ) : (
                         <button
                           onClick={() => row.code && copyToClipboard(row.code, `${row.id}_code`)}
                           title={row.code ? '클릭하여 복사' : ''}
-                          style={{ fontSize: 10, fontWeight: 700, color: copiedCell === `${row.id}_code` ? '#16a34a' : '#10203a', textAlign: 'center', padding: '3px 4px', borderRadius: 4, border: '1px solid transparent', background: copiedCell === `${row.id}_code` ? '#f0fdf4' : 'transparent', cursor: row.code ? 'pointer' : 'default', fontFamily: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          style={{ fontSize: 12, fontWeight: 700, color: copiedCell === `${row.id}_code` ? '#16a34a' : '#10203a', textAlign: 'center', padding: '4px 5px', borderRadius: 4, border: '1px solid transparent', background: copiedCell === `${row.id}_code` ? '#f0fdf4' : 'transparent', cursor: row.code ? 'pointer' : 'default', fontFamily: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {copiedCell === `${row.id}_code` ? '복사됨 ✓' : (row.code || '—')}
                         </button>
                       )}
@@ -479,27 +505,20 @@ export default function GeneralHome({
                           placeholder="비밀번호"
                           type={showPw ? 'text' : 'password'}
                           maxLength={20}
-                          style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 5px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
+                          style={{ fontSize: 12, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
                       ) : (
                         <button
                           onClick={() => row.pw && copyToClipboard(row.pw, `${row.id}_pw`)}
                           title={row.pw ? '클릭하여 복사' : ''}
-                          style={{ fontSize: 10, fontWeight: 700, color: copiedCell === `${row.id}_pw` ? '#16a34a' : '#64748b', textAlign: 'center', padding: '3px 4px', borderRadius: 4, border: '1px solid transparent', background: copiedCell === `${row.id}_pw` ? '#f0fdf4' : 'transparent', cursor: row.pw ? 'pointer' : 'default', fontFamily: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          style={{ fontSize: 12, fontWeight: 700, color: copiedCell === `${row.id}_pw` ? '#16a34a' : '#64748b', textAlign: 'center', padding: '4px 5px', borderRadius: 4, border: '1px solid transparent', background: copiedCell === `${row.id}_pw` ? '#f0fdf4' : 'transparent', cursor: row.pw ? 'pointer' : 'default', fontFamily: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {copiedCell === `${row.id}_pw` ? '복사됨 ✓' : (row.pw ? (showPw ? row.pw : '•'.repeat(Math.min(row.pw.length, 8))) : '—')}
                         </button>
                       )}
 
-                      {/* 순서 (편집 모드에서만) */}
+                      {/* 드래그 핸들 (편집 모드에서만) */}
                       {isInsuEdit && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
-                          <button onClick={() => moveRow(insuTab, idx, -1)} disabled={idx === 0}
-                            style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', padding: 0, color: idx === 0 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
-                            <ChevronUp size={11} />
-                          </button>
-                          <button onClick={() => moveRow(insuTab, idx, 1)} disabled={idx === arr.length - 1}
-                            style={{ background: 'none', border: 'none', cursor: idx === arr.length - 1 ? 'default' : 'pointer', padding: 0, color: idx === arr.length - 1 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
-                            <ChevronDown size={11} />
-                          </button>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b0bec5', cursor: 'grab' }}>
+                          <GripVertical size={14} />
                         </div>
                       )}
                     </div>

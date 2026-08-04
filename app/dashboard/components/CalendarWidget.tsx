@@ -142,15 +142,15 @@ export default function CalendarWidget({ user, canUseCrm }: { user: any; canUseC
         <div style={{ flex: "1 1 50%", minWidth: 220, padding: "14px 16px", borderRight: "1px solid #eef3f8" }}>
           {/* 헤더 */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-            <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#9ab4c8", padding: "2px 6px", lineHeight: 1, fontFamily: "inherit" }}>‹</button>
-            <span style={{ fontSize: 14, fontWeight: 900, color: NAVY }}>{viewYear}년 {MONTH_NAMES[viewMonth]}</span>
-            <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#9ab4c8", padding: "2px 6px", lineHeight: 1, fontFamily: "inherit" }}>›</button>
+            <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#9ab4c8", padding: "2px 6px", lineHeight: 1, fontFamily: "inherit" }}>‹</button>
+            <span style={{ fontSize: 16, fontWeight: 900, color: NAVY }}>{viewYear}년 {MONTH_NAMES[viewMonth]}</span>
+            <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#9ab4c8", padding: "2px 6px", lineHeight: 1, fontFamily: "inherit" }}>›</button>
           </div>
 
           {/* 요일 */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 2 }}>
             {DAY_NAMES.map((d, i) => (
-              <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 900, padding: "2px 0", color: i === 0 ? "#e63946" : i === 6 ? "#2563eb" : "#9ca3af" }}>{d}</div>
+              <div key={d} style={{ textAlign: "center", fontSize: 12, fontWeight: 900, padding: "3px 0", color: i === 0 ? "#e63946" : i === 6 ? "#2563eb" : "#9ca3af" }}>{d}</div>
             ))}
           </div>
 
@@ -165,8 +165,8 @@ export default function CalendarWidget({ user, canUseCrm }: { user: any; canUseC
               const dow = (firstDow + day - 1) % 7
               return (
                 <button key={idx} onClick={() => setSelected(isSelected ? null : dayStr)}
-                  style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "4px 0 3px", borderRadius: 7, border: "none", cursor: "pointer", fontFamily: "inherit", background: isSelected ? NAVY : isToday ? "#eef4fb" : "transparent", minHeight: 34 }}>
-                  <span style={{ fontSize: 11, fontWeight: isToday || isSelected ? 900 : 600, color: isSelected ? "#fff" : isToday ? NAVY : dow === 0 ? "#e63946" : dow === 6 ? "#2563eb" : "#374151" }}>{day}</span>
+                  style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "5px 0 4px", borderRadius: 7, border: "none", cursor: "pointer", fontFamily: "inherit", background: isSelected ? NAVY : isToday ? "#eef4fb" : "transparent", minHeight: 38 }}>
+                  <span style={{ fontSize: 14, fontWeight: isToday || isSelected ? 900 : 600, color: isSelected ? "#fff" : isToday ? NAVY : dow === 0 ? "#e63946" : dow === 6 ? "#2563eb" : "#374151" }}>{day}</span>
                   {(hasBirthday || hasNote) && (
                     <div style={{ display: "flex", gap: 2, marginTop: 1 }}>
                       {hasBirthday && <div style={{ width: 4, height: 4, borderRadius: "50%", background: isSelected ? "#fbbf24" : GOLD }} />}
