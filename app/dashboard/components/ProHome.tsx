@@ -5,13 +5,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ArrowLeftRight, BarChart3, Bell, BookOpen, Calculator, CarFront,
-  ChevronRight, ChevronDown, ClipboardCheck, FileSearch, Hospital,
+  ChevronRight, ChevronDown, ClipboardCheck, Eye, EyeOff, FileSearch, Hospital,
   PieChart, Plus, Scale, Search, ShieldCheck, Star, Stethoscope,
-  ScrollText, Users, X,
+  ScrollText, Trash2, Users, X,
 } from 'lucide-react'
 import type { ConsultingTool } from '../../../lib/consultingTools'
 import { CONSULTING_TOOL_CATEGORIES } from '../../../lib/consultingTools'
 import { supabase } from '../../../lib/supabase'
+import CalendarWidget from './CalendarWidget'
 
 const CAT_STYLE: Record<string, { bg: string; border: string; iconBg: string; activeBg: string; activeText: string }> = {
   face:     { bg: '#eef8ff', border: '#bfdbfe', iconBg: '#dbeafe', activeBg: '#1b54ad', activeText: '#fff' },
@@ -45,6 +46,30 @@ function ToolIcon({ icon, size = 18 }: { icon: string; size?: number }) {
   }
 }
 
+type TodoItemP = { id: string; text: string; done: boolean }
+type InsuCodeP  = { id: string; company: string; code: string; pw: string }
+
+const DEFAULT_LIFE_P: InsuCodeP[] = [
+  { id: 'l1', company: '삼성생명',     code: '', pw: '' },
+  { id: 'l2', company: '한화생명',     code: '', pw: '' },
+  { id: 'l3', company: '교보생명',     code: '', pw: '' },
+  { id: 'l4', company: '신한라이프',   code: '', pw: '' },
+  { id: 'l5', company: 'ABL생명',      code: '', pw: '' },
+  { id: 'l6', company: '동양생명',     code: '', pw: '' },
+  { id: 'l7', company: '미래에셋생명', code: '', pw: '' },
+  { id: 'l8', company: 'KDB생명',      code: '', pw: '' },
+]
+const DEFAULT_NON_P: InsuCodeP[] = [
+  { id: 'n1', company: '삼성화재',   code: '', pw: '' },
+  { id: 'n2', company: 'DB손보',     code: '', pw: '' },
+  { id: 'n3', company: '현대해상',   code: '', pw: '' },
+  { id: 'n4', company: 'KB손보',     code: '', pw: '' },
+  { id: 'n5', company: '메리츠화재', code: '', pw: '' },
+  { id: 'n6', company: '한화손보',   code: '', pw: '' },
+  { id: 'n7', company: '롯데손보',   code: '', pw: '' },
+  { id: 'n8', company: '농협손보',   code: '', pw: '' },
+]
+
 interface ProHomeProps {
   user: any
   announcements: any[]
@@ -77,6 +102,53 @@ export default function ProHome({
   const [localFavIds, setLocalFavIds] = useState<string[]>(favorites)
   const dragStartIdx = useRef<number | null>(null)
   const dragOverIdx = useRef<number | null>(null)
+
+  const uid = user?.id || 'guest'
+  const todayKey = new Date().toISOString().split('T')[0]
+
+  // ── 체크리스트 ───────────────────────────────────────────────────────
+  const [todos, setTodos] = useState<TodoItemP[]>(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(localStorage.getItem(`todo-${uid}-${todayKey}`) || '[]') } catch { return [] }
+  })
+  const [todoInput, setTodoInput] = useState('')
+  const todoRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    localStorage.setItem(`todo-${uid}-${todayKey}`, JSON.stringify(todos))
+  }, [todos, uid, todayKey])
+
+  const addTodo = () => {
+    const t = todoInput.trim()
+    if (!t) return
+    setTodos(p => [...p, { id: Date.now().toString(), text: t, done: false }])
+    setTodoInput('')
+    todoRef.current?.focus()
+  }
+
+  // ── 보험사 코드 ──────────────────────────────────────────────────────
+  const [insuTab, setInsuTab] = useState<'life' | 'non'>('life')
+  const [showPw, setShowPw] = useState(false)
+  const [lifeCodes, setLifeCodes] = useState<InsuCodeP[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_LIFE_P
+    try { return JSON.parse(localStorage.getItem(`insu-life-${uid}`) || 'null') || DEFAULT_LIFE_P } catch { return DEFAULT_LIFE_P }
+  })
+  const [nonCodes, setNonCodes] = useState<InsuCodeP[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_NON_P
+    try { return JSON.parse(localStorage.getItem(`insu-non-${uid}`) || 'null') || DEFAULT_NON_P } catch { return DEFAULT_NON_P }
+  })
+
+  const updateInsuCode = (type: 'life' | 'non', id: string, field: 'code' | 'pw', val: string) => {
+    if (type === 'life') {
+      const next = lifeCodes.map(c => c.id === id ? { ...c, [field]: val } : c)
+      setLifeCodes(next)
+      localStorage.setItem(`insu-life-${uid}`, JSON.stringify(next))
+    } else {
+      const next = nonCodes.map(c => c.id === id ? { ...c, [field]: val } : c)
+      setNonCodes(next)
+      localStorage.setItem(`insu-non-${uid}`, JSON.stringify(next))
+    }
+  }
 
   const name = user?.name || user?.email?.split('@')[0] || ''
   const noticeCnt = announcements.filter(a => a.category === 'notice').length
@@ -448,137 +520,108 @@ export default function ProHome({
       </button>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 4: 2컬럼 메인
+          SECTION 4: 달력 + 할일 체크리스트 + 보험사 코드
       ══════════════════════════════════════════════════ */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
 
-        {/* 왼쪽: 오늘의 상담 일정 + 최근 고객 */}
-        <div style={{ flex: '1 1 380px', minWidth: 300, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* 오늘의 상담 일정 */}
-          <section style={card}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span style={{ fontSize: 15, fontWeight: 900, color: '#10203a' }}>오늘의 상담 일정</span>
-              <button onClick={() => window.open('/crm/customers/new', '_blank', 'noopener,noreferrer')}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: '#1b54ad', background: '#eef4fb', border: 'none', borderRadius: 8, padding: '5px 10px', cursor: 'pointer' }}>
-                <Plus size={11} />새 고객
-              </button>
-            </div>
-            {recentCustomers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px 0', color: '#94a3b8' }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>📅</div>
-                <p style={{ fontSize: 12, fontWeight: 700, margin: 0 }}>오늘 예정된 상담이 없습니다.</p>
-                <p style={{ fontSize: 11, color: '#c8d6e5', marginTop: 4 }}>새 고객을 등록해보세요.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {recentCustomers.slice(0, 4).map(c => (
-                  <button key={c.id}
-                    onClick={() => window.open(`/crm/customers/${c.id}`, '_blank', 'noopener,noreferrer')}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, border: '1px solid #eef2f8', background: '#f8fafc', cursor: 'pointer', textAlign: 'left', width: '100%' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#bfdbfe'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#eef2f8'; }}
-                  >
-                    <span style={{ width: 36, height: 36, borderRadius: '50%', background: '#1a2744', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 900, flexShrink: 0 }}>
-                      {(c.name || '?')[0]}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 900, color: '#10203a' }}>{c.name || '이름 없음'}</div>
-                      <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, marginTop: 2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                        {c.consulting_summary || c.memo || c.phone || '상담 정보 없음'}
-                      </div>
-                    </div>
-                    {c.sales_stage && (
-                      <span style={{ fontSize: 9, fontWeight: 900, background: '#eef4fb', color: '#1b54ad', borderRadius: 8, padding: '3px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                        {c.sales_stage}
-                      </span>
-                    )}
-                    <ChevronRight size={13} color="#c8d6e5" style={{ flexShrink: 0 }} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* 최근 고객 */}
-          <section style={card}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Users size={16} color="#10203a" />
-                <span style={{ fontSize: 15, fontWeight: 900, color: '#10203a' }}>최근 고객</span>
-              </div>
-              <button onClick={() => window.open('/crm/customers', '_blank', 'noopener,noreferrer')} style={editBtn}>전체보기</button>
-            </div>
-            {recentCustomers.length === 0 ? (
-              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>등록된 고객이 없습니다.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {recentCustomers.slice(0, 5).map((c, i) => (
-                  <button key={c.id}
-                    onClick={() => window.open(`/crm/customers/${c.id}`, '_blank', 'noopener,noreferrer')}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: i < 4 ? '1px solid #f1f5f9' : 'none', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
-                  >
-                    <span style={{ fontSize: 13, fontWeight: 900, color: '#10203a', flex: 1 }}>{c.name || '이름 없음'}</span>
-                    {c.status && (
-                      <span style={{ fontSize: 9, fontWeight: 700, color: c.status === '활동중' ? '#0f6e56' : '#64748b', background: c.status === '활동중' ? '#e1f5ee' : '#f1f5f9', borderRadius: 12, padding: '2px 7px', whiteSpace: 'nowrap' }}>
-                        {c.status}
-                      </span>
-                    )}
-                    <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      {c.join_date ? new Date(c.join_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }) : ''}
-                    </span>
-                    <ChevronRight size={12} color="#c8d6e5" style={{ flexShrink: 0 }} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
+        {/* 달력 */}
+        <div style={{ flex: '1 1 380px', minWidth: 300 }}>
+          <CalendarWidget user={user} canUseCrm={true} />
         </div>
 
-        {/* 오른쪽: 빠른 실행 + 진행 중인 업무 */}
-        <div style={{ flex: '0 0 320px', minWidth: 280, maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 우측: 할일 + 보험사 코드 */}
+        <div style={{ flex: '0 0 340px', minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-          {/* 빠른 실행 2x2 */}
+          {/* ── 오늘의 할일 체크리스트 ── */}
           <section style={card}>
-            <div style={{ fontSize: 15, fontWeight: 900, color: '#10203a', marginBottom: 14 }}>빠른 실행</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {quickActions.map((a, i) => (
-                <button key={i} onClick={a.onClick}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, padding: '14px 14px', borderRadius: 12, border: '1px solid #e8eef5', background: a.bg, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,32,58,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
-                >
-                  <span style={{ fontSize: 22 }}>{a.emoji}</span>
-                  <span style={{ fontSize: 12, fontWeight: 900, color: a.color, lineHeight: 1.3 }}>{a.label}</span>
-                </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 900, color: '#10203a' }}>오늘의 할일</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>
+                {todos.filter(t => t.done).length}/{todos.length} 완료
+              </span>
+            </div>
+
+            {/* 입력 */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              <input
+                ref={todoRef}
+                value={todoInput}
+                onChange={e => setTodoInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addTodo()}
+                placeholder="할일을 입력하세요..."
+                style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1.5px solid #dce6f1', fontSize: 12, fontWeight: 500, color: '#10203a', outline: 'none', fontFamily: 'inherit' }}
+                onFocus={e => (e.target.style.borderColor = '#1A2744')}
+                onBlur={e => (e.target.style.borderColor = '#dce6f1')}
+              />
+              <button onClick={addTodo} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: 'none', background: '#1A2744', color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
+                <Plus size={15} />
+              </button>
+            </div>
+
+            {/* 목록 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
+              {todos.length === 0 && (
+                <p style={{ fontSize: 11, color: '#c8d6e5', fontWeight: 700, textAlign: 'center', padding: '12px 0', margin: 0 }}>오늘의 할일을 추가해보세요</p>
+              )}
+              {todos.map(t => (
+                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: t.done ? '#f8fafc' : '#fff', border: '1px solid #f1f5f9' }}>
+                  <input type="checkbox" checked={t.done}
+                    onChange={() => setTodos(p => p.map(x => x.id === t.id ? { ...x, done: !x.done } : x))}
+                    style={{ width: 15, height: 15, accentColor: '#1A2744', cursor: 'pointer', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: t.done ? '#94a3b8' : '#10203a', textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'keep-all' }}>{t.text}</span>
+                  <button onClick={() => setTodos(p => p.filter(x => x.id !== t.id))}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c8d6e5', padding: 2, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               ))}
             </div>
           </section>
 
-          {/* 진행 중인 업무 파이프라인 */}
+          {/* ── 보험사 코드 & 비밀번호 ── */}
           <section style={card}>
-            <div style={{ fontSize: 15, fontWeight: 900, color: '#10203a', marginBottom: 16 }}>진행 중인 업무</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {PIPELINE_STAGES.map((stage, i) => {
-                const count = pipeline[stage] || 0
-                const pct = Math.round((count / maxPipe) * 100)
-                return (
-                  <div key={stage}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: PIPELINE_COLORS[i], flexShrink: 0, display: 'block' }} />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>{stage}</span>
-                      </div>
-                      <span style={{ fontSize: 12, fontWeight: 900, color: count > 0 ? PIPELINE_COLORS[i] : '#94a3b8' }}>{count}건</span>
-                    </div>
-                    <div style={{ height: 6, background: '#f0f4f9', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', background: PIPELINE_COLORS[i], borderRadius: 3, width: `${pct}%`, transition: 'width 0.5s ease', opacity: count === 0 ? 0.25 : 1 }} />
-                    </div>
-                  </div>
-                )
-              })}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 900, color: '#10203a' }}>보험사 코드 & 비밀번호</span>
+              <button onClick={() => setShowPw(p => !p)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid #dce6f1', background: '#f8fafc', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {showPw ? <EyeOff size={12} color="#94a3b8" /> : <Eye size={12} color="#94a3b8" />}
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>{showPw ? '숨기기' : '보기'}</span>
+              </button>
+            </div>
+
+            {/* 탭 */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+              {(['life', 'non'] as const).map(tab => (
+                <button key={tab} onClick={() => setInsuTab(tab)}
+                  style={{ flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', background: insuTab === tab ? '#1A2744' : '#f1f5f9', color: insuTab === tab ? '#fff' : '#64748b' }}>
+                  {tab === 'life' ? '생명보험' : '손해보험'}
+                </button>
+              ))}
+            </div>
+
+            {/* 테이블 */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 2 }}>
+              <div style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', padding: '3px 4px' }}>보험사</div>
+              <div style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', padding: '3px 4px', textAlign: 'center' }}>코드</div>
+              <div style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', padding: '3px 4px', textAlign: 'center' }}>비밀번호</div>
+              {(insuTab === 'life' ? lifeCodes : nonCodes).map(row => (
+                <>
+                  <div key={row.id + '-name'} style={{ fontSize: 11, fontWeight: 700, color: '#374151', padding: '4px 4px', display: 'flex', alignItems: 'center', borderTop: '1px solid #f1f5f9' }}>{row.company}</div>
+                  <input key={row.id + '-code'} value={row.code}
+                    onChange={e => updateInsuCode(insuTab, row.id, 'code', e.target.value)}
+                    placeholder="입력"
+                    style={{ fontSize: 11, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e8eef5', borderRadius: 5, outline: 'none', textAlign: 'center', fontFamily: 'inherit', borderTop: '1px solid #f1f5f9' }} />
+                  <input key={row.id + '-pw'} value={showPw ? row.pw : row.pw ? '••••••' : ''}
+                    onChange={e => showPw && updateInsuCode(insuTab, row.id, 'pw', e.target.value)}
+                    readOnly={!showPw}
+                    placeholder="입력"
+                    type={showPw ? 'text' : 'password'}
+                    style={{ fontSize: 11, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e8eef5', borderRadius: 5, outline: 'none', textAlign: 'center', fontFamily: 'inherit', borderTop: '1px solid #f1f5f9', background: !showPw && row.pw ? '#f8fafc' : '#fff' }} />
+                </>
+              ))}
             </div>
           </section>
+
         </div>
       </div>
 
