@@ -116,8 +116,18 @@ export default function GeneralHome({
 
   // ── 보험사 코드 ─────────────────────────────────────────────────────
   const [isInsuOpen, setIsInsuOpen] = useState(true)
+  const [isInsuEdit, setIsInsuEdit] = useState(false)
   const [insuTab, setInsuTab] = useState<'life' | 'non'>('life')
   const [showPw, setShowPw] = useState(false)
+  const [copiedCell, setCopiedCell] = useState<string | null>(null)
+
+  const copyToClipboard = (text: string, cellId: string) => {
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedCell(cellId)
+      setTimeout(() => setCopiedCell(null), 1500)
+    }).catch(() => {})
+  }
   const [lifeCodes, setLifeCodes] = useState<InsuCode[]>(() => {
     if (typeof window === 'undefined') return DEFAULT_LIFE
     try { return JSON.parse(localStorage.getItem(`insu-life-${uid}`) || 'null') || DEFAULT_LIFE } catch { return DEFAULT_LIFE }

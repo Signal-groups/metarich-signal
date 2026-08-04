@@ -512,8 +512,8 @@ export default function Sidebar({
                 <NavItem
                   icon="🎨"
                   label="설계사 브랜딩 AI"
-                  active={false}
-                  onClick={() => window.open(process.env.NEXT_PUBLIC_BRANDING_URL || "https://branding.metarich-signal.com", "_blank", "noopener,noreferrer")}
+                  active={activeTab === 'branding'}
+                  onClick={() => { if (onTabChange) onTabChange('branding'); setIsOpen(false); }}
                   badge="PRO"
                 />
               )}
