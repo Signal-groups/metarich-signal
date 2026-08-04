@@ -2,11 +2,11 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import {
   ArrowLeftRight, BarChart3, BookOpen, Calculator, CarFront,
-  ChevronDown, ClipboardCheck, FileSearch, Hospital,
-  PieChart, Plus, Scale, Search, ShieldCheck, Star, Stethoscope, ScrollText, Bell, Trash2, Eye, EyeOff,
+  ChevronDown, ChevronUp, ClipboardCheck, FileSearch, Hospital,
+  PieChart, Scale, Search, ShieldCheck, Star, Stethoscope, ScrollText, Bell, Eye, EyeOff,
 } from 'lucide-react'
 import type { ConsultingTool } from '../../../lib/consultingTools'
 import { CONSULTING_TOOL_CATEGORIES } from '../../../lib/consultingTools'
@@ -61,28 +61,50 @@ const CAT_STYLE: Record<string, { bg: string; border: string; iconBg: string; ac
 const MAX_FAV = 10   // 즐겨찾기 최대 개수
 const FAV_COLS = 5   // 한 행에 5개
 
-type TodoItem = { id: string; text: string; done: boolean }
-type InsuCode  = { id: string; company: string; code: string; pw: string }
+type InsuCode = { id: string; company: string; code: string; pw: string }
 
+// 공시실 등록 생명보험사 (2025)
 const DEFAULT_LIFE: InsuCode[] = [
-  { id: 'l1', company: '삼성생명',     code: '', pw: '' },
-  { id: 'l2', company: '한화생명',     code: '', pw: '' },
-  { id: 'l3', company: '교보생명',     code: '', pw: '' },
-  { id: 'l4', company: '신한라이프',   code: '', pw: '' },
-  { id: 'l5', company: 'ABL생명',      code: '', pw: '' },
-  { id: 'l6', company: '동양생명',     code: '', pw: '' },
-  { id: 'l7', company: '미래에셋생명', code: '', pw: '' },
-  { id: 'l8', company: 'KDB생명',      code: '', pw: '' },
+  { id: 'l01', company: '삼성생명',       code: '', pw: '' },
+  { id: 'l02', company: '한화생명',       code: '', pw: '' },
+  { id: 'l03', company: '교보생명',       code: '', pw: '' },
+  { id: 'l04', company: '신한라이프',     code: '', pw: '' },
+  { id: 'l05', company: 'NH농협생명',     code: '', pw: '' },
+  { id: 'l06', company: '흥국생명',       code: '', pw: '' },
+  { id: 'l07', company: '동양생명',       code: '', pw: '' },
+  { id: 'l08', company: 'ABL생명',        code: '', pw: '' },
+  { id: 'l09', company: 'DB생명보험',     code: '', pw: '' },
+  { id: 'l10', company: 'AIA생명',        code: '', pw: '' },
+  { id: 'l11', company: '메트라이프생명', code: '', pw: '' },
+  { id: 'l12', company: '처브라이프생명', code: '', pw: '' },
+  { id: 'l13', company: '미래에셋생명',   code: '', pw: '' },
+  { id: 'l14', company: '라이나생명',     code: '', pw: '' },
+  { id: 'l15', company: 'KDB생명',        code: '', pw: '' },
+  { id: 'l16', company: '카디프생명',     code: '', pw: '' },
+  { id: 'l17', company: '하나생명',       code: '', pw: '' },
+  { id: 'l18', company: '푸본현대생명',   code: '', pw: '' },
+  { id: 'l19', company: '교보라이프플래닛', code: '', pw: '' },
+  { id: 'l20', company: 'iM라이프',       code: '', pw: '' },
 ]
+
+// 공시실 등록 손해보험사 (2025)
 const DEFAULT_NON: InsuCode[] = [
-  { id: 'n1', company: '삼성화재', code: '', pw: '' },
-  { id: 'n2', company: 'DB손보',   code: '', pw: '' },
-  { id: 'n3', company: '현대해상', code: '', pw: '' },
-  { id: 'n4', company: 'KB손보',   code: '', pw: '' },
-  { id: 'n5', company: '메리츠화재', code: '', pw: '' },
-  { id: 'n6', company: '한화손보', code: '', pw: '' },
-  { id: 'n7', company: '롯데손보', code: '', pw: '' },
-  { id: 'n8', company: '농협손보', code: '', pw: '' },
+  { id: 'n01', company: '삼성화재',   code: '', pw: '' },
+  { id: 'n02', company: '현대해상',   code: '', pw: '' },
+  { id: 'n03', company: 'KB손보',     code: '', pw: '' },
+  { id: 'n04', company: 'DB손보',     code: '', pw: '' },
+  { id: 'n05', company: '메리츠화재', code: '', pw: '' },
+  { id: 'n06', company: '한화손보',   code: '', pw: '' },
+  { id: 'n07', company: '롯데손보',   code: '', pw: '' },
+  { id: 'n08', company: 'MG손보',     code: '', pw: '' },
+  { id: 'n09', company: '흥국화재',   code: '', pw: '' },
+  { id: 'n10', company: 'NH농협손보', code: '', pw: '' },
+  { id: 'n11', company: '하나손보',   code: '', pw: '' },
+  { id: 'n12', company: '캐롯손보',   code: '', pw: '' },
+  { id: 'n13', company: 'AIG손보',    code: '', pw: '' },
+  { id: 'n14', company: 'AXA손보',    code: '', pw: '' },
+  { id: 'n15', company: '처브손보',   code: '', pw: '' },
+  { id: 'n16', company: '더케이손보', code: '', pw: '' },
 ]
 
 export default function GeneralHome({
@@ -91,27 +113,6 @@ export default function GeneralHome({
 }: GeneralHomeProps) {
   const [activeCat, setActiveCat] = useState<string | null>(null)
   const uid = user?.id || 'guest'
-  const todayKey = new Date().toISOString().split('T')[0]
-
-  // ── 체크리스트 ──────────────────────────────────────────────────────
-  const [todos, setTodos] = useState<TodoItem[]>(() => {
-    if (typeof window === 'undefined') return []
-    try { return JSON.parse(localStorage.getItem(`todo-${uid}-${todayKey}`) || '[]') } catch { return [] }
-  })
-  const [todoInput, setTodoInput] = useState('')
-  const todoRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    localStorage.setItem(`todo-${uid}-${todayKey}`, JSON.stringify(todos))
-  }, [todos, uid, todayKey])
-
-  const addTodo = () => {
-    const t = todoInput.trim()
-    if (!t) return
-    setTodos(p => [...p, { id: Date.now().toString(), text: t, done: false }])
-    setTodoInput('')
-    todoRef.current?.focus()
-  }
 
   // ── 보험사 코드 ─────────────────────────────────────────────────────
   const [insuTab, setInsuTab] = useState<'life' | 'non'>('life')
@@ -135,6 +136,15 @@ export default function GeneralHome({
       setNonCodes(next)
       localStorage.setItem(`insu-non-${uid}`, JSON.stringify(next))
     }
+  }
+
+  const moveRow = (type: 'life' | 'non', idx: number, dir: -1 | 1) => {
+    const arr = (type === 'life' ? [...lifeCodes] : [...nonCodes])
+    const target = idx + dir
+    if (target < 0 || target >= arr.length) return
+    ;[arr[idx], arr[target]] = [arr[target], arr[idx]]
+    if (type === 'life') { setLifeCodes(arr); localStorage.setItem(`insu-life-${uid}`, JSON.stringify(arr)) }
+    else                 { setNonCodes(arr);  localStorage.setItem(`insu-non-${uid}`,  JSON.stringify(arr)) }
   }
 
   const noticeCnt = announcements.filter(a => a.category === 'notice').length
@@ -371,65 +381,19 @@ export default function GeneralHome({
           SECTION 3: 달력 50/50 (CalendarWidget 내부 반반 처리)
                     + 우측 하단: 공지·버튼
       ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'stretch' }}>
 
         {/* 달력 */}
-        <div style={{ flex: '1 1 380px', minWidth: 300 }}>
+        <div style={{ flex: '1 1 380px', minWidth: 300, display: 'flex', flexDirection: 'column' }}>
           <CalendarWidget user={user} canUseCrm={canUseCrm} />
         </div>
 
-        {/* 우측: 할일 + 보험사 코드 */}
-        <div style={{ flex: '0 0 340px', minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* 우측: 보험사 코드 & 비밀번호 (달력 높이에 맞춤) */}
+        <div style={{ flex: '0 0 340px', minWidth: 280, display: 'flex', flexDirection: 'column' }}>
+          <section style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '16px 18px' }}>
 
-          {/* ── 오늘의 할일 체크리스트 ── */}
-          <section style={card}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 900, color: '#10203a' }}>오늘의 할일</span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>
-                {todos.filter(t => t.done).length}/{todos.length} 완료
-              </span>
-            </div>
-
-            {/* 입력 */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-              <input
-                ref={todoRef}
-                value={todoInput}
-                onChange={e => setTodoInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addTodo()}
-                placeholder="할일을 입력하세요..."
-                style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1.5px solid #dce6f1', fontSize: 12, fontWeight: 500, color: '#10203a', outline: 'none', fontFamily: 'inherit' }}
-                onFocus={e => (e.target.style.borderColor = '#1A2744')}
-                onBlur={e => (e.target.style.borderColor = '#dce6f1')}
-              />
-              <button onClick={addTodo} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: 'none', background: '#1A2744', color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
-                <Plus size={15} />
-              </button>
-            </div>
-
-            {/* 목록 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
-              {todos.length === 0 && (
-                <p style={{ fontSize: 11, color: '#c8d6e5', fontWeight: 700, textAlign: 'center', padding: '12px 0', margin: 0 }}>오늘의 할일을 추가해보세요</p>
-              )}
-              {todos.map(t => (
-                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: t.done ? '#f8fafc' : '#fff', border: '1px solid #f1f5f9' }}>
-                  <input type="checkbox" checked={t.done}
-                    onChange={() => setTodos(p => p.map(x => x.id === t.id ? { ...x, done: !x.done } : x))}
-                    style={{ width: 15, height: 15, accentColor: '#1A2744', cursor: 'pointer', flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: t.done ? '#94a3b8' : '#10203a', textDecoration: t.done ? 'line-through' : 'none', wordBreak: 'keep-all' }}>{t.text}</span>
-                  <button onClick={() => setTodos(p => p.filter(x => x.id !== t.id))}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c8d6e5', padding: 2, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* ── 보험사 코드 & 비밀번호 ── */}
-          <section style={card}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            {/* 헤더 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexShrink: 0 }}>
               <span style={{ fontSize: 13, fontWeight: 900, color: '#10203a' }}>보험사 코드 & 비밀번호</span>
               <button onClick={() => setShowPw(p => !p)}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid #dce6f1', background: '#f8fafc', cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -439,7 +403,7 @@ export default function GeneralHome({
             </div>
 
             {/* 탭 */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+            <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexShrink: 0 }}>
               {(['life', 'non'] as const).map(tab => (
                 <button key={tab} onClick={() => setInsuTab(tab)}
                   style={{ flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', background: insuTab === tab ? '#1A2744' : '#f1f5f9', color: insuTab === tab ? '#fff' : '#64748b' }}>
@@ -448,25 +412,40 @@ export default function GeneralHome({
               ))}
             </div>
 
-            {/* 테이블 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 2 }}>
-              <div style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', padding: '3px 4px' }}>보험사</div>
-              <div style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', padding: '3px 4px', textAlign: 'center' }}>코드</div>
-              <div style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', padding: '3px 4px', textAlign: 'center' }}>비밀번호</div>
-              {(insuTab === 'life' ? lifeCodes : nonCodes).map(row => (
-                <>
-                  <div key={row.id + '-name'} style={{ fontSize: 11, fontWeight: 700, color: '#374151', padding: '4px 4px', display: 'flex', alignItems: 'center', borderTop: '1px solid #f1f5f9' }}>{row.company}</div>
-                  <input key={row.id + '-code'} value={row.code}
+            {/* 컬럼 헤더 */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 64px 64px 28px', gap: 3, paddingBottom: 4, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
+              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
+              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
+              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
+              <span style={{ fontSize: 9, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>순서</span>
+            </div>
+
+            {/* 스크롤 목록 */}
+            <div style={{ flex: 1, overflowY: 'auto', marginTop: 2 }}>
+              {(insuTab === 'life' ? lifeCodes : nonCodes).map((row, idx, arr) => (
+                <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr 64px 64px 28px', gap: 3, alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.company}</span>
+                  <input value={row.code}
                     onChange={e => updateCode(insuTab, row.id, 'code', e.target.value)}
-                    placeholder="입력"
-                    style={{ fontSize: 11, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e8eef5', borderRadius: 5, outline: 'none', textAlign: 'center', fontFamily: 'inherit', borderTop: '1px solid #f1f5f9' }} />
-                  <input key={row.id + '-pw'} value={showPw ? row.pw : row.pw ? '••••••' : ''}
+                    placeholder="코드"
+                    style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 4px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', textAlign: 'center', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
+                  <input value={showPw ? row.pw : row.pw ? '••••' : ''}
                     onChange={e => showPw && updateCode(insuTab, row.id, 'pw', e.target.value)}
                     readOnly={!showPw}
-                    placeholder="입력"
+                    placeholder="비번"
                     type={showPw ? 'text' : 'password'}
-                    style={{ fontSize: 11, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e8eef5', borderRadius: 5, outline: 'none', textAlign: 'center', fontFamily: 'inherit', borderTop: '1px solid #f1f5f9', background: !showPw && row.pw ? '#f8fafc' : '#fff' }} />
-                </>
+                    style={{ fontSize: 10, fontWeight: 600, color: '#10203a', padding: '3px 4px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', textAlign: 'center', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const, background: !showPw && row.pw ? '#f8fafc' : '#fff' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+                    <button onClick={() => moveRow(insuTab, idx, -1)} disabled={idx === 0}
+                      style={{ background: 'none', border: 'none', cursor: idx === 0 ? 'default' : 'pointer', padding: 0, color: idx === 0 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
+                      <ChevronUp size={11} />
+                    </button>
+                    <button onClick={() => moveRow(insuTab, idx, 1)} disabled={idx === arr.length - 1}
+                      style={{ background: 'none', border: 'none', cursor: idx === arr.length - 1 ? 'default' : 'pointer', padding: 0, color: idx === arr.length - 1 ? '#e2e8f0' : '#94a3b8', lineHeight: 1, display: 'flex' }}>
+                      <ChevronDown size={11} />
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </section>
