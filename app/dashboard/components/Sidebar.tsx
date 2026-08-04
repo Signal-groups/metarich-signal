@@ -513,7 +513,7 @@ export default function Sidebar({
                   icon="🎨"
                   label="설계사 브랜딩 AI"
                   active={false}
-                  onClick={() => window.open(`${window.location.origin}/branding-builder`, "_blank", "noopener,noreferrer")}
+                  onClick={() => window.open(process.env.NEXT_PUBLIC_BRANDING_URL || "https://branding.metarich-signal.com", "_blank", "noopener,noreferrer")}
                   badge="PRO"
                 />
               )}

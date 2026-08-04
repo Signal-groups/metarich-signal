@@ -115,7 +115,7 @@ app/
 │   └── components/           — 전용 컴포넌트 14개 (아래 5-1 참조)
 ├── insurance-tools/premium-compare/    — 보험료 비교 시뮬레이터
 ├── financial-portfolio/                — 재무설계 포트폴리오
-├── branding-builder/                   — 브랜딩 빌더
+├── branding-builder/            ★ 리다이렉트 전용 (page.tsx만). 실제 에디터는 별도 저장소 branding-studio로 분리됨.
 └── api/
     ├── coverage-pro/excel-export/      — 엑셀 다운로드 API (서버)
     ├── admin/ / ai-coach/ / notify-signup/ / crm-upload-analyze/
@@ -282,7 +282,24 @@ Step 7: 출력
 
 ### 기타
 - [x] 보험료 비교 시뮬레이터 (`/insurance-tools/premium-compare`)
-- [x] 브랜딩 빌더 / 재무설계 포트폴리오
+- [x] 재무설계 포트폴리오
+
+---
+
+## 14. 브랜딩 스튜디오 분리 (2026-08-04) ★
+
+메인 앱을 가볍게 하기 위해 브랜딩 빌더를 **완전히 별도 프로젝트**로 분리했다.
+
+| 항목 | 내용 |
+|---|---|
+| 위치 | `branding-studio/` (메인 저장소 루트, `.gitignore`로 커밋 제외 — 별도 저장소로 push 예정) |
+| 구조 | 독립 Next.js 16 프로젝트. `app/page.tsx`(새 랜딩페이지) → `app/editor`(기존 에디터 이전) |
+| 의존성 | supabase·무거운 라이브러리 없음. `next`, `react`, `lucide-react`만 사용 — 완전 독립 |
+| 랜딩 플로우 | 히어로 → 컨셉 선택(이름 입력) → `/editor?concept=X&name=Y` → 모달 없이 바로 에디터 진입 |
+| 메인 앱 연결 | `app/branding-builder/page.tsx`는 **리다이렉트 전용** (`NEXT_PUBLIC_BRANDING_URL` 환경변수로 이동) |
+| 권한 | 메인 앱 Sidebar `canAccessBranding()`에서만 게이팅. 분리된 프로젝트 자체는 인증 없음(공개) |
+| 배포 전 할 일 | 1) `branding-studio/`를 새 Git 저장소로 push  2) 별도 Vercel 프로젝트 연결  3) 메인 앱 `.env.local`·Vercel의 `NEXT_PUBLIC_BRANDING_URL`을 실제 배포 주소로 교체 |
+| 남은 작업 | 샌드박스 파일 잠금 문제로 `app/branding-builder/components·hooks·templates`(구 에디터 코드, 이제 미사용)가 물리적으로 삭제되지 않음 — Windows에서 해당 폴더를 열고 있는 프로그램(VS Code, `npm run dev` 등) 종료 후 수동 삭제 필요. tsconfig에서 제외 처리되어 빌드에는 영향 없음 |
 
 ---
 

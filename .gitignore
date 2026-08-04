@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# 별도 저장소로 분리 예정인 브랜딩 스튜디오 프로젝트 (임시로 이 폴더에 위치, 메인 저장소에 커밋하지 않음)
+/branding-studio
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
