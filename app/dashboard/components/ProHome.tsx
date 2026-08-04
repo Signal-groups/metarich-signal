@@ -106,7 +106,8 @@ interface ProHomeProps {
 
 const PIPELINE_STAGES = ['초기상담', '분석중', '제안중', '계약완료'] as const
 const PIPELINE_COLORS = ['#1b54ad', '#7c3aed', '#0f6e56', '#c9a96e']
-const MAX_VISIBLE = 5 // 5개 이상이면 접힘
+const MAX_FAV = 10
+const FAV_COLS = 5
 
 export default function ProHome({
   user, announcements, favorites, isFavEditMode, visibleTools, recentCustomers,
@@ -114,7 +115,6 @@ export default function ProHome({
 }: ProHomeProps) {
   const [stats, setStats] = useState({ todayCount: 0, followupCount: 0, analyzeCount: 0, todoCount: 0 })
   const [pipeline, setPipeline] = useState<Record<string, number>>({})
-  const [showAllFavs, setShowAllFavs] = useState(false)
   const [showTodayModal, setShowTodayModal] = useState(false)
   const [activeCat, setActiveCat] = useState<string | null>(null)
   // 드래그앤드롭용 로컬 순서 상태
@@ -176,9 +176,6 @@ export default function ProHome({
   const displayFavIds = isFavEditMode ? localFavIds : favorites
   const favTools = visibleTools.filter(t => displayFavIds.includes(t.id))
     .sort((a, b) => displayFavIds.indexOf(a.id) - displayFavIds.indexOf(b.id))
-
-  const visibleFavTools = showAllFavs ? favTools : favTools.slice(0, MAX_VISIBLE)
-  const hiddenCount = favTools.length - MAX_VISIBLE
 
   // CRM 통계 로드
   const loadStats = useCallback(async () => {
@@ -274,142 +271,183 @@ export default function ProHome({
     <div style={{ display: 'grid', gap: 16 }}>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 1: 자주 쓰는 도구 (TOP) + 빠른 이동
+          HEADER: 작은 버튼 행
       ══════════════════════════════════════════════════ */}
-      <section style={{ ...card, padding: '18px 22px' }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button onClick={onNoticeClick}
+          style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 12px', borderRadius: 8, border: '1px solid #dce6f1', background: '#fff', color: '#10203a', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(16,32,58,0.06)' }}>
+          <Bell size={12} />공지·업데이트
+          {(noticeCnt + updateCnt) > 0 && (
+            <span style={{ position: 'absolute', top: -5, right: -5, background: '#e63946', color: '#fff', borderRadius: '50%', width: 15, height: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 900 }}>
+              {noticeCnt + updateCnt}
+            </span>
+          )}
+        </button>
+        <button onClick={onStrategyClick}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 12px', borderRadius: 8, border: '1px solid #dce6f1', background: '#fff', color: '#8a6a1e', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(16,32,58,0.06)' }}>
+          📊 이달의 전략
+        </button>
+        <button onClick={() => window.open('https://signalgroup-sigma.vercel.app/index.html', '_blank')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 12px', borderRadius: 8, border: '1px solid #dce6f1', background: '#fff', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(16,32,58,0.06)' }}>
+          🏢 시그널 홈
+        </button>
+        <button onClick={() => window.open('/guide.html', '_blank', 'width=1100,height=800,menubar=no,toolbar=no,location=no')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 12px', borderRadius: 8, border: '1px solid #dce6f1', background: '#fff', color: '#1b54ad', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(16,32,58,0.06)' }}>
+          <BookOpen size={12} />사용가이드
+        </button>
+      </div>
 
-          {/* 왼쪽: 도구 아이콘 열 */}
-          <div style={{ flex: '1 1 320px', minWidth: 260 }}>
+      {/* ══════════════════════════════════════════════════
+          SECTION 1: 배너 4개
+      ══════════════════════════════════════════════════ */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+        {[
+          {
+            label: '보험의 기준 카페', sub: '네이버 카페', emoji: '☕',
+            bg: 'linear-gradient(135deg, #f0fff8 0%, #e8f5e9 100%)', border: '#bbf7d0', color: '#0f6e56',
+            onClick: () => { const m = /Android|iPhone|iPad/i.test(navigator.userAgent); window.open(m ? 'https://m.cafe.naver.com/signal1035' : 'https://cafe.naver.com/signal1035', '_blank') },
+          },
+          {
+            label: '보험의 기준', sub: '오픈채팅방', emoji: '💬',
+            bg: 'linear-gradient(135deg, #fffbf0 0%, #fef3c7 100%)', border: '#fde68a', color: '#92700a',
+            onClick: () => window.open('https://open.kakao.com/o/g8ND5toi', '_blank'),
+          },
+          {
+            label: '메타리치 시그널그룹', sub: '영업의 품격 · 박주완 본부장', emoji: '⭐',
+            bg: 'linear-gradient(135deg, #eef4fb 0%, #dbeafe 100%)', border: '#bfdbfe', color: '#1b54ad',
+            onClick: () => window.open('https://signal-groups.github.io/insuclass/', '_blank'),
+          },
+          {
+            label: 'CJ온스타일 GA', sub: '보험설계사·조직관리자 모집', emoji: '📺',
+            bg: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)', border: '#e9d5ff', color: '#7c3aed',
+            onClick: () => window.open('https://signal-groups.github.io/cjon/', '_blank'),
+          },
+        ].map((b, i) => (
+          <button key={i} onClick={b.onClick}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, padding: '14px 16px', borderRadius: 14, border: `1px solid ${b.border}`, background: b.bg, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(16,32,58,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+          >
+            <span style={{ fontSize: 22 }}>{b.emoji}</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 900, color: b.color, lineHeight: 1.3 }}>{b.label}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: b.color, opacity: 0.7, marginTop: 2 }}>{b.sub}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════════════════
+          SECTION 2: 즐겨찾기(5×2) + 업무별 도구
+      ══════════════════════════════════════════════════ */}
+      <section style={card}>
+        <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+
+          {/* 왼쪽: 즐겨찾기 5×2 */}
+          <div style={{ flex: '2 1 0', minWidth: 280, paddingRight: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Star size={15} style={{ fill: '#172947', color: '#172947' }} />
-                <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>자주 쓰는 도구</span>
-                {isFavEditMode && (
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', background: '#f1f5f9', borderRadius: 8, padding: '2px 8px' }}>드래그로 순서 변경</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
+                <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
+                {!isFavEditMode && favTools.length > 0 && (
+                  <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{favTools.length}/{MAX_FAV}</span>
                 )}
               </div>
-              <button onClick={onFavEditToggle} style={editBtn}>
-                {isFavEditMode ? '완료' : '편집'}
-              </button>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {isFavEditMode && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', background: '#f1f5f9', borderRadius: 8, padding: '2px 8px' }}>드래그로 순서 변경</span>
+                )}
+                <button onClick={onFavEditToggle} style={editBtn}>
+                  {isFavEditMode ? '완료' : '편집'}
+                </button>
+              </div>
             </div>
 
-            {/* 도구 아이콘 행 */}
             {favTools.length === 0 && !isFavEditMode ? (
-              <p style={{ fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>편집을 눌러 즐겨찾기를 추가하세요.</p>
+              <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontSize: 24 }}>⭐</span>
+                <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, margin: 0 }}>편집을 눌러 즐겨찾기를 추가하세요</p>
+              </div>
             ) : (
-              <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {(isFavEditMode ? favTools : visibleFavTools).map((tool, i) => {
-                    const isFav = favorites.includes(tool.id)
-                    return (
-                      <div
-                        key={tool.id}
-                        draggable={isFavEditMode}
-                        onDragStart={() => handleDragStart(i)}
-                        onDragOver={e => handleDragOver(e, i)}
-                        onDrop={handleDrop}
-                        onDragEnd={handleDragEnd}
-                        style={{ cursor: isFavEditMode ? 'grab' : 'default' }}
-                      >
-                        <button
-                          onClick={() => isFavEditMode ? onFavToggle(tool.id) : onNavigate(tool)}
-                          style={{
-                            position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                            padding: '10px 8px', borderRadius: 10, width: 76,
-                            border: `1.5px solid ${isFavEditMode && !isFav ? '#e8eef5' : isFavEditMode ? '#1b54ad' : '#e8eef5'}`,
-                            background: isFavEditMode && !isFav ? '#f8fafc' : isFavEditMode ? '#eef4fb' : '#f8fafc',
-                            cursor: 'pointer',
-                            boxShadow: isFavEditMode ? '0 2px 8px rgba(16,32,58,0.06)' : 'none',
-                            transition: 'all 0.12s',
-                          }}
-                          onMouseEnter={e => { if (!isFavEditMode) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
-                        >
-                          {!isFavEditMode && i < 3 && <span style={{ position: 'absolute', top: 3, right: 3, fontSize: 8 }}>👑</span>}
-                          {isFavEditMode && (
-                            <Star size={9} style={{ position: 'absolute', top: 4, right: 4, fill: isFav ? '#f59e0b' : 'none', color: isFav ? '#f59e0b' : '#d1d5db' }} />
-                          )}
-                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
-                            <ToolIcon icon={tool.icon} size={17} />
-                          </span>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
-                        </button>
-                      </div>
-                    )
-                  })}
-
-                  {/* 더보기/접기 버튼 (5개 초과 시) */}
-                  {!isFavEditMode && hiddenCount > 0 && (
-                    <button
-                      onClick={() => setShowAllFavs(v => !v)}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '10px 12px', borderRadius: 10, width: 72, border: '1.5px dashed #c8d6e5', background: '#f8fafc', cursor: 'pointer' }}
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${FAV_COLS}, 1fr)`, gap: 7 }}>
+                {favTools.slice(0, MAX_FAV).map((tool, i) => {
+                  const isFav = favorites.includes(tool.id)
+                  return (
+                    <div
+                      key={tool.id}
+                      draggable={isFavEditMode}
+                      onDragStart={() => handleDragStart(i)}
+                      onDragOver={e => handleDragOver(e, i)}
+                      onDrop={handleDrop}
+                      onDragEnd={handleDragEnd}
+                      style={{ cursor: isFavEditMode ? 'grab' : 'default' }}
                     >
-                      <ChevronDown size={16} color="#64748b" style={{ transform: showAllFavs ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                      <span style={{ fontSize: 10, fontWeight: 800, color: '#64748b' }}>{showAllFavs ? '접기' : `+${hiddenCount}개`}</span>
-                    </button>
-                  )}
-                </div>
-              </>
+                      <button
+                        onClick={() => isFavEditMode ? onFavToggle(tool.id) : onNavigate(tool)}
+                        style={{
+                          position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          gap: 6, padding: '10px 4px', borderRadius: 10, width: '100%',
+                          border: `1.5px solid ${isFavEditMode && isFav ? '#1b54ad' : '#e8eef5'}`,
+                          background: isFavEditMode && isFav ? '#eef4fb' : '#f8fafc',
+                          cursor: 'pointer', transition: 'all 0.12s',
+                        }}
+                        onMouseEnter={e => { if (!isFavEditMode) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isFavEditMode && isFav ? '#eef4fb' : '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
+                      >
+                        {isFavEditMode && (
+                          <Star size={8} style={{ position: 'absolute', top: 3, right: 3, fill: isFav ? '#f59e0b' : 'none', color: isFav ? '#f59e0b' : '#cbd5e1' }} />
+                        )}
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
+                          <ToolIcon icon={tool.icon} size={17} />
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </div>
 
           {/* 구분선 */}
-          <div style={{ width: 1, background: '#e8eef5', alignSelf: 'stretch', flexShrink: 0, minHeight: 80 }} />
+          <div style={{ width: 1, background: '#e8eef5', alignSelf: 'stretch', flexShrink: 0, minHeight: 100 }} />
 
-          {/* 오른쪽: 업무별 도구 + 빠른 이동 */}
-          <div style={{ flex: '1 1 0', minWidth: 180, paddingLeft: 4, display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-            {/* 업무별 도구 */}
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>업무별 도구</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {categorySections.map(cat => {
-                  const isActive = activeCat === cat.id
-                  const s = CAT_STYLE[cat.id] || CAT_STYLE.face
-                  return (
-                    <button key={cat.id}
-                      onClick={() => setActiveCat(prev => prev === cat.id ? null : cat.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                        padding: '7px 12px', borderRadius: 9, width: '100%',
-                        border: `1.5px solid ${isActive ? s.activeBg : s.border}`,
-                        background: isActive ? s.activeBg : s.bg,
-                        cursor: 'pointer', transition: 'all 0.15s',
-                        boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
-                      }}
-                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,32,58,0.08)'; }}
-                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.boxShadow = 'none'; }}
-                    >
-                      <span style={{ fontSize: 11, fontWeight: 800, color: isActive ? s.activeText : '#10203a', flex: 1, textAlign: 'left' }}>{cat.title}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>{cat.tools.length}</span>
-                      <ChevronDown size={11} color={isActive ? s.activeText : '#94a3b8'} style={{ transform: isActive ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* 빠른 이동 2x2 */}
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', marginBottom: 8 }}>빠른 이동</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                {[
-                  { label: '공지·업데이트', emoji: '📢', onClick: onNoticeClick, color: '#1b54ad' },
-                  { label: '이달의 전략', emoji: '📊', onClick: onStrategyClick, color: '#8a6a1e' },
-                  { label: '고객관리', emoji: '👥', onClick: () => window.open('/crm/customers', '_blank', 'noopener,noreferrer'), color: '#0f6e56' },
-                  { label: '시그널 홈', emoji: '🏢', onClick: () => window.open('https://signalgroup-sigma.vercel.app/index.html', '_blank'), color: '#374151' },
-                ].map((b, i) => (
-                  <button key={i} onClick={b.onClick}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '9px 4px', borderRadius: 10, border: '1px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', textAlign: 'center' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.07)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.boxShadow = 'none'; }}
+          {/* 오른쪽: 업무별 도구 */}
+          <div style={{ flex: '1 1 0', minWidth: 180, paddingLeft: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 900, color: '#10203a', marginBottom: 10 }}>업무별 도구</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {categorySections.map(cat => {
+                const isActive = activeCat === cat.id
+                const s = CAT_STYLE[cat.id] || CAT_STYLE.face
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCat(prev => prev === cat.id ? null : cat.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                      padding: '8px 12px', borderRadius: 9, width: '100%',
+                      border: `1.5px solid ${isActive ? s.activeBg : s.border}`,
+                      background: isActive ? s.activeBg : s.bg,
+                      cursor: 'pointer', transition: 'all 0.15s',
+                      boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,32,58,0.08)'; }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <span style={{ fontSize: 18 }}>{b.emoji}</span>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: b.color, lineHeight: 1.3 }}>{b.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: isActive ? s.activeText : '#10203a', textAlign: 'left', flex: 1 }}>
+                      {cat.title}
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>
+                      {cat.tools.length}
+                    </span>
+                    <ChevronDown
+                      size={11}
+                      color={isActive ? s.activeText : '#94a3b8'}
+                      style={{ transform: isActive ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}
+                    />
                   </button>
-                ))}
-              </div>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -418,11 +456,15 @@ export default function ProHome({
         {activeSectionData && (() => {
           const s = CAT_STYLE[activeSectionData.id] || CAT_STYLE.face
           return (
-            <div style={{ marginTop: 14, padding: '13px 16px', borderRadius: 12, border: `1.5px solid ${s.border}`, background: s.bg }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>{activeSectionData.desc}</div>
+            <div style={{ marginTop: 14, padding: '14px 16px', borderRadius: 12, border: `1.5px solid ${s.border}`, background: s.bg }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>
+                {activeSectionData.desc}
+              </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {activeSectionData.tools.map(tool => (
-                  <button key={tool.id} onClick={() => onNavigate(tool)}
+                  <button
+                    key={tool.id}
+                    onClick={() => onNavigate(tool)}
                     style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 9, border: `1px solid ${s.border}`, background: '#fff', cursor: 'pointer', transition: 'all 0.12s', whiteSpace: 'nowrap' }}
                     onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(16,32,58,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = s.activeBg; }}
                     onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = s.border; }}
@@ -440,65 +482,7 @@ export default function ProHome({
       </section>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 2: 배너 4개 (카페·채팅·시그널·CJ)
-      ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-        {[
-          {
-            label: '보험의 기준 카페',
-            sub: '네이버 카페',
-            emoji: '☕',
-            bg: 'linear-gradient(135deg, #f0fff8 0%, #e8f5e9 100%)',
-            border: '#bbf7d0',
-            color: '#0f6e56',
-            onClick: () => { const m = /Android|iPhone|iPad/i.test(navigator.userAgent); window.open(m ? 'https://m.cafe.naver.com/signal1035' : 'https://cafe.naver.com/signal1035', '_blank') },
-          },
-          {
-            label: '보험의 기준',
-            sub: '오픈채팅방',
-            emoji: '💬',
-            bg: 'linear-gradient(135deg, #fffbf0 0%, #fef3c7 100%)',
-            border: '#fde68a',
-            color: '#92700a',
-            onClick: () => window.open('https://open.kakao.com/o/g8ND5toi', '_blank'),
-          },
-          {
-            label: '메타리치 시그널그룹',
-            sub: '영업의 품격 · 박주완 본부장',
-            emoji: '⭐',
-            bg: 'linear-gradient(135deg, #eef4fb 0%, #dbeafe 100%)',
-            border: '#bfdbfe',
-            color: '#1b54ad',
-            onClick: () => window.open('https://signal-groups.github.io/insuclass/', '_blank'),
-          },
-          {
-            label: 'CJ온스타일 GA',
-            sub: '보험설계사·조직관리자 모집',
-            emoji: '📺',
-            bg: 'linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%)',
-            border: '#e9d5ff',
-            color: '#7c3aed',
-            onClick: () => window.open('https://signal-groups.github.io/cjon/', '_blank'),
-          },
-        ].map((b, i) => (
-          <button
-            key={i}
-            onClick={b.onClick}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, padding: '14px 16px', borderRadius: 14, border: `1px solid ${b.border}`, background: b.bg, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(16,32,58,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
-          >
-            <span style={{ fontSize: 22 }}>{b.emoji}</span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 900, color: b.color, lineHeight: 1.3 }}>{b.label}</div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: b.color, opacity: 0.7, marginTop: 2 }}>{b.sub}</div>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* ══════════════════════════════════════════════════
-          SECTION 3: 오늘의 업무 요약 바 → 상세 모달 오픈
+          SECTION 3: 오늘의 업무 요약 바 (Pro 전용)
       ══════════════════════════════════════════════════ */}
       <button
         onClick={() => setShowTodayModal(true)}
