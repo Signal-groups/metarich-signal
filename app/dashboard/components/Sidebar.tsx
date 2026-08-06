@@ -113,6 +113,7 @@ export default function Sidebar({
 
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || DEFAULT_MENU_STATUS);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [menuModalTab, setMenuModalTab] = useState<'tools' | 'layout'>('tools');
   const [recentCustsOpen, setRecentCustsOpen] = useState(true);
   const activeMenuLayout = useMemo(() => normalizeMenuLayout(menuLayout), [menuLayout]);
   const [layoutDraft, setLayoutDraft] = useState<MenuLayout>(() => activeMenuLayout);
@@ -662,8 +663,8 @@ export default function Sidebar({
           <MobileNavButton label="사무실업무" active={mode === 'office' && !isOpen} onClick={openOffice} disabled={!canUseOffice}>
             <MessageSquareText className="h-5 w-5" />
           </MobileNavButton>
-          <MobileNavButton label="DM" onClick={openContentStudio} disabled={!isApproved}>
-            <ClipboardCheck className="h-5 w-5" />
+          <MobileNavButton label="공시실" onClick={() => window.open('/gongsi.html', '_blank')}>
+            <FileSearch className="h-5 w-5" />
           </MobileNavButton>
           <MobileNavButton label="메뉴" active={isOpen} onClick={() => setIsOpen(true)}>
             <MoreHorizontal className="h-5 w-5" />
@@ -673,198 +674,215 @@ export default function Sidebar({
 
       {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-[1180px] rounded-[2rem] border-4 border-black overflow-hidden shadow-2xl">
-            <div className="bg-black p-6 flex justify-between items-center">
-              <h3 className="text-[#d4af37] font-black text-xl tracking-tighter">메뉴 배치 관리</h3>
+          <div className="bg-white w-full max-w-[1180px] max-h-[92vh] rounded-[2rem] border-4 border-black overflow-hidden shadow-2xl flex flex-col">
+
+            {/* ── 헤더 ── */}
+            <div className="bg-black px-6 py-4 flex items-center justify-between gap-4 flex-shrink-0">
+              {/* 탭 */}
+              <div className="flex items-center gap-1">
+                {isMaster ? (
+                  <>
+                    <button
+                      onClick={() => setMenuModalTab('tools')}
+                      className={`px-4 py-1.5 rounded-full text-[12px] font-black transition ${menuModalTab === 'tools' ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 hover:text-white'}`}
+                    >
+                      🛠 도구 관리
+                    </button>
+                    <button
+                      onClick={() => setMenuModalTab('layout')}
+                      className={`px-4 py-1.5 rounded-full text-[12px] font-black transition ${menuModalTab === 'layout' ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 hover:text-white'}`}
+                    >
+                      🗂 메뉴 배치
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-[#d4af37] font-black text-xl tracking-tighter">메뉴 배치 관리</span>
+                )}
+              </div>
+              {/* 오른쪽 버튼 */}
               <div className="flex items-center gap-3">
-                {isMaster && (
-                  <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[10px] px-3 py-1 rounded-full font-black ${isEditMode ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 border border-white/20'}`}>
+                {isMaster && menuModalTab === 'tools' && (
+                  <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[11px] px-3 py-1 rounded-full font-black ${isEditMode ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 border border-white/20'}`}>
                     {isEditMode ? "완료" : "편집"}
                   </button>
                 )}
-                <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black">×</button>
-              </div>
-            </div>
-            <div className="border-b border-slate-100 bg-slate-50 px-6 py-3">
-              <p className="text-[12px] font-black text-slate-800">현재 적용 상태</p>
-              <p className="mt-1 text-[11px] font-bold leading-5 text-slate-500">
-                PC 메인, 사이드바, 모바일 빠른실행, 모바일 전체메뉴, 숨김 영역을 한 번에 관리합니다.
-              </p>
-            </div>
-            {isMaster && (
-              <div className="border-b border-slate-200 bg-white px-5 py-4">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[15px] font-black text-slate-950">메뉴 드래그 배치</p>
-                    <p className="mt-1 text-[11px] font-bold text-slate-500">
-                      카드를 원하는 영역으로 옮긴 뒤 저장하세요. 저장된 배치는 전체 직원 화면에 적용됩니다.
-                    </p>
-                  </div>
+                {isMaster && menuModalTab === 'layout' && (
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={resetMenuLayout}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-black text-slate-600 hover:bg-slate-50"
-                    >
+                    <button type="button" onClick={resetMenuLayout} className="rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-white/70 hover:bg-white/20">
                       기본값
                     </button>
-                    <button
-                      type="button"
-                      onClick={saveMenuLayout}
-                      className="rounded-xl bg-[#10203a] px-4 py-2 text-[11px] font-black text-white shadow-sm hover:bg-[#0a3268]"
-                    >
+                    <button type="button" onClick={saveMenuLayout} className="rounded-xl bg-[#d4af37] px-4 py-1.5 text-[11px] font-black text-black hover:bg-[#c49a52]">
                       배치 저장
                     </button>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-                  {layoutZones.map((zone) => (
-                    <div
-                      key={zone}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => {
-                        event.preventDefault();
-                        if (draggedTool) moveLayoutTool(draggedTool.id, zone);
-                        setDraggedTool(null);
-                      }}
-                      className={`min-h-[180px] rounded-2xl border-2 border-dashed p-3 ${
-                        zone === "hidden"
-                          ? "border-rose-200 bg-rose-50"
-                          : zone === "desktopSidebar"
-                            ? "border-[#0a3268]/25 bg-[#eef4fb]"
-                            : "border-slate-200 bg-slate-50"
-                      }`}
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <p className="text-[12px] font-black text-slate-900">{MENU_LAYOUT_LABELS[zone]}</p>
-                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-slate-500 shadow-sm">
-                          {layoutDraft[zone].length}
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        {layoutDraft[zone].map((toolId) => {
-                          const tool = getLayoutTool(toolId);
-                          if (!tool) return null;
-                          return (
-                            <div
-                              key={`${zone}-${toolId}`}
-                              draggable
-                              onDragStart={() => setDraggedTool({ id: toolId, from: zone })}
-                              onDragEnd={() => setDraggedTool(null)}
-                              className="cursor-grab rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm active:cursor-grabbing"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#eef4fb] text-[#0a3268]">
-                                  <ToolIcon icon={tool.icon} />
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-[11px] font-black text-slate-900">{tool.title}</p>
-                                  <p className="truncate text-[9px] font-bold text-slate-400">{tool.label}</p>
-                                </div>
-                                {tool.premium && (
-                                  <span className="rounded-full bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] px-2 py-0.5 text-[8px] font-black text-white shadow-sm">
-                                    PREMIUM
-                                  </span>
-                                )}
-                              </div>
-                              <div className="mt-2 grid grid-cols-2 gap-1">
-                                {layoutZones.filter((target) => target !== zone).slice(0, 4).map((target) => (
-                                  <button
-                                    key={target}
-                                    type="button"
-                                    onClick={() => moveLayoutTool(toolId, target)}
-                                    className="rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-500 hover:bg-[#10203a] hover:text-white"
-                                  >
-                                    {MENU_LAYOUT_LABELS[target]}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {layoutDraft[zone].length === 0 && (
-                          <div className="grid min-h-[76px] place-items-center rounded-xl border border-dashed border-slate-200 bg-white/60 text-[11px] font-black text-slate-300">
-                            이곳으로 끌어오기
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                )}
+                <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black leading-none">×</button>
               </div>
-            )}
-            {isMaster && isEditMode && (
-              <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-black text-slate-600 mr-1">프리셋</span>
-                  {([
-                    { label: "게스트 승인", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio"], off: ["show_insu","show_finance"] },
-                    { label: "설계사 전체", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"], off: [] },
-                    { label: "모두 끄기", keys: [], off: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"] },
-                  ] as const).map((preset) => (
-                    <button
-                      key={preset.label}
-                      onClick={async () => {
-                        const updates: Record<string, boolean> = {};
-                        preset.keys.forEach((k) => { updates[k] = true; });
-                        preset.off.forEach((k) => { updates[k] = false; });
-                        const newStatus = { ...menuStatus, ...updates };
-                        setMenuStatus(newStatus);
-                        if (onMenuStatusChange) onMenuStatusChange(newStatus);
-                        await Promise.all([...preset.keys, ...preset.off].map((k) =>
-                          supabase.from("team_settings").upsert({ key: k, value: String(updates[k]) }, { onConflict: "key" })
-                        ));
-                      }}
-                      className="text-[10px] px-3 py-1 rounded-full font-black bg-white text-slate-700 border border-slate-200 hover:bg-[#d4af37] hover:text-black transition"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            </div>
 
-            <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto no-scrollbar">
-              {CONSULTING_TOOL_GROUPS.map((category) => {
-                const catTools = category.toolIds
-                  .map((id) => visibleConsultTools.find((tool) => tool.id === id))
-                  .filter(Boolean) as typeof visibleConsultTools;
-                if (catTools.length === 0) return null;
-                return (
-                  <section key={category.id} className="space-y-3">
-                    <div>
-                      <p className="text-[13px] font-black text-slate-900">{category.title}</p>
-                      <p className="text-[10px] font-bold text-slate-400">{category.desc}</p>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {catTools.map((item) => (
-                        <div key={item.id} className="relative">
-                          <button
-                            onClick={() => handleLinkClick(item)}
-                            className={`w-full min-h-[72px] flex items-center gap-3 px-4 py-3 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!item.fixed && !menuStatus[item.id] && 'opacity-30'}`}
-                          >
-                            <ToolIcon icon={item.icon} />
-                            <span className="text-[12px] font-black text-left leading-tight">{item.label}</span>
-                            {item.premium && (
-                              <span className="ml-auto rounded-full bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] px-2 py-0.5 text-[9px] font-black text-white shadow-sm">
-                                PREMIUM
-                              </span>
-                            )}
-                          </button>
-                          {isMaster && isEditMode && item.editable && !item.fixed && (
-                            <input
-                              type="checkbox"
-                              checked={menuStatus[item.id]}
-                              onChange={() => toggleMenu(item.id)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black"
-                            />
-                          )}
-                        </div>
+            {/* ── 탭 콘텐츠 ── */}
+            <div className="flex-1 overflow-y-auto">
+
+              {/* ── 도구 관리 탭 ── */}
+              {menuModalTab === 'tools' && (
+                <>
+                  {isMaster && isEditMode && (
+                    <div className="border-b border-slate-200 bg-slate-50 px-5 py-3 flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] font-black text-slate-600 mr-1">프리셋</span>
+                      {([
+                        { label: "게스트 승인", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio"], off: ["show_insu","show_finance"] },
+                        { label: "설계사 전체", keys: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"], off: [] },
+                        { label: "모두 끄기", keys: [], off: ["show_coverage_stats","show_car_accident","show_premium_compare","show_surgery","show_disability","show_underwriting","show_calc","show_financial_portfolio","show_insu","show_finance"] },
+                      ] as const).map((preset) => (
+                        <button
+                          key={preset.label}
+                          onClick={async () => {
+                            const updates: Record<string, boolean> = {};
+                            preset.keys.forEach((k) => { updates[k] = true; });
+                            preset.off.forEach((k) => { updates[k] = false; });
+                            const newStatus = { ...menuStatus, ...updates };
+                            setMenuStatus(newStatus);
+                            if (onMenuStatusChange) onMenuStatusChange(newStatus);
+                            await Promise.all([...preset.keys, ...preset.off].map((k) =>
+                              supabase.from("team_settings").upsert({ key: k, value: String(updates[k]) }, { onConflict: "key" })
+                            ));
+                          }}
+                          className="text-[10px] px-3 py-1 rounded-full font-black bg-white text-slate-700 border border-slate-200 hover:bg-[#d4af37] hover:text-black transition"
+                        >
+                          {preset.label}
+                        </button>
                       ))}
                     </div>
-                  </section>
-                );
-              })}
+                  )}
+                  <div className="p-6 space-y-5">
+                    {CONSULTING_TOOL_GROUPS.map((category) => {
+                      const catTools = category.toolIds
+                        .map((id) => visibleConsultTools.find((tool) => tool.id === id))
+                        .filter(Boolean) as typeof visibleConsultTools;
+                      if (catTools.length === 0) return null;
+                      return (
+                        <section key={category.id} className="space-y-3">
+                          <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
+                            <p className="text-[13px] font-black text-slate-900">{category.title}</p>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">{catTools.length}</span>
+                            <p className="text-[10px] font-bold text-slate-400 ml-1">{category.desc}</p>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {catTools.map((item) => (
+                              <div key={item.id} className="relative">
+                                <button
+                                  onClick={() => handleLinkClick(item)}
+                                  className={`w-full min-h-[60px] flex items-center gap-3 px-4 py-2.5 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!item.fixed && !menuStatus[item.id] && 'opacity-30'}`}
+                                >
+                                  <ToolIcon icon={item.icon} />
+                                  <span className="text-[12px] font-black text-left leading-tight">{item.label}</span>
+                                  {item.premium && (
+                                    <span className="ml-auto rounded-full bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] px-2 py-0.5 text-[8px] font-black text-white shadow-sm">
+                                      PREMIUM
+                                    </span>
+                                  )}
+                                </button>
+                                {isMaster && isEditMode && item.editable && !item.fixed && (
+                                  <input
+                                    type="checkbox"
+                                    checked={menuStatus[item.id]}
+                                    onChange={() => toggleMenu(item.id)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 accent-black"
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* ── 메뉴 배치 탭 ── */}
+              {menuModalTab === 'layout' && isMaster && (
+                <div className="p-5">
+                  <p className="text-[11px] font-bold text-slate-400 mb-4">
+                    카드를 원하는 영역으로 드래그하거나 버튼으로 이동한 뒤 <strong className="text-slate-600">배치 저장</strong>을 누르세요. 저장 즉시 전체 직원 화면에 반영됩니다.
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    {layoutZones.map((zone) => (
+                      <div
+                        key={zone}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          if (draggedTool) moveLayoutTool(draggedTool.id, zone);
+                          setDraggedTool(null);
+                        }}
+                        className={`min-h-[160px] rounded-2xl border-2 border-dashed p-3 ${
+                          zone === "hidden"
+                            ? "border-rose-200 bg-rose-50"
+                            : zone === "desktopSidebar"
+                              ? "border-[#0a3268]/25 bg-[#eef4fb]"
+                              : "border-slate-200 bg-slate-50"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-[12px] font-black text-slate-900">{MENU_LAYOUT_LABELS[zone]}</p>
+                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-slate-500 shadow-sm">
+                            {layoutDraft[zone].length}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {layoutDraft[zone].map((toolId) => {
+                            const tool = getLayoutTool(toolId);
+                            if (!tool) return null;
+                            return (
+                              <div
+                                key={`${zone}-${toolId}`}
+                                draggable
+                                onDragStart={() => setDraggedTool({ id: toolId, from: zone })}
+                                onDragEnd={() => setDraggedTool(null)}
+                                className="cursor-grab rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm active:cursor-grabbing"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[#eef4fb] text-[#0a3268]">
+                                    <ToolIcon icon={tool.icon} />
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-[11px] font-black text-slate-900">{tool.title}</p>
+                                    <p className="truncate text-[9px] font-bold text-slate-400">{tool.label}</p>
+                                  </div>
+                                  {tool.premium && (
+                                    <span className="rounded-full bg-[linear-gradient(120deg,#ff4d6d,#f59e0b,#22c55e,#06b6d4,#6366f1,#d946ef)] px-2 py-0.5 text-[8px] font-black text-white shadow-sm">
+                                      PREMIUM
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="mt-2 grid grid-cols-2 gap-1">
+                                  {layoutZones.filter((target) => target !== zone).slice(0, 4).map((target) => (
+                                    <button
+                                      key={target}
+                                      type="button"
+                                      onClick={() => moveLayoutTool(toolId, target)}
+                                      className="rounded-lg bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-500 hover:bg-[#10203a] hover:text-white"
+                                    >
+                                      {MENU_LAYOUT_LABELS[target]}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {layoutDraft[zone].length === 0 && (
+                            <div className="grid min-h-[64px] place-items-center rounded-xl border border-dashed border-slate-200 bg-white/60 text-[11px] font-black text-slate-300">
+                              이곳으로 끌어오기
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         </div>

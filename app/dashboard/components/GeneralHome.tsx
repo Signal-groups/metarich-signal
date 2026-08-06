@@ -198,9 +198,9 @@ export default function GeneralHome({
     <div style={{ display: 'grid', gap: 16 }}>
 
       {/* ══════════════════════════════════════════════════
-          HEADER: 작은 버튼 행 (배너 위)
+          HEADER: 작은 버튼 행 (배너 위) — PC 전용
       ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="hidden md:flex" style={{ justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={onNoticeClick}
           style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 12px', borderRadius: 8, border: '1px solid #dce6f1', background: '#fff', color: '#10203a', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(16,32,58,0.06)' }}>
           <Bell size={12} />공지·업데이트
@@ -225,9 +225,9 @@ export default function GeneralHome({
       </div>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 1: 배너 4개
+          SECTION 1: 배너 4개 — 모바일 2×2 / PC 4×1
       ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
         {[
           {
             label: '보험의 기준 카페', sub: '네이버 카페', emoji: '☕',
@@ -265,8 +265,41 @@ export default function GeneralHome({
       </div>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 2: 즐겨찾기(5×2) + 업무별 도구(5카테고리) 통합
+          SECTION 2 (모바일): 즐겨찾기 가로 스크롤
       ══════════════════════════════════════════════════ */}
+      <div className="block md:hidden">
+        <section style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+            <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
+            <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
+          </div>
+          {favTools.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '12px 0', color: '#94a3b8', fontSize: 12, fontWeight: 700 }}>
+              PC에서 즐겨찾기를 등록해 주세요
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' as any }}>
+              {favTools.map(tool => (
+                <button
+                  key={tool.id}
+                  onClick={() => onNavigate(tool)}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '8px 10px', borderRadius: 10, border: '1.5px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', flexShrink: 0, minWidth: 60 }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 9, background: '#eef4fb' }}>
+                    <ToolIcon icon={tool.icon} size={15} />
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>{tool.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ══════════════════════════════════════════════════
+          SECTION 2 (PC): 즐겨찾기(5×2) + 업무별 도구(5카테고리) 통합
+      ══════════════════════════════════════════════════ */}
+      <div className="hidden md:block">
       <section style={card}>
         <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
@@ -398,20 +431,20 @@ export default function GeneralHome({
           )
         })()}
       </section>
+      </div>{/* /PC Section 2 */}
 
       {/* ══════════════════════════════════════════════════
-          SECTION 3: 달력 50/50 (CalendarWidget 내부 반반 처리)
-                    + 우측 하단: 공지·버튼
+          SECTION 3: 달력 + 보험사 코드 — 모바일 전체폭 스택
       ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'stretch' }}>
+      <div className="flex flex-col md:flex-row flex-wrap gap-4 md:items-stretch">
 
         {/* 달력 */}
-        <div style={{ flex: '1 1 380px', minWidth: 300, display: 'flex', flexDirection: 'column' }}>
+        <div className="w-full md:flex-1" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <CalendarWidget user={user} canUseCrm={canUseCrm} />
         </div>
 
         {/* 우측: 보험사 코드 & 비밀번호 */}
-        <div style={{ flex: '0 0 400px', minWidth: 320, display: 'flex', flexDirection: 'column' }}>
+        <div className="w-full md:w-auto" style={{ display: 'flex', flexDirection: 'column' }}>
           <section style={{ ...card, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '14px 18px', ...(isInsuOpen ? { flex: 1 } : {}) }}>
 
             {/* 헤더 — 클릭하면 열고 닫힘 */}

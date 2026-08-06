@@ -119,6 +119,11 @@ export default function ProHome({
   const [activeCat, setActiveCat] = useState<string | null>(null)
   // 드래그앤드롭용 로컬 순서 상태
   const [localFavIds, setLocalFavIds] = useState<string[]>(favorites)
+
+  // ── 모바일 CRM 검색 ──────────────────────────────────────────────────
+  const [mobileQuery, setMobileQuery] = useState('')
+  const [mobileResults, setMobileResults] = useState<any[]>([])
+  const [mobileLoading, setMobileLoading] = useState(false)
   const dragStartIdx = useRef<number | null>(null)
   const dragOverIdx = useRef<number | null>(null)
 
@@ -239,6 +244,34 @@ export default function ProHome({
 
   useEffect(() => { loadStats() }, [loadStats])
 
+  // ── 모바일 CRM 고객 검색 ─────────────────────────────────────────────
+  const searchMobileCustomers = useCallback(async (q: string) => {
+    if (!user?.id) return
+    setMobileLoading(true)
+    try {
+      let query = supabase
+        .from('customers')
+        .select('id, name, birth_date, phone, sales_stage, status, gender')
+        .eq('advisor_id', user.id)
+        .is('deleted_at', null)
+        .order('updated_at', { ascending: false })
+        .limit(30)
+      if (q.trim()) {
+        query = query.ilike('name', `%${q.trim()}%`)
+      }
+      const { data } = await query
+      setMobileResults(data || [])
+    } catch {
+      setMobileResults([])
+    } finally {
+      setMobileLoading(false)
+    }
+  }, [user?.id])
+
+  useEffect(() => {
+    searchMobileCustomers('')
+  }, [searchMobileCustomers])
+
   // ── 드래그앤드롭 핸들러 ───────────────────────────────────────────
   const handleDragStart = (idx: number) => {
     dragStartIdx.current = idx
@@ -292,9 +325,9 @@ export default function ProHome({
     <div style={{ display: 'grid', gap: 16 }}>
 
       {/* ══════════════════════════════════════════════════
-          HEADER: 작은 버튼 행
+          HEADER: 작은 버튼 행 — PC 전용
       ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="hidden md:flex" style={{ justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={onNoticeClick}
           style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 12px', borderRadius: 8, border: '1px solid #dce6f1', background: '#fff', color: '#10203a', fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(16,32,58,0.06)' }}>
           <Bell size={12} />공지·업데이트
@@ -319,9 +352,9 @@ export default function ProHome({
       </div>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 1: 배너 4개
+          SECTION 1: 배너 4개 — 모바일 2×2 / PC 4×1
       ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
         {[
           {
             label: '보험의 기준 카페', sub: '네이버 카페', emoji: '☕',
@@ -359,8 +392,41 @@ export default function ProHome({
       </div>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 2: 즐겨찾기(5×2) + 업무별 도구
+          SECTION 2 (모바일): 즐겨찾기 가로 스크롤
       ══════════════════════════════════════════════════ */}
+      <div className="block md:hidden">
+        <section style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+            <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
+            <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
+          </div>
+          {favTools.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '12px 0', color: '#94a3b8', fontSize: 12, fontWeight: 700 }}>
+              PC에서 즐겨찾기를 등록해 주세요
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' as any }}>
+              {favTools.map(tool => (
+                <button
+                  key={tool.id}
+                  onClick={() => onNavigate(tool)}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '8px 10px', borderRadius: 10, border: '1.5px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', flexShrink: 0, minWidth: 60 }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 9, background: '#eef4fb' }}>
+                    <ToolIcon icon={tool.icon} size={15} />
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>{tool.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ══════════════════════════════════════════════════
+          SECTION 2 (PC): 즐겨찾기(5×2) + 업무별 도구
+      ══════════════════════════════════════════════════ */}
+      <div className="hidden md:block">
       <section style={card}>
         <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
@@ -501,13 +567,72 @@ export default function ProHome({
           )
         })()}
       </section>
+      </div>{/* /PC Section 2 */}
 
       {/* ══════════════════════════════════════════════════
-          SECTION 3: 오늘의 업무 요약 바 (Pro 전용)
+          SECTION 3 (모바일): 고객 CRM 검색
       ══════════════════════════════════════════════════ */}
-      <button
+      <div className="block md:hidden">
+        <section style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
+            <span style={{ fontSize: 16 }}>👥</span>
+            <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>고객 보장 조회</span>
+          </div>
+          {/* 검색 입력 */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            <input
+              type="text"
+              value={mobileQuery}
+              onChange={e => setMobileQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && searchMobileCustomers(mobileQuery)}
+              placeholder="고객 이름 검색..."
+              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #dce6f1', fontSize: 13, fontWeight: 500, fontFamily: 'inherit', outline: 'none', color: '#10203a' }}
+            />
+            <button
+              onClick={() => searchMobileCustomers(mobileQuery)}
+              style={{ padding: '8px 14px', borderRadius: 8, background: '#1A2744', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+            >
+              검색
+            </button>
+          </div>
+          {/* 결과 목록 */}
+          {mobileLoading ? (
+            <div style={{ textAlign: 'center', padding: '16px 0', color: '#94a3b8', fontSize: 12, fontWeight: 700 }}>검색 중...</div>
+          ) : mobileResults.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '16px 0', color: '#94a3b8', fontSize: 12, fontWeight: 700 }}>
+              {mobileQuery ? '검색 결과가 없습니다' : '등록된 고객이 없습니다'}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
+              {mobileResults.map(c => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, border: '1px solid #e8eef5', background: '#f8fafc' }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#10203a' }}>{c.name}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginTop: 2 }}>
+                      {c.sales_stage || c.status || '미분류'}
+                      {c.birth_date ? ` · ${c.birth_date.slice(0, 4)}년생` : ''}
+                      {c.gender === 'male' ? ' · 남' : c.gender === 'female' ? ' · 여' : ''}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => window.open(`/mobile?customerId=${c.id}`, '_blank')}
+                    style={{ padding: '6px 12px', borderRadius: 7, background: '#1A2744', border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+                  >
+                    보장 조회
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* ══════════════════════════════════════════════════
+          SECTION 3 (PC): 오늘의 업무 요약 바 (Pro 전용)
+      ══════════════════════════════════════════════════ */}
+      <button className="hidden md:flex"
         onClick={() => setShowTodayModal(true)}
-        style={{ display: 'flex', alignItems: 'center', gap: 0, padding: 0, borderRadius: 14, border: '1px solid #e8eef5', background: '#fff', cursor: 'pointer', boxShadow: '0 1px 6px rgba(16,32,58,0.05)', overflow: 'hidden', textAlign: 'left', width: '100%' }}
+        style={{ alignItems: 'center', gap: 0, padding: 0, borderRadius: 14, border: '1px solid #e8eef5', background: '#fff', cursor: 'pointer', boxShadow: '0 1px 6px rgba(16,32,58,0.05)', overflow: 'hidden', textAlign: 'left', width: '100%' }}
         onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 3px 12px rgba(16,32,58,0.1)'; }}
         onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 6px rgba(16,32,58,0.05)'; }}
       >
@@ -533,17 +658,17 @@ export default function ProHome({
       </button>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 4: 달력 + 보험사 코드 (달력 높이 일치)
+          SECTION 4: 달력 + 보험사 코드 — 모바일 전체폭 스택
       ══════════════════════════════════════════════════ */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'stretch' }}>
+      <div className="flex flex-col md:flex-row flex-wrap gap-4 md:items-stretch">
 
         {/* 달력 */}
-        <div style={{ flex: '1 1 380px', minWidth: 300, display: 'flex', flexDirection: 'column' }}>
+        <div className="w-full md:flex-1" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <CalendarWidget user={user} canUseCrm={true} />
         </div>
 
         {/* 우측: 보험사 코드 & 비밀번호 */}
-        <div style={{ flex: '0 0 400px', minWidth: 320, display: 'flex', flexDirection: 'column' }}>
+        <div className="w-full md:w-auto" style={{ display: 'flex', flexDirection: 'column' }}>
           <section style={{ ...card, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '14px 18px', ...(isInsuOpen ? { flex: 1 } : {}) }}>
 
             {/* 헤더 — 클릭하면 열고 닫힘 */}

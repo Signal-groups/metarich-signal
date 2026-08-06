@@ -1978,7 +1978,7 @@ function PensionCalc() {
             {
               icon:'📊', label: productType==='variable'?'예상 투자수익률':productType==='dollar'?'달러 공시이율':'공시이율',
               value: productType==='variable'?variableRate:productType==='dollar'?dollarRate:declaredRate,
-              min:0.5, max:10, step:0.25,
+              min:0.5, max:productType==='variable'?30:10, step:0.25,
               display: `연 ${(productType==='variable'?variableRate:productType==='dollar'?dollarRate:declaredRate).toFixed(2)}%`,
               onChange: (v:number) => productType==='variable'?setVariableRate(v):productType==='dollar'?setDollarRate(v):setDeclaredRate(v),
             },
