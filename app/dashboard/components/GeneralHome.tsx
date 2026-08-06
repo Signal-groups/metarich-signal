@@ -112,10 +112,11 @@ export default function GeneralHome({
   onFavEditToggle, onFavToggle, onNavigate, onNoticeClick, onStrategyClick,
 }: GeneralHomeProps) {
   const [activeCat, setActiveCat] = useState<string | null>(null)
+  const [mobileFavOpen, setMobileFavOpen] = useState(true)
   const uid = user?.id || 'guest'
 
-  // ── 보험사 코드 ─────────────────────────────────────────────────────
-  const [isInsuOpen, setIsInsuOpen] = useState(true)
+  // ── 보험사 코드 — 모바일 기본 접힘
+  const [isInsuOpen, setIsInsuOpen] = useState(false)
   const [isInsuEdit, setIsInsuEdit] = useState(false)
   const [insuTab, setInsuTab] = useState<'life' | 'non'>('life')
   const [showPw, setShowPw] = useState(false)
@@ -251,47 +252,53 @@ export default function GeneralHome({
           },
         ].map((b, i) => (
           <button key={i} onClick={b.onClick}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, padding: '14px 16px', borderRadius: 14, border: `1px solid ${b.border}`, background: b.bg, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 5, padding: '10px 12px', borderRadius: 12, border: `1px solid ${b.border}`, background: b.bg, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(16,32,58,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
             onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
           >
-            <span style={{ fontSize: 22 }}>{b.emoji}</span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 900, color: b.color, lineHeight: 1.3 }}>{b.label}</div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: b.color, opacity: 0.7, marginTop: 2 }}>{b.sub}</div>
-            </div>
+            <span style={{ fontSize: 18 }}>{b.emoji}</span>
+            <div style={{ fontSize: 12, fontWeight: 900, color: b.color, lineHeight: 1.3 }}>{b.label}</div>
           </button>
         ))}
       </div>
 
       {/* ══════════════════════════════════════════════════
-          SECTION 2 (모바일): 즐겨찾기 가로 스크롤
+          SECTION 2 (모바일): 즐겨찾기 4개 + 접기/펼치기
       ══════════════════════════════════════════════════ */}
       <div className="block md:hidden">
         <section style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-            <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
-            <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
-          </div>
-          {favTools.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '12px 0', color: '#94a3b8', fontSize: 12, fontWeight: 700 }}>
-              PC에서 즐겨찾기를 등록해 주세요
+          <button
+            onClick={() => setMobileFavOpen(p => !p)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
+              <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
+              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{Math.min(favTools.length, 4)}개</span>
             </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, WebkitOverflowScrolling: 'touch' as any }}>
-              {favTools.map(tool => (
-                <button
-                  key={tool.id}
-                  onClick={() => onNavigate(tool)}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '8px 10px', borderRadius: 10, border: '1.5px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', flexShrink: 0, minWidth: 60 }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 9, background: '#eef4fb' }}>
-                    <ToolIcon icon={tool.icon} size={15} />
-                  </span>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all', whiteSpace: 'nowrap' }}>{tool.title}</span>
-                </button>
-              ))}
-            </div>
+            <ChevronDown size={14} color="#94a3b8" style={{ transition: 'transform 0.2s', transform: mobileFavOpen ? 'rotate(180deg)' : 'none' }} />
+          </button>
+          {mobileFavOpen && (
+            favTools.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '12px 0', color: '#94a3b8', fontSize: 12, fontWeight: 700 }}>
+                PC에서 즐겨찾기를 등록해 주세요
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
+                {favTools.slice(0, 4).map(tool => (
+                  <button
+                    key={tool.id}
+                    onClick={() => onNavigate(tool)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 4px', borderRadius: 10, border: '1.5px solid #e8eef5', background: '#f8fafc', cursor: 'pointer' }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
+                      <ToolIcon icon={tool.icon} size={16} />
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                  </button>
+                ))}
+              </div>
+            )
           )}
         </section>
       </div>

@@ -660,11 +660,11 @@ export default function Sidebar({
           <MobileNavButton label="홈" active={mode === 'consulting' && !isOpen} onClick={openConsulting}>
             <Home className="h-5 w-5" />
           </MobileNavButton>
-          <MobileNavButton label="사무실업무" active={mode === 'office' && !isOpen} onClick={openOffice} disabled={!canUseOffice}>
-            <MessageSquareText className="h-5 w-5" />
-          </MobileNavButton>
           <MobileNavButton label="공시실" onClick={() => window.open('/gongsi.html', '_blank')}>
             <FileSearch className="h-5 w-5" />
+          </MobileNavButton>
+          <MobileNavButton label="조회" onClick={() => window.open('/mobile', '_blank')}>
+            <ShieldCheck className="h-5 w-5" />
           </MobileNavButton>
           <MobileNavButton label="메뉴" active={isOpen} onClick={() => setIsOpen(true)}>
             <MoreHorizontal className="h-5 w-5" />
