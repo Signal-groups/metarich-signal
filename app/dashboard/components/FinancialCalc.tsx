@@ -268,7 +268,7 @@ export default function FinancialCalc() {
   const reset = () => setState(DEFAULT_STATE)
 
   return (
-    <div className="financial-calc-tool" style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#EEF3F8", minHeight: "100vh", padding: "24px 18px 40px" }}>
+    <div className="financial-calc-tool" style={{ fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", background: "#EEF3F8", minHeight: "100vh", padding: "24px 18px 40px", overflowX: "hidden" }}>
       <div className="financial-calc-layout" style={{ maxWidth: 1220, margin: "0 auto", display: "grid", gridTemplateColumns: "250px minmax(0,1fr)", gap: 18, alignItems: "start" }}>
         <aside className="financial-calc-side" style={{ position: "sticky", top: 76, background: C.navy, borderRadius: 22, padding: 16, color: "#fff", boxShadow: "0 16px 28px rgba(15,30,53,0.18)" }}>
           <div style={{ padding: "8px 8px 14px", borderBottom: "1px solid rgba(255,255,255,0.09)", marginBottom: 12 }}>
@@ -1554,9 +1554,9 @@ function PensionChart(p: PensionChartProps) {
   }
 
   return (
-    <div style={{ display:'grid', gap:12 }}>
+    <div style={{ display:'grid', gap:12, gridTemplateColumns:'minmax(0,1fr)', overflow:'hidden' }}>
       {/* 요약 카드 */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,minmax(0,1fr))', gap:8 }}>
         {[
           { icon:'📥', label:'총 납입', val:fmt(p.totalPaid), sub:`월 ${fmtSmall(p.monthly)} × ${p.payYears*12}개월`, color:'#1A2744' },
           { icon:'🏦', label:'연금개시 재원', val:fmt(p.effectiveReserve), sub:`${p.pensionStart}세 시점`, color:'#2D4A8A' },
@@ -1592,7 +1592,7 @@ function PensionChart(p: PensionChartProps) {
             ))}
           </div>
         </div>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', minWidth:300, display:'block' }}>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', display:'block' }}>
 
           {/* 구간 배경 */}
           {/* 납입구간 */}
@@ -1899,7 +1899,7 @@ function PensionCalc() {
 
   // ── 렌더 ─────────────────────────────────────────────────────────
   return (
-    <div style={{ display:'grid', gap:0, fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif" }}>
+    <div style={{ display:'grid', gap:0, gridTemplateColumns:'minmax(0,1fr)', overflowX:'hidden', fontFamily:"'Pretendard','Apple SD Gothic Neo',sans-serif" }}>
       {showInheritance && <InheritanceModal onClose={() => setShowInheritance(false)} />}
 
       {/* ── 헤더 ── */}
@@ -1946,7 +1946,7 @@ function PensionCalc() {
       </div>
 
       {/* ── 입력 + 차트 ── */}
-      <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderTop:'none', display:'grid', gridTemplateColumns:'1fr 1fr', gap:0 }}>
+      <div style={{ background:'#fff', border:`1px solid ${C.border}`, borderTop:'none', display:'grid', gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)', gap:0 }}>
         {/* 좌: 슬라이더 입력 */}
         <div style={{ padding:'24px 28px', borderRight:`1px solid ${C.border}` }}>
           {/* 슬라이더 헬퍼 */}
@@ -2164,7 +2164,7 @@ function PensionCalc() {
         </table>
         {/* 바 차트 비교 */}
         <p style={{ margin:'0 0 10px', fontSize:12, fontWeight:900, color:C.muted, textAlign:'center' }}>월 연금액 비교</p>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, alignItems:'flex-end', height:130, padding:'0 20px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:16, alignItems:'flex-end', height:130, padding:'0 20px' }}>
           {presetData.map((row,i)=>{
             const h = Math.max(20, (row.monthly / maxPresetMon) * 110)
             return (
@@ -2181,7 +2181,7 @@ function PensionCalc() {
       {/* ── 수령방식 선택 ── */}
       <div style={{ background:'#F7F8FA', border:`1px solid ${C.border}`, borderTop:'none', padding:'24px 28px' }}>
         <p style={{ margin:'0 0 12px', fontSize:13, fontWeight:900, color:C.navy }}>💳 수령방식 선택 (현재: {({'5y':'5년 확정','10y':'10년 확정','15y':'15년 확정','20y':'20년 확정','lifetime':'종신','inherit':'상속'} as Record<PPayType,string>)[payType]})</p>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:8 }}>
           {([
             {key:'5y',label:'5년 확정',sub:'단기 고수령'},
             {key:'10y',label:'10년 확정',sub:'안정 균형형'},
