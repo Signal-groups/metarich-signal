@@ -256,8 +256,8 @@ export default function GeneralHome({
             onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(16,32,58,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
             onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'none'; }}
           >
-            <span style={{ fontSize: 18 }}>{b.emoji}</span>
-            <div style={{ fontSize: 12, fontWeight: 900, color: b.color, lineHeight: 1.3 }}>{b.label}</div>
+            <span style={{ fontSize: 22 }}>{b.emoji}</span>
+            <div style={{ fontSize: 14, fontWeight: 900, color: b.color, lineHeight: 1.3 }}>{b.label}</div>
           </button>
         ))}
       </div>
@@ -273,8 +273,8 @@ export default function GeneralHome({
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
-              <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
-              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{Math.min(favTools.length, 4)}개</span>
+              <span style={{ fontSize: 15, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
+              <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{Math.min(favTools.length, 4)}개</span>
             </div>
             <ChevronDown size={14} color="#94a3b8" style={{ transition: 'transform 0.2s', transform: mobileFavOpen ? 'rotate(180deg)' : 'none' }} />
           </button>
@@ -294,7 +294,7 @@ export default function GeneralHome({
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
                       <ToolIcon icon={tool.icon} size={16} />
                     </span>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
                   </button>
                 ))}
               </div>
@@ -315,14 +315,14 @@ export default function GeneralHome({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <Star size={14} style={{ fill: '#172947', color: '#172947' }} />
-                <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
+                <span style={{ fontSize: 15, fontWeight: 900, color: '#10203a' }}>즐겨찾기 도구</span>
                 {!isFavEditMode && favTools.length > 0 && (
-                  <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>{favTools.length}/{MAX_FAV}</span>
+                  <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{favTools.length}/{MAX_FAV}</span>
                 )}
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 {isFavEditMode && (
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', background: '#f1f5f9', borderRadius: 8, padding: '2px 8px' }}>클릭으로 추가·제거</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', background: '#f1f5f9', borderRadius: 8, padding: '2px 8px' }}>클릭으로 추가·제거</span>
                 )}
                 <button onClick={onFavEditToggle} style={editBtn}>
                   {isFavEditMode ? '완료' : '편집'}
@@ -333,7 +333,7 @@ export default function GeneralHome({
             {favTools.length === 0 && !isFavEditMode ? (
               <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontSize: 24 }}>⭐</span>
-                <p style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, margin: 0 }}>편집을 눌러 즐겨찾기를 추가하세요</p>
+                <p style={{ fontSize: 13, color: '#94a3b8', fontWeight: 700, margin: 0 }}>편집을 눌러 즐겨찾기를 추가하세요</p>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${FAV_COLS}, 1fr)`, gap: 7 }}>
@@ -359,7 +359,7 @@ export default function GeneralHome({
                       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
                         <ToolIcon icon={tool.icon} size={17} />
                       </span>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
                     </button>
                   )
                 })}
@@ -372,7 +372,7 @@ export default function GeneralHome({
 
           {/* 오른쪽: 업무별 도구 — 전체의 1/3 */}
           <div style={{ flex: '1 1 0', minWidth: 180, paddingLeft: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 900, color: '#10203a', marginBottom: 10 }}>업무별 도구</div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: '#10203a', marginBottom: 10 }}>업무별 도구</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {categorySections.map(cat => {
                 const isActive = activeCat === cat.id
@@ -392,10 +392,10 @@ export default function GeneralHome({
                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,32,58,0.08)'; }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <span style={{ fontSize: 13, fontWeight: 800, color: isActive ? s.activeText : '#10203a', textAlign: 'left', flex: 1 }}>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: isActive ? s.activeText : '#10203a', textAlign: 'left', flex: 1 }}>
                       {cat.title}
                     </span>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 7px', borderRadius: 12, background: isActive ? 'rgba(255,255,255,0.25)' : s.iconBg, color: isActive ? s.activeText : '#64748b', flexShrink: 0 }}>
                       {cat.tools.length}
                     </span>
                     <ChevronDown
@@ -415,7 +415,7 @@ export default function GeneralHome({
           const s = CAT_STYLE[activeSectionData.id] || CAT_STYLE.face
           return (
             <div style={{ marginTop: 14, padding: '14px 16px', borderRadius: 12, border: `1.5px solid ${s.border}`, background: s.bg }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>
                 {activeSectionData.desc}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
@@ -430,7 +430,7 @@ export default function GeneralHome({
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: s.iconBg, flexShrink: 0 }}>
                       <ToolIcon icon={tool.icon} size={12} />
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#10203a' }}>{tool.title}</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: '#10203a' }}>{tool.title}</span>
                   </button>
                 ))}
               </div>
@@ -459,9 +459,9 @@ export default function GeneralHome({
               onClick={() => setIsInsuOpen(p => !p)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%', fontFamily: 'inherit' }}
             >
-              <span style={{ fontSize: 13, fontWeight: 900, color: '#10203a' }}>보험사 코드 & 비밀번호</span>
+              <span style={{ fontSize: 15, fontWeight: 900, color: '#10203a' }}>보험사 코드 & 비밀번호</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8' }}>
                   {(insuTab === 'life' ? lifeCodes : nonCodes).filter(r => r.code).length}개 등록됨
                 </span>
                 <ChevronDown size={14} color="#94a3b8" style={{ transition: 'transform 0.2s', transform: isInsuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
@@ -495,10 +495,10 @@ export default function GeneralHome({
 
                 {/* 컬럼 헤더 */}
                 <div style={{ display: 'grid', gridTemplateColumns: isInsuEdit ? '1fr 90px 110px 22px' : '1fr 90px 110px', gap: 4, paddingBottom: 5, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
-                  {isInsuEdit && <span style={{ fontSize: 11, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>≡</span>}
+                  <span style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
+                  <span style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
+                  <span style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
+                  {isInsuEdit && <span style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>≡</span>}
                 </div>
 
                 {/* 스크롤 목록 */}
@@ -520,7 +520,7 @@ export default function GeneralHome({
                         cursor: isInsuEdit ? 'grab' : 'default',
                         transition: 'opacity 0.15s',
                       }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#374151', paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.company}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#374151', paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.company}</span>
 
                       {/* 코드 셀 */}
                       {isInsuEdit ? (
@@ -528,7 +528,7 @@ export default function GeneralHome({
                           onChange={e => updateCode(insuTab, row.id, 'code', e.target.value)}
                           placeholder="코드 (10자리)"
                           maxLength={15}
-                          style={{ fontSize: 12, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
+                          style={{ fontSize: 13, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
                       ) : (
                         <button
                           onClick={() => row.code && copyToClipboard(row.code, `${row.id}_code`)}
@@ -545,7 +545,7 @@ export default function GeneralHome({
                           placeholder="비밀번호"
                           type={showPw ? 'text' : 'password'}
                           maxLength={20}
-                          style={{ fontSize: 12, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
+                          style={{ fontSize: 13, fontWeight: 600, color: '#10203a', padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 4, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' as const }} />
                       ) : (
                         <button
                           onClick={() => row.pw && copyToClipboard(row.pw, `${row.id}_pw`)}
@@ -580,7 +580,7 @@ const card: React.CSSProperties = {
   padding: '20px 22px', boxShadow: '0 1px 6px rgba(16,32,58,0.05)',
 }
 const editBtn: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: '#21324d',
+  fontSize: 13, fontWeight: 700, color: '#21324d',
   background: '#f8fafc', border: '1px solid #dce6f1',
   borderRadius: 8, padding: '4px 10px', cursor: 'pointer',
 }

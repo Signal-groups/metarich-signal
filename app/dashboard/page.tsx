@@ -447,6 +447,10 @@ export default function DashboardPage() {
   
   const isApproved = isApprovedUser(user);
   const isGuest = !isApproved;
+
+  // 공지 카운트 — 컴포넌트 전역 (GeneralHome/ProHome 버튼에서도 사용)
+  const noticeCnt = announcements.filter(a => a.category === 'notice').length;
+  const updateCnt = announcements.filter(a => a.category === 'update').length;
   const canUseOffice = canAccessOffice(user);
   const canUseCrm = canAccessCrm(user);
   const visibleConsultingTools = CONSULTING_TOOLS.filter((m) => {
@@ -515,9 +519,6 @@ export default function DashboardPage() {
     // 진료기록확인·상품공시조회 숨김(사이드바 전용) / 내보험바로알기+고객상담카드 통합
     const HIDDEN_FROM_MAIN = new Set(['show_hira', 'show_gongsi'])
     const COMBINED_FACE_IDS = new Set(['show_insurance_survey', 'show_card_consult'])
-
-    const noticeCnt = announcements.filter(a => a.category === 'notice').length
-    const updateCnt = announcements.filter(a => a.category === 'update').length
 
     return (
       <div className="mx-auto max-w-[1680px] min-w-0 pb-3">
@@ -884,6 +885,67 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#eef3f8] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
+      {/* ── 공지·업데이트 통합 팝업 ── */}
+      {showNoticePopup && (
+        <div style={{ position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,20,40,0.45)" }}
+          onClick={() => setShowNoticePopup(false)}>
+          <div style={{ background:"white",borderRadius:16,maxWidth:540,width:"calc(100% - 32px)",padding:"0",boxShadow:"0 8px 40px rgba(0,0,0,0.18)",overflow:"hidden",maxHeight:"78vh",display:"flex",flexDirection:"column" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:"flex",borderBottom:"1px solid #eef3f8",padding:"16px 20px 0" }}>
+              <div style={{ display:"flex",gap:0,flex:1 }}>
+                {(['notice','update'] as const).map(tab => (
+                  <button key={tab} onClick={() => setNoticePopupTab(tab)}
+                    style={{ padding:"8px 18px",fontSize:14,fontWeight:900,border:"none",background:"none",cursor:"pointer",borderBottom: noticePopupTab === tab ? "2.5px solid #1a2744" : "2.5px solid transparent",color: noticePopupTab === tab ? "#1a2744" : "#9ab4c8",transition:"all 0.15s",fontFamily:"inherit",position:"relative" }}>
+                    {tab === 'notice' ? '공지사항' : '업데이트'}
+                    {tab === 'notice' && noticeCnt > 0 && (
+                      <span style={{ position:"absolute",top:4,right:4,background:"#e63946",color:"white",borderRadius:"50%",width:14,height:14,display:"grid",placeItems:"center",fontSize:9,fontWeight:900 }}>{noticeCnt}</span>
+                    )}
+                    {tab === 'update' && updateCnt > 0 && (
+                      <span style={{ position:"absolute",top:4,right:4,background:"#0f6e56",color:"white",borderRadius:"50%",width:14,height:14,display:"grid",placeItems:"center",fontSize:9,fontWeight:900 }}>{updateCnt}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display:"flex",gap:6,alignItems:"center",paddingBottom:8 }}>
+                {isMaster && (
+                  <button onClick={() => { addAnnouncement(noticePopupTab); setShowNoticePopup(false); }}
+                    style={{ fontSize:11,fontWeight:700,color: noticePopupTab === 'notice' ? "#1b54ad" : "#0f6e56",background: noticePopupTab === 'notice' ? "#eef4fb" : "#e1f5ee",border:"none",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit" }}>
+                    + 추가
+                  </button>
+                )}
+                <button onClick={() => setShowNoticePopup(false)}
+                  style={{ background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#9ab4c8",lineHeight:1 }}>×</button>
+              </div>
+            </div>
+            <div style={{ overflowY:"auto",padding:"12px 20px 20px",flex:1 }}>
+              {announcements.filter(a => a.category === noticePopupTab).length === 0 ? (
+                <p style={{ fontSize:13,color:"#b8ccd8",fontWeight:700,marginTop:12 }}>
+                  {noticePopupTab === 'notice' ? '공지사항이 없습니다.' : '업데이트 소식이 없습니다.'}
+                </p>
+              ) : announcements.filter(a => a.category === noticePopupTab).map(ann => (
+                <button key={ann.id} onClick={() => { setSelectedAnnouncement(ann); setShowNoticePopup(false); }}
+                  style={{ display:"block",width:"100%",textAlign:"left",padding:"12px 0",borderBottom:"1px solid #eef3f8",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit" }}>
+                  {noticePopupTab === 'update' && (
+                    <span style={{ background:"#dcfce7",color:"#15803d",fontSize:9,fontWeight:900,borderRadius:12,padding:"2px 8px",marginRight:8 }}>NEW</span>
+                  )}
+                  <span style={{ fontSize:14,fontWeight:900,color:"#10203a" }}>{ann.title.replace(/^\[.*?\]\s*/, '')}</span>
+                  <p style={{ fontSize:11,color:"#8aa0ba",marginTop:4 }}>{new Date(ann.created_at).toLocaleDateString("ko-KR")}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {selectedAnnouncement && (
+        <AnnouncementModal
+          item={selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+          onSave={saveAnnouncement}
+          onDelete={deleteAnnouncement}
+          isMaster={isMaster}
+        />
+      )}
+
       <Sidebar
         user={user}
         selectedDate={selectedDate}
