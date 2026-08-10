@@ -196,7 +196,7 @@ export default function GeneralHome({
     setActiveCat(prev => prev === id ? null : id)
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div style={{ display: 'grid', gap: 16, minWidth: 0, overflowX: 'hidden' }}>
 
       {/* ══════════════════════════════════════════════════
           HEADER: 작은 버튼 행 (배너 위) — PC 전용
@@ -284,17 +284,17 @@ export default function GeneralHome({
                 PC에서 즐겨찾기를 등록해 주세요
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8, marginTop: 12 }}>
                 {favTools.slice(0, 4).map(tool => (
                   <button
                     key={tool.id}
                     onClick={() => onNavigate(tool)}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 4px', borderRadius: 10, border: '1.5px solid #e8eef5', background: '#f8fafc', cursor: 'pointer' }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 4px', borderRadius: 10, border: '1.5px solid #e8eef5', background: '#f8fafc', cursor: 'pointer', minWidth: 0 }}
                   >
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 9, background: '#eef4fb', flexShrink: 0 }}>
                       <ToolIcon icon={tool.icon} size={16} />
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'keep-all' }}>{tool.title}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#10203a', lineHeight: 1.3, textAlign: 'center', wordBreak: 'break-all', overflowWrap: 'break-word' }}>{tool.title}</span>
                   </button>
                 ))}
               </div>

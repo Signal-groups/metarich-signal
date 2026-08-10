@@ -337,7 +337,7 @@ export default function CalendarWidget({ user, canUseCrm }: { user: any; canUseC
       <div style={{ display: "flex", flexWrap: "wrap", flex: 1 }}>
 
         {/* ── 캘린더 패널 (50%) ── */}
-        <div style={{ flex: "1 1 50%", minWidth: 220, padding: "14px 16px", borderRight: "1px solid #eef3f8" }}>
+        <div style={{ flex: "1 1 50%", minWidth: 0, padding: "14px 16px", borderRight: "1px solid #eef3f8" }}>
           {/* 헤더 */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#9ab4c8", padding: "2px 6px", lineHeight: 1, fontFamily: "inherit" }}>‹</button>
@@ -427,7 +427,7 @@ export default function CalendarWidget({ user, canUseCrm }: { user: any; canUseC
         </div>
 
         {/* ── 우측 패널 (50%) ── */}
-        <div style={{ flex: "1 1 50%", minWidth: 200, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto" }}>
+        <div style={{ flex: "1 1 50%", minWidth: 0, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto" }}>
           {!selected ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, paddingTop: 8 }}>
               <span style={{ fontSize: 32 }}>📅</span>
