@@ -47,6 +47,9 @@ interface GeneralHomeProps {
   onNavigate: (tool: ConsultingTool) => void
   onNoticeClick: () => void
   onStrategyClick: () => void
+  canSwitchView?: boolean
+  onSwitchView?: () => void
+  currentViewMode?: 'pro' | 'general'
 }
 
 const CAT_STYLE: Record<string, { bg: string; border: string; iconBg: string; activeBg: string; activeText: string }> = {
@@ -110,6 +113,7 @@ const DEFAULT_NON: InsuCode[] = [
 export default function GeneralHome({
   user, canUseCrm, announcements, favorites, isFavEditMode, visibleTools,
   onFavEditToggle, onFavToggle, onNavigate, onNoticeClick, onStrategyClick,
+  canSwitchView, onSwitchView,
 }: GeneralHomeProps) {
   const [activeCat, setActiveCat] = useState<string | null>(null)
   const [mobileFavOpen, setMobileFavOpen] = useState(true)
@@ -199,6 +203,25 @@ export default function GeneralHome({
     <div style={{ display: 'grid', gap: 16, minWidth: 0, overflowX: 'hidden' }}>
 
       {/* ══════════════════════════════════════════════════
+          HEADER (모바일): 프로/일반 뷰 전환 탭 — 마스터 전용
+      ══════════════════════════════════════════════════ */}
+      {canSwitchView && onSwitchView && (
+        <div className="flex md:hidden" style={{ background: '#e8eef5', borderRadius: 10, padding: 3, gap: 2 }}>
+          <button
+            onClick={onSwitchView}
+            style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 800, background: 'transparent', color: '#4b5d76', fontFamily: 'inherit' }}
+          >
+            📊 프로 보기
+          </button>
+          <button
+            style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'default', fontSize: 13, fontWeight: 900, background: '#1a2744', color: '#fff', fontFamily: 'inherit' }}
+          >
+            📋 일반 보기
+          </button>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════
           HEADER: 작은 버튼 행 (배너 위) — PC 전용
       ══════════════════════════════════════════════════ */}
       <div className="hidden md:flex" style={{ justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -241,9 +264,9 @@ export default function GeneralHome({
             onClick: () => window.open('https://open.kakao.com/o/g8ND5toi', '_blank'),
           },
           {
-            label: '메타리치 시그널그룹', sub: '영업의 품격 · 박주완 본부장', emoji: '⭐',
-            bg: 'linear-gradient(135deg, #eef4fb 0%, #dbeafe 100%)', border: '#bfdbfe', color: '#1b54ad',
-            onClick: () => window.open('https://signal-groups.github.io/insuclass/', '_blank'),
+            label: '이달의 전략', sub: '상품전략 게시판', emoji: '📊',
+            bg: 'linear-gradient(135deg, #1a2744 0%, #2d4a8a 100%)', border: '#1a2744', color: '#c9a96e',
+            onClick: onStrategyClick,
           },
           {
             label: 'CJ온스타일 GA', sub: '보험설계사·조직관리자 모집', emoji: '📺',

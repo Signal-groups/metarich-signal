@@ -966,31 +966,10 @@ export default function DashboardPage() {
       />
 
       <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-10">
-        {isMaster && viewMode === 'consulting' && !activeTab && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-            <div style={{ display: 'inline-flex', background: '#e8eef5', borderRadius: 10, padding: 3, gap: 2 }}>
-              {(['pro', 'general'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setMasterPreviewMode(mode)}
-                  style={{
-                    padding: '6px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                    fontSize: 12, fontWeight: 800,
-                    background: masterPreviewMode === mode ? '#1a2744' : 'transparent',
-                    color: masterPreviewMode === mode ? '#fff' : '#4b5d76',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {mode === 'pro' ? '프로 보기' : '일반 보기'}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="mx-auto max-w-[1680px] min-w-0">
           {activeTab === 'strategy' ? (
-            <ProductStrategyBoard user={user} />
+            <ProductStrategyBoard user={user} onClose={() => setActiveTab(null)} />
           ) : activeTab === 'branding' ? (
             <BrandingAIPage user={user} />
           ) : viewMode === 'office' ? (
@@ -1025,17 +1004,23 @@ export default function DashboardPage() {
               onNavigate: handleNavigation,
               onNoticeClick: () => { setShowNoticePopup(true); setNoticePopupTab('notice') },
               onStrategyClick: () => setActiveTab('strategy'),
+              canSwitchView: isMaster,
+              onSwitchView: isMaster
+                ? () => setMasterPreviewMode(p => p === 'pro' ? 'general' : 'pro')
+                : undefined,
             }
             return showProHome ? (
               <ProHome
                 {...commonProps}
                 recentCustomers={recentCustomers}
                 onFavReorder={reorderFavorites}
+                currentViewMode="pro"
               />
             ) : (
               <GeneralHome
                 {...commonProps}
                 canUseCrm={canUseCrm}
+                currentViewMode="general"
               />
             )
           })()}

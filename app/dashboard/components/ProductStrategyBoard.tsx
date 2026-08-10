@@ -28,6 +28,7 @@ type Post = {
 
 type Props = {
   user: any
+  onClose?: () => void
 }
 
 // ─── 유틸 ─────────────────────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ function monthOptions(): string[] {
 
 // ─── 메인 컴포넌트 ────────────────────────────────────────────────────────────
 
-export default function ProductStrategyBoard({ user }: Props) {
+export default function ProductStrategyBoard({ user, onClose }: Props) {
   // ── 권한 ────────────────────────────────────────────────────────────────────
   const email   = user?.email || ""
   const name    = user?.name  || "익명"
@@ -305,14 +306,24 @@ export default function ProductStrategyBoard({ user }: Props) {
                 📌 중요글은 공지로 상단 고정 · 월별 아카이브 조회 가능
               </p>
             </div>
-            {isAdmin && (
-              <button
-                onClick={openNew}
-                style={{ padding: "10px 22px", borderRadius: 12, border: "none", background: GOLD, color: NAVY, fontSize: 13, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}
-              >
-                ✏️ 새 게시물 작성
-              </button>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  style={{ padding: "10px 18px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, backdropFilter: "blur(4px)" }}
+                >
+                  🏠 홈으로
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={openNew}
+                  style={{ padding: "10px 22px", borderRadius: 12, border: "none", background: GOLD, color: NAVY, fontSize: 13, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  ✏️ 새 게시물 작성
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
