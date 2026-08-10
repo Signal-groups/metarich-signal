@@ -457,10 +457,10 @@ export default function GeneralHome({
       {/* ══════════════════════════════════════════════════
           SECTION 3: 달력 + 보험사 코드 — 모바일 전체폭 스택
       ══════════════════════════════════════════════════ */}
-      <div className="flex flex-col md:flex-row flex-wrap gap-4 md:items-stretch">
+      <div className="flex flex-col md:flex-row flex-wrap gap-4 md:items-stretch" style={{ minWidth: 0, overflow: 'hidden' }}>
 
         {/* 달력 */}
-        <div className="w-full md:flex-1" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div className="w-full md:flex-1" style={{ minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <CalendarWidget user={user} canUseCrm={canUseCrm} />
         </div>
 

@@ -594,7 +594,7 @@ export default function ProHome({
           SECTION 3 (모바일): 고객 CRM 검색
       ══════════════════════════════════════════════════ */}
       <div className="block md:hidden">
-        <section style={card}>
+        <section style={{ ...card, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
             <span style={{ fontSize: 16 }}>👥</span>
             <span style={{ fontSize: 14, fontWeight: 900, color: '#10203a' }}>고객 보장 조회</span>
@@ -607,7 +607,7 @@ export default function ProHome({
               onChange={e => setMobileQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && searchMobileCustomers(mobileQuery)}
               placeholder="고객 이름 검색..."
-              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #dce6f1', fontSize: 13, fontWeight: 500, fontFamily: 'inherit', outline: 'none', color: '#10203a' }}
+              style={{ flex: 1, minWidth: 0, padding: '8px 12px', borderRadius: 8, border: '1px solid #dce6f1', fontSize: 13, fontWeight: 500, fontFamily: 'inherit', outline: 'none', color: '#10203a' }}
             />
             <button
               onClick={() => searchMobileCustomers(mobileQuery)}
@@ -624,12 +624,12 @@ export default function ProHome({
               {mobileQuery ? '검색 결과가 없습니다' : '등록된 고객이 없습니다'}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto', overflowX: 'hidden' }}>
               {mobileResults.map(c => (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, border: '1px solid #e8eef5', background: '#f8fafc' }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#10203a' }}>{c.name}</div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginTop: 2 }}>
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 12px', borderRadius: 10, border: '1px solid #e8eef5', background: '#f8fafc', minWidth: 0 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#10203a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {c.sales_stage || c.status || '미분류'}
                       {c.birth_date ? ` · ${c.birth_date.slice(0, 4)}년생` : ''}
                       {c.gender === 'male' ? ' · 남' : c.gender === 'female' ? ' · 여' : ''}
@@ -681,10 +681,10 @@ export default function ProHome({
       {/* ══════════════════════════════════════════════════
           SECTION 4: 달력 + 보험사 코드 — 모바일 전체폭 스택
       ══════════════════════════════════════════════════ */}
-      <div className="flex flex-col md:flex-row flex-wrap gap-4 md:items-stretch">
+      <div className="flex flex-col md:flex-row flex-wrap gap-4 md:items-stretch" style={{ minWidth: 0, overflow: 'hidden' }}>
 
         {/* 달력 */}
-        <div className="w-full md:flex-1" style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <div className="w-full md:flex-1" style={{ minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <CalendarWidget user={user} canUseCrm={true} />
         </div>
 

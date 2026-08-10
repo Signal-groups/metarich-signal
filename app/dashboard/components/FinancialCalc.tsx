@@ -1738,7 +1738,7 @@ function PensionCalc() {
   const [annuityPayRate, setAnnuityPayRate] = useState(2.42)
   const [annuityBaseRate, setAnnuityBaseRate] = useState(6.0)
   const [autoBaseRate, setAutoBaseRate] = useState(true)
-  const [guaranteeRatio, setGuaranteeRatio] = useState(210)
+  const [guaranteeRatio, setGuaranteeRatio] = useState(100)
   const [payType, setPayType] = useState<PPayType>('lifetime')
   const [showInheritance, setShowInheritance] = useState(false)
   const [annualIncomeMan, setAnnualIncomeMan] = useState(5000)
@@ -1763,7 +1763,7 @@ function PensionCalc() {
 
   function calcReserveAt(rate: number): number {
     const r0 = pFV3(netMonthly, rate, payMonths)
-    return deferYears > 0 ? r0 * Math.pow(1 + Math.max(0, rate) / 100, deferYears) : r0
+    return deferYears > 0 ? r0 * Math.pow(1 + Math.max(0, rate) / 100 / 12, deferYears * 12) : r0
   }
 
   const reserveBase = calcReserveAt(growthRate)
@@ -1817,7 +1817,7 @@ function PensionCalc() {
       rv = pFV3(netMonthly, growthRate, yr * 12)
     } else if (age < pensionStart) {
       const base = pFV3(netMonthly, growthRate, payYears * 12)
-      rv = base * Math.pow(1 + Math.max(0, growthRate) / 100, yr - payYears)
+      rv = base * Math.pow(1 + Math.max(0, growthRate) / 100 / 12, (yr - payYears) * 12)
     } else {
       const into = age - pensionStart
       const totalYrs = Math.max(1, lifeExpect - pensionStart)
@@ -1873,7 +1873,7 @@ function PensionCalc() {
     const pm = isDollar ? dollarMonthly * exchangeRate : p.monthlyManP * 10_000
     const pn = pm * 0.92
     const r = pFV3(pn, growthRate, payMonths)
-    const rDefer = deferYears > 0 ? r * Math.pow(1 + Math.max(0, growthRate)/100, deferYears) : r
+    const rDefer = deferYears > 0 ? r * Math.pow(1 + Math.max(0, growthRate)/100/12, deferYears*12) : r
     const rEff = productType === 'variable' ? Math.max(rDefer, pm * payMonths * (guaranteeRatio/100)) : rDefer
     const mon = getMonthly(payType, rEff)
     return { ...p, reserve: rEff, monthly: mon }
@@ -1978,7 +1978,7 @@ function PensionCalc() {
             {
               icon:'📊', label: productType==='variable'?'예상 투자수익률':productType==='dollar'?'달러 공시이율':'공시이율',
               value: productType==='variable'?variableRate:productType==='dollar'?dollarRate:declaredRate,
-              min:0.5, max:productType==='variable'?30:10, step:0.25,
+              min:0.5, max:productType==='variable'?15:10, step:0.25,
               display: `연 ${(productType==='variable'?variableRate:productType==='dollar'?dollarRate:declaredRate).toFixed(2)}%`,
               onChange: (v:number) => productType==='variable'?setVariableRate(v):productType==='dollar'?setDollarRate(v):setDeclaredRate(v),
             },
@@ -2263,7 +2263,7 @@ function PensionCalc() {
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
                   {VAR3.map(s=>{
                     const r = pFV3(netMonthly, s.invest, payMonths)
-                    const rD = deferYears>0?r*Math.pow(1+Math.max(0,s.invest)/100,deferYears):r
+                    const rD = deferYears>0?r*Math.pow(1+Math.max(0,s.invest)/100/12,deferYears*12):r
                     const eff = Math.max(rD, minGuarantee)
                     const m = payType==='lifetime'?eff*(effectiveBaseRate/100)/12:payType==='inherit'?rD*(annuityPayRate/100)/12:pMon3(eff,annuityPayRate,getMonths(payType))
                     return (
