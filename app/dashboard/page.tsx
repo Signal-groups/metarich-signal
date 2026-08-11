@@ -25,6 +25,7 @@ import {
   Megaphone,
   PieChart,
   Pill,
+  Phone,
   Scale,
   Search,
   ShieldCheck,
@@ -521,7 +522,7 @@ export default function DashboardPage() {
     const COMBINED_FACE_IDS = new Set(['show_insurance_survey', 'show_card_consult'])
 
     return (
-      <div className="mx-auto max-w-[1680px] min-w-0 pb-3">
+      <div className="dashboard-home mx-auto max-w-[1520px] min-w-0 pb-8">
         {!isApproved && (
           <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3">
             <p className="text-sm font-black text-amber-800">{isGuest ? "타사 게스트 계정입니다" : "관리자 승인 대기 중입니다"}</p>
@@ -532,13 +533,24 @@ export default function DashboardPage() {
         )}
 
         {/* ── 헤더 ── */}
-        <header className="mb-3 flex flex-col gap-2 px-0.5 xl:flex-row xl:items-center xl:justify-between">
+        <header className="dashboard-header mb-7 flex flex-col gap-4 px-0.5 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <h1 className="text-[22px] font-black leading-tight tracking-[-0.01em] text-[#10203a]">
+            <h1 className="dashboard-title text-[clamp(24px,2.2vw,32px)] font-bold leading-[1.25] tracking-[-0.035em] text-[#172947]">
               {(user.name || user.email?.split("@")[0] || "")}님, {canUseCrm ? "오늘 상담을 시작해볼까요?" : "필요한 도구를 빠르게 열어보세요"}
             </h1>
+            <p className="mt-2 text-[14px] font-medium leading-relaxed text-[#6b7c93]">
+              자주 쓰는 업무와 상담 도구를 한곳에서 편안하게 관리하세요.
+            </p>
           </div>
-          <div className="flex min-h-[34px] w-full flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 xl:w-auto xl:flex-wrap xl:justify-end xl:overflow-visible xl:pb-0">
+          <div className="dashboard-actions flex min-h-[40px] w-full flex-nowrap items-center gap-2 overflow-x-auto pb-1 xl:w-auto xl:flex-wrap xl:justify-end xl:overflow-visible xl:pb-0">
+            <a
+              href="tel:01034302565"
+              className="dashboard-contact-link inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#b9944c] bg-[#fffaf0] px-3 text-[11px] font-bold text-[#76591e] shadow-sm transition-colors hover:border-[#8a6818] hover:bg-[#fff4d9]"
+              aria-label="관리자 문의 전화 010-3430-2565"
+            >
+              <Phone className="h-3.5 w-3.5" />
+              문의 010-3430-2565
+            </a>
             {/* 공지·업데이트 통합 버튼 */}
             <button
               onClick={() => { setShowNoticePopup(true); setNoticePopupTab('notice'); }}
@@ -594,7 +606,7 @@ export default function DashboardPage() {
         </header>
 
         {/* ── 배너 4칸 (placeholder) ── */}
-        <section className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <section className="dashboard-banner-grid mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
             { label: "배너 1", color: "#eef4fb", text: "#1b54ad" },
             { label: "배너 2", color: "#f0fff8", text: "#0f6e56" },
@@ -617,7 +629,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── 모바일 전용 ── */}
-        <section className="mb-3 rounded-[14px] border border-[#dce6f1] bg-white px-4 py-3 shadow-sm md:hidden">
+        <section className="dashboard-panel mb-6 rounded-[20px] border border-[#dce6f1] bg-white px-5 py-5 shadow-sm md:hidden">
           <div className="mb-2 flex items-center justify-between gap-3">
             <p className="text-[14px] font-black text-[#10203a]">모바일 빠른 실행</p>
             <span className="rounded-full bg-[#eef4fb] px-2.5 py-1 text-[10px] font-black text-[#1b54ad]">Mobile</span>
@@ -637,7 +649,7 @@ export default function DashboardPage() {
             ))}
           </div>
         </section>
-        <section className="mb-3 rounded-[14px] border border-[#dce6f1] bg-white px-4 py-3 shadow-sm md:hidden">
+        <section className="dashboard-panel mb-6 rounded-[20px] border border-[#dce6f1] bg-white px-5 py-5 shadow-sm md:hidden">
           <p className="mb-2 text-[14px] font-black text-[#10203a]">전체 메뉴</p>
           <div className="space-y-1.5">
             {mobileCategorySections.map((cat) => (
@@ -666,7 +678,7 @@ export default function DashboardPage() {
         </section>
 
         {/* ── 즐겨찾기 (compact) ── */}
-        <section className="mb-3 rounded-[14px] border border-[#dce6f1] bg-white px-4 py-3 shadow-sm">
+        <section className="dashboard-panel mb-8 rounded-[20px] border border-[#dce6f1] bg-white px-6 py-5 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 fill-[#172947] text-[#172947]" />
@@ -715,7 +727,7 @@ export default function DashboardPage() {
 
         {/* ── 데스크톱 카테고리 그리드 ── */}
         <div className="hidden md:block">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '8px', alignItems: 'start' }}>
+          <div className="dashboard-category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '18px', alignItems: 'start' }}>
           {allCategorySections.map((cat) => {
             const isOpen = openConsultCategories[cat.id] ?? false
             // 진료기록확인·상품공시조회 숨김
@@ -726,22 +738,22 @@ export default function DashboardPage() {
             const visibleCount = regularTools.filter(t => !(t as any).locked).length + (combinedTools.length > 0 ? 1 : 0)
 
             return (
-              <section key={cat.id} className="overflow-hidden rounded-[14px] border border-[#dce6f1] bg-white shadow-sm">
+              <section key={cat.id} className="dashboard-category-card overflow-hidden rounded-[20px] border border-[#dce6f1] bg-white shadow-sm">
                 {/* 아코디언 헤더 */}
                 <button
                   type="button"
                   onClick={() => toggleConsultCategory(cat.id)}
-                  className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-[#fafcff] transition-colors"
+                  className="dashboard-category-header flex w-full items-center gap-3 px-6 py-5 text-left hover:bg-[#fafcff] transition-colors"
                 >
-                  <span className="flex-1 text-[15px] font-black text-[#10203a]">{cat.title}</span>
+                  <span className="flex-1 text-[16px] font-bold tracking-[-0.02em] text-[#172947]">{cat.title}</span>
                   <span className="rounded-full bg-[#f0f4f9] px-2.5 py-0.5 text-[10px] font-black text-[#64748b]">{visibleCount}개</span>
                   <ChevronDown className={`h-4 w-4 text-[#9ab4c8] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* 아코디언 내용 */}
                 {isOpen && (
-                  <div className="border-t border-[#e8eef5] px-5 py-4">
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div className="dashboard-category-content border-t border-[#e8eef5] px-6 py-5">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                       {regularTools.map((tool) => {
                         const locked = (tool as any).locked
                         return (
@@ -884,7 +896,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef3f8] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
+    <div className="dashboard-shell min-h-screen bg-[#f5f7fa] flex flex-col lg:flex-row overflow-x-hidden [overflow-wrap:anywhere] [text-wrap:pretty] [word-break:keep-all]">
       {/* ── 공지·업데이트 통합 팝업 ── */}
       {showNoticePopup && (
         <div style={{ position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(10,20,40,0.45)" }}
@@ -965,7 +977,7 @@ export default function DashboardPage() {
         recentCustomers={recentCustomers}
       />
 
-      <main className="flex-1 min-w-0 p-4 pb-28 transition-all duration-300 sm:p-5 lg:ml-[300px] lg:p-8 xl:p-10">
+      <main className="dashboard-main flex-1 min-w-0 p-5 pb-28 transition-all duration-300 sm:p-7 lg:ml-[300px] lg:p-10 xl:p-12 2xl:p-14">
         {isMaster && viewMode === 'consulting' && !activeTab && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
             <div style={{ display: 'inline-flex', background: '#e8eef5', borderRadius: 10, padding: 3, gap: 2 }}>
@@ -988,7 +1000,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="mx-auto max-w-[1680px] min-w-0">
+        <div className="dashboard-content mx-auto max-w-[1520px] min-w-0">
           {activeTab === 'strategy' ? (
             <ProductStrategyBoard user={user} />
           ) : activeTab === 'branding' ? (

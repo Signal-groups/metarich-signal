@@ -508,7 +508,7 @@ export default function GeneralHome({
                 </div>
 
                 {/* 컬럼 헤더 */}
-                <div style={{ display: 'grid', gridTemplateColumns: isInsuEdit ? '1fr 90px 110px 22px' : '1fr 90px 110px', gap: 4, paddingBottom: 5, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isInsuEdit ? 'minmax(0,1fr) 90px 110px 22px' : 'minmax(0,1fr) 90px 110px', gap: 4, paddingBottom: 5, borderBottom: '1.5px solid #e8eef5', flexShrink: 0 }}>
                   <span style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', paddingLeft: 2 }}>보험사</span>
                   <span style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>코드</span>
                   <span style={{ fontSize: 12, fontWeight: 900, color: '#94a3b8', textAlign: 'center' }}>비밀번호</span>
@@ -527,7 +527,7 @@ export default function GeneralHome({
                       onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: isInsuEdit ? '1fr 90px 110px 22px' : '1fr 90px 110px',
+                        gridTemplateColumns: isInsuEdit ? 'minmax(0,1fr) 90px 110px 22px' : 'minmax(0,1fr) 90px 110px',
                         gap: 4, alignItems: 'center', padding: '5px 0',
                         borderBottom: overIdx === idx && dragIdx !== null && dragIdx !== idx ? '2px solid #1A2744' : '1px solid #f1f5f9',
                         opacity: dragIdx === idx ? 0.4 : 1,
