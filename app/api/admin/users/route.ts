@@ -12,11 +12,10 @@ function createServiceClient() {
   })
 }
 
-// 사용자 JWT 검증은 anon 클라이언트로 수행 (올바른 Supabase 패턴)
-function createUserClient(token: string) {
+// 사용자 JWT 검증용 anon 클라이언트 (토큰은 getUser(token)에 직접 전달)
+function createAnonClient() {
   return createClient(SUPABASE_URL, ANON_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` } },
   })
 }
 
@@ -73,15 +72,21 @@ export async function GET(req: NextRequest) {
   const token = getBearerToken(req)
   if (!token) return NextResponse.json({ error: "마스터 로그인 확인이 필요합니다." }, { status: 401 })
 
-  // JWT 검증: anon 클라이언트로 사용자 확인 (service key 불필요)
-  const userClient = createUserClient(token)
-  const { data: { user: authUser }, error: authError } = await userClient.auth.getUser()
+  // admin 작업을 위한 service role 클라이언트
+  const serviceSupabase = createServiceClient()
+  if (!serviceSupabase) {
+    return NextResponse.json({ error: "서버 전용 Supabase 설정이 필요합니다." }, { status: 500 })
+  }
+
+  // JWT 검증: anon 클라이언트로 token을 직접 전달
+  const anonClient = createAnonClient()
+  const { data: { user: authUser }, error: authError } = await anonClient.auth.getUser(token)
   if (authError || !authUser?.id) {
     return NextResponse.json({ error: "로그인 세션을 확인하지 못했습니다." }, { status: 401 })
   }
 
-  // users 테이블 조회 (anon 클라이언트 + 사용자 JWT)
-  const { data: requester, error: requesterError } = await userClient
+  // 마스터 권한 확인 (service client로 RLS 우회)
+  const { data: requester, error: requesterError } = await serviceSupabase
     .from("users")
     .select("rank, role, role_level, email")
     .eq("id", authUser.id)
@@ -90,12 +95,6 @@ export async function GET(req: NextRequest) {
   if (requesterError) return NextResponse.json({ error: requesterError.message }, { status: 500 })
   const requesterWithEmail = { ...requester, email: requester?.email || authUser.email }
   if (!isMaster(requesterWithEmail)) return NextResponse.json({ error: "마스터만 직원 목록을 조회할 수 있습니다." }, { status: 403 })
-
-  // admin 작업(listUsers)은 service role 클라이언트 필요
-  const serviceSupabase = createServiceClient()
-  if (!serviceSupabase) {
-    return NextResponse.json({ error: "서버 전용 Supabase 설정이 필요합니다." }, { status: 500 })
-  }
 
   const { data: existing, error: usersError } = await serviceSupabase
     .from("users")

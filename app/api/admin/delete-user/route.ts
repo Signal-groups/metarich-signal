@@ -12,10 +12,9 @@ function createServiceClient() {
   })
 }
 
-function createUserClient(token: string) {
+function createAnonClient() {
   return createClient(SUPABASE_URL, ANON_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
-    global: { headers: { Authorization: `Bearer ${token}` } },
   })
 }
 
@@ -32,9 +31,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "마스터 로그인 확인이 필요합니다. 다시 로그인 후 삭제해주세요." }, { status: 401 })
   }
 
-  // JWT 검증: anon 클라이언트 사용
-  const userClient = createUserClient(token)
-  const { data: { user: authUser }, error: authUserError } = await userClient.auth.getUser()
+  // JWT 검증: anon 클라이언트로 token 직접 전달
+  const anonClient = createAnonClient()
+  const { data: { user: authUser }, error: authUserError } = await anonClient.auth.getUser(token)
   if (authUserError || !authUser?.id) {
     return NextResponse.json({ error: "로그인 세션을 확인하지 못했습니다. 다시 로그인 후 삭제해주세요." }, { status: 401 })
   }
