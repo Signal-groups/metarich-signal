@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
-function getSupabaseConfig() {
-  return {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    serviceRoleKey:
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_SERVICE_KEY ||
-      process.env.SUPABASE_SERVICE_ROLE,
-  }
-}
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE
 
 function createServiceClient() {
-  const { supabaseUrl, serviceRoleKey } = getSupabaseConfig()
-  if (!supabaseUrl || !serviceRoleKey) return null
-
-  return createClient(supabaseUrl, serviceRoleKey, {
+  if (!SUPABASE_URL || !SERVICE_KEY) return null
+  return createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
+function createUserClient(token: string) {
+  return createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
   })
 }
 
@@ -28,21 +27,15 @@ function getBearerToken(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const serviceSupabase = createServiceClient()
-  if (!serviceSupabase) {
-    return NextResponse.json({
-      error: "삭제 실패: Vercel 환경변수에 SUPABASE_SERVICE_ROLE_KEY가 필요합니다. Supabase 프로젝트 설정에서 service_role key를 확인해 Vercel Production/Preview/Development 환경변수에 추가한 뒤 재배포해주세요.",
-      setupRequired: true,
-    }, { status: 500 })
-  }
-
   const token = getBearerToken(req)
   if (!token) {
     return NextResponse.json({ error: "마스터 로그인 확인이 필요합니다. 다시 로그인 후 삭제해주세요." }, { status: 401 })
   }
 
-  const { data: authUser, error: authUserError } = await serviceSupabase.auth.getUser(token)
-  if (authUserError || !authUser.user?.id) {
+  // JWT 검증: anon 클라이언트 사용
+  const userClient = createUserClient(token)
+  const { data: { user: authUser }, error: authUserError } = await userClient.auth.getUser()
+  if (authUserError || !authUser?.id) {
     return NextResponse.json({ error: "로그인 세션을 확인하지 못했습니다. 다시 로그인 후 삭제해주세요." }, { status: 401 })
   }
 
@@ -51,7 +44,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "삭제할 직원 정보가 필요합니다." }, { status: 400 })
   }
 
-  const requesterId = authUser.user.id
+  // 서비스 클라이언트로 admin 작업 수행
+  const serviceSupabase = createServiceClient()
+  if (!serviceSupabase) {
+    return NextResponse.json({
+      error: "삭제 실패: Vercel 환경변수에 SUPABASE_SERVICE_ROLE_KEY가 필요합니다.",
+      setupRequired: true,
+    }, { status: 500 })
+  }
+
+  const requesterId = authUser.id
   const { data: requester, error: requesterError } = await serviceSupabase
     .from("users")
     .select("rank, role, role_level")

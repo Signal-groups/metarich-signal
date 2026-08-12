@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE
+
 function createServiceClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE
-  if (!supabaseUrl || !serviceRoleKey) return null
-  return createClient(supabaseUrl, serviceRoleKey, {
+  if (!SUPABASE_URL || !SERVICE_KEY) return null
+  return createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
+// 사용자 JWT 검증은 anon 클라이언트로 수행 (올바른 Supabase 패턴)
+function createUserClient(token: string) {
+  return createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
   })
 }
 
@@ -60,29 +70,32 @@ function profileFromAuthUser(user: any) {
 }
 
 export async function GET(req: NextRequest) {
+  const token = getBearerToken(req)
+  if (!token) return NextResponse.json({ error: "마스터 로그인 확인이 필요합니다." }, { status: 401 })
+
+  // JWT 검증: anon 클라이언트로 사용자 확인 (service key 불필요)
+  const userClient = createUserClient(token)
+  const { data: { user: authUser }, error: authError } = await userClient.auth.getUser()
+  if (authError || !authUser?.id) {
+    return NextResponse.json({ error: "로그인 세션을 확인하지 못했습니다." }, { status: 401 })
+  }
+
+  // users 테이블 조회 (anon 클라이언트 + 사용자 JWT)
+  const { data: requester, error: requesterError } = await userClient
+    .from("users")
+    .select("rank, role, role_level, email")
+    .eq("id", authUser.id)
+    .maybeSingle()
+
+  if (requesterError) return NextResponse.json({ error: requesterError.message }, { status: 500 })
+  const requesterWithEmail = { ...requester, email: requester?.email || authUser.email }
+  if (!isMaster(requesterWithEmail)) return NextResponse.json({ error: "마스터만 직원 목록을 조회할 수 있습니다." }, { status: 403 })
+
+  // admin 작업(listUsers)은 service role 클라이언트 필요
   const serviceSupabase = createServiceClient()
   if (!serviceSupabase) {
     return NextResponse.json({ error: "서버 전용 Supabase 설정이 필요합니다." }, { status: 500 })
   }
-
-  const token = getBearerToken(req)
-  if (!token) return NextResponse.json({ error: "마스터 로그인 확인이 필요합니다." }, { status: 401 })
-
-  const { data: authUser, error: authError } = await serviceSupabase.auth.getUser(token)
-  if (authError || !authUser.user?.id) {
-    return NextResponse.json({ error: "로그인 세션을 확인하지 못했습니다." }, { status: 401 })
-  }
-
-  const { data: requester, error: requesterError } = await serviceSupabase
-    .from("users")
-    .select("rank, role, role_level, email")
-    .eq("id", authUser.user.id)
-    .maybeSingle()
-
-  if (requesterError) return NextResponse.json({ error: requesterError.message }, { status: 500 })
-  // users 테이블에 email이 없으면 auth 토큰 이메일로 보완
-  const requesterWithEmail = { ...requester, email: requester?.email || authUser.user.email }
-  if (!isMaster(requesterWithEmail)) return NextResponse.json({ error: "마스터만 직원 목록을 조회할 수 있습니다." }, { status: 403 })
 
   const { data: existing, error: usersError } = await serviceSupabase
     .from("users")
