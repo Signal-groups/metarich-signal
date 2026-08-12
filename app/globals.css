@@ -190,6 +190,18 @@ body {
   .dashboard-banner-grid > div {
     min-height: 82px !important;
   }
+
+  /* 달력 우측 패널 — 모바일에서 자연스럽게 높이 확장 (스크롤 없이 전체 표시) */
+  .calendar-right-panel {
+    overflow-y: visible !important;
+    max-height: none !important;
+  }
+
+  /* ProHome/GeneralHome 외부 그리드 오버플로우 방지 */
+  .dashboard-content > div:first-child {
+    overflow: hidden !important;
+    max-width: 100% !important;
+  }
 }
 
 @media (max-width: 420px) {

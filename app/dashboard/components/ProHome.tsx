@@ -323,7 +323,7 @@ export default function ProHome({
     : null
 
   return (
-    <div style={{ display: 'grid', gap: 16, minWidth: 0, overflowX: 'hidden' }}>
+    <div style={{ display: 'grid', gap: 16, minWidth: 0, overflow: 'hidden', maxWidth: '100%', width: '100%' }}>
 
       {/* ══════════════════════════════════════════════════
           HEADER (모바일): 이달의 전략 + 시그널 홈 — 작은 버튼 2개
@@ -407,7 +407,7 @@ export default function ProHome({
           SECTION 2 (모바일): 즐겨찾기 4개 + 접기/펼치기
       ══════════════════════════════════════════════════ */}
       <div className="block md:hidden">
-        <section style={card}>
+        <section style={{ ...card, overflow: 'hidden' }}>
           <button
             onClick={() => setMobileFavOpen(p => !p)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}

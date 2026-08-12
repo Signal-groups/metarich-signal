@@ -427,7 +427,7 @@ export default function CalendarWidget({ user, canUseCrm }: { user: any; canUseC
         </div>
 
         {/* ── 우측 패널 (50%) ── */}
-        <div style={{ flex: "1 1 0", minWidth: 0, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto" }}>
+        <div className="calendar-right-panel" style={{ flex: "1 1 0", minWidth: 0, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto" }}>
           {!selected ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, paddingTop: 8 }}>
               <span style={{ fontSize: 32 }}>📅</span>
