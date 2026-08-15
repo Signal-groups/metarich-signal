@@ -15,6 +15,10 @@ import LoadingScreen from "./LoadingScreen"
 import { supabase } from "../../lib/supabase"
 import { trackPageView } from "../../lib/trackActivity"
 
+// 세션 캐시 (60초 TTL) — 페이지 이동마다 Supabase auth 호출 방지
+let _sessionCache: { userId: string; ts: number } | null = null
+const SESSION_TTL_MS = 60_000
+
 const INITIAL_MS = 1000   // 최초 오픈 표시 시간 (ms)
 const NAVIGATE_MS = 500   // 페이지 이동 표시 시간 (ms)
 
@@ -45,10 +49,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       prevPath.current = pathname
       showFor(NAVIGATE_MS)
     }
-    // 페이지 방문 트래킹 (로그인 상태일 때만)
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.id) void trackPageView(session.user.id, pathname)
-    })
+    // 페이지 방문 트래킹 (캐시된 세션 사용 — 60초마다 1회만 Supabase auth 호출)
+    const now = Date.now()
+    if (_sessionCache && now - _sessionCache.ts < SESSION_TTL_MS) {
+      void trackPageView(_sessionCache.userId, pathname)
+    } else {
+      void supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user?.id) {
+          _sessionCache = { userId: session.user.id, ts: now }
+          void trackPageView(session.user.id, pathname)
+        }
+      })
+    }
   }, [pathname])
 
   return (

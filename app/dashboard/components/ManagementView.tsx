@@ -69,8 +69,14 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
     const { data: settings } = await supabase.from("team_settings").select("*")
     setGlobalNotice(settings?.find((s) => s.key === "global_notice")?.value || "등록된 공지사항이 없습니다.")
 
-    const { data: users } = await supabase.from("users").select("*")
-    const { data: allPerfs } = await supabase.from("daily_perf").select("*")
+    const { data: users } = await supabase.from("users").select(
+      "id, name, email, phone, role, rank, role_level, branch, department, headquarter, is_approved, created_at, profile_image_url"
+    )
+    // 당월 데이터만 조회 (egress 최적화 — 전체 이력 대신 현재 monthKey만)
+    const { data: allPerfs } = await supabase
+      .from("daily_perf")
+      .select("*")
+      .eq("date", monthKey)
     const visibleUsers = users?.filter((target) => canSeeUser(user, target)) || []
 
     setAgents(visibleUsers.map((target) => {
