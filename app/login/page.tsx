@@ -45,8 +45,15 @@ export default function LoginPage() {
   const [redirectPath, setRedirectPath] = useState("/dashboard")
   const [slideIdx, setSlideIdx] = useState(0)
   const [progKey, setProgKey] = useState(0)
+  const [showMaintenance, setShowMaintenance] = useState(false)
   const router = useRouter()
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // 8월 27일 이전이면 점검 공지 팝업 표시
+  useEffect(() => {
+    const resumeDate = new Date("2026-08-27T00:00:00+09:00")
+    if (new Date() < resumeDate) setShowMaintenance(true)
+  }, [])
 
   const goSlide = (n: number) => {
     setSlideIdx(n)
@@ -139,6 +146,58 @@ export default function LoginPage() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", overflow: "hidden", background: "#0f1923" }}>
+
+      {/* ── 서버 점검 공지 팝업 ── */}
+      {showMaintenance && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}>
+          <div style={{ background: "#ffffff", borderRadius: 18, padding: "36px 32px", maxWidth: 420, width: "90%", boxShadow: "0 24px 60px rgba(0,0,0,0.4)", textAlign: "center" }}>
+            {/* 아이콘 */}
+            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "linear-gradient(135deg, #1a2744, #2D4A8A)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C9A96E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+
+            {/* 제목 */}
+            <p style={{ fontSize: 18, fontWeight: 700, color: "#1A2744", marginBottom: 8 }}>서비스 점검 안내</p>
+            <p style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 24, lineHeight: 1.5 }}>
+              현재 서버 업그레이드 및 시스템 이전 작업이 진행 중입니다.
+            </p>
+
+            {/* 일정 박스 */}
+            <div style={{ background: "#F5F2ED", borderRadius: 12, padding: "16px 20px", marginBottom: 20, textAlign: "left" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 2 }}>서비스 중단 기간</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "#1A2744" }}>~ 2026년 8월 26일 (화)</p>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 2 }}>서비스 재개 예정</p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "#1A2744" }}>2026년 8월 27일 (수) 이후</p>
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.6, marginBottom: 24 }}>
+              불편을 드려 진심으로 사과드립니다.<br/>
+              작업 완료 후 더욱 안정적인 서비스로 찾아뵙겠습니다.
+            </p>
+
+            <button
+              onClick={() => setShowMaintenance(false)}
+              style={{ width: "100%", height: 46, borderRadius: 10, border: "none", background: "#1A2744", color: "#ffffff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 좌측 스토리텔링 패널 (PC only) */}
       <div className="hidden lg:flex" style={{ flex: 6, position: "relative", flexDirection: "column", justifyContent: "flex-end", padding: "40px", overflow: "hidden", minHeight: "100vh" }}>
