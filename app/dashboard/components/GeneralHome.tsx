@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowLeftRight, BarChart3, BookOpen, Calculator, CarFront,
   ChevronDown, ChevronUp, ClipboardCheck, FileSearch, GripVertical, Hospital,
@@ -123,6 +123,17 @@ export default function GeneralHome({
   const [copiedCell, setCopiedCell] = useState<string | null>(null)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
+
+  // 데스크톱에서는 첨부 화면처럼 기본 펼침, 모바일에서는 기본 접힘.
+  // 화면 크기가 바뀌어도 각 레이아웃에 맞는 초기 상태로 전환한다.
+  useEffect(() => {
+    const desktopQuery = window.matchMedia('(min-width: 768px)')
+    const syncInsuPanel = () => setIsInsuOpen(desktopQuery.matches)
+
+    syncInsuPanel()
+    desktopQuery.addEventListener('change', syncInsuPanel)
+    return () => desktopQuery.removeEventListener('change', syncInsuPanel)
+  }, [])
 
   const copyToClipboard = (text: string, cellId: string) => {
     if (!text) return
