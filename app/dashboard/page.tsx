@@ -257,14 +257,15 @@ export default function DashboardPage() {
       }
       if (!userInfo) return router.replace("/login");
 
-      const [{ data: settings }, { data: annData }] = await Promise.all([
-        supabase.from("team_settings").select("key, value"),
+      const [{ data: layoutSetting }, { data: booleanSettings }, { data: annData }] = await Promise.all([
+        supabase.from("team_settings").select("value").eq("key", MENU_LAYOUT_KEY).maybeSingle(),
+        supabase.from("team_settings").select("key, value").in("value", ["true", "false"]),
         supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }),
       ]);
       if (annData) setAnnouncements(annData);
-      const layoutValue = settings?.find((item: any) => item.key === MENU_LAYOUT_KEY)?.value;
+      const layoutValue = layoutSetting?.value;
       setMenuLayout(parseMenuLayout(layoutValue));
-      const statusMap = settings?.reduce((acc: any, curr: any) => {
+      const statusMap = booleanSettings?.reduce((acc: any, curr: any) => {
         if (curr.value === "true" || curr.value === "false") acc[curr.key] = curr.value === "true";
         return acc;
       }, { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };

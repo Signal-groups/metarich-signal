@@ -85,7 +85,14 @@ export default function AdminPopups({
   const canUseOrgManagement = isOrganizationAdminAccount(viewer)
 
   const load = useCallback(async () => {
-    const { data: settings } = await supabase.from("team_settings").select("*")
+    const settingKeys = ["global_notice"]
+    if (scopeHeadquarter && scopeDepartment) {
+      settingKeys.push(departmentSettingsKey(scopeHeadquarter, scopeDepartment))
+    }
+    const { data: settings } = await supabase
+      .from("team_settings")
+      .select("key, value")
+      .in("key", settingKeys)
     setNotice(settings?.find((setting) => setting.key === "global_notice")?.value || "")
 
     if (scopeHeadquarter && scopeDepartment) {

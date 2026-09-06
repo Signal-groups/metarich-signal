@@ -66,18 +66,21 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
   const canUseCrm = canAccessCrm(user)
 
   const fetchTeamData = useCallback(async () => {
-    const { data: settings } = await supabase.from("team_settings").select("*")
-    setGlobalNotice(settings?.find((s) => s.key === "global_notice")?.value || "등록된 공지사항이 없습니다.")
-
-    const { data: users } = await supabase.from("users").select(
-      "id, name, email, phone, role, rank, role_level, branch, department, headquarter, is_approved, created_at, profile_image_url"
-    )
-    // 당월 데이터만 조회 (egress 최적화 — 전체 이력 대신 현재 monthKey만)
-    const { data: allPerfs } = await supabase
-      .from("daily_perf")
-      .select("*")
-      .eq("date", monthKey)
+    const [{ data: noticeSetting }, { data: users }, { data: allPerfs }] = await Promise.all([
+      supabase.from("team_settings").select("value").eq("key", "global_notice").maybeSingle(),
+      supabase.from("users").select(
+        "id, name, email, phone, role, rank, role_level, branch, department, headquarter, is_approved, created_at, profile_image_url"
+      ),
+      // 당월 데이터만 조회 (egress 최적화 — 전체 이력 대신 현재 monthKey만)
+      supabase.from("daily_perf").select("*").eq("date", monthKey),
+    ])
+    setGlobalNotice(noticeSetting?.value || "등록된 공지사항이 없습니다.")
     const visibleUsers = users?.filter((target) => canSeeUser(user, target)) || []
+    const extKeys = visibleUsers.map((target) => `daily_perf_ext:${target.id}:${monthKey}`)
+    const { data: extSettings } = extKeys.length
+      ? await supabase.from("team_settings").select("key, value").in("key", extKeys)
+      : { data: [] }
+    const extByKey = new Map((extSettings || []).map((setting) => [setting.key, setting.value]))
 
     setAgents(visibleUsers.map((target) => {
       const userHistory = allPerfs?.filter((perf) => perf.user_id === target.id) || []
@@ -86,7 +89,7 @@ export default function ManagementView({ user, selectedDate }: ManagementViewPro
         contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10,
         is_approved: target.is_approved || false,
       }
-      const rawExt = settings?.find((setting) => setting.key === `daily_perf_ext:${target.id}:${monthKey}`)?.value
+      const rawExt = extByKey.get(`daily_perf_ext:${target.id}:${monthKey}`)
       let parsedExt = {}
       if (rawExt) {
         try { parsedExt = typeof rawExt === "string" ? JSON.parse(rawExt) : rawExt } catch { parsedExt = {} }

@@ -73,7 +73,10 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   }, [monthKey, user.id]);
 
   async function fetchData() {
-    const { data: settings } = await supabase.from("team_settings").select("*");
+    const { data: settings } = await supabase
+      .from("team_settings")
+      .select("key, value")
+      .in("key", ["global_notice", "edu_content"]);
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
     const savedEdu = settings?.find(s => s.key === 'edu_content')?.value;
     if (savedEdu) {

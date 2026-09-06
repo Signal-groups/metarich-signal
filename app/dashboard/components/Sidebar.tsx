@@ -142,7 +142,10 @@ export default function Sidebar({
   }, [activeMenuLayout, isConsultModalOpen]);
 
   async function fetchMenuSettings() {
-    const { data } = await supabase.from("team_settings").select("key, value");
+    const { data } = await supabase
+      .from("team_settings")
+      .select("key, value")
+      .in("value", ["true", "false"]);
     if (data) {
       const settings = data.reduce((acc: any, curr: any) => {
         if (curr.value === "true" || curr.value === "false") acc[curr.key] = curr.value === "true";
